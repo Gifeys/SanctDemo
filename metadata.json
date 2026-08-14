@@ -1,0 +1,6 @@
+{
+  "name": "SanctiWalk",
+  "description": "An interactive, mobile-first Progressive Web App (PWA) walking guide and heritage pilgrimage tracker.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

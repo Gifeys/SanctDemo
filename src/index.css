@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* ─── DYNAMIC COLOR VARIABLES ─── */
+  /* Change these colors here to anything you want (like blues, reds, etc.) and the whole app will update instantly! */
+  --color-brand-primary: #151b54;      /* Main Primary Color (original Olive: #5A5A40) */
+  --color-brand-primary-dark: #4A4A35; /* Hover/Pressed state (original Dark Olive: #4A4A35) */
+  --color-brand-secondary: #8A8A70;    /* Secondary/Muted elements (original Khaki: #8A8A70) */
+  --color-brand-accent: #C2A649;       /* Accent Gold/Ochre (original Gold: #C2A649) */
+  --color-brand-bg: #151b54;           /* Outer body background (original Cream: #F5F5F0) */
+  --color-brand-card: #EBEBE0;         /* Card/Surface background (original Warm Beige: #EBEBE0) */
+  --color-brand-border: #161603;       /* Borders and dividers (original Gray Border: #D6D6C2) */
+  --color-brand-text: #33332D;         /* Main body text color (original Dark Charcoal: #33332D) */
+}
+
+@theme {
+--font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+
+--font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
+--font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-primary-dark: var(--color-brand-primary-dark);
+  --color-brand-secondary: var(--color-brand-secondary);
+  --color-brand-accent: var(--color-brand-accent);
+  --color-brand-bg: var(--color-brand-bg);
+  --color-brand-card: var(--color-brand-card);
+  --color-brand-border: var(--color-brand-border);
+  --color-brand-text: var(--color-brand-text);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC COLOR BRIDGING OVERRIDES
+   These rules capture Tailwind's generated class names for
+   the hardcoded colors in the components and link them 
+   directly to your CSS theme variables above.
+   ───────────────────────────────────────────────────────────── */
+
+/* Primary Color mappings (#5A5A40) */
+.bg-\[\#5A5A40\] { background-color: var(--color-brand-primary) !important; }
+.text-\[\#5A5A40\] { color: var(--color-brand-primary) !important; }
+.border-\[\#5A5A40\] { border-color: var(--color-brand-primary) !important; }
+.stroke-\[\#5A5A40\] { stroke: var(--color-brand-primary) !important; }
+.fill-\[\#5A5A40\] { fill: var(--color-brand-primary) !important; }
+.from-\[\#5A5A40\] { --tw-gradient-from: var(--color-brand-primary) !important; --tw-gradient-to: var(--color-brand-primary) !important; }
+.to-\[\#5A5A40\] { --tw-gradient-to: var(--color-brand-primary) !important; }
+
+/* Primary Dark Color mappings (#4A4A35) */
+.bg-\[\#4A4A35\] { background-color: var(--color-brand-primary-dark) !important; }
+.text-\[\#4A4A35\] { color: var(--color-brand-primary-dark) !important; }
+.border-\[\#4A4A35\] { border-color: var(--color-brand-primary-dark) !important; }
+.stroke-\[\#4A4A35\] { stroke: var(--color-brand-primary-dark) !important; }
+.fill-\[\#4A4A35\] { fill: var(--color-brand-primary-dark) !important; }
+.from-\[\#4A4A35\] { --tw-gradient-from: var(--color-brand-primary-dark) !important; --tw-gradient-to: var(--color-brand-primary-dark) !important; }
+.to-\[\#4A4A35\] { --tw-gradient-to: var(--color-brand-primary-dark) !important; }
+
+/* Secondary/Muted Color mappings (#8A8A70) */
+.bg-\[\#8A8A70\] { background-color: var(--color-brand-secondary) !important; }
+.text-\[\#8A8A70\] { color: var(--color-brand-secondary) !important; }
+.border-\[\#8A8A70\] { border-color: var(--color-brand-secondary) !important; }
+.stroke-\[\#8A8A70\] { stroke: var(--color-brand-secondary) !important; }
+.fill-\[\#8A8A70\] { fill: var(--color-brand-secondary) !important; }
+
+/* Accent Color mappings (#C2A649) */
+.bg-\[\#C2A649\] { background-color: var(--color-brand-accent) !important; }
+.text-\[\#C2A649\] { color: var(--color-brand-accent) !important; }
+.border-\[\#C2A649\] { border-color: var(--color-brand-accent) !important; }
+.stroke-\[\#C2A649\] { stroke: var(--color-brand-accent) !important; }
+.fill-\[\#C2A649\] { fill: var(--color-brand-accent) !important; }
+.from-\[\#C2A649\] { --tw-gradient-from: var(--color-brand-accent) !important; --tw-gradient-to: var(--color-brand-accent) !important; }
+.to-\[\#C2A649\] { --tw-gradient-to: var(--color-brand-accent) !important; }
+
+/* Body Background mappings (#F5F5F0) */
+.bg-\[\#F5F5F0\] { background-color: var(--color-brand-bg) !important; }
+.text-\[\#F5F5F0\] { color: var(--color-brand-bg) !important; }
+.border-\[\#F5F5F0\] { border-color: var(--color-brand-bg) !important; }
+
+/* Card/Surface mappings (#EBEBE0) */
+.bg-\[\#EBEBE0\] { background-color: var(--color-brand-card) !important; }
+.text-\[\#EBEBE0\] { color: var(--color-brand-card) !important; }
+.border-\[\#EBEBE0\] { border-color: var(--color-brand-card) !important; }
+
+/* Border/Divider mappings (#D6D6C2) */
+.bg-\[\#D6D6C2\] { background-color: var(--color-brand-border) !important; }
+.text-\[\#D6D6C2\] { color: var(--color-brand-border) !important; }
+.border-\[\#D6D6C2\] { border-color: var(--color-brand-border) !important; }
+
+/* Body Text mappings (#33332D) */
+.text-\[\#33332D\] { color: var(--color-brand-text) !important; }
+.bg-\[\#33332D\] { background-color: var(--color-brand-text) !important; }
