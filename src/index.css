@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=Poppins:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -12,14 +12,18 @@
   --color-brand-card: #EBEBE0;         /* Card/Surface background (original Warm Beige: #EBEBE0) */
   --color-brand-border: #161603;       /* Borders and dividers (original Gray Border: #D6D6C2) */
   --color-brand-text: #33332D;         /* Main body text color (original Dark Charcoal: #33332D) */
+
+  /* ─── TYPOGRAPHY VARIABLES ─── */
+  --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-secondary: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {
---font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-
---font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
---font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  
+  --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-secondary: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   
   --color-brand-primary: var(--color-brand-primary);
@@ -30,6 +34,20 @@
   --color-brand-card: var(--color-brand-card);
   --color-brand-border: var(--color-brand-border);
   --color-brand-text: var(--color-brand-text);
+}
+
+/* Base Typography Configuration */
+body {
+  font-family: var(--font-secondary);
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
+  font-family: var(--font-primary);
+  font-weight: 700;
+}
+
+.font-secondary, .font-poppins {
+  font-family: var(--font-secondary);
 }
 
 /* Custom Scrollbar */

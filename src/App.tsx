@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import PhoneContainer from "./components/PhoneContainer";
 import ExploreTab from "./components/ExploreTab";
 import MapTab from "./components/MapTab";
-import TrackerTab from "./components/TrackerTab";
 import CompanionTab from "./components/CompanionTab";
 import PwaBanner from "./components/PwaBanner";
 
@@ -26,7 +25,7 @@ import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
 
 import { 
-  Compass, Map, Award, Cpu, Sparkles, BookOpen, Clock, Heart, 
+  Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon, 
   BookOpen as AgosIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft
 } from "lucide-react";
@@ -35,7 +34,7 @@ export default function App() {
   // Navigation & Frame settings
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "agos-ar" | "quiz" | "tracker" | "login" | "admin" | "pwa-devkit"
+    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "agos-ar" | "quiz" | "login" | "admin" | "pwa-devkit"
   >("home");
   
   const [isOffline, setIsOffline] = useState(false);
@@ -694,16 +693,6 @@ export default function App() {
                           <span>Pilgrim Catechism Quiz</span>
                         </button>
 
-                        <button
-                          onClick={() => { setActiveTab("tracker"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
-                            activeTab === "tracker" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <Award className="w-4 h-4" />
-                          <span>Stamp Passport Status</span>
-                        </button>
-
                         <div className="border-t border-[#D6D6C2]/45 my-2"></div>
 
                         <button
@@ -998,12 +987,7 @@ export default function App() {
                     />
                   )}
 
-                  {/* TAB 10: Passport stamp board */}
-                  {activeTab === "tracker" && (
-                    <TrackerTab progress={userProgress} />
-                  )}
-
-                  {/* TAB 11: Authenticator Profile */}
+                  {/* TAB 10: Authenticator Profile */}
                   {activeTab === "login" && (
                     <LoginModal 
                       onLoginSuccess={handleLoginSuccess}
@@ -1013,7 +997,7 @@ export default function App() {
                     />
                   )}
 
-                  {/* TAB 12: Admin Control Panel */}
+                  {/* TAB 11: Admin Control Panel */}
                   {activeTab === "admin" && (
                     <AdminPortal 
                       applications={applications}
@@ -1027,10 +1011,10 @@ export default function App() {
                 </div>
 
                 {/* BOTTOM STICKY PHONE SIM NAVIGATION BAR (Figure 35 style) */}
-                <nav className="absolute bottom-0 inset-x-0 h-16 bg-[#EBEBE0] border-t border-[#D6D6C2] flex items-center justify-around px-2 z-40 shadow-md">
+                <nav className="absolute bottom-0 inset-x-0 h-16 bg-[#EBEBE0] border-t border-[#D6D6C2] flex items-center justify-around px-4 z-40 shadow-md">
                   <button
                     onClick={() => setActiveTab("home")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
                       activeTab === "home" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
                     }`}
                   >
@@ -1040,7 +1024,7 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab("navigator")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
                       activeTab === "navigator" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
                     }`}
                   >
@@ -1050,22 +1034,12 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab("rosary")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
                       activeTab === "rosary" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
                     }`}
                   >
                     <BookOpen className="w-5 h-5" />
                     <span className="text-[9px] font-bold font-serif italic">Rosary</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("tracker")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all ${
-                      activeTab === "tracker" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
-                    }`}
-                  >
-                    <Award className="w-5 h-5" />
-                    <span className="text-[9px] font-bold font-serif italic">Passport</span>
                   </button>
                 </nav>
 
