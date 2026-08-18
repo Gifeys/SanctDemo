@@ -1,17 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Sync-able pilgrim profiles
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Administrators are listed in the admins collection, one document per
+    // uid. Membership is granted from the Firebase console, never from the
+    // client, so a user cannot promote themselves.
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // A pilgrim's own profile and devotional progress.
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
-    // Dynamic sacrament & ministry applications
+
+    // Ministry and sacrament applications carry personal data. A signed-in
+    // pilgrim may submit one and read their own back; only the parish office
+    // may read across applicants or change a status.
     match /applications/{docId} {
-      allow read, write: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
     }
-    // Dynamic parish bulletins
+
+    // Parish bulletins are public to read and parish-only to write.
     match /announcements/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // The admin roster is readable by signed-in users so the client can tell
+    // whether to show the portal, but is never writable from the client.
+    match /admins/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
   }
 }

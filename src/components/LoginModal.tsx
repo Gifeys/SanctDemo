@@ -9,9 +9,10 @@ interface LoginModalProps {
   onLogout: () => void;
   isLoggedIn: boolean;
   userEmail: string;
+  isAdmin: boolean;
 }
 
-export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userEmail }: LoginModalProps) {
+export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userEmail, isAdmin }: LoginModalProps) {
   const [activeMode, setActiveMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,9 +63,13 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
         });
 
         setSuccessMsg("Profile registered successfully! Logging you in...");
+        // Admin status comes from the "admins" collection (one document per
+        // uid, granted only from the Firebase console) — never from the
+        // email address, which the person creating the account controls.
+        const signupAdminSnap = await getDoc(doc(db, "admins", user.uid));
+        const signupIsAdmin = signupAdminSnap.exists();
         setTimeout(() => {
-          const isAdmin = email.toLowerCase().includes("admin");
-          onLoginSuccess(email, isAdmin);
+          onLoginSuccess(email, signupIsAdmin);
           setIsLoading(false);
         }, 1500);
 
@@ -91,10 +96,14 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
           });
         }
 
-        const isAdmin = email.toLowerCase().includes("admin");
-        setSuccessMsg(`Welcome back, ${isAdmin ? "Parish Administrator" : "Faithful Pilgrim"}!`);
+        // Admin status comes from the "admins" collection (one document per
+        // uid, granted only from the Firebase console) — never from the
+        // email address.
+        const signinAdminSnap = await getDoc(doc(db, "admins", user.uid));
+        const signinIsAdmin = signinAdminSnap.exists();
+        setSuccessMsg(`Welcome back, ${signinIsAdmin ? "Parish Administrator" : "Faithful Pilgrim"}!`);
         setTimeout(() => {
-          onLoginSuccess(email, isAdmin);
+          onLoginSuccess(email, signinIsAdmin);
           setIsLoading(false);
         }, 1500);
       }
@@ -150,7 +159,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
               </span>
             </div>
 
-            {userEmail.toLowerCase().includes("admin") && (
+            {isAdmin && (
               <div className="p-4 bg-[#EBEBE0]/30 border border-[#D6D6C2] text-[#4A4A35] rounded-2xl text-xs leading-relaxed font-sans text-left space-y-1.5">
                 <span className="font-bold text-[#4A4A35] block uppercase tracking-wider text-[10px]">Admin Privilege Unlocked</span>
                 <p className="text-[11px] text-[#8A8A70]">You now have authorization to edit parish history details, add/remove parish bulletin announcements, and moderate pilgrim logs in the <strong>Admin Portal</strong>.</p>
@@ -239,7 +248,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                     <Mail className="w-4 h-4 text-[#8A8A70] shrink-0" />
                     <input
                       type="email"
-                      placeholder="pilgrim@sti.edu (or admin@sti.edu)"
+                      placeholder="pilgrim@sti.edu"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-transparent outline-none text-xs text-[#33332D]"
@@ -288,8 +297,8 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2 text-[11px] text-[#8A8A70] shadow-xs">
               <strong className="block text-[#4A4A35] font-bold uppercase tracking-wider text-[10px] font-sans">Registration Info:</strong>
               <div className="space-y-1.5 font-sans leading-relaxed">
-                <p>Register with any standard email. To access administrative controls, include the word <span className="font-bold text-[#4A4A35]">"admin"</span> anywhere in your email address (e.g., <code className="bg-[#F5F5F0] px-1 rounded text-[#33332D]">admin@sti.edu</code>).</p>
-                <p>All authenticated credentials now map directly to securely sandboxed Firestore sessions!</p>
+                <p>Register with any standard email to create a pilgrim profile. Administrative access to the parish office portal is granted individually by parish staff and cannot be self-assigned.</p>
+                <p>All authenticated credentials map directly to securely sandboxed Firestore sessions.</p>
               </div>
             </div>
           </div>

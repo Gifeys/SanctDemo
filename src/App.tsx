@@ -19,7 +19,7 @@ import AdminPortal from "./components/AdminPortal";
 // Firebase imports
 import { auth, db } from "./lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs, writeBatch, query, where } from "firebase/firestore";
 
 import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
@@ -45,6 +45,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [uid, setUid] = useState<string | null>(null);
 
   // Simulated Database store: Dynamic Pilgrim Applications & Visitor transaction logs
   const [applications, setApplications] = useState<Array<{
@@ -98,23 +99,40 @@ export default function App() {
       if (user) {
         setIsLoggedIn(true);
         setUserEmail(user.email || "");
-        setIsAdmin(user.email ? user.email.toLowerCase().includes("admin") : false);
+        setUid(user.uid);
+
+        // Admin status is derived from membership in the "admins" collection
+        // (one document per uid, granted only from the Firebase console),
+        // never from anything the client controls like the email address.
+        try {
+          const adminSnap = await getDoc(doc(db, "admins", user.uid));
+          setIsAdmin(adminSnap.exists());
+        } catch (err) {
+          console.error("Error checking admin status from Firestore:", err);
+          setIsAdmin(false);
+        }
 
         // Fetch / sync user profile document in Firestore
         const userDocRef = doc(db, "users", user.uid);
-        const unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setUserProgress({
-              completedStations: data.completedStations || [],
-              completedRoutes: data.completedRoutes || [],
-              badges: data.badges || [],
-              steps: data.steps || 640,
-              distanceKm: data.distanceKm || 0.42,
-              points: data.points || 120
-            });
+        const unsubscribeUserDoc = onSnapshot(
+          userDocRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setUserProgress({
+                completedStations: data.completedStations || [],
+                completedRoutes: data.completedRoutes || [],
+                badges: data.badges || [],
+                steps: data.steps || 640,
+                distanceKm: data.distanceKm || 0.42,
+                points: data.points || 120
+              });
+            }
+          },
+          (error) => {
+            console.error("Error listening to user profile document (check Firestore rules / sign-in state):", error);
           }
-        });
+        );
 
         return () => {
           unsubscribeUserDoc();
@@ -123,6 +141,7 @@ export default function App() {
         setIsLoggedIn(false);
         setUserEmail("");
         setIsAdmin(false);
+        setUid(null);
       }
     });
 
@@ -131,73 +150,104 @@ export default function App() {
     };
   }, []);
 
-  // 2. Listen to Applications collection in Firestore (with dynamic seeding if database empty)
+  // 2. Listen to Applications collection in Firestore (with dynamic seeding if database empty).
+  // Under the Firestore rules, a signed-out user cannot read this collection
+  // at all, and a signed-in non-admin can only read documents whose "uid"
+  // matches their own uid. Subscribe accordingly so we never attempt a read
+  // the rules will reject.
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "applications"), (snapshot) => {
-      const items: any[] = [];
-      snapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
-      });
+    if (!isLoggedIn || !uid) {
+      setApplications([]);
+      return;
+    }
 
-      if (items.length === 0) {
-        // Seed initial applications to Firestore if empty
-        const initialApps = [
-          {
-            type: "Sacrament Booking",
-            applicant: "Christian dela Vega",
-            details: "Holy Baptism - May 24, 2026 (Sponsor: Maria Santos)",
-            date: "05/12/2026",
-            status: "Awaiting Parish Interview",
-            createdAt: new Date().toISOString()
-          },
-          {
-            type: "Ministry Application",
-            applicant: "Justine Valenzuela",
-            details: "SOCOM (Social Communications) - Cameraman Volunteer",
-            date: "05/14/2026",
-            status: "Interview Scheduled",
-            createdAt: new Date().toISOString()
-          }
-        ];
-        initialApps.forEach(async (app) => {
-          await addDoc(collection(db, "applications"), app);
+    const applicationsQuery = isAdmin
+      ? collection(db, "applications")
+      : query(collection(db, "applications"), where("uid", "==", uid));
+
+    const unsub = onSnapshot(
+      applicationsQuery,
+      (snapshot) => {
+        const items: any[] = [];
+        snapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() });
         });
-      } else {
-        // Sort items by a createdAt timestamp or doc id to keep consistent order
-        items.sort((a, b) => b.id.localeCompare(a.id));
-        setApplications(items);
+
+        if (items.length === 0 && isAdmin) {
+          // Seed initial applications to Firestore if empty (admin only —
+          // a non-admin write here would be rejected by the rules anyway,
+          // and every application must carry an owning uid).
+          const initialApps = [
+            {
+              type: "Sacrament Booking",
+              applicant: "Christian dela Vega",
+              details: "Holy Baptism - May 24, 2026 (Sponsor: Maria Santos)",
+              date: "05/12/2026",
+              status: "Awaiting Parish Interview",
+              uid,
+              createdAt: new Date().toISOString()
+            },
+            {
+              type: "Ministry Application",
+              applicant: "Justine Valenzuela",
+              details: "SOCOM (Social Communications) - Cameraman Volunteer",
+              date: "05/14/2026",
+              status: "Interview Scheduled",
+              uid,
+              createdAt: new Date().toISOString()
+            }
+          ];
+          initialApps.forEach(async (app) => {
+            await addDoc(collection(db, "applications"), app);
+          });
+        } else {
+          // Sort items by a createdAt timestamp or doc id to keep consistent order
+          items.sort((a, b) => b.id.localeCompare(a.id));
+          setApplications(items);
+        }
+      },
+      (error) => {
+        console.error("Error listening to applications collection (check Firestore rules / sign-in state):", error);
       }
-    });
+    );
 
     return () => unsub();
-  }, []);
+  }, [isLoggedIn, isAdmin, uid]);
 
   // 3. Listen to Announcements collection in Firestore (with dynamic seeding if database empty)
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "announcements"), (snapshot) => {
-      const items: any[] = [];
-      snapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
-      });
-
-      if (items.length === 0) {
-        // Seed initial announcements to Firestore if empty
-        const initialAnns = [
-          { title: "Feast of St. Joseph Mass", date: "May 1, 2026", time: "3:00 PM", type: "Mass", createdAt: new Date().toISOString() },
-          { title: "Consecration to Maria Auxiliadora", date: "May 13, 2026", time: "3:00 PM", type: "Feast", createdAt: new Date().toISOString() },
-          { title: "7th Sunday of Easter Liturgy", date: "May 17, 2026", time: "3:00 PM", type: "Mass", createdAt: new Date().toISOString() }
-        ];
-        initialAnns.forEach(async (ann) => {
-          await addDoc(collection(db, "announcements"), ann);
+    const unsub = onSnapshot(
+      collection(db, "announcements"),
+      (snapshot) => {
+        const items: any[] = [];
+        snapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() });
         });
-      } else {
-        items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-        setAnnouncements(items);
+
+        if (items.length === 0 && isAdmin) {
+          // Seed initial announcements to Firestore if empty. Announcement
+          // writes are admin-only under the rules, so only attempt this
+          // once we know the current user is an admin.
+          const initialAnns = [
+            { title: "Feast of St. Joseph Mass", date: "May 1, 2026", time: "3:00 PM", type: "Mass", createdAt: new Date().toISOString() },
+            { title: "Consecration to Maria Auxiliadora", date: "May 13, 2026", time: "3:00 PM", type: "Feast", createdAt: new Date().toISOString() },
+            { title: "7th Sunday of Easter Liturgy", date: "May 17, 2026", time: "3:00 PM", type: "Mass", createdAt: new Date().toISOString() }
+          ];
+          initialAnns.forEach(async (ann) => {
+            await addDoc(collection(db, "announcements"), ann);
+          });
+        } else {
+          items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+          setAnnouncements(items);
+        }
+      },
+      (error) => {
+        console.error("Error listening to announcements collection:", error);
       }
-    });
+    );
 
     return () => unsub();
-  }, []);
+  }, [isAdmin]);
 
   const activeChurchRoute = ROUTES.find(r => r.id === selectedChurchId) || ROUTES[0];
 
@@ -230,9 +280,18 @@ export default function App() {
   };
 
   const handleAddApplication = async (newApp: Omit<typeof applications[0], "id">) => {
+    if (!auth.currentUser) {
+      // The Firestore rules require every application to carry the uid of
+      // its signed-in creator, so an anonymous write would be rejected
+      // anyway. Fail loudly here instead of letting it fail silently.
+      console.error("Cannot submit application: no signed-in user.");
+      alert("Please sign in first before submitting this form.");
+      return;
+    }
     try {
       await addDoc(collection(db, "applications"), {
         ...newApp,
+        uid: auth.currentUser.uid,
         createdAt: new Date().toISOString()
       });
     } catch (err) {
@@ -989,11 +1048,12 @@ export default function App() {
 
                   {/* TAB 10: Authenticator Profile */}
                   {activeTab === "login" && (
-                    <LoginModal 
+                    <LoginModal
                       onLoginSuccess={handleLoginSuccess}
                       onLogout={handleLogout}
                       isLoggedIn={isLoggedIn}
                       userEmail={userEmail}
+                      isAdmin={isAdmin}
                     />
                   )}
 
