@@ -3,15 +3,17 @@
 
 :root {
   /* ─── DYNAMIC COLOR VARIABLES ─── */
-  /* Change these colors here to anything you want (like blues, reds, etc.) and the whole app will update instantly! */
-  --color-brand-primary: #151b54;      /* Main Primary Color (original Olive: #5A5A40) */
-  --color-brand-primary-dark: #4A4A35; /* Hover/Pressed state (original Dark Olive: #4A4A35) */
-  --color-brand-secondary: #8A8A70;    /* Secondary/Muted elements (original Khaki: #8A8A70) */
-  --color-brand-accent: #C2A649;       /* Accent Gold/Ochre (original Gold: #C2A649) */
-  --color-brand-bg: #151b54;           /* Outer body background (original Cream: #F5F5F0) */
-  --color-brand-card: #EBEBE0;         /* Card/Surface background (original Warm Beige: #EBEBE0) */
-  --color-brand-border: #161603;       /* Borders and dividers (original Gray Border: #D6D6C2) */
-  --color-brand-text: #33332D;         /* Main body text color (original Dark Charcoal: #33332D) */
+  /* Client palette: navy #151B53 + teal #1886A0, cream cards on navy (per the
+     application form reference). Values below are tuned so every text/background
+     pairing that uses them clears WCAG AA (4.5:1 normal text, 3:1 large text). */
+  --color-brand-primary: #151B53;      /* Client Navy (structural bars, buttons, active states) */
+  --color-brand-primary-dark: #0F1440; /* Hover/Pressed state — darker navy */
+  --color-brand-secondary: #666655;    /* Secondary/Muted elements — darkened khaki for AA contrast on cream/white cards */
+  --color-brand-accent: #147288;       /* Client Teal #1886A0, darkened ~18% so small accent text/badges clear 4.5:1 on cream/white */
+  --color-brand-bg: #151B53;           /* Outer body/canvas background — Client Navy */
+  --color-brand-card: #EBEBE0;         /* Card/Surface background — cream (unchanged) */
+  --color-brand-border: #D6D6C2;       /* Borders and dividers — light neutral (was mistakenly #161603, near-black) */
+  --color-brand-text: #33332D;         /* Main body text color (Dark Charcoal, on cream/white cards) */
 
   /* ─── TYPOGRAPHY VARIABLES ─── */
   --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;

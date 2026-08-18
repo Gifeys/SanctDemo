@@ -71,14 +71,14 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Bookmark className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#C2A649] font-bold text-xs tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Holy Sacraments
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Sacraments Office
           </h2>
-          <p className="text-xs text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Review canonical guidelines, prepare documents, and schedule holy sacraments for your family.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
       <div className="p-4 space-y-4">
         {/* Sacraments Guide Accordion */}
         <div className="space-y-2.5">
-          <h3 className="text-xs font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic pl-1">
+          <h3 className="text-[15px] font-bold text-[#EBEBE0] uppercase tracking-widest font-serif italic pl-1">
             Canonical Requirements
           </h3>
 
@@ -104,10 +104,10 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                     className="w-full p-4 flex items-center justify-between text-left select-none"
                   >
                     <div>
-                      <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic">
+                      <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic">
                         {sac.name}
                       </h4>
-                      <p className="text-[10px] text-[#8A8A70] line-clamp-1 font-sans mt-0.5">
+                      <p className="text-sm text-[#8A8A70] line-clamp-1 font-sans mt-0.5">
                         {sac.description}
                       </p>
                     </div>
@@ -119,23 +119,23 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[#F5F5F0] bg-[#F5F5F0]/30 space-y-3 font-sans">
-                      <p className="text-xs text-[#33332D] leading-relaxed">
+                    <div className="px-4 pb-4 pt-1 border-t border-[#EBEBE0] bg-[#EBEBE0]/30 space-y-3 font-sans">
+                      <p className="text-[15px] text-[#33332D] leading-relaxed">
                         {sac.description}
                       </p>
 
-                      <div className="p-2.5 bg-[#EBEBE0]/40 rounded-xl border border-[#D6D6C2]/40 text-[11px]">
+                      <div className="p-2.5 bg-[#EBEBE0]/40 rounded-xl border border-[#D6D6C2]/40 text-[15px]">
                         <span className="font-bold text-[#5A5A40] block font-serif italic">Parish Schedule:</span>
                         <span className="text-[#33332D]">{sac.scheduleDetails}</span>
                       </div>
                       
                       <div className="space-y-1.5">
-                        <h5 className="text-[9px] font-bold text-[#8A8A70] uppercase tracking-wider">
+                        <h5 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">
                           Required Documents to Submit:
                         </h5>
-                        <ul className="space-y-1 text-xs text-[#33332D]">
+                        <ul className="space-y-1 text-[15px] text-[#33332D]">
                           {sac.requirements.map((req, idx) => (
-                            <li key={idx} className="flex gap-2 items-center text-[11px]">
+                            <li key={idx} className="flex gap-2 items-center text-[15px]">
                               <Check className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                               <span>{req}</span>
                             </li>
@@ -150,7 +150,7 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                           const element = document.getElementById("booking-form");
                           element?.scrollIntoView({ behavior: "smooth" });
                         }}
-                        className="py-1.5 px-3 bg-[#5A5A40] text-white text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-[#4A4A35] transition-colors"
+                        className="py-1.5 px-3 bg-[#5A5A40] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[#4A4A35] transition-colors"
                       >
                         Schedule / Book Now
                       </button>
@@ -172,30 +172,30 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-2">
               <CheckCircle className="w-8 h-8 text-amber-700 mx-auto" />
               <div className="space-y-0.5">
-                <h4 className="text-xs font-bold text-amber-900 font-serif italic">Pre-Booking Submitted!</h4>
-                <p className="text-[11px] text-amber-800 leading-relaxed font-sans">
+                <h4 className="text-[15px] font-bold text-amber-900 font-serif italic">Pre-Booking Submitted!</h4>
+                <p className="text-[15px] text-amber-800 leading-relaxed font-sans">
                   Your reservation request has been logged! Please bring the physical documents to our Maypajo Parish Office for verification and canonical approval.
                 </p>
               </div>
               <button
                 onClick={() => setIsBooked(false)}
-                className="mt-1.5 text-[10px] bg-[#5A5A40] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
+                className="mt-1.5 text-sm bg-[#5A5A40] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
               >
                 Schedule Another Sacrament
               </button>
             </div>
           ) : (
-            <form onSubmit={handleBooking} className="space-y-2.5 text-xs">
+            <form onSubmit={handleBooking} className="space-y-2.5 text-[15px]">
               {errorMsg && (
                 <div className="p-2 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span className="text-[10px] font-bold">{errorMsg}</span>
+                  <span className="text-sm font-bold">{errorMsg}</span>
                 </div>
               )}
 
               {/* Selection */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Select Sacrament
                 </label>
                 <select
@@ -204,17 +204,17 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                     setSelectedSacramentId(e.target.value);
                     setErrorMsg("");
                   }}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2 font-bold font-serif italic text-xs outline-none"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2 font-bold font-serif italic text-[15px] outline-none"
                 >
                   {SACRAMENTS.map(s => (
-                    <option key={s.id} value={s.id}>{m => m.name} {s.name}</option>
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
 
               {/* Applicant Name */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Applicant's Full Name
                 </label>
                 <input
@@ -222,26 +222,26 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                   placeholder="Name of child / couple / baptismal candidate"
                   value={applicantName}
                   onChange={(e) => setApplicantName(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                 />
               </div>
 
               {/* Target Date */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Desired Date of Sacrament
                 </label>
                 <input
                   type="date"
                   value={bookingDate}
                   onChange={(e) => setBookingDate(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                 />
               </div>
 
               {/* Parent/Sponsor Information */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Parent / Primary Sponsor Name (Optional)
                 </label>
                 <input
@@ -249,18 +249,18 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                   placeholder="Primary parent or key sponsor name"
                   value={parentOrSponsor}
                   onChange={(e) => setParentOrSponsor(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                 />
               </div>
 
               {/* Document Checklist Validation */}
-              <div className="space-y-1.5 pt-1.5 border-t border-[#F5F5F0]">
-                <span className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-wider">
+              <div className="space-y-1.5 pt-1.5 border-t border-[#EBEBE0]">
+                <span className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">
                   Document Readiness:
                 </span>
                 
                 <div className="space-y-1">
-                  <label className="flex items-center gap-2 text-[11px] text-[#33332D] select-none">
+                  <label className="flex items-center gap-2 text-[15px] text-[#33332D] select-none">
                     <input
                       type="checkbox"
                       checked={hasPSA}
@@ -271,7 +271,7 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
                   </label>
 
                   {(selectedSacramentId === "sac-matrimony" || selectedSacramentId === "sac-confirmation") && (
-                    <label className="flex items-center gap-2 text-[11px] text-[#33332D] select-none">
+                    <label className="flex items-center gap-2 text-[15px] text-[#33332D] select-none">
                       <input
                         type="checkbox"
                         checked={hasBaptismal}
@@ -286,7 +286,7 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
 
               <button
                 type="submit"
-                className="w-full mt-1.5 py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[11px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] shadow-xs"
+                className="w-full mt-1.5 py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] shadow-xs"
               >
                 File Sacrament Request Form
               </button>

@@ -155,19 +155,19 @@ export default function MapTab({
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h3 className="text-xs font-bold text-[#C2A649] font-serif italic uppercase tracking-wider">Active SanctiWalk Guide</h3>
+          <h3 className="text-[15px] font-bold text-[#5FC7DE] font-serif italic uppercase tracking-wider">Active SanctiWalk Guide</h3>
           <h2 className="text-sm font-bold tracking-tight line-clamp-1 font-serif">{currentRoute.name}</h2>
         </div>
       </div>
 
       {/* Geolocation Telemetry Display */}
-      <div className="bg-[#33332D] text-[#EBEBE0] font-mono text-[9px] px-4 py-2 flex items-center justify-between shadow-inner shrink-0 border-b border-[#D6D6C2]/45">
+      <div className="bg-[#33332D] text-[#EBEBE0] font-mono text-sm px-4 py-2 flex items-center justify-between shadow-inner shrink-0 border-b border-[#D6D6C2]/45">
         <span className="flex items-center gap-1">
-          <Navigation className="w-3 h-3 text-[#C2A649] animate-pulse" />
-          LAT: <span className="text-[#C2A649] font-bold">{simLat.toFixed(6)}</span> 
-          &nbsp; LNG: <span className="text-[#C2A649] font-bold">{simLng.toFixed(6)}</span>
+          <Navigation className="w-3 h-3 text-[#5FC7DE] animate-pulse" />
+          LAT: <span className="text-[#5FC7DE] font-bold">{simLat.toFixed(6)}</span> 
+          &nbsp; LNG: <span className="text-[#5FC7DE] font-bold">{simLng.toFixed(6)}</span>
         </span>
-        <span className="text-[8px] bg-[#4A4A35] text-[#EBEBE0] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+        <span className="text-sm bg-[#4A4A35] text-[#EBEBE0] px-2 py-0.5 rounded font-bold uppercase tracking-wider">
           GPS Sim
         </span>
       </div>
@@ -176,11 +176,11 @@ export default function MapTab({
       <div className="p-4 shrink-0">
         <div className="bg-white rounded-3xl border border-[#D6D6C2] p-3.5 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-wider font-serif italic">
+            <span className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-serif italic">
               Sancti Trail Visualizer
             </span>
             {isOffline && (
-              <span className="flex items-center gap-1 text-[9px] font-bold text-[#4A4A35] bg-[#EBEBE0] px-2 py-0.5 rounded-full border border-[#D6D6C2]">
+              <span className="flex items-center gap-1 text-sm font-bold text-[#4A4A35] bg-[#EBEBE0] px-2 py-0.5 rounded-full border border-[#D6D6C2]">
                 <AlertCircle className="w-2.5 h-2.5" /> Cached Offline Map
               </span>
             )}
@@ -241,7 +241,7 @@ export default function MapTab({
                       cy={y}
                       r="9"
                       fill={isCurrent ? "#5A5A40" : isVisited ? "#10b981" : "#ffffff"}
-                      stroke={isCurrent ? "#C2A649" : "#D6D6C2"}
+                      stroke={isCurrent ? "#147288" : "#D6D6C2"}
                       strokeWidth="2.5"
                     />
                     {/* Inner gold core */}
@@ -249,7 +249,7 @@ export default function MapTab({
                       cx={x}
                       cy={y}
                       r="4"
-                      fill={isCurrent ? "#C2A649" : "#ffffff"}
+                      fill={isCurrent ? "#147288" : "#ffffff"}
                     />
                     {/* Station Number Text */}
                     <text
@@ -257,7 +257,7 @@ export default function MapTab({
                       y={y - 12}
                       textAnchor="middle"
                       fill="#33332D"
-                      fontSize="9"
+                      fontSize="14"
                       fontWeight="bold"
                       fontFamily="Lora, serif"
                     >
@@ -297,7 +297,7 @@ export default function MapTab({
                   const y = (1 - t) * (1 - t) * (mapHeight / 2) + 2 * (1 - t) * t * (mapHeight / 5) + t * t * (mapHeight / 2);
                   return (
                     <g className="animate-bounce">
-                      <circle cx={x} cy={y} r="8" fill="#C2A649" stroke="#5A5A40" strokeWidth="2" />
+                      <circle cx={x} cy={y} r="8" fill="#147288" stroke="#5A5A40" strokeWidth="2" />
                     </g>
                   );
                 })()
@@ -310,7 +310,7 @@ export default function MapTab({
                 id="btn-simulate-walk"
                 disabled={isSimulatingWalk || stationsCount <= 1}
                 onClick={handleNextStationSim}
-                className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold uppercase tracking-wider text-[9px] px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md disabled:bg-[#D6D6C2] disabled:text-[#8A8A70] disabled:shadow-none transition-colors border border-[#4A4A35]"
+                className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold uppercase tracking-wider text-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md disabled:bg-[#D6D6C2] disabled:text-[#8A8A70] disabled:shadow-none transition-colors border border-[#4A4A35]"
               >
                 <Navigation className="w-3 h-3 rotate-45 fill-current" />
                 {isSimulatingWalk ? "Walking..." : "Simulate Walk"}
@@ -331,13 +331,13 @@ export default function MapTab({
               referrerPolicy="no-referrer"
             />
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-[#C2A649] uppercase tracking-widest block font-serif italic">
+              <span className="text-sm font-bold text-[#C2A649] uppercase tracking-widest block font-serif italic">
                 Current Station {activeStationIndex + 1} of {stationsCount}
               </span>
-              <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic leading-tight">
+              <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic leading-tight">
                 {activeStation.name}
               </h4>
-              <p className="text-[11px] text-[#8A8A70] leading-normal line-clamp-2">
+              <p className="text-[15px] text-[#8A8A70] leading-normal line-clamp-2">
                 {activeStation.description}
               </p>
             </div>
@@ -345,10 +345,10 @@ export default function MapTab({
 
           {/* Historical Details */}
           <div className="p-3 bg-[#EBEBE0]/60 rounded-2xl space-y-1 border border-[#D6D6C2]/50">
-            <h5 className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic flex items-center gap-1">
+            <h5 className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic flex items-center gap-1">
               <BookOpen className="w-3.5 h-3.5 text-[#5A5A40]" /> Heritage & History
             </h5>
-            <p className="text-[11px] text-[#33332D] leading-relaxed font-sans">
+            <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
               {activeStation.history}
             </p>
           </div>
@@ -356,21 +356,21 @@ export default function MapTab({
           {/* Spiritual Reflection Segment */}
           <div className="p-3.5 bg-[#EBEBE0]/30 rounded-2xl border border-[#D6D6C2] space-y-2">
             <div className="flex items-center justify-between">
-              <h5 className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic flex items-center gap-1.5">
+              <h5 className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-[#C2A649]" /> Pilgrim Reflection Prompt
               </h5>
               
               {/* Voice Guided Audio Button */}
               <button
                 onClick={isPlayingAudio ? stopSpeaking : speakReflection}
-                className="flex items-center gap-1 bg-[#5A5A40] text-white px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-[#4A4A35] uppercase tracking-wider hover:bg-[#4A4A35] transition-all"
+                className="flex items-center gap-1 bg-[#5A5A40] text-white px-2.5 py-0.5 rounded-full text-sm font-bold border border-[#4A4A35] uppercase tracking-wider hover:bg-[#4A4A35] transition-all"
               >
                 <Volume2 className="w-3 h-3" />
                 {isPlayingAudio ? "Stop Guide" : "Listen Guide"}
               </button>
             </div>
 
-            <p className="text-xs text-[#33332D] leading-relaxed italic font-medium font-sans">
+            <p className="text-[15px] text-[#33332D] leading-relaxed italic font-medium font-sans">
               "{activeStation.reflection}"
             </p>
 
@@ -381,15 +381,15 @@ export default function MapTab({
                 <span className="w-1.5 h-5 bg-[#5A5A40] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
                 <span className="w-1.5 h-2 bg-[#5A5A40] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
                 <span className="w-1.5 h-4 bg-[#5A5A40] rounded-full animate-bounce" style={{ animationDelay: "450ms" }}></span>
-                <span className="text-[10px] font-mono text-[#8A8A70] ml-1.5">Playing Audio Guide...</span>
+                <span className="text-sm font-mono text-[#8A8A70] ml-1.5">Playing Audio Guide...</span>
               </div>
             )}
 
             {/* Local Notes/Reflections Diary input */}
             <div className="space-y-2 pt-2 border-t border-[#D6D6C2]/45">
               {savedNotes[activeStation.id] ? (
-                <div className="p-2.5 bg-white rounded-xl border border-[#D6D6C2] text-xs text-gray-700 space-y-1">
-                  <span className="text-[9px] text-[#8A8A70] font-mono block font-bold uppercase">Your Saved Note:</span>
+                <div className="p-2.5 bg-white rounded-xl border border-[#D6D6C2] text-[15px] text-gray-700 space-y-1">
+                  <span className="text-sm text-[#8A8A70] font-mono block font-bold uppercase">Your Saved Note:</span>
                   <p className="italic font-medium text-[#33332D]">"{savedNotes[activeStation.id]}"</p>
                 </div>
               ) : (
@@ -400,11 +400,11 @@ export default function MapTab({
                     placeholder="Write down your thoughts here..."
                     value={diaryNote}
                     onChange={(e) => setDiaryNote(e.target.value)}
-                    className="flex-1 bg-white border border-[#D6D6C2] text-[11px] px-2.5 py-1.5 rounded-xl outline-none placeholder-[#8A8A70] text-[#33332D]"
+                    className="flex-1 bg-white border border-[#D6D6C2] text-[15px] px-2.5 py-1.5 rounded-xl outline-none placeholder-[#8A8A70] text-[#33332D]"
                   />
                   <button
                     onClick={handleSaveDiary}
-                    className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold uppercase tracking-wider text-[10px] px-3 py-1.5 rounded-xl shrink-0"
+                    className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold uppercase tracking-wider text-sm px-3 py-1.5 rounded-xl shrink-0"
                   >
                     Save
                   </button>
@@ -415,19 +415,19 @@ export default function MapTab({
 
           {/* Action Check In */}
           <div className="pt-2 flex items-center justify-between">
-            <span className="text-[10px] text-[#8A8A70] font-mono flex items-center gap-1 font-bold">
+            <span className="text-sm text-[#8A8A70] font-mono flex items-center gap-1 font-bold">
               QR Code: <strong className="text-[#33332D]">{activeStation.qrCode}</strong>
             </span>
 
             {visitedStations.includes(activeStation.id) ? (
-              <span className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-3.5 py-1.5 rounded-full font-bold border border-green-200">
+              <span className="flex items-center gap-1.5 text-[15px] text-green-700 bg-green-50 px-3.5 py-1.5 rounded-full font-bold border border-green-200">
                 <CheckCircle2 className="w-4 h-4 text-green-600" /> Arrived & Checked-In
               </span>
             ) : (
               <button
                 id="btn-station-checkin"
                 onClick={handleCheckIn}
-                className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold text-xs px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm border border-[#4A4A35] transition-all uppercase tracking-wider hover:scale-[1.02]"
+                className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold text-[15px] px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm border border-[#4A4A35] transition-all uppercase tracking-wider hover:scale-[1.02]"
               >
                 <Award className="w-4 h-4" /> Stamp Passport
               </button>

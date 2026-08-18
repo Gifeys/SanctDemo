@@ -67,13 +67,13 @@ self.addEventListener('fetch', (e) => {
           <Layers className="w-48 h-48" />
         </div>
         <div className="relative z-10 space-y-2">
-          <div className="text-[10px] uppercase font-bold tracking-widest text-[#C2A649] font-serif italic">
+          <div className="text-sm uppercase font-bold tracking-widest text-[#C2A649] font-serif italic">
             STI College - Capstone 2 Toolkit
           </div>
           <h2 className="text-xl font-bold font-serif italic tracking-tight">
             How to Pitch PWA for Capstone 2
           </h2>
-          <p className="text-xs text-[#EBEBE0] leading-relaxed max-w-sm font-sans">
+          <p className="text-[15px] text-[#EBEBE0] leading-relaxed max-w-sm font-sans">
             Presenting a PWA solves the cross-platform mobile limitation elegantly. You maintain a single React codebase, deploy instantly, and fulfill all requirements of a high-grade software thesis!
           </p>
         </div>
@@ -87,19 +87,19 @@ self.addEventListener('fetch', (e) => {
         
         <div className="space-y-2.5">
           <div className="p-3 bg-[#EBEBE0]/30 rounded-2xl border border-[#D6D6C2] space-y-1">
-            <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic">
+            <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic">
               Q: Why build a PWA instead of native iOS & Android apps?
             </h4>
-            <p className="text-xs text-[#8A8A70] leading-relaxed font-sans">
+            <p className="text-[15px] text-[#8A8A70] leading-relaxed font-sans">
               <strong>Answer:</strong> Native iOS requires Xcode and macOS (not accessible with Windows laptops). Developing separate Kotlin and Swift apps doubles development overhead. A PWA provides a single, cost-effective codebase that runs cross-platform natively, utilizing Service Workers to work offline.
             </p>
           </div>
 
           <div className="p-3 bg-[#EBEBE0]/30 rounded-2xl border border-[#D6D6C2] space-y-1">
-            <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic">
+            <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic">
               Q: Can a PWA use hardware like Geolocation & Cameras?
             </h4>
-            <p className="text-xs text-[#8A8A70] leading-relaxed font-sans">
+            <p className="text-[15px] text-[#8A8A70] leading-relaxed font-sans">
               <strong>Answer:</strong> Yes, modern browsers grant PWAs full native-like hardware access via standardized Web APIs (such as `navigator.geolocation` and `MediaDevices`). No App Store compilation required!
             </p>
           </div>
@@ -111,19 +111,19 @@ self.addEventListener('fetch', (e) => {
         <h3 className="text-sm font-bold text-[#4A4A35] flex items-center gap-1.5 font-serif italic">
           <FileCode className="w-4 h-4 text-[#5A5A40]" /> PWA Blueprint Code Files
         </h3>
-        <p className="text-xs text-[#8A8A70] font-sans">
+        <p className="text-[15px] text-[#8A8A70] font-sans">
           Copy these directly into your project directory for full desktop and mobile installation capability.
         </p>
 
         {/* manifest.json */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[10px] font-bold text-[#5A5A40] bg-[#EBEBE0] px-2.5 py-1 rounded-md border border-[#D6D6C2]">
+          <div className="flex items-center justify-between text-[15px]">
+            <span className="font-mono text-sm font-bold text-[#5A5A40] bg-[#EBEBE0] px-2.5 py-1 rounded-md border border-[#D6D6C2]">
               public/manifest.json
             </span>
             <button
               onClick={() => copyToClipboard(manifestJson, "manifest")}
-              className="flex items-center gap-1 text-[#5A5A40] hover:underline font-bold text-[11px] uppercase tracking-wider"
+              className="flex items-center gap-1 text-[#5A5A40] hover:underline font-bold text-[15px] uppercase tracking-wider"
             >
               {copiedText === "manifest" ? (
                 <>
@@ -136,20 +136,20 @@ self.addEventListener('fetch', (e) => {
               )}
             </button>
           </div>
-          <pre className="p-3 bg-[#33332D] text-[#C2A649] font-mono text-[10px] rounded-2xl overflow-x-auto max-h-[160px] border border-[#D6D6C2]/40">
+          <pre className="p-3 bg-[#33332D] text-[#C2A649] font-mono text-sm rounded-2xl overflow-x-auto max-h-[160px] border border-[#D6D6C2]/40">
             {manifestJson}
           </pre>
         </div>
 
         {/* sw.js */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[10px] font-bold text-[#5A5A40] bg-[#EBEBE0] px-2.5 py-1 rounded-md border border-[#D6D6C2]">
+          <div className="flex items-center justify-between text-[15px]">
+            <span className="font-mono text-sm font-bold text-[#5A5A40] bg-[#EBEBE0] px-2.5 py-1 rounded-md border border-[#D6D6C2]">
               public/sw.js (Service Worker)
             </span>
             <button
               onClick={() => copyToClipboard(serviceWorkerCode, "sw")}
-              className="flex items-center gap-1 text-[#5A5A40] hover:underline font-bold text-[11px] uppercase tracking-wider"
+              className="flex items-center gap-1 text-[#5A5A40] hover:underline font-bold text-[15px] uppercase tracking-wider"
             >
               {copiedText === "sw" ? (
                 <>
@@ -162,7 +162,7 @@ self.addEventListener('fetch', (e) => {
               )}
             </button>
           </div>
-          <pre className="p-3 bg-[#33332D] text-[#EBEBE0] font-mono text-[10px] rounded-2xl overflow-x-auto max-h-[160px] border border-[#D6D6C2]/40">
+          <pre className="p-3 bg-[#33332D] text-[#EBEBE0] font-mono text-sm rounded-2xl overflow-x-auto max-h-[160px] border border-[#D6D6C2]/40">
             {serviceWorkerCode}
           </pre>
         </div>
@@ -170,9 +170,9 @@ self.addEventListener('fetch', (e) => {
 
       <div className="p-4 bg-[#E0E2D1] border border-[#D6D6C2] rounded-2xl flex items-start gap-2.5">
         <Globe className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
-        <div className="text-xs text-[#4A4A35] space-y-1">
+        <div className="text-[15px] text-[#4A4A35] space-y-1">
           <p className="font-bold font-serif italic">Instant Cloud Deployment Ready!</p>
-          <p className="leading-relaxed font-sans text-xs text-[#5A5A40]">
+          <p className="leading-relaxed font-sans text-[15px] text-[#5A5A40]">
             Because this is deployed as a secure full-stack web application, you can test it on your actual iPhone or Android phone immediately by visiting the **Shared App URL** at the top right of your screen! No Xcode or Windows emulators needed.
           </p>
         </div>

@@ -29,14 +29,14 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
           <Compass className="w-32 h-32 text-white" />
         </div>
         <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-1.5 text-[#C2A649] font-bold text-xs tracking-wider uppercase font-serif italic">
+          <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
             <Sparkles className="w-3.5 h-3.5" /> Philippines Heritage Guide
           </div>
           <div>
             <h2 className="text-2xl font-bold font-serif italic tracking-tight">
               Begin Your Walk
             </h2>
-            <p className="text-xs text-[#EBEBE0] opacity-90 mt-1 max-w-xs leading-relaxed font-sans">
+            <p className="text-[15px] text-[#EBEBE0] opacity-90 mt-1 max-w-xs leading-relaxed font-sans">
               Rediscover historical churches, scenic trails, and wellness milestones on foot.
             </p>
           </div>
@@ -53,7 +53,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
             placeholder="Search historic trails, cities..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-xs text-[#33332D] outline-none placeholder-[#8A8A70]"
+            className="w-full bg-transparent text-[15px] text-[#33332D] outline-none placeholder-[#8A8A70]"
           />
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`text-xs px-3.5 py-1.5 rounded-full font-bold uppercase tracking-wider shrink-0 transition-all border ${
+              className={`text-[15px] px-3.5 py-1.5 rounded-full font-bold uppercase tracking-wider shrink-0 transition-all border ${
                 selectedCategory === cat
                   ? "bg-[#5A5A40] text-white border-[#5A5A40] shadow-xs"
                   : "bg-[#EBEBE0] text-[#8A8A70] border-[#D6D6C2] hover:bg-[#D6D6C2]/45"
@@ -80,7 +80,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
       {/* Trail Cards */}
       <div className="px-4 mt-5 space-y-4 flex-1">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#8A8A70] uppercase tracking-wider font-serif italic">
+          <h3 className="text-[15px] font-bold text-[#8A8A70] uppercase tracking-wider font-serif italic">
             Recommended Routes ({filteredRoutes.length})
           </h3>
         </div>
@@ -100,10 +100,10 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute top-2.5 left-2.5 bg-black/45 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-bold text-white uppercase tracking-wider">
+                <div className="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-sm font-bold text-white uppercase tracking-wider">
                   {route.category}
                 </div>
-                <div className="absolute bottom-2 left-2.5 flex items-center gap-1 bg-[#5A5A40]/95 backdrop-blur-xs text-[10px] text-white px-2.5 py-0.5 rounded-full font-medium border border-[#D6D6C2]/40">
+                <div className="absolute bottom-2 left-2.5 flex items-center gap-1 bg-[#5A5A40]/95 backdrop-blur-xs text-sm text-white px-2.5 py-0.5 rounded-full font-medium border border-[#D6D6C2]/40">
                   <MapPin className="w-3 h-3 text-[#C2A649]" /> {route.location}
                 </div>
               </div>
@@ -114,25 +114,25 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
                   <h4 className="font-bold text-sm text-[#4A4A35] font-serif italic group-hover:text-[#5A5A40] transition-colors leading-tight">
                     {route.name}
                   </h4>
-                  <p className="text-xs text-[#8A8A70] line-clamp-2 mt-1 leading-normal font-sans">
+                  <p className="text-[15px] text-[#8A8A70] line-clamp-2 mt-1 leading-normal font-sans">
                     {route.description}
                   </p>
                 </div>
 
                 {/* Trail Details */}
-                <div className="flex items-center justify-between border-t border-[#D6D6C2]/40 pt-2.5 mt-2 text-[10px] text-[#8A8A70] font-mono">
+                <div className="flex items-center justify-between border-t border-[#D6D6C2]/40 pt-2.5 mt-2 text-sm text-[#8A8A70] font-mono">
                   <div className="flex gap-4">
                     <div>
-                      <span className="block text-[#8A8A70] uppercase text-[8px] font-bold">Distance</span>
-                      <strong className="text-[#33332D] text-xs font-semibold">{route.distanceKm} km</strong>
+                      <span className="block text-[#8A8A70] uppercase text-sm font-bold">Distance</span>
+                      <strong className="text-[#33332D] text-[15px] font-semibold">{route.distanceKm} km</strong>
                     </div>
                     <div>
-                      <span className="block text-[#8A8A70] uppercase text-[8px] font-bold">Duration</span>
-                      <strong className="text-[#33332D] text-xs font-semibold">{route.durationMins} mins</strong>
+                      <span className="block text-[#8A8A70] uppercase text-sm font-bold">Duration</span>
+                      <strong className="text-[#33332D] text-[15px] font-semibold">{route.durationMins} mins</strong>
                     </div>
                     <div>
-                      <span className="block text-[#8A8A70] uppercase text-[8px] font-bold">Difficulty</span>
-                      <span className={`inline-block text-[10px] font-bold ${
+                      <span className="block text-[#8A8A70] uppercase text-sm font-bold">Difficulty</span>
+                      <span className={`inline-block text-sm font-bold ${
                         route.difficulty === "Easy" ? "text-emerald-700" : "text-[#C2A649]"
                       }`}>{route.difficulty}</span>
                     </div>
@@ -147,7 +147,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
           ))
         ) : (
           <div className="p-8 text-center bg-white rounded-xl border border-[#D6D6C2] shadow-xs">
-            <p className="text-xs text-[#8A8A70]">No walking routes found for your filters.</p>
+            <p className="text-[15px] text-[#8A8A70]">No walking routes found for your filters.</p>
           </div>
         )}
       </div>

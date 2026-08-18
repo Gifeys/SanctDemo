@@ -23,18 +23,6 @@ export interface Sacrament {
   scheduleDetails: string;
 }
 
-export interface AgosBookPage {
-  id: string;
-  pageNumber: number;
-  title: string;
-  description: string;
-  arModelName: string;
-  arModelIcon: string;
-  overlayText: string;
-  audioFileUrl?: string;
-  reflectionPrompt: string;
-}
-
 export interface QuizQuestion {
   id: string;
   question: string;
@@ -213,39 +201,6 @@ export const SACRAMENTS: Sacrament[] = [
       "Intent to confess and repent of sins"
     ],
     scheduleDetails: "Every first Friday of the month (before Mass) or by special appointment"
-  }
-];
-
-export const AGOS_BOOK_PAGES: AgosBookPage[] = [
-  {
-    id: "agos-p5",
-    pageNumber: 5,
-    title: "Chapter 1: The Foundations of Maypajo",
-    description: "Highlights the historic establishment of the Mary Help of Christians community in 1952, marking the seeds of Marian pilgrimage.",
-    arModelName: "Interactive 1952 Founding Altar 3D",
-    arModelIcon: "Building2",
-    overlayText: "Behold the replica of the original wooden Maypajo chapel! Built by local volunteers in 1952 using simple nipa and bamboo, this historical layout holds the spiritual roots of our parish.",
-    reflectionPrompt: "Look at this simple wooden chapel. How does the faith of our parish founders inspire you to build a community of love with what you have?"
-  },
-  {
-    id: "agos-p18",
-    pageNumber: 18,
-    title: "Chapter 3: The Call of Maria Auxiliadora",
-    description: "Documents the consecration of the parish under the maternal protection of Mary, Help of Christians (Maria Auxiliadora).",
-    arModelName: "The Consecrated Crown and Scepter 3D",
-    arModelIcon: "Sparkles",
-    overlayText: "Behold the Golden Crown and Scepter of Maria Auxiliadora! Symbolizing Mary's queenly intercession and her maternal defense of Christians in all trials.",
-    reflectionPrompt: "Reflect on Mary's crown. True power in God's eyes is shown through humble service. How can you serve those around you with a crown of love?"
-  },
-  {
-    id: "agos-p35",
-    pageNumber: 35,
-    title: "Chapter 5: Diocese of Kalookan Consecration",
-    description: "Details the official establishment of the Diocese of Kalookan in 2003, uniting Caloocan, Malabon, and Navotas under one shepherd.",
-    arModelName: "Bishop's Mitre & Diocesan Seal 3D",
-    arModelIcon: "ShieldAlert",
-    overlayText: "Behold the official Diocesan Seal of Kalookan in AR! Displaying the keys of Peter, the pastoral staff, and the waves of Manila Bay, representing our coastal parishes sailing under Christ's anchor.",
-    reflectionPrompt: "The Bishop's staff guides the flock. Who are the mentors or guides in your life whom you are grateful for today?"
   }
 ];
 

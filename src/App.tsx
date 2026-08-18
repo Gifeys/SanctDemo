@@ -11,7 +11,7 @@ import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
 import MinistriesTab from "./components/MinistriesTab";
 import SacramentsTab from "./components/SacramentsTab";
-import AgosBookAR from "./components/AgosBookAR";
+import ArPlaceholder from "./components/ArPlaceholder";
 import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
 import AdminPortal from "./components/AdminPortal";
@@ -27,14 +27,14 @@ import { ROUTES, BADGES } from "./data";
 import { 
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon, 
-  BookOpen as AgosIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft
+  ScanLine as ArIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft
 } from "lucide-react";
 
 export default function App() {
   // Navigation & Frame settings
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "agos-ar" | "quiz" | "login" | "admin" | "pwa-devkit"
+    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "login" | "admin" | "pwa-devkit"
   >("home");
   
   const [isOffline, setIsOffline] = useState(false);
@@ -461,21 +461,21 @@ export default function App() {
       <header className="bg-[#EBEBE0] border-b border-[#D6D6C2] py-4 px-6 select-none shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="h-8 w-8 rounded-lg bg-[#5A5A40] text-[#C2A649] flex items-center justify-center font-serif font-bold italic text-lg shadow-xs border border-[#C2A649]">
+            <span className="h-8 w-8 rounded-lg bg-[#5A5A40] text-white flex items-center justify-center font-serif font-bold italic text-lg shadow-xs border border-[#C2A649]">
               S
             </span>
             <div>
               <h2 className="text-sm font-bold text-[#4A4A35] font-serif italic leading-tight">
                 SanctiWalk Core Workspace
               </h2>
-              <p className="text-[10px] text-[#8A8A70] font-bold tracking-wider uppercase font-sans">
+              <p className="text-sm text-[#8A8A70] font-bold tracking-wider uppercase font-sans">
                 Progressive Web App Prepared for STI College Capstone Defense
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="hidden md:inline-block text-xs text-[#8A8A70] font-mono">
+            <span className="hidden md:inline-block text-[15px] text-[#8A8A70] font-mono">
               STATUS: <strong className="text-[#5A5A40] uppercase">Ready (Maypajo Parishes v2.0)</strong>
             </span>
             <button
@@ -483,7 +483,7 @@ export default function App() {
                 setSelectedChurchId(null);
                 setActiveTab("home");
               }}
-              className="bg-[#5A5A40] text-white hover:bg-[#4A4A35] text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full flex items-center gap-1.5 shadow-sm transition-all border border-[#C2A649]"
+              className="bg-[#5A5A40] text-white hover:bg-[#4A4A35] text-[15px] font-bold uppercase tracking-wider py-1.5 px-4 rounded-full flex items-center gap-1.5 shadow-sm transition-all border border-[#C2A649]"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Return to Church Selection
             </button>
@@ -508,14 +508,14 @@ export default function App() {
                 <div className="space-y-6 pt-4">
                   {/* Stylized App Icon/Header */}
                   <div className="text-center space-y-2">
-                    <div className="h-14 w-14 rounded-2xl bg-[#5A5A40] border border-[#C2A649] text-[#C2A649] flex items-center justify-center font-sans text-3xl font-black shadow-md mx-auto">
+                    <div className="h-14 w-14 rounded-2xl bg-[#5A5A40] border border-[#C2A649] text-white flex items-center justify-center font-sans text-3xl font-black shadow-md mx-auto">
                       S
                     </div>
                     <div>
-                      <h1 className="text-3xl font-black font-sans tracking-tight text-[#4A4A35] uppercase">
+                      <h1 className="text-3xl font-black font-sans tracking-tight text-white uppercase">
                         SanctiWalk
                       </h1>
-                      <p className="text-[9px] text-[#8A8A70] font-bold tracking-widest uppercase mt-0.5">
+                      <p className="text-sm text-[#EBEBE0] font-bold tracking-widest uppercase mt-0.5">
                         Pilgrimage Navigator
                       </p>
                     </div>
@@ -523,10 +523,10 @@ export default function App() {
 
                   {/* Instructions */}
                   <div className="text-center space-y-1 px-4">
-                    <h2 className="text-xs font-bold text-[#5A5A40] uppercase tracking-wider font-sans">
+                    <h2 className="text-[15px] font-bold text-white uppercase tracking-wider font-sans">
                       Choose Your Church Experience
                     </h2>
-                    <p className="text-[11px] text-[#8A8A70] leading-relaxed font-sans">
+                    <p className="text-[15px] text-[#EBEBE0] leading-relaxed font-sans">
                       Select a historical parish of the Diocese of Kalookan to begin your interactive spiritual walking tour.
                     </p>
                   </div>
@@ -548,8 +548,8 @@ export default function App() {
                             alt={route.name}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute inset-0 bg-black/45 flex items-end p-2.5">
-                            <span className="text-[9px] bg-[#C2A649] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider font-sans">
+                          <div className="absolute inset-0 bg-black/70 flex items-end p-2.5">
+                            <span className="text-sm bg-[#C2A649] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider font-sans">
                               {route.category}
                             </span>
                           </div>
@@ -558,14 +558,14 @@ export default function App() {
                         {/* Card body */}
                         <div className="p-3.5 space-y-2 text-left font-sans">
                           <div>
-                            <h4 className="text-xs font-bold text-[#4A4A35] font-sans">
+                            <h4 className="text-[15px] font-bold text-[#4A4A35] font-sans">
                               {route.name}
                             </h4>
-                            <p className="text-[10px] text-[#8A8A70] mt-0.5 flex items-center gap-0.5">
+                            <p className="text-sm text-[#8A8A70] mt-0.5 flex items-center gap-0.5">
                               <MapPin className="w-3 h-3 text-[#5A5A40]" /> {route.location}
                             </p>
                           </div>
-                          <p className="text-[11px] text-[#33332D] leading-normal line-clamp-2">
+                          <p className="text-[15px] text-[#33332D] leading-normal line-clamp-2">
                             {route.description}
                           </p>
 
@@ -574,7 +574,7 @@ export default function App() {
                               setSelectedChurchId(route.id);
                               setActiveTab("home");
                             }}
-                            className="w-full mt-1 py-2 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[10px] font-bold uppercase tracking-wider rounded-xl border border-[#4A4A35] transition-colors"
+                            className="w-full mt-1 py-2 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-sm font-bold uppercase tracking-wider rounded-xl border border-[#4A4A35] transition-colors"
                           >
                             Start Sanctuary Walk
                           </button>
@@ -584,8 +584,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="text-center pt-4 border-t border-[#D6D6C2]/45">
-                  <span className="text-[9px] text-[#8A8A70] font-mono block">
+                <div className="text-center pt-4 border-t border-white/15">
+                  <span className="text-sm text-[#EBEBE0] font-mono block">
                     STI COLLEGE KALOOKAN • CAPSTONE 2026
                   </span>
                 </div>
@@ -604,10 +604,10 @@ export default function App() {
                       <Menu className="w-5 h-5 text-white" />
                     </button>
                     <div>
-                      <h4 className="text-[9px] font-bold text-[#C2A649] uppercase tracking-widest leading-none font-sans">
+                      <h4 className="text-sm font-bold text-[#5FC7DE] uppercase tracking-widest leading-none font-sans">
                         {activeChurchRoute.name.replace("Guide", "").replace("Tour", "")}
                       </h4>
-                      <h1 className="text-xs font-extrabold font-sans tracking-tight leading-normal mt-0.5">
+                      <h1 className="text-[15px] font-extrabold font-sans tracking-tight leading-normal mt-0.5">
                         SANCTIWALK GUIDE
                       </h1>
                     </div>
@@ -617,8 +617,8 @@ export default function App() {
                     onClick={() => setActiveTab("login")}
                     className="p-1.5 bg-[#EBEBE0]/15 hover:bg-[#EBEBE0]/30 rounded-full border border-[#D6D6C2]/30 transition-all flex items-center gap-1"
                   >
-                    <User className="w-3.5 h-3.5 text-[#C2A649]" />
-                    <span className="text-[8px] font-bold text-white uppercase tracking-wider pr-1">
+                    <User className="w-3.5 h-3.5 text-white" />
+                    <span className="text-sm font-bold text-white uppercase tracking-wider pr-1">
                       {isLoggedIn ? userEmail.split("@")[0] : "Sign In"}
                     </span>
                   </button>
@@ -627,19 +627,19 @@ export default function App() {
                 {/* SLIDEOUT SIDEBAR MENU DRAWER PANEL */}
                 {isSidebarOpen && (
                   <div className="absolute inset-0 bg-black/60 z-50 flex">
-                    <div className="w-64 bg-[#F5F5F0] border-r border-[#D6D6C2] flex flex-col justify-between h-full shadow-2xl animate-in slide-in-from-left duration-200">
-                      
+                    <div className="w-64 bg-[#EBEBE0] border-r border-[#D6D6C2] flex flex-col justify-between h-full shadow-2xl animate-in slide-in-from-left duration-200">
+
                       {/* Sidebar Header */}
                       <div className="bg-[#5A5A40] text-white p-4 flex items-center justify-between border-b border-[#D6D6C2]">
                         <div className="flex items-center gap-2">
-                          <span className="h-7 w-7 rounded-lg bg-white/10 text-[#C2A649] flex items-center justify-center font-sans font-bold text-lg">
+                          <span className="h-7 w-7 rounded-lg bg-white/10 text-white flex items-center justify-center font-sans font-bold text-lg">
                             S
                           </span>
                           <div>
-                            <h3 className="text-xs font-extrabold font-sans tracking-tight uppercase">
+                            <h3 className="text-[15px] font-extrabold font-sans tracking-tight uppercase">
                               SanctiWalk
                             </h3>
-                            <span className="text-[8px] font-mono text-[#EBEBE0] uppercase">Maypajo Parish App</span>
+                            <span className="text-sm font-mono text-[#EBEBE0] uppercase">Maypajo Parish App</span>
                           </div>
                         </div>
                         <button
@@ -654,7 +654,7 @@ export default function App() {
                       <div className="flex-1 overflow-y-auto p-3 space-y-1 font-sans">
                         <button
                           onClick={() => { setSelectedChurchId(null); setIsSidebarOpen(false); }}
-                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs text-red-800 font-bold hover:bg-red-50 transition-all border border-transparent"
+                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] text-red-800 font-bold hover:bg-red-50 transition-all border border-transparent"
                         >
                           <ArrowLeft className="w-4 h-4 text-red-700" />
                           <span>Switch Parish Church</span>
@@ -664,7 +664,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("home"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "home" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -674,7 +674,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("navigator"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "navigator" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -684,7 +684,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("rosary"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "rosary" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -694,7 +694,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("mass"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "mass" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -704,7 +704,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("history"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "history" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -714,7 +714,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("ministries"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "ministries" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -724,7 +724,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("sacraments"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "sacraments" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -733,18 +733,18 @@ export default function App() {
                         </button>
 
                         <button
-                          onClick={() => { setActiveTab("agos-ar"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
-                            activeTab === "agos-ar" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
+                          onClick={() => { setActiveTab("ar"); setIsSidebarOpen(false); }}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                            activeTab === "ar" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
-                          <AgosIcon className="w-4 h-4" />
-                          <span>Agos Book AR Simulator</span>
+                          <ArIcon className="w-4 h-4" />
+                          <span>AR Tour</span>
                         </button>
 
                         <button
                           onClick={() => { setActiveTab("quiz"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "quiz" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -756,7 +756,7 @@ export default function App() {
 
                         <button
                           onClick={() => { setActiveTab("login"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "login" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
@@ -768,7 +768,7 @@ export default function App() {
                         {(isAdmin || isLoggedIn) && (
                           <button
                             onClick={() => { setActiveTab("admin"); setIsSidebarOpen(false); }}
-                            className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs transition-all bg-[#C2A649]/20 text-[#4A4A35] font-bold border border-[#C2A649]/45`}
+                            className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all bg-[#C2A649]/20 text-[#4A4A35] font-bold border border-[#C2A649]/45`}
                           >
                             <ShieldCheck className="w-4 h-4 text-[#5A5A40]" />
                             <span>Church DB Admin Panel</span>
@@ -777,7 +777,7 @@ export default function App() {
                       </div>
 
                       {/* Sidebar Footer */}
-                      <div className="p-4 bg-[#EBEBE0] border-t border-[#D6D6C2] text-center text-[9px] text-[#8A8A70] font-mono">
+                      <div className="p-4 bg-[#EBEBE0] border-t border-[#D6D6C2] text-center text-sm text-[#8A8A70] font-mono">
                         <span>STI College Kalookan v2.0</span>
                       </div>
                     </div>
@@ -795,10 +795,10 @@ export default function App() {
                       {/* Apple iOS Style Header */}
                       <div className="px-5 pt-6 pb-2 shrink-0 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-widest block font-sans">
+                          <span className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest block font-sans">
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                           </span>
-                          <h2 className="text-2xl font-black text-[#4A4A35] tracking-tight leading-tight mt-0.5 uppercase">
+                          <h2 className="text-2xl font-black text-white tracking-tight leading-tight mt-0.5 uppercase">
                             {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
                           </h2>
                         </div>
@@ -816,16 +816,16 @@ export default function App() {
                           <Compass className="w-32 h-32 text-black animate-[spin_80s_linear_infinite]" />
                         </div>
                         <div className="relative z-10 space-y-3">
-                          <div className="inline-flex items-center gap-1 bg-[#5A5A40]/10 px-2.5 py-0.5 rounded-full text-[#5A5A40] font-extrabold text-[8px] tracking-widest uppercase font-sans">
+                          <div className="inline-flex items-center gap-1 bg-[#5A5A40]/10 px-2.5 py-0.5 rounded-full text-[#5A5A40] font-extrabold text-sm tracking-widest uppercase font-sans">
                             <Sparkles className="w-3 h-3 text-[#C2A649]" /> PILGRIMAGE SCANNER
                           </div>
-                          <p className="text-xs text-[#8A8A70] leading-relaxed font-sans max-w-xs">
+                          <p className="text-[15px] text-[#8A8A70] leading-relaxed font-sans max-w-xs">
                             Bring the physical <strong className="text-[#33332D]">Agos</strong> book to life. Scan parish points inside the church to play rich audio guides.
                           </p>
                           <div className="pt-1.5">
                             <button
                               onClick={() => setActiveTab("navigator")}
-                              className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-full transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                              className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-sm font-bold uppercase tracking-wider px-4 py-2.5 rounded-full transition-all flex items-center gap-1 shadow-sm active:scale-95"
                             >
                               <span>Scan Book / Altar</span> <ChevronRight className="w-3 h-3 stroke-[2.5]" />
                             </button>
@@ -836,10 +836,10 @@ export default function App() {
                       <div className="p-4 space-y-4 font-sans">
                         {/* Quick Navigation grid (Figure 35: 6 buttons) */}
                         <div className="space-y-2">
-                          <h3 className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-wider pl-1 font-sans">
+                          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-wider pl-1 font-sans">
                             Explore Faith and History
                           </h3>
-                          <div className="grid grid-cols-2 gap-2 text-xs font-bold text-[#4A4A35]">
+                          <div className="grid grid-cols-2 gap-2 text-[15px] font-bold text-[#4A4A35]">
                             <button
                               onClick={() => setActiveTab("rosary")}
                               className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
@@ -881,48 +881,48 @@ export default function App() {
                             </button>
 
                             <button
-                              onClick={() => setActiveTab("agos-ar")}
+                              onClick={() => setActiveTab("ar")}
                               className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
                             >
-                              <AgosIcon className="w-4 h-4 text-[#5A5A40] shrink-0 animate-pulse" />
-                              <span>Agos Book AR</span>
+                              <ArIcon className="w-4 h-4 text-[#5A5A40] shrink-0 animate-pulse" />
+                              <span>AR Tour</span>
                             </button>
                           </div>
                         </div>
 
                         {/* Verse of the day matching Figure 35/37 */}
                         <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-2">
-                          <h4 className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
+                          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
                             Verse of the Day
                           </h4>
-                          <blockquote className="text-[11px] text-[#33332D] leading-relaxed italic font-serif">
+                          <blockquote className="text-[15px] text-[#33332D] leading-relaxed italic font-serif">
                             "He has given us his very great and precious promises, so that through them you may participate in the divine nature and escape the corruption in the world caused by evil desires."
                           </blockquote>
-                          <cite className="text-[9px] font-bold text-[#5A5A40] block font-mono">
+                          <cite className="text-sm font-bold text-[#5A5A40] block font-mono">
                             — 2 Peter 1:4
                           </cite>
                         </div>
 
                         {/* Dynamic Announcements Bulletin board */}
                         <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
-                          <div className="flex justify-between items-center border-b border-[#F5F5F0] pb-1.5">
-                            <h4 className="text-[10px] font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
+                          <div className="flex justify-between items-center border-b border-[#EBEBE0] pb-1.5">
+                            <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
                               Upcoming Parish Events
                             </h4>
-                            <span className="text-[9px] font-mono text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded">
+                            <span className="text-sm font-mono text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded">
                               Maypajo Bulletin
                             </span>
                           </div>
 
                           <div className="space-y-2.5">
                             {announcements.map((ann) => (
-                              <div key={ann.id} className="flex gap-3 items-start text-xs border-b border-[#F5F5F0]/60 pb-2 last:border-0 last:pb-0">
-                                <div className="p-2 bg-[#EBEBE0] text-[#5A5A40] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-[10px]">
+                              <div key={ann.id} className="flex gap-3 items-start text-[15px] border-b border-[#EBEBE0]/60 pb-2 last:border-0 last:pb-0">
+                                <div className="p-2 bg-[#EBEBE0] text-[#5A5A40] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-sm">
                                   {ann.type}
                                 </div>
                                 <div>
-                                  <h5 className="font-bold text-[#4A4A35] font-sans text-xs">{ann.title}</h5>
-                                  <p className="text-[10px] text-[#8A8A70] font-sans mt-0.5">{ann.date} at {ann.time}</p>
+                                  <h5 className="font-bold text-[#4A4A35] font-sans text-[15px]">{ann.title}</h5>
+                                  <p className="text-sm text-[#8A8A70] font-sans mt-0.5">{ann.date} at {ann.time}</p>
                                 </div>
                               </div>
                             ))}
@@ -947,7 +947,7 @@ export default function App() {
                         {/* DYNAMIC STATION COMMENT FORUM as requested */}
                         <div className="px-4 pb-16 pt-2 font-sans text-left">
                           <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-4">
-                            <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/45 pb-1.5 flex items-center gap-1">
+                            <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/45 pb-1.5 flex items-center gap-1">
                               <MessageSquare className="w-4 h-4 text-[#5A5A40]" /> Pilgrim Station Comments
                             </h4>
 
@@ -958,7 +958,7 @@ export default function App() {
                                 placeholder="Post a spiritual reflection comment or prayers for this parish station..."
                                 value={activeCommentInput}
                                 onChange={(e) => setActiveCommentInput(e.target.value)}
-                                className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D] resize-none placeholder-[#8A8A70]"
+                                className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D] resize-none placeholder-[#8A8A70]"
                               />
                               <button
                                 onClick={() => {
@@ -969,7 +969,7 @@ export default function App() {
                                   handlePostComment(currentStationId);
                                 }}
                                 disabled={!activeCommentInput.trim()}
-                                className="w-full py-1.5 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl border border-[#4A4A35] transition-colors"
+                                className="w-full py-1.5 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white text-sm font-bold uppercase tracking-wider rounded-xl border border-[#4A4A35] transition-colors"
                               >
                                 Post Public Devotional Note (+100 pts)
                               </button>
@@ -983,14 +983,14 @@ export default function App() {
                                 const commList = commentsByStation[currentStationId] || [];
                                 
                                 if (commList.length === 0) {
-                                  return <p className="text-[10px] text-[#8A8A70] italic text-center py-2">No pilgrim reflections posted yet for this station. Be the first!</p>;
+                                  return <p className="text-sm text-[#8A8A70] italic text-center py-2">No pilgrim reflections posted yet for this station. Be the first!</p>;
                                 }
 
                                 return commList.map((comm, idx) => (
-                                  <div key={idx} className="p-2.5 bg-[#F5F5F0]/60 rounded-xl border border-[#D6D6C2]/30 text-xs">
-                                    <div className="flex justify-between font-bold text-[#5A5A40] text-[10px] mb-0.5 font-serif italic">
+                                  <div key={idx} className="p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30 text-[15px]">
+                                    <div className="flex justify-between font-bold text-[#5A5A40] text-sm mb-0.5 font-serif italic">
                                       <span>@{comm.user}</span>
-                                      <span className="text-[9px] text-[#8A8A70] font-mono font-normal">{comm.date}</span>
+                                      <span className="text-sm text-[#8A8A70] font-mono font-normal">{comm.date}</span>
                                     </div>
                                     <p className="text-[#33332D] italic font-sans">"{comm.text}"</p>
                                   </div>
@@ -1028,13 +1028,9 @@ export default function App() {
                     <SacramentsTab onAddApplication={handleAddApplication} />
                   )}
 
-                  {/* TAB 8: Agos Book AR view */}
-                  {activeTab === "agos-ar" && (
-                    <AgosBookAR 
-                      onEarnBadge={earnBadge} 
-                      onAddPoints={addPoints} 
-                      onAddApplication={handleAddApplication}
-                    />
+                  {/* TAB 8: AR Tour placeholder */}
+                  {activeTab === "ar" && (
+                    <ArPlaceholder />
                   )}
 
                   {/* TAB 9: Pilgrim Catechism Quiz */}
@@ -1079,7 +1075,7 @@ export default function App() {
                     }`}
                   >
                     <Home className="w-5 h-5" />
-                    <span className="text-[9px] font-bold font-serif italic">Home</span>
+                    <span className="text-sm font-bold font-serif italic">Home</span>
                   </button>
 
                   <button
@@ -1089,7 +1085,7 @@ export default function App() {
                     }`}
                   >
                     <Map className="w-5 h-5" />
-                    <span className="text-[9px] font-bold font-serif italic">Walk</span>
+                    <span className="text-sm font-bold font-serif italic">Walk</span>
                   </button>
 
                   <button
@@ -1099,7 +1095,7 @@ export default function App() {
                     }`}
                   >
                     <BookOpen className="w-5 h-5" />
-                    <span className="text-[9px] font-bold font-serif italic">Rosary</span>
+                    <span className="text-sm font-bold font-serif italic">Rosary</span>
                   </button>
                 </nav>
 
@@ -1111,7 +1107,7 @@ export default function App() {
       </main>
 
       {/* Footer credits bar */}
-      <footer className="bg-[#EBEBE0] border-t border-[#D6D6C2] py-3.5 px-6 text-center text-[10px] text-[#8A8A70] font-mono select-none shrink-0 leading-normal">
+      <footer className="bg-[#EBEBE0] border-t border-[#D6D6C2] py-3.5 px-6 text-center text-sm text-[#8A8A70] font-mono select-none shrink-0 leading-normal">
         <p>Prepared for STI College Kalookan Capstone 2 Defense (March 2026). SanctiWalk is optimized for offline-first rendering across Windows, iOS, and Android platforms.</p>
       </footer>
     </div>

@@ -85,14 +85,14 @@ export default function DailyRosary() {
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Heart className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#C2A649] font-bold text-xs tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Spiritual Companion
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Daily Holy Rosary
           </h2>
-          <p className="text-xs text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             "The Rosary is the weapon for these times." Pray and contemplate on the sacred mysteries.
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function DailyRosary() {
                 <button
                   key={mystery.id}
                   onClick={() => setSelectedCategory(mystery.id)}
-                  className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full transition-all border shrink-0 ${
+                  className={`text-sm uppercase tracking-wider font-bold px-3 py-1.5 rounded-full transition-all border shrink-0 ${
                     selectedCategory === mystery.id
                       ? "bg-[#5A5A40] text-white border-[#5A5A40] shadow-xs"
                       : "bg-[#EBEBE0] text-[#8A8A70] border-[#D6D6C2] hover:bg-[#D6D6C2]"
@@ -121,10 +121,10 @@ export default function DailyRosary() {
             {/* Active Mystery Detail Card */}
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-3">
               <div className="flex justify-between items-center border-b border-[#D6D6C2]/45 pb-2">
-                <span className="text-[10px] font-bold text-[#C2A649] font-serif italic">
+                <span className="text-sm font-bold text-[#C2A649] font-serif italic">
                   Traditional Days: {activeMystery.days}
                 </span>
-                <span className="text-[9px] bg-[#EBEBE0] text-[#5A5A40] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                <span className="text-sm bg-[#EBEBE0] text-[#5A5A40] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                   {activeMystery.category}
                 </span>
               </div>
@@ -134,13 +134,13 @@ export default function DailyRosary() {
               </h3>
 
               <div className="space-y-2">
-                <h4 className="text-[9px] font-bold text-[#8A8A70] uppercase tracking-wider">
+                <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">
                   The Five Mysteries to Contemplate:
                 </h4>
-                <ul className="space-y-2 text-xs text-[#33332D] font-sans">
+                <ul className="space-y-2 text-[15px] text-[#33332D] font-sans">
                   {activeMystery.prayers.map((prayer, index) => (
-                    <li key={index} className="flex gap-2.5 items-start p-2 bg-[#F5F5F0]/65 rounded-xl border border-[#D6D6C2]/40">
-                      <span className="h-4 w-4 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                    <li key={index} className="flex gap-2.5 items-start p-2 bg-[#EBEBE0]/65 rounded-xl border border-[#D6D6C2]/40">
+                      <span className="h-4 w-4 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-sm font-bold shrink-0">
                         {index + 1}
                       </span>
                       <span className="leading-relaxed">{prayer.replace(/^\d+\.\s*/, "")}</span>
@@ -151,7 +151,7 @@ export default function DailyRosary() {
 
               <button
                 onClick={handleStartRosary}
-                className="w-full mt-2 py-3 px-4 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-xs font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1.5 shadow-md border border-[#4A4A35] transition-all"
+                className="w-full mt-2 py-3 px-4 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1.5 shadow-md border border-[#4A4A35] transition-all"
               >
                 <Heart className="w-4 h-4 fill-current text-[#C2A649]" /> Begin Rosary Meditations
               </button>
@@ -159,10 +159,10 @@ export default function DailyRosary() {
 
             {/* Rosary How-To Card */}
             <div className="bg-[#EBEBE0]/40 p-4 rounded-3xl border border-[#D6D6C2] space-y-2.5">
-              <h4 className="text-xs font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic flex items-center gap-1.5">
+              <h4 className="text-[15px] font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4" /> Rosary Devotional Guide
               </h4>
-              <p className="text-[11px] text-[#33332D] leading-relaxed font-sans">
+              <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
                 The Holy Rosary is a scripture-based prayer reflecting on the life of Christ. Tapping the virtual prayer guide helps first-time pilgrims and devotees follow along the 59 beads seamlessly without losing track.
               </p>
             </div>
@@ -173,10 +173,10 @@ export default function DailyRosary() {
             {/* Top Stats */}
             <div className="flex items-center justify-between border-b border-[#D6D6C2]/45 pb-2">
               <div className="flex flex-col">
-                <span className="text-[9px] font-bold text-[#8A8A70] uppercase tracking-wider">Active Meditation</span>
-                <span className="text-xs font-bold text-[#4A4A35] font-serif italic">{activeMystery.title}</span>
+                <span className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">Active Meditation</span>
+                <span className="text-[15px] font-bold text-[#4A4A35] font-serif italic">{activeMystery.title}</span>
               </div>
-              <span className="text-[10px] font-mono font-bold text-white bg-[#C2A649] px-2 py-0.5 rounded-full">
+              <span className="text-sm font-mono font-bold text-white bg-[#C2A649] px-2 py-0.5 rounded-full">
                 Step {currentBeadIndex + 1} of {rosarySteps.length}
               </span>
             </div>
@@ -206,7 +206,7 @@ export default function DailyRosary() {
                       {isCurrent ? (
                         <Star className="w-4.5 h-4.5 text-[#C2A649] fill-current animate-spin" style={{ animationDuration: "12s" }} />
                       ) : (
-                        <span className="text-[10px] font-mono font-bold">
+                        <span className="text-sm font-mono font-bold">
                           {isValid ? relativeIndex + 1 : ""}
                         </span>
                       )}
@@ -217,14 +217,14 @@ export default function DailyRosary() {
             </div>
 
             {/* Active Bead Content */}
-            <div className="bg-[#F5F5F0]/70 p-4 rounded-2xl border border-[#D6D6C2]/50 space-y-2 flex-1 flex flex-col justify-center text-center">
-              <span className="text-[9px] font-bold text-[#C2A649] uppercase tracking-widest">
+            <div className="bg-[#EBEBE0]/70 p-4 rounded-2xl border border-[#D6D6C2]/50 space-y-2 flex-1 flex flex-col justify-center text-center">
+              <span className="text-sm font-bold text-[#C2A649] uppercase tracking-widest">
                 {currentStep.prayerName}
               </span>
               <h4 className="text-sm font-bold text-[#4A4A35] font-serif italic leading-tight">
                 {currentStep.title}
               </h4>
-              <p className="text-xs text-[#33332D] leading-relaxed italic font-medium font-sans px-2">
+              <p className="text-[15px] text-[#33332D] leading-relaxed italic font-medium font-sans px-2">
                 {currentStep.text}
               </p>
             </div>
@@ -234,14 +234,14 @@ export default function DailyRosary() {
               <button
                 onClick={handlePrevBead}
                 disabled={currentBeadIndex === 0}
-                className="flex-1 py-2.5 bg-[#EBEBE0] text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#D6D6C2] text-xs font-bold uppercase tracking-wider rounded-full disabled:opacity-50 transition-colors"
+                className="flex-1 py-2.5 bg-[#EBEBE0] text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#D6D6C2] text-[15px] font-bold uppercase tracking-wider rounded-full disabled:opacity-50 transition-colors"
               >
                 Previous
               </button>
               
               <button
                 onClick={handleNextBead}
-                className="flex-[2] py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-xs font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1 shadow-sm border border-[#4A4A35] transition-all"
+                className="flex-[2] py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1 shadow-sm border border-[#4A4A35] transition-all"
               >
                 {currentBeadIndex === rosarySteps.length - 1 ? "Complete Rosary" : "Next Bead"} <ChevronRight className="w-4 h-4" />
               </button>
@@ -249,7 +249,7 @@ export default function DailyRosary() {
 
             <button
               onClick={() => setIsMeditating(false)}
-              className="text-[10px] text-[#8A8A70] hover:text-[#5A5A40] underline text-center"
+              className="text-sm text-[#8A8A70] hover:text-[#5A5A40] underline text-center"
             >
               Exit Prayer Guide
             </button>

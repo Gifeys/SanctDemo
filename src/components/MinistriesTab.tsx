@@ -59,14 +59,14 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Users className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#C2A649] font-bold text-xs tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Serve and Volunteer
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Parish Ministries
           </h2>
-          <p className="text-xs text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             "Go into the world and preach the Gospel." Join our lay ministries to serve the parish community.
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
       <div className="p-4 space-y-4">
         {/* Ministries List Accordion */}
         <div className="space-y-2.5">
-          <h3 className="text-xs font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic pl-1">
+          <h3 className="text-[15px] font-bold text-[#EBEBE0] uppercase tracking-widest font-serif italic pl-1">
             Available Ministries
           </h3>
 
@@ -92,10 +92,10 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                     className="w-full p-4 flex items-center justify-between text-left select-none"
                   >
                     <div>
-                      <h4 className="text-xs font-bold text-[#4A4A35] font-serif italic">
+                      <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic">
                         {min.name}
                       </h4>
-                      <p className="text-[10px] text-[#8A8A70] line-clamp-1 font-sans mt-0.5">
+                      <p className="text-sm text-[#8A8A70] line-clamp-1 font-sans mt-0.5">
                         {min.description}
                       </p>
                     </div>
@@ -107,18 +107,18 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[#F5F5F0] bg-[#F5F5F0]/30 space-y-3 font-sans">
-                      <p className="text-xs text-[#33332D] leading-relaxed">
+                    <div className="px-4 pb-4 pt-1 border-t border-[#EBEBE0] bg-[#EBEBE0]/30 space-y-3 font-sans">
+                      <p className="text-[15px] text-[#33332D] leading-relaxed">
                         {min.description}
                       </p>
                       
                       <div className="space-y-1.5">
-                        <h5 className="text-[9px] font-bold text-[#8A8A70] uppercase tracking-wider">
+                        <h5 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">
                           Requirements to Join:
                         </h5>
-                        <ul className="space-y-1 text-xs text-[#33332D]">
+                        <ul className="space-y-1 text-[15px] text-[#33332D]">
                           {min.requirements.map((req, idx) => (
-                            <li key={idx} className="flex gap-2 items-center text-[11px]">
+                            <li key={idx} className="flex gap-2 items-center text-[15px]">
                               <Check className="w-3.5 h-3.5 text-green-700 shrink-0" />
                               <span>{req}</span>
                             </li>
@@ -133,7 +133,7 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                           const element = document.getElementById("application-form");
                           element?.scrollIntoView({ behavior: "smooth" });
                         }}
-                        className="py-1.5 px-3 bg-[#5A5A40] text-white text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-[#4A4A35] transition-colors"
+                        className="py-1.5 px-3 bg-[#5A5A40] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[#4A4A35] transition-colors"
                       >
                         Apply for this Guild
                       </button>
@@ -155,36 +155,36 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
             <div className="p-4 bg-green-50 border border-green-200 rounded-2xl text-center space-y-2">
               <CheckCircle className="w-8 h-8 text-green-700 mx-auto" />
               <div className="space-y-0.5">
-                <h4 className="text-xs font-bold text-green-900 font-serif italic">Application Filed Successfully!</h4>
-                <p className="text-[11px] text-green-800 leading-relaxed font-sans">
+                <h4 className="text-[15px] font-bold text-green-900 font-serif italic">Application Filed Successfully!</h4>
+                <p className="text-[15px] text-green-800 leading-relaxed font-sans">
                   Your volunteer profile has been sent to Father Paul Woo and the parish panel. A SOCOM coordinator will contact you shortly for an interview.
                 </p>
               </div>
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="mt-1.5 text-[10px] bg-[#5A5A40] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
+                className="mt-1.5 text-sm bg-[#5A5A40] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
               >
                 Apply for Another
               </button>
             </div>
           ) : (
-            <form onSubmit={handleApply} className="space-y-2.5 text-xs">
+            <form onSubmit={handleApply} className="space-y-2.5 text-[15px]">
               {errorMsg && (
                 <div className="p-2 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span className="text-[10px] font-bold">{errorMsg}</span>
+                  <span className="text-sm font-bold">{errorMsg}</span>
                 </div>
               )}
 
               {/* Selection */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Select Target Ministry
                 </label>
                 <select
                   value={selectedMinistryId}
                   onChange={(e) => setSelectedMinistryId(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2 font-bold font-serif italic text-xs outline-none"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2 font-bold font-serif italic text-[15px] outline-none"
                 >
                   {MINISTRIES.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
@@ -194,7 +194,7 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
 
               {/* Full Name */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Full Name
                 </label>
                 <input
@@ -202,14 +202,14 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                   placeholder="Juan dela Cruz"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                 />
               </div>
 
               {/* Phone & Email */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                  <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                     Mobile No.
                   </label>
                   <input
@@ -217,11 +217,11 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                     placeholder="0917-XXXXXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                    className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                  <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                     Email Address
                   </label>
                   <input
@@ -229,14 +229,14 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                     placeholder="juan@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D]"
+                    className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
                   />
                 </div>
               </div>
 
               {/* Cover Letter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
                   Why do you wish to join?
                 </label>
                 <textarea
@@ -244,13 +244,13 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
                   placeholder="I want to offer my talents for social media live streaming..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full bg-[#F5F5F0] border border-[#D6D6C2] rounded-xl p-2.5 text-xs outline-none text-[#33332D] font-sans resize-none"
+                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D] font-sans resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[11px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] shadow-xs"
+                className="w-full py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] shadow-xs"
               >
                 Submit Volunteer Registration
               </button>

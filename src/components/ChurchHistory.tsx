@@ -11,14 +11,14 @@ export default function ChurchHistory() {
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <History className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#C2A649] font-bold text-xs tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Historical Archive
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Diocesan History
           </h2>
-          <p className="text-xs text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Explore the spiritual roots, milestones, and architectural legacy of Kalookan's sacred treasures.
           </p>
         </div>
@@ -29,7 +29,7 @@ export default function ChurchHistory() {
         <div className="grid grid-cols-2 gap-2 bg-[#EBEBE0] p-1.5 rounded-full border border-[#D6D6C2] select-none">
           <button
             onClick={() => setActiveTab("mhcp")}
-            className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all ${
+            className={`py-2 px-3 text-sm font-bold uppercase tracking-wider rounded-full transition-all ${
               activeTab === "mhcp"
                 ? "bg-[#5A5A40] text-white shadow-xs"
                 : "text-[#8A8A70] hover:text-[#5A5A40]"
@@ -39,7 +39,7 @@ export default function ChurchHistory() {
           </button>
           <button
             onClick={() => setActiveTab("src")}
-            className={`py-2 px-3 text-[10px] font-bold uppercase tracking-wider rounded-full transition-all ${
+            className={`py-2 px-3 text-sm font-bold uppercase tracking-wider rounded-full transition-all ${
               activeTab === "src"
                 ? "bg-[#5A5A40] text-white shadow-xs"
                 : "text-[#8A8A70] hover:text-[#5A5A40]"
@@ -60,11 +60,11 @@ export default function ChurchHistory() {
                   alt="Mary Help of Christians Maypajo"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <span className="absolute bottom-3 left-3 text-white text-xs font-bold font-serif italic">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <span className="absolute bottom-3 left-3 text-white text-[15px] font-bold font-serif italic bg-black/70 px-2 py-0.5 rounded-lg">
                   Mary Help of Christians Parish
                 </span>
-                <span className="absolute bottom-3 right-3 text-[9px] bg-[#C2A649] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                <span className="absolute bottom-3 right-3 text-sm bg-[#C2A649] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                   Maypajo, Caloocan
                 </span>
               </div>
@@ -74,11 +74,11 @@ export default function ChurchHistory() {
                   <BookOpen className="w-4.5 h-4.5 text-[#C2A649]" /> Brief History
                 </h3>
                 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   Mary Help of Christians Parish in Maypajo, Caloocan City was established in 1952 to serve the rapidly expanding population of Southern Caloocan and to provide a sacred sanctuary dedicated to Marian devotion. Under the zealous pastoral leadership of the parish priests and active community builders, it grew from a simple chapel of wood and nipa into a beautiful parish that stands as a beacon of Christian faith and Salesian spirit.
                 </p>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   Over the decades, the parish has nurtured thousands of families, active lay organizations, and youth ministries, becoming a vital hub for prayer, catechesis, sacraments, and social services.
                 </p>
 
@@ -86,11 +86,11 @@ export default function ChurchHistory() {
                   <Compass className="w-4.5 h-4.5 text-[#C2A649]" /> Patroness: Maria Auxiliadora
                 </h3>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   The beloved patroness is the Blessed Virgin Mary under the title <strong>Mary, Help of Christians (Maria Auxiliadora)</strong>. This title highlights her powerful maternal role as a helper, protector, and defender of Christians in times of severe trial, hardship, or spiritual battle.
                 </p>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   Venerated highly within the Salesian family of St. John Bosco, her image depicts her holding the Child Jesus with both arms open, inviting the faithful to surrender their cares, seek grace, and find victory over life's daily storms through Christ.
                 </p>
               </div>
@@ -107,11 +107,11 @@ export default function ChurchHistory() {
                   alt="San Roque Cathedral Caloocan"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <span className="absolute bottom-3 left-3 text-white text-xs font-bold font-serif italic">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <span className="absolute bottom-3 left-3 text-white text-[15px] font-bold font-serif italic bg-black/70 px-2 py-0.5 rounded-lg">
                   San Roque Cathedral
                 </span>
-                <span className="absolute bottom-3 right-3 text-[9px] bg-[#C2A649] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                <span className="absolute bottom-3 right-3 text-sm bg-[#C2A649] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                   Diocese of Kalookan
                 </span>
               </div>
@@ -121,11 +121,11 @@ export default function ChurchHistory() {
                   <BookOpen className="w-4.5 h-4.5 text-[#C2A649]" /> Historical Milestones
                 </h3>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   The historic San Roque Cathedral was originally founded as a parish in <strong>1815</strong> under the Archdiocese of Manila. The church stood witness to the turbulent days of the Philippine Revolution, serving as a military post and safe haven for local revolutionaries. It was repeatedly damaged during wars but rose each time through the absolute devotion of the Caloocan parishioners.
                 </p>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   In <strong>2003</strong>, His Holiness Pope John Paul II established the <strong>Diocese of Kalookan</strong>, and San Roque Parish was officially elevated to the dignity of a Cathedral, serving as the central seat of the Bishop, guiding the spiritual flock of Caloocan, Malabon, and Navotas.
                 </p>
 
@@ -133,11 +133,11 @@ export default function ChurchHistory() {
                   <Compass className="w-4.5 h-4.5 text-[#C2A649]" /> Patron: San Roque (Saint Roch)
                 </h3>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   The Cathedral is named in honor of <strong>San Roque (Saint Roch)</strong>, a 14th-century lay saint who traveled across Europe nursing patients afflicted with the horrific bubonic plague. He is depicted pointing to a plague sore on his thigh, flanked by his faithful dog who brought him daily loaves of bread when he was isolated in the forest.
                 </p>
 
-                <p className="text-xs text-[#33332D] leading-relaxed font-sans text-justify">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
                   San Roque is beloved as the patron saint of the sick, plague victims, healthcare workers, and epidemics, standing as a testament of pure Christian charity, selfless volunteerism, and healing.
                 </p>
               </div>

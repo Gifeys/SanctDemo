@@ -39,20 +39,20 @@ export default function PhoneContainer({
       <div className="flex-1 flex flex-col justify-between space-y-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <span className="px-2.5 py-1 bg-[#EBEBE0] text-[#5A5A40] text-xs font-bold rounded-full uppercase tracking-wider font-serif italic border border-[#D6D6C2]">
+            <span className="px-2.5 py-1 bg-[#EBEBE0] text-[#5A5A40] text-[15px] font-bold rounded-full uppercase tracking-wider font-serif italic border border-[#D6D6C2]">
               STI Capstone 1-2 Scope
             </span>
-            <span className="flex items-center gap-1 text-xs text-[#5A5A40] bg-[#EBEBE0] px-2 py-1 rounded-full font-medium border border-[#D6D6C2]">
+            <span className="flex items-center gap-1 text-[15px] text-[#5A5A40] bg-[#EBEBE0] px-2 py-1 rounded-full font-medium border border-[#D6D6C2]">
               <ShieldCheck className="w-3.5 h-3.5" /> PWA Certified
             </span>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold font-serif italic text-[#4A4A35] tracking-tight leading-tight">
-            SanctiWalk <span className="text-[#5A5A40] not-italic">PWA</span>
+          <h1 className="text-3xl lg:text-4xl font-bold font-serif italic text-white tracking-tight leading-tight">
+            SanctiWalk <span className="text-[#1886A0] not-italic">PWA</span>
           </h1>
-          <p className="text-sm text-[#8A8A70] mt-2 max-w-xl leading-relaxed font-sans">
-            A beautiful, fully-responsive walking tour & pilgrimage companion. 
-            Because iOS development requires macOS & Apple credentials, changing your Capstone 2 
-            scope to a <strong className="text-[#5A5A40]">Progressive Web App (PWA)</strong> is the perfect, industry-standard 
+          <p className="text-base text-[#EBEBE0] mt-2 max-w-xl leading-relaxed font-sans">
+            A beautiful, fully-responsive walking tour & pilgrimage companion.
+            Because iOS development requires macOS & Apple credentials, changing your Capstone 2
+            scope to a <strong className="text-white">Progressive Web App (PWA)</strong> is the perfect, industry-standard
             solution to deploy cross-platform seamlessly from a Windows setup!
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function PhoneContainer({
           <h3 className="font-bold text-sm text-[#4A4A35] flex items-center gap-2 font-serif italic">
             <Cpu className="w-4 h-4 text-[#5A5A40]" /> Interactive Simulation Controls
           </h3>
-          <p className="text-xs text-[#8A8A70] leading-normal">
+          <p className="text-[15px] text-[#8A8A70] leading-normal">
             Toggle settings to test how SanctiWalk behaves on different viewports and offline environments.
           </p>
           
@@ -70,10 +70,10 @@ export default function PhoneContainer({
             <button
               id="btn-toggle-mobile"
               onClick={() => setIsMobileOnly(true)}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-[15px] font-bold uppercase tracking-wider transition-all border ${
                 isMobileOnly
                   ? "bg-[#5A5A40] text-white border-[#5A5A40] shadow-xs"
-                  : "bg-[#F5F5F0] text-[#8A8A70] border-[#D6D6C2] hover:bg-[#EBEBE0]"
+                  : "bg-white text-[#666655] border-[#D6D6C2] hover:bg-[#EBEBE0]"
               }`}
             >
               <Smartphone className="w-4 h-4" /> Smartphone Frame
@@ -81,10 +81,10 @@ export default function PhoneContainer({
             <button
               id="btn-toggle-responsive"
               onClick={() => setIsMobileOnly(false)}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-[15px] font-bold uppercase tracking-wider transition-all border ${
                 !isMobileOnly
                   ? "bg-[#5A5A40] text-white border-[#5A5A40] shadow-xs"
-                  : "bg-[#F5F5F0] text-[#8A8A70] border-[#D6D6C2] hover:bg-[#EBEBE0]"
+                  : "bg-white text-[#666655] border-[#D6D6C2] hover:bg-[#EBEBE0]"
               }`}
             >
               <Monitor className="w-4 h-4" /> Full Responsive
@@ -93,13 +93,13 @@ export default function PhoneContainer({
 
           <div className="border-t border-[#D6D6C2] pt-3 flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-[#4A4A35]">Simulate Offline Mode</span>
-              <span className="text-[10px] text-[#8A8A70]">Tests Service Worker client fallback</span>
+              <span className="text-[15px] font-bold text-[#4A4A35]">Simulate Offline Mode</span>
+              <span className="text-sm text-[#8A8A70]">Tests Service Worker client fallback</span>
             </div>
             <button
               id="btn-toggle-offline"
               onClick={() => setIsOffline(!isOffline)}
-              className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+              className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[15px] font-bold uppercase tracking-wider transition-all border ${
                 isOffline
                   ? "bg-[#C2A649]/20 text-[#C2A649] border-[#C2A649]/55 animate-pulse"
                   : "bg-emerald-50 text-emerald-800 border-emerald-200"
@@ -120,10 +120,10 @@ export default function PhoneContainer({
 
         {/* Defense Bulletins */}
         <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#D6D6C2] space-y-3 shadow-xs">
-          <h4 className="text-xs font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic">
+          <h4 className="text-[15px] font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic">
             Capstone Defense Bulletin
           </h4>
-          <ul className="text-xs text-[#33332D] space-y-2 list-disc list-inside leading-relaxed font-sans">
+          <ul className="text-[15px] text-[#33332D] space-y-2 list-disc list-inside leading-relaxed font-sans">
             <li><strong className="text-[#4A4A35]">Zero App Store Tax:</strong> PWAs bypass Apple App Store ($99/year fee) & Google Play Console, distributing instantly via URL.</li>
             <li><strong className="text-[#4A4A35]">Storage footprint:</strong> Weighs under 3MB compared to 80MB+ native builds.</li>
             <li><strong className="text-[#4A4A35]">Hardware Access:</strong> Securely triggers Geolocation and Camera natively without compilation on a Mac.</li>
@@ -143,7 +143,7 @@ export default function PhoneContainer({
             </div>
 
             {/* Simulated Phone Status Bar */}
-            <div className="h-[44px] bg-[#EBEBE0] border-b border-[#D6D6C2]/40 text-[#33332D] px-6 flex items-end justify-between pb-1.5 text-xs font-semibold select-none z-40 shrink-0">
+            <div className="h-[44px] bg-[#EBEBE0] border-b border-[#D6D6C2]/40 text-[#33332D] px-6 flex items-end justify-between pb-1.5 text-[15px] font-semibold select-none z-40 shrink-0">
               <span>{currentTime || "10:00 AM"}</span>
               <div className="flex items-center gap-1.5">
                 {isOffline ? (
@@ -151,9 +151,9 @@ export default function PhoneContainer({
                 ) : (
                   <Wifi className="w-3.5 h-3.5 text-green-700" />
                 )}
-                <span className="text-[10px]">LTE</span>
+                <span className="text-sm">LTE</span>
                 <Battery className="w-4 h-4 text-gray-800 rotate-90 scale-90 translate-y-[1px]" />
-                <span className="text-[10px]">98%</span>
+                <span className="text-sm">98%</span>
               </div>
             </div>
 
@@ -171,12 +171,12 @@ export default function PhoneContainer({
           /* Desktop Responsive Frame (Max width styled container) */
           <div className="w-full lg:w-[460px] min-h-[680px] h-[750px] bg-[#FFFFFF] rounded-2xl border border-[#D6D6C2] shadow-xl flex flex-col overflow-hidden relative">
             {/* Standard Mini Header for Responsive simulation */}
-            <div className="bg-[#5A5A40] text-white px-4 py-2 flex items-center justify-between text-xs font-serif italic">
+            <div className="bg-[#5A5A40] text-white px-4 py-2 flex items-center justify-between text-[15px] font-serif italic">
               <div className="flex items-center gap-1.5 font-medium">
                 <span>SanctiWalk Web View</span>
-                {isOffline && <span className="bg-[#C2A649] text-white text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">Offline</span>}
+                {isOffline && <span className="bg-[#C2A649] text-white text-sm px-1.5 py-0.5 rounded uppercase font-bold">Offline</span>}
               </div>
-              <span className="opacity-85 text-[10px] font-mono">100% Fluid Width</span>
+              <span className="opacity-85 text-sm font-mono">100% Fluid Width</span>
             </div>
             
             <div className="flex-1 overflow-y-auto bg-[#F5F5F0] flex flex-col">
