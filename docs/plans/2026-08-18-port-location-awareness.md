@@ -375,6 +375,24 @@ Simulation values: `'off' | 'approaching_mhcp' | 'at_mhcp' | 'at_src'`, with lab
 
 `gpsStatus` is `'idle' | 'granted' | 'denied' | 'unavailable'`, and reports `'granted'` whenever the simulator is on so a simulated demo never shows a location error.
 
+- [ ] **Step 3b: Convert routes to parishes strictly**
+
+`Route`'s geography fields are optional, because `CompanionTab` builds AI-generated custom routes that have no location. `GeoParish` requires all four. The conversion between them is therefore the only place a parish can silently lose its coordinates, so it must be strict:
+
+```ts
+function toGeoParish(route: Route): GeoParish | null {
+  if (!route.coordinates || route.geofenceRadius == null || !route.status) return null
+  return {
+    id: route.id,
+    coordinates: route.coordinates,
+    geofenceRadius: route.geofenceRadius,
+    status: route.status,
+  }
+}
+```
+
+**Never substitute a default.** A route without coordinates is skipped, not placed at `{lat: 0, lng: 0}` — which is in the Atlantic Ocean and would quietly make a parish unreachable rather than obviously absent. Log a single console warning naming any route that was skipped, so a parish added without coordinates is noticed rather than silently missing from presence detection.
+
 - [ ] **Step 4: Wrap the app**
 
 In `src/App.tsx`, wrap the existing returned tree in `<PresenceProvider>`. Change nothing else in that file in this task.
