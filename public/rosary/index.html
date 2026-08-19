@@ -28,10 +28,12 @@
 
      Want a different file? Just change the text inside the quotes.
 
-     Background music isn't wired up in this build - there's no music
-     control to avoid a silent dead button. To add it back later, put an
-     audio file anywhere under this folder and set AMBIENT_MUSIC_FILE
-     below to its path (any .mp3 / .m4a / .ogg works).
+     Background music plays softly from the start screen straight through
+     prayer, loops, and can be switched off in Settings. It lives at
+     music/ambient.mp3 and is only fetched once a first tap/gesture
+     actually happens (see AMBIENT_MUSIC_FILE below) so nobody pays for a
+     multi-megabyte download by opening the rosary and never touching it,
+     or by praying with the setting off.
      ================================================================== -->
 <script>
 // The picture from your original design - the last resort for any slot.
@@ -180,11 +182,13 @@ const SCENE_FADE_MS = 900;
 const SLIDE_HOLD_MS = 7000;
 const SLIDE_FADE_MS = 1800;
 
-// Ambient background music is not part of this build yet - the client's
-// original file (music/ambient.mp3) never shipped. Point this at a real
-// audio file once one is chosen (e.g. "music/ambient.mp3") to bring the
-// music control back; nothing else needs to change.
-const AMBIENT_MUSIC_FILE = null;
+// Ambient background music, looped quietly under prayer. Set to null to
+// disable the feature entirely (the Settings toggle disappears too).
+const AMBIENT_MUSIC_FILE = "music/ambient.mp3";
+
+// Playback volume while praying, 0..1. Kept low - this sits under spoken
+// prayers and voice guidance, it should never compete with them.
+const AMBIENT_MUSIC_VOLUME = 0.3;
 
 // How much of a prayer you must say before it advances (0.7 = about 70%).
 const VOICE_THRESHOLD = 0.70;
@@ -959,6 +963,16 @@ header {
     <div id="vignette"></div>
   </div>
 
+  <!-- Ambient background music. No `src` here on purpose: preload="none"
+       alone still lets some browsers fetch metadata eagerly, so the file
+       path is only assigned to `.src` in JS, and only from playMusic(),
+       which only runs once a real user gesture happens (first tap on the
+       start screen, or the Begin button as a fallback) with the music
+       setting on. That is what guarantees zero bytes of audio download
+       for anyone who opens the rosary and never touches it, or who has
+       music switched off. -->
+  <audio id="ambient-music" loop preload="none"></audio>
+
   <!-- Header -->
   <header>
     <h1 class="serif set-name" id="hdr-set">Holy Rosary<span class="set-sub" id="hdr-sub">Ready</span></h1>
@@ -1063,6 +1077,14 @@ header {
             <button type="button" data-mystery="luminous"></button>
           </div>
         </div>
+
+        <div class="rs-section" id="rs-music-section">
+          <div class="rs-label" id="rs-music-label"></div>
+          <div class="rs-grid rs-grid-2" id="rs-music-group">
+            <button type="button" data-music="on" id="rs-music-on"></button>
+            <button type="button" data-music="off" id="rs-music-off"></button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1100,6 +1122,7 @@ const P = {
     closing:"O God, whose only begotten Son, by His life, death and resurrection, has purchased for us the rewards of eternal life; grant, we beseech Thee, that meditating upon these mysteries of the most holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ our Lord. Amen.",
     ui: {
       mystery:"Mysteries", language:"Language", begin:"Begin", again:"Pray again",
+      music:"Background Music", musicOn:"On", musicOff:"Off",
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
       hint:"Tap anywhere to continue",
@@ -1166,6 +1189,7 @@ const P = {
     closing:"O Diyos, na ang Bugtong Mong Anak, sa pamamagitan ng Kanyang buhay, kamatayan at muling pagkabuhay, ay ipinagkamit kami ng gantimpala ng buhay na walang hanggan. Ipagkaloob Mo po, isinasamo namin, na sa pagbubulay-bulay namin sa mga misteryong ito ng banal na Rosaryo ng Mahal na Birheng Maria, aming matularan ang tinutukoy nito at makamtan ang ipinangangako nito, alang-alang kay Kristong aming Panginoon. Amen.",
     ui: {
       mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Manalangin muli",
+      music:"Musikang Panlikod", musicOn:"Naka-on", musicOff:"Naka-off",
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
       hint:"I-tap kahit saan upang magpatuloy",
@@ -1739,34 +1763,35 @@ const store = {
    file is static HTML/JS and can't import that module directly.
    ------------------------------------------------------------------ */
 const ROSARY_SETTINGS_KEY = "sanctiwalk.rosary.settings";
-const DEFAULT_ROSARY_SETTINGS = { language: "en", mysterySet: "today" };
+const DEFAULT_ROSARY_SETTINGS = { language: "en", mysterySet: "today", music: "on" };
 const VALID_MYSTERY_SETS = ["today", "joyful", "sorrowful", "glorious", "luminous"];
 
 function isValidRosarySettings(v) {
   return !!v && typeof v === "object" &&
     (v.language === "en" || v.language === "fil") &&
-    VALID_MYSTERY_SETS.indexOf(v.mysterySet) !== -1;
+    VALID_MYSTERY_SETS.indexOf(v.mysterySet) !== -1 &&
+    (v.music === "on" || v.music === "off");
 }
 function loadRosarySettings() {
   try {
     var raw = localStorage.getItem(ROSARY_SETTINGS_KEY);
-    if (!raw) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    if (!raw) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
     var parsed = JSON.parse(raw);
-    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
   } catch (e) {
-    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
   }
 }
 function saveRosarySettings(settings) {
   try { localStorage.setItem(ROSARY_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
 }
 function parseRosarySettingsEventValue(newValue) {
-  if (!newValue) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  if (!newValue) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
   try {
     var parsed = JSON.parse(newValue);
-    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
   } catch (e) {
-    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
   }
 }
 // The prayer engine's internal language tag ("en"/"tl") predates the
@@ -1780,6 +1805,7 @@ const INITIAL_ROSARY_SETTINGS = loadRosarySettings();
 const S = {
   lang: prefToLang(INITIAL_ROSARY_SETTINGS.language),
   mysterySet: INITIAL_ROSARY_SETTINGS.mysterySet,
+  musicOn: INITIAL_ROSARY_SETTINGS.music !== "off",
   set: INITIAL_ROSARY_SETTINGS.mysterySet === "today"
     ? DAY_SET[new Date().getDay()]
     : INITIAL_ROSARY_SETTINGS.mysterySet,
@@ -1810,6 +1836,9 @@ const el = {
   btnExit:$("btn-exit"),
   rsOverlay:$("rosary-settings-overlay"), rsClose:$("rs-close"),
   rsLangGroup:$("rs-lang-group"), rsMysteryGroup:$("rs-mystery-group"),
+  rsMusicGroup:$("rs-music-group"), rsMusicLabel:$("rs-music-label"),
+  rsMusicOn:$("rs-music-on"), rsMusicOff:$("rs-music-off"),
+  ambientMusic:$("ambient-music"),
   finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again")
 };
 
@@ -2507,15 +2536,59 @@ function syncMicButton() {
 /* ==================================================================
    MUSIC
 
-   No control in the UI right now - see AMBIENT_MUSIC_FILE near the top
-   of the file. playMusic/pauseMusic stay as harmless no-ops so begin()
-   and endSession() don't need to change if music comes back later.
+   Quiet looping ambient track that plays under the start screen AND
+   straight through into prayer - one <audio> element, started once,
+   never restarted, so there is no restart or gap crossing from the
+   start screen into a decade. Toggled by the "Background Music"
+   setting. The whole point is that nobody downloads 20MB of audio
+   just to glance at the start screen and leave, or to pray with music
+   off, so the file is never pointed at until playMusic() actually runs
+   with music wanted:
+
+     - the <audio> element ships with no `src` and preload="none"
+     - `.src` is assigned here, in playMusic(), the first time it's
+       actually needed - not on boot, not when the settings panel opens
+     - playMusic() is called from the first tap/click/key anywhere on
+       the start screen (see unlockMusicOnFirstGesture below) - that is
+       the earliest real user gesture available, and browsers require
+       one before audio may start
+     - if that first gesture is somehow missed, begin() below still
+       calls playMusic() as a fallback when the Begin button is tapped
+     - playMusic() is idempotent: if the track is already playing it
+       does nothing, so calling it again from begin() after the start
+       screen already started it just leaves playback exactly where it
+       was - that's what keeps it gapless across the two screens
    ================================================================== */
 function playMusic() {
-  if (!AMBIENT_MUSIC_FILE) return;
-  // Intentionally left as a stub until AMBIENT_MUSIC_FILE is set.
+  if (!AMBIENT_MUSIC_FILE || !S.musicOn || !el.ambientMusic) return;
+  if (!el.ambientMusic.src) el.ambientMusic.src = AMBIENT_MUSIC_FILE;
+  el.ambientMusic.loop = true;
+  el.ambientMusic.volume = AMBIENT_MUSIC_VOLUME;
+  if (!el.ambientMusic.paused) return;   // already playing - leave it alone, no restart
+  // Autoplay rules require a user gesture; every caller of playMusic() is
+  // itself reached from a click/tap/key handler, which qualifies. If the
+  // browser still refuses (e.g. some other policy), fail silently - no
+  // error, no toast, the rosary continues without music.
+  const p = el.ambientMusic.play();
+  if (p && typeof p.catch === "function") p.catch(function () {});
 }
-function pauseMusic() {}
+function pauseMusic() {
+  if (!el.ambientMusic) return;
+  el.ambientMusic.pause();
+}
+
+/* First real user gesture anywhere on the page - a tap on the start
+   screen (its background, the gear, a settings button) or a keypress -
+   is what browsers require before audio can start, and it happens well
+   before "Begin Today's Rosary" is tapped. Music starts there so it is
+   already playing under the paintings on the start screen. Runs once;
+   harmless (a no-op, via the `!paused` guard above) if begin() gets
+   there first via its own direct call. */
+function unlockMusicOnFirstGesture() {
+  playMusic();
+}
+document.addEventListener("pointerdown", unlockMusicOnFirstGesture, { capture: true, once: true });
+document.addEventListener("keydown", unlockMusicOnFirstGesture, { capture: true, once: true });
 
 /* ==================================================================
    START SCREEN SLIDESHOW
@@ -2659,6 +2732,14 @@ function paintSettingsPanel() {
     b.textContent = MYSTERY_PANEL_LABELS[S.lang][key] || MYSTERY_PANEL_LABELS.en[key];
     b.classList.toggle("sel", key === S.mysterySet);
   }
+
+  if (AMBIENT_MUSIC_FILE && el.rsMusicGroup) {
+    el.rsMusicLabel.textContent = P[S.lang].ui.music;
+    el.rsMusicOn.textContent = P[S.lang].ui.musicOn;
+    el.rsMusicOff.textContent = P[S.lang].ui.musicOff;
+    el.rsMusicOn.classList.toggle("sel", S.musicOn);
+    el.rsMusicOff.classList.toggle("sel", !S.musicOn);
+  }
 }
 
 /**
@@ -2673,12 +2754,27 @@ function paintSettingsPanel() {
  * still applies live there, exactly like the in-session header toggle
  * already did. The mystery-set preference is still recorded in
  * S.mysterySet so it takes effect the next time the rosary is begun.
+ *
+ * Music is the one setting that always applies live, in both directions,
+ * on the start screen or mid-prayer alike: switching it off should
+ * silence the track immediately, not "at the end of this decade" -
+ * that's the whole point of the switch. Note that when this call
+ * originates from a `storage` event (a change made in the app shell,
+ * not this document), there is no user gesture in *this* document, so
+ * playMusic()'s play() may be refused by the browser - it fails
+ * silently via its own .catch(), which is the correct behavior here.
  */
 function applyRosarySettingsToState(settings) {
   const newLang = prefToLang(settings.language);
   const langChanged = newLang !== S.lang;
+  const musicChanged = settings.music !== (S.musicOn ? "on" : "off");
   S.mysterySet = settings.mysterySet;
   S.lang = newLang;
+  S.musicOn = settings.music !== "off";
+
+  if (musicChanged) {
+    if (S.musicOn) playMusic(); else pauseMusic();
+  }
 
   if (S.started) {
     if (langChanged) {
@@ -2729,7 +2825,7 @@ el.rsOverlay.addEventListener("click", function (e) {
 
 el.rsLangGroup.addEventListener("click", function (e) {
   const b = e.target.closest("button"); if (!b) return;
-  const next = { language: b.dataset.lang, mysterySet: S.mysterySet };
+  const next = { language: b.dataset.lang, mysterySet: S.mysterySet, music: S.musicOn ? "on" : "off" };
   saveRosarySettings(next);
   applyRosarySettingsToState(next);
   paintSettingsPanel();
@@ -2737,11 +2833,21 @@ el.rsLangGroup.addEventListener("click", function (e) {
 
 el.rsMysteryGroup.addEventListener("click", function (e) {
   const b = e.target.closest("button"); if (!b) return;
-  const next = { language: langToPref(S.lang), mysterySet: b.dataset.mystery };
+  const next = { language: langToPref(S.lang), mysterySet: b.dataset.mystery, music: S.musicOn ? "on" : "off" };
   saveRosarySettings(next);
   applyRosarySettingsToState(next);
   paintSettingsPanel();
 });
+
+if (el.rsMusicGroup) {
+  el.rsMusicGroup.addEventListener("click", function (e) {
+    const b = e.target.closest("button"); if (!b) return;
+    const next = { language: langToPref(S.lang), mysterySet: S.mysterySet, music: b.dataset.music };
+    saveRosarySettings(next);
+    applyRosarySettingsToState(next);
+    paintSettingsPanel();
+  });
+}
 
 // Live two-way sync: a change made in the app shell's own settings, or in
 // the rosary open in another tab, lands here. `storage` never fires in
@@ -2757,7 +2863,7 @@ window.addEventListener("storage", function (e) {
 el.btnLang.addEventListener("click", function (e) {
   e.stopPropagation();
   S.lang = S.lang === "en" ? "tl" : "en";
-  saveRosarySettings({ language: langToPref(S.lang), mysterySet: S.mysterySet });
+  saveRosarySettings({ language: langToPref(S.lang), mysterySet: S.mysterySet, music: S.musicOn ? "on" : "off" });
   el.btnLang.textContent = S.lang === "tl" ? "TL" : "EN";
   el.hint.textContent = P[S.lang].ui.hint;
   if (S.started) {
@@ -2845,6 +2951,10 @@ document.documentElement.style.setProperty("--scene-fade", SCENE_FADE_MS + "ms")
 document.documentElement.style.setProperty("--cam-glide", CAMERA_GLIDE_MS + "ms");
 document.documentElement.style.setProperty("--slide-fade", SLIDE_FADE_MS + "ms");
 Camera.el = el.bgA;
+if (!AMBIENT_MUSIC_FILE) {
+  const musicSection = $("rs-music-section");
+  if (musicSection) musicSection.style.display = "none";
+}
 buildRosary();
 makeMotes();
 Meter.raf = requestAnimationFrame(meterFrame);   // resting breath until the mic starts

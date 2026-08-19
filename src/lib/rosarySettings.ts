@@ -11,10 +11,12 @@
 
 export type RosaryLanguage = "en" | "fil";
 export type RosaryMysterySet = "today" | "joyful" | "sorrowful" | "glorious" | "luminous";
+export type RosaryMusic = "on" | "off";
 
 export interface RosarySettings {
   language: RosaryLanguage;
   mysterySet: RosaryMysterySet;
+  music: RosaryMusic;
 }
 
 export const ROSARY_SETTINGS_KEY = "sanctiwalk.rosary.settings";
@@ -22,6 +24,7 @@ export const ROSARY_SETTINGS_KEY = "sanctiwalk.rosary.settings";
 export const DEFAULT_ROSARY_SETTINGS: RosarySettings = {
   language: "en",
   mysterySet: "today",
+  music: "on",
 };
 
 const VALID_MYSTERY_SETS: RosaryMysterySet[] = ["today", "joyful", "sorrowful", "glorious", "luminous"];
@@ -31,7 +34,8 @@ function isValidRosarySettings(value: unknown): value is RosarySettings {
   const v = value as Record<string, unknown>;
   return (v.language === "en" || v.language === "fil") &&
     typeof v.mysterySet === "string" &&
-    VALID_MYSTERY_SETS.indexOf(v.mysterySet as RosaryMysterySet) !== -1;
+    VALID_MYSTERY_SETS.indexOf(v.mysterySet as RosaryMysterySet) !== -1 &&
+    (v.music === "on" || v.music === "off");
 }
 
 /** Never throws. Falls back to the default on missing or corrupted data. */

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { X, Languages, Sparkles } from "lucide-react";
+import { X, Languages, Sparkles, Music } from "lucide-react";
 import {
   RosaryLanguage,
   RosaryMysterySet,
+  RosaryMusic,
   RosarySettings,
   ROSARY_SETTINGS_KEY,
   loadRosarySettings,
@@ -68,6 +69,10 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
 
   function setMysterySet(mysterySet: RosaryMysterySet) {
     updateSettings((prev) => ({ ...prev, mysterySet }));
+  }
+
+  function setMusic(music: RosaryMusic) {
+    updateSettings((prev) => ({ ...prev, music }));
   }
 
   if (!isOpen) return null;
@@ -146,6 +151,36 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Background music */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2 text-sm font-semibold uppercase tracking-wider text-white/90">
+              <Music className="w-3.5 h-3.5" />
+              <span>Background Music</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMusic("on")}
+                className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
+                  settings.music === "on"
+                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
+                }`}
+              >
+                On
+              </button>
+              <button
+                onClick={() => setMusic("off")}
+                className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
+                  settings.music === "off"
+                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
+                }`}
+              >
+                Off
+              </button>
             </div>
           </div>
 
