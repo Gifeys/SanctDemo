@@ -242,6 +242,19 @@ export const PILGRIM_QUIZ: QuizQuestion[] = [
   }
 ];
 
+export const MASS_SCHEDULES: Record<string, { day: string; time: string }[]> = {
+  "route-mhcp": [
+    { day: "Monday", time: "6:00 AM" },
+    { day: "Tuesday", time: "6:00 AM" },
+    { day: "Wednesday", time: "6:00 AM, 6:00 PM" },
+    { day: "Thursday", time: "6:00 AM, 6:00 PM" },
+    { day: "Friday", time: "6:00 AM, 6:00 PM" },
+    { day: "Saturday", time: "6:00 AM, 6:00 PM" },
+    { day: "Sunday", time: "6:00 AM, 7:30 AM, 9:00 AM, 10:30 AM, 4:30 PM, 6:00 PM" },
+  ],
+  "route-src": [],
+};
+
 export const ROUTES: Route[] = [
   {
     id: "route-mhcp",

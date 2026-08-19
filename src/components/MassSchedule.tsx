@@ -1,7 +1,44 @@
 import React from "react";
 import { Clock, Phone, Mail, MapPin, Calendar, Sparkles } from "lucide-react";
+import { MASS_SCHEDULES } from "../data";
+import { parseTimes } from "../lib/schedule";
+
+const WEEKDAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// Groups consecutive weekdays that share the exact same Mass time string into
+// a single display row (e.g. "Monday & Tuesday", "Wednesday - Saturday"),
+// mirroring how the parish bulletin itself groups days.
+function groupWeekdayRows(schedule: { day: string; time: string }[]) {
+  const byDay = new Map(schedule.map((s) => [s.day, s.time]));
+  const groups: { label: string; time: string }[] = [];
+  let i = 0;
+  while (i < WEEKDAY_ORDER.length) {
+    const day = WEEKDAY_ORDER[i];
+    const time = byDay.get(day);
+    if (!time) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < WEEKDAY_ORDER.length && byDay.get(WEEKDAY_ORDER[j + 1]) === time) j++;
+    const label =
+      j === i
+        ? day
+        : j === i + 1
+        ? `${day} & ${WEEKDAY_ORDER[j]}`
+        : `${day} - ${WEEKDAY_ORDER[j]}`;
+    groups.push({ label, time });
+    i = j + 1;
+  }
+  return groups;
+}
 
 export default function MassSchedule() {
+  const schedule = MASS_SCHEDULES["route-mhcp"] ?? [];
+  const weekdayRows = groupWeekdayRows(schedule);
+  const sundayEntry = schedule.find((s) => s.day === "Sunday");
+  const sundayTimes = sundayEntry ? parseTimes(sundayEntry.time) : [];
+
   return (
     <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
       {/* Page Header */}
@@ -44,35 +81,36 @@ export default function MassSchedule() {
           </h3>
 
           <div className="space-y-3 font-sans">
-            {/* Monday & Tuesday */}
-            <div className="flex justify-between items-center p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30">
-              <span className="text-[15px] font-bold text-[#4A4A35]">Monday & Tuesday</span>
-              <span className="text-[15px] font-mono font-bold text-[#33332D]">6:00 AM</span>
-            </div>
-
-            {/* Wednesday - Saturday */}
-            <div className="flex justify-between items-center p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30">
-              <span className="text-[15px] font-bold text-[#4A4A35]">Wednesday - Saturday</span>
-              <span className="text-[15px] font-mono font-bold text-[#33332D]">6:00 AM / 6:00 PM</span>
-            </div>
-
-            {/* Sunday */}
-            <div className="p-2.5 bg-[#EBEBE0]/50 rounded-xl border border-[#D6D6C2]/60 space-y-1.5">
-              <div className="flex justify-between items-center">
-                <span className="text-[15px] font-bold text-[#5A5A40]">Sunday Masses</span>
-                <span className="text-sm bg-[#5A5A40] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                  Lord's Day
+            {weekdayRows.map((row) => (
+              <div
+                key={row.label}
+                className="flex justify-between items-center p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30"
+              >
+                <span className="text-[15px] font-bold text-[#4A4A35]">{row.label}</span>
+                <span className="text-[15px] font-mono font-bold text-[#33332D]">
+                  {parseTimes(row.time).join(" / ")}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-mono font-bold text-[#33332D] pt-1">
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">6:00 AM</div>
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">7:30 AM</div>
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">9:00 AM</div>
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">10:30 AM</div>
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">4:30 PM</div>
-                <div className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">6:00 PM</div>
+            ))}
+
+            {/* Sunday */}
+            {sundayTimes.length > 0 && (
+              <div className="p-2.5 bg-[#EBEBE0]/50 rounded-xl border border-[#D6D6C2]/60 space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[15px] font-bold text-[#5A5A40]">Sunday Masses</span>
+                  <span className="text-sm bg-[#5A5A40] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    Lord's Day
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-mono font-bold text-[#33332D] pt-1">
+                  {sundayTimes.map((time) => (
+                    <div key={time} className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">
+                      {time}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Confessions block */}
