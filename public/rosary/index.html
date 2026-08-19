@@ -725,36 +725,24 @@ header {
     linear-gradient(to bottom, rgba(21,27,83,.38), rgba(13,17,50,.55));
 }
 
-/* Compact language toggle, top corner, always readable regardless of the
-   image behind it. */
-#start-lang {
+/* Gear button, top corner, replacing the old language toggle there.
+   44x44 touch target per the accessibility floor, always readable
+   regardless of the image behind it. */
+#start-settings-btn {
   position: absolute; z-index: 3;
   top: max(16px, env(safe-area-inset-top)); right: 16px;
-  display: flex; gap: 2px;
-  padding: 3px;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
   border-radius: 999px;
   background: rgba(21,27,83,.90);
   border: 1px solid rgba(95,199,222,.35);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-}
-#start-lang button {
-  min-width: 44px; min-height: 44px;
-  padding: 0 10px;
-  border: none; border-radius: 999px;
-  background: transparent;
   color: var(--teal-text);
-  font-family: 'Poppins', sans-serif; font-weight: 600;
-  font-size: 14px; letter-spacing: .04em;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   cursor: pointer;
-  transition: .25s ease;
+  transition: background .25s ease, color .25s ease, transform .3s ease;
 }
-#start-lang button.sel {
-  /* Deeper than --teal: at this small a size (14px) the button text needs
-     the full 4.5:1 AA ratio, not just the 3:1 "large text" allowance that
-     --teal + white clears elsewhere (e.g. the Begin button). */
-  background: #106a7d;
-  color: #fff;
-}
+#start-settings-btn:active { transform: scale(.92); }
+#start-settings-btn svg { width: 20px; height: 20px; }
 
 /* Everything else sits on this card. It was measured, not eyeballed: at
    alpha .70 with an 18px blur behind it, the brightest of the 20
@@ -764,7 +752,7 @@ header {
    4.8:1, comfortably over the 4.5:1 floor. Going more transparent than
    this is possible for white text alone (down to ~.64) but not for the
    card's teal text at any size below "large" - see the note on
-   liturgical-day/start-alt-link/.choice small below. */
+   liturgical-day/.rs-grid button below. */
 #start-card {
   position: relative; z-index: 2;
   margin-top: 44px;
@@ -814,65 +802,98 @@ header {
 }
 #begin:active { transform: scale(.975); }
 
-#start-alt-link {
-  background: none; border: none;
-  padding: 8px;
-  font-family: 'Poppins', sans-serif; font-weight: 500;
-  font-size: 15px;
+#start-card .note {
+  font-size: 14px; line-height: 1.55;
   color: rgba(255,255,255,.90);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  margin: 4px 0 0;
+}
+
+/* ==================== ROSARY SETTINGS PANEL ===================== *
+ * A dismissible overlay on the start screen itself (not a new page),
+ * opened by the gear. Same navy/teal palette and measured contrast as
+ * the rest of the start screen; motion is 300-400ms ease, no bounce.
+ * ================================================================== */
+#rosary-settings-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(10,13,42,.62);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  opacity: 0; visibility: hidden;
+  transition: opacity .35s ease, visibility .35s;
+}
+#rosary-settings-overlay.open { opacity: 1; visibility: visible; }
+
+#rosary-settings-panel {
+  width: 100%; max-width: 360px;
+  max-height: calc(100% - 12px);
+  overflow-y: auto;
+  border-radius: 20px;
+  padding: 20px 20px 22px;
+  background: var(--navy-card);
+  border: 1px solid rgba(95,199,222,.28);
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  transform: translateY(10px) scale(.98);
+  transition: transform .35s ease;
+}
+#rosary-settings-overlay.open #rosary-settings-panel { transform: translateY(0) scale(1); }
+
+#rs-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+#rs-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 17px; letter-spacing: .02em;
+  color: #ffffff; margin: 0;
+}
+#rs-close {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  margin: -10px -10px -10px 0;
+  border: none; border-radius: 999px;
+  background: transparent;
+  color: rgba(255,255,255,.85);
   cursor: pointer;
-  min-height: 44px;
+  transition: background .25s ease;
+}
+#rs-close:hover, #rs-close:active { background: rgba(255,255,255,.12); }
+#rs-close svg { width: 18px; height: 18px; }
+
+.rs-section + .rs-section { margin-top: 18px; }
+
+.rs-label {
+  font-family: 'Poppins', sans-serif; font-weight: 600;
+  font-size: 14px; letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(255,255,255,.75);
+  margin: 0 0 8px;
 }
 
-/* Collapsed by default; reveals the four mystery sets. */
-#start-alt-panel {
-  display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows .35s ease;
-}
-#start-alt-panel.open { grid-template-rows: 1fr; }
-#start-alt-panel > div { overflow: hidden; }
+.rs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rs-grid-2 { grid-template-columns: 1fr 1fr; }
+.rs-wide { grid-column: 1 / -1; }
 
-.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 6px; }
-
-.choice {
-  padding: 13px 8px;
+.rs-grid button {
+  padding: 12px 8px;
   border: 1px solid rgba(95,199,222,.28);
   border-radius: 12px;
-  /* Transparent, not a faint white tint: even .04 of white was enough to
-     lift the effective background just far enough to drop this text
-     under 4.5:1 against the brightest painting. Sitting directly on the
-     card (already measured) keeps the margin. */
   background: transparent;
   color: rgba(255,255,255,.90);
   font-family: 'Montserrat', sans-serif; font-weight: 700;
   font-size: 16px; letter-spacing: .02em;
   cursor: pointer; text-align: center;
   min-height: 44px;
-  transition: .25s ease;
+  transition: background .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
-.choice small {
-  display: block; font-family: 'Poppins', sans-serif;
-  font-size: 14px; letter-spacing: .08em; text-transform: uppercase;
-  color: rgba(255,255,255,.90);
-  margin-top: 4px;
-}
-.choice.sel {
-  /* Deeper than --teal: at 16px/14px this text needs the full 4.5:1 AA
+.rs-grid button.sel {
+  /* Deeper than --teal: at this size the text needs the full 4.5:1 AA
      ratio, not just the 3:1 "large text" allowance --teal clears on the
-     bigger, bolder Begin button. */
+     bigger, bolder Begin button. Same measured value used elsewhere on
+     this screen for selected pills. */
   color: #ffffff;
   background: #106a7d;
   border-color: rgba(95,199,222,.8);
   box-shadow: 0 0 20px rgba(24,134,160,.4);
-}
-.choice.sel small { color: #ffffff; opacity: .9; }
-
-#start-card .note {
-  font-size: 14px; line-height: 1.55;
-  color: rgba(255,255,255,.90);
-  margin: 4px 0 0;
 }
 
 /* ========================== FINISH ============================= */
@@ -989,10 +1010,15 @@ header {
     <div id="start-slides"></div>
     <div id="start-overlay"></div>
 
-    <div id="start-lang">
-      <button data-lang="en">EN</button>
-      <button data-lang="tl">FIL</button>
-    </div>
+    <!-- Gear opens the settings panel below. Sits where the old EN/FIL
+         toggle lived, top corner, always readable regardless of the image
+         behind it. -->
+    <button id="start-settings-btn" aria-label="Rosary settings" title="Rosary settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
 
     <div id="start-card">
       <p id="liturgical-day"></p>
@@ -1004,14 +1030,40 @@ header {
 
       <button id="begin" class="serif"></button>
 
-      <button id="start-alt-link"></button>
-      <div id="start-alt-panel">
-        <div>
-          <div class="choices" id="set-choices"></div>
+      <p class="note" id="start-note"></p>
+    </div>
+
+    <!-- Settings panel: a dismissible overlay on this same screen, not a
+         new page. Holds the two settings that used to live directly on
+         the start card: language and which mystery set to pray. -->
+    <div id="rosary-settings-overlay">
+      <div id="rosary-settings-panel" role="dialog" aria-modal="true" aria-label="Rosary settings">
+        <div id="rs-header">
+          <h2 id="rs-title">Rosary Settings</h2>
+          <button id="rs-close" aria-label="Close rosary settings" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="rs-section">
+          <div class="rs-label">Language</div>
+          <div class="rs-grid rs-grid-2" id="rs-lang-group">
+            <button type="button" data-lang="en">English</button>
+            <button type="button" data-lang="fil">Filipino</button>
+          </div>
+        </div>
+
+        <div class="rs-section">
+          <div class="rs-label">Mystery</div>
+          <div class="rs-grid" id="rs-mystery-group">
+            <button type="button" class="rs-wide" data-mystery="today"></button>
+            <button type="button" data-mystery="joyful"></button>
+            <button type="button" data-mystery="sorrowful"></button>
+            <button type="button" data-mystery="glorious"></button>
+            <button type="button" data-mystery="luminous"></button>
+          </div>
         </div>
       </div>
-
-      <p class="note" id="start-note"></p>
     </div>
   </div>
 
@@ -1675,9 +1727,62 @@ const store = {
   del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
 
+/* ------------------------------------------------------------------
+   ROSARY SETTINGS - shared with the app shell via localStorage.
+
+   The rosary is mounted same-origin in an <iframe> inside the SanctDemo
+   app (see src/components/DailyRosary.tsx), which also has its own
+   "Rosary settings" surface (src/components/RosarySettingsModal.tsx).
+   Both sides read/write this one key and react to the `storage` event
+   instead of using postMessage. Keep this contract - key name, field
+   names, field values - identical to src/lib/rosarySettings.ts; this
+   file is static HTML/JS and can't import that module directly.
+   ------------------------------------------------------------------ */
+const ROSARY_SETTINGS_KEY = "sanctiwalk.rosary.settings";
+const DEFAULT_ROSARY_SETTINGS = { language: "en", mysterySet: "today" };
+const VALID_MYSTERY_SETS = ["today", "joyful", "sorrowful", "glorious", "luminous"];
+
+function isValidRosarySettings(v) {
+  return !!v && typeof v === "object" &&
+    (v.language === "en" || v.language === "fil") &&
+    VALID_MYSTERY_SETS.indexOf(v.mysterySet) !== -1;
+}
+function loadRosarySettings() {
+  try {
+    var raw = localStorage.getItem(ROSARY_SETTINGS_KEY);
+    if (!raw) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+    var parsed = JSON.parse(raw);
+    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  } catch (e) {
+    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  }
+}
+function saveRosarySettings(settings) {
+  try { localStorage.setItem(ROSARY_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+}
+function parseRosarySettingsEventValue(newValue) {
+  if (!newValue) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  try {
+    var parsed = JSON.parse(newValue);
+    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  } catch (e) {
+    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet };
+  }
+}
+// The prayer engine's internal language tag ("en"/"tl") predates the
+// shared settings contract ("en"/"fil") - map between them at the edges
+// rather than touch every S.lang reference in the engine below.
+function prefToLang(pref) { return pref === "fil" ? "tl" : "en"; }
+function langToPref(lang) { return lang === "tl" ? "fil" : "en"; }
+
+const INITIAL_ROSARY_SETTINGS = loadRosarySettings();
+
 const S = {
-  lang: store.get("rosary.lang") || "en",
-  set:  DAY_SET[new Date().getDay()],
+  lang: prefToLang(INITIAL_ROSARY_SETTINGS.language),
+  mysterySet: INITIAL_ROSARY_SETTINGS.mysterySet,
+  set: INITIAL_ROSARY_SETTINGS.mysterySet === "today"
+    ? DAY_SET[new Date().getDay()]
+    : INITIAL_ROSARY_SETTINGS.mysterySet,
   seq: [], idx: 0,
   started: false,
   voiceWanted: true, voiceLive: false,
@@ -1696,14 +1801,15 @@ const el = {
   voiceTrack:$("voice-track"), voiceFill:$("voice-fill"),
   footL:$("foot-left"), footR:$("foot-right"), hint:$("tap-hint"),
   tapzone:$("tapzone"), toast:$("toast"),
-  start:$("start"), setChoices:$("set-choices"),
+  start:$("start"),
   begin:$("begin"), startNote:$("start-note"),
-  startLangToggle:$("start-lang"),
+  startSettingsBtn:$("start-settings-btn"),
   liturgicalDay:$("liturgical-day"),
   todayMysteryLabel:$("today-mystery-label"), todayMysteryName:$("today-mystery-name"),
-  startAltLink:$("start-alt-link"), startAltPanel:$("start-alt-panel"),
   startSlides:$("start-slides"),
   btnExit:$("btn-exit"),
+  rsOverlay:$("rosary-settings-overlay"), rsClose:$("rs-close"),
+  rsLangGroup:$("rs-lang-group"), rsMysteryGroup:$("rs-mystery-group"),
   finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again")
 };
 
@@ -2504,12 +2610,12 @@ function saveProgress() {
 /* ==================================================================
    START SCREEN
 
-   Top to bottom: a compact EN/FIL toggle, the liturgical day (season and
-   week only, computed - see the Liturgical module above), today's
-   mystery set in large type, one primary Begin button, and a collapsed
-   link that reveals the other three sets. The FIL toggle only ever
-   changes the mystery-set names; the liturgical-day wording stays
-   English, per the brief.
+   Top to bottom: a gear (opens the settings panel below), the liturgical
+   day (season and week only, computed - see the Liturgical module
+   above), today's mystery set in large type, and one primary Begin
+   button. Language and which mystery set to pray both live in the
+   settings panel now, sourced from S.lang/S.mysterySet, which in turn
+   are kept in sync with the app shell via ROSARY_SETTINGS_KEY.
    ================================================================== */
 function startSetHeadline(lang, key) {
   const name = START_SET_NAMES[lang][key];
@@ -2521,32 +2627,70 @@ function startSetShort(lang, key) {
 }
 
 function paintStartScreen() {
-  const today = DAY_SET[new Date().getDay()];
-  const chosen = S.set !== today;
+  const chosen = S.mysterySet !== "today";
 
   el.liturgicalDay.textContent = Liturgical.describe(new Date());
   el.todayMysteryLabel.textContent = chosen ? "You've Chosen" : "Today's Mystery";
   el.todayMysteryName.textContent = startSetHeadline(S.lang, S.set);
   el.begin.textContent = chosen ? "Begin the Rosary" : "Begin Today's Rosary";
-  el.startAltLink.textContent = el.startAltPanel.classList.contains("open")
-    ? "Hide"
-    : "Pray a different mystery";
   el.startNote.textContent = P[S.lang].ui.note;
 
-  el.setChoices.innerHTML = "";
-  SET_KEYS.forEach(function (k) {
-    const b = document.createElement("button");
-    b.className = "choice" + (k === S.set ? " sel" : "");
-    b.dataset.set = k;
-    b.innerHTML = startSetShort(S.lang, k) + (k === today ? "<small>Today</small>" : "");
-    el.setChoices.appendChild(b);
-  });
-
-  const langBtns = el.startLangToggle.children;
-  for (let i = 0; i < langBtns.length; i++)
-    langBtns[i].classList.toggle("sel", langBtns[i].dataset.lang === S.lang);
-
   setScene(S.set, 0);        // the set's own picture while choosing
+  paintSettingsPanel();
+}
+
+/** Mystery-set labels shown in the settings panel, localized to S.lang. */
+const MYSTERY_PANEL_LABELS = {
+  en: { today: "Today's Mystery", joyful: "Joyful", sorrowful: "Sorrowful", glorious: "Glorious", luminous: "Luminous" },
+  tl: { today: "Ngayong Araw", joyful: "Maligayang", sorrowful: "Mahapding", glorious: "Maluwalhati", luminous: "Liwanag" }
+};
+
+function paintSettingsPanel() {
+  if (!el.rsLangGroup) return;
+
+  const langBtns = el.rsLangGroup.children;
+  for (let i = 0; i < langBtns.length; i++)
+    langBtns[i].classList.toggle("sel", langBtns[i].dataset.lang === langToPref(S.lang));
+
+  const mysteryBtns = el.rsMysteryGroup.children;
+  for (let i = 0; i < mysteryBtns.length; i++) {
+    const b = mysteryBtns[i];
+    const key = b.dataset.mystery;
+    b.textContent = MYSTERY_PANEL_LABELS[S.lang][key] || MYSTERY_PANEL_LABELS.en[key];
+    b.classList.toggle("sel", key === S.mysterySet);
+  }
+}
+
+/**
+ * Applies an incoming { language, mysterySet } to engine state S, whether
+ * it came from this screen's own settings panel or from a `storage` event
+ * fired by another same-origin context (the app shell, or the rosary open
+ * in another tab).
+ *
+ * While a rosary is actively being prayed (S.started), the mystery set in
+ * progress is left alone - changing it mid-decade would yank the beads
+ * and prayer text out from under whoever is praying. Only the language
+ * still applies live there, exactly like the in-session header toggle
+ * already did. The mystery-set preference is still recorded in
+ * S.mysterySet so it takes effect the next time the rosary is begun.
+ */
+function applyRosarySettingsToState(settings) {
+  const newLang = prefToLang(settings.language);
+  const langChanged = newLang !== S.lang;
+  S.mysterySet = settings.mysterySet;
+  S.lang = newLang;
+
+  if (S.started) {
+    if (langChanged) {
+      S.seq = buildSequence(S.set, S.lang);   // same length, so your place is kept
+      if (rec) { rec.lang = langTag(); if (recRunning) { try { rec.stop(); } catch (err) {} } }
+      el.hint.textContent = P[S.lang].ui.hint;
+      render();
+    }
+  } else {
+    S.set = settings.mysterySet === "today" ? DAY_SET[new Date().getDay()] : settings.mysterySet;
+    paintStartScreen();
+  }
 }
 
 let toastTimer = null;
@@ -2560,31 +2704,60 @@ function toast(msg) {
 /* ==================================================================
    EVENTS
    ================================================================== */
-el.setChoices.addEventListener("click", function (e) {
-  const b = e.target.closest(".choice"); if (!b) return;
-  S.set = b.dataset.set;
-  paintStartScreen();
-});
+function openRosarySettings() {
+  paintSettingsPanel();
+  el.rsOverlay.classList.add("open");
+}
+function closeRosarySettings() {
+  el.rsOverlay.classList.remove("open");
+}
 
-el.startAltLink.addEventListener("click", function (e) {
+el.startSettingsBtn.addEventListener("click", function (e) {
   e.stopPropagation();
-  el.startAltPanel.classList.toggle("open");
-  el.startAltLink.textContent = el.startAltPanel.classList.contains("open")
-    ? "Hide" : "Pray a different mystery";
+  openRosarySettings();
 });
 
-el.startLangToggle.addEventListener("click", function (e) {
+el.rsClose.addEventListener("click", function (e) {
+  e.stopPropagation();
+  closeRosarySettings();
+});
+
+// Dismiss on backdrop click (but not on clicks inside the panel itself).
+el.rsOverlay.addEventListener("click", function (e) {
+  if (e.target === el.rsOverlay) closeRosarySettings();
+});
+
+el.rsLangGroup.addEventListener("click", function (e) {
   const b = e.target.closest("button"); if (!b) return;
-  S.lang = b.dataset.lang;
-  store.set("rosary.lang", S.lang);
-  el.btnLang.textContent = S.lang === "tl" ? "TL" : "EN";
-  paintStartScreen();
+  const next = { language: b.dataset.lang, mysterySet: S.mysterySet };
+  saveRosarySettings(next);
+  applyRosarySettingsToState(next);
+  paintSettingsPanel();
+});
+
+el.rsMysteryGroup.addEventListener("click", function (e) {
+  const b = e.target.closest("button"); if (!b) return;
+  const next = { language: langToPref(S.lang), mysterySet: b.dataset.mystery };
+  saveRosarySettings(next);
+  applyRosarySettingsToState(next);
+  paintSettingsPanel();
+});
+
+// Live two-way sync: a change made in the app shell's own settings, or in
+// the rosary open in another tab, lands here. `storage` never fires in
+// the context that made the change - that side already applied it
+// directly at the click handler above.
+window.addEventListener("storage", function (e) {
+  if (e.key !== ROSARY_SETTINGS_KEY) return;
+  const next = parseRosarySettingsEventValue(e.newValue);
+  applyRosarySettingsToState(next);
+  paintSettingsPanel();
 });
 
 el.btnLang.addEventListener("click", function (e) {
   e.stopPropagation();
   S.lang = S.lang === "en" ? "tl" : "en";
-  store.set("rosary.lang", S.lang);
+  saveRosarySettings({ language: langToPref(S.lang), mysterySet: S.mysterySet });
   el.btnLang.textContent = S.lang === "tl" ? "TL" : "EN";
   el.hint.textContent = P[S.lang].ui.hint;
   if (S.started) {

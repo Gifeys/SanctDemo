@@ -15,6 +15,7 @@ import ArPlaceholder from "./components/ArPlaceholder";
 import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
 import AdminPortal from "./components/AdminPortal";
+import RosarySettingsModal from "./components/RosarySettingsModal";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -26,8 +27,9 @@ import { ROUTES, BADGES } from "./data";
 
 import { 
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
-  Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon, 
-  ScanLine as ArIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft
+  Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon,
+  ScanLine as ArIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft,
+  Settings as SettingsIcon
 } from "lucide-react";
 
 export default function App() {
@@ -40,6 +42,7 @@ export default function App() {
   const [isOffline, setIsOffline] = useState(false);
   const [isMobileOnly, setIsMobileOnly] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRosarySettingsOpen, setIsRosarySettingsOpen] = useState(false);
 
   // Identity state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -693,6 +696,14 @@ export default function App() {
                         </button>
 
                         <button
+                          onClick={() => { setIsRosarySettingsOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 pl-9 rounded-xl text-left flex items-center gap-2.5 text-sm text-[#666655] hover:bg-[#EBEBE0] transition-all"
+                        >
+                          <SettingsIcon className="w-3.5 h-3.5" />
+                          <span>Rosary Settings (Language &amp; Mystery)</span>
+                        </button>
+
+                        <button
                           onClick={() => { setActiveTab("mass"); setIsSidebarOpen(false); }}
                           className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
                             activeTab === "mass" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
@@ -1101,6 +1112,11 @@ export default function App() {
 
               </div>
             )}
+
+            <RosarySettingsModal
+              isOpen={isRosarySettingsOpen}
+              onClose={() => setIsRosarySettingsOpen(false)}
+            />
 
           </div>
         </PhoneContainer>
