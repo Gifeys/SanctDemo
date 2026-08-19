@@ -8,3 +8,4 @@ coverage/
 !.env.example
 node_modules/
 .claude-note
+.claude/

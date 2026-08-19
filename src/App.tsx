@@ -12,7 +12,7 @@ import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
 import MinistriesTab from "./components/MinistriesTab";
 import SacramentsTab from "./components/SacramentsTab";
-import ArPlaceholder from "./components/ArPlaceholder";
+import ArTour from "./components/ArTour";
 import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
 import AdminPortal from "./components/AdminPortal";
@@ -1077,9 +1077,11 @@ export default function App() {
                     <SacramentsTab onAddApplication={handleAddApplication} />
                   )}
 
-                  {/* TAB 8: AR Tour placeholder */}
+                  {/* TAB 8: AR Tour */}
                   {activeTab === "ar" && (
-                    <ArPlaceholder />
+                    <ArTour
+                      stationNames={activeChurchRoute.stations.map((s) => s.name)}
+                    />
                   )}
 
                   {/* TAB 9: Pilgrim Catechism Quiz */}

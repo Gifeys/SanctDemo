@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 
@@ -144,6 +144,113 @@ app.post("/api/generate-walk", async (req, res) => {
         }
       ]
     });
+  }
+});
+
+// Full-stack API Endpoint: Identify what the camera is looking at (AR Tour)
+//
+// The API key stays on the server — the browser only ever sends an image and
+// receives text, so nothing sensitive reaches the client bundle.
+//
+// `candidates` is the accuracy lever. A vision model is weak at open-ended
+// "what specific statue is this", but strong at "which of these five stations
+// is this". When the app knows which parish the pilgrim is in, it should send
+// that parish's station names and turn recognition into a multiple choice.
+app.post("/api/identify", async (req, res) => {
+  try {
+    const { imageBase64, mimeType, candidates } = req.body ?? {};
+
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Missing imageBase64." });
+    }
+
+    const shortlist: string[] = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+
+    const instruction = shortlist.length
+      ? [
+          "You are identifying a feature inside a specific Catholic parish church.",
+          "",
+          "The pilgrim is at a station that is one of the following:",
+          ...shortlist.map((name: string) => `- ${name}`),
+          "",
+          "Choose the one the photo shows. If the photo clearly shows none of them,",
+          "set recognized to false rather than forcing a match.",
+          "",
+          "Only state facts you can see in the image or that are common knowledge",
+          "about the subject. Do not invent parish-specific history, dates, donors,",
+          "or names — if you do not know, say what is visible instead.",
+        ].join("\n")
+      : [
+          "Identify the main subject of this camera frame.",
+          "",
+          "Name it as specifically as you can — a particular statue, altar, window,",
+          "artwork, or building rather than a generic category. Ignore hands and the",
+          "person holding the camera. If the frame is too blurry, too dark, or shows",
+          "nothing identifiable, set recognized to false.",
+          "",
+          "Do not invent parish-specific history, dates, donors, or names. If you do",
+          "not know, describe what is visible instead.",
+        ].join("\n");
+
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
+            { text: instruction },
+          ],
+        },
+      ],
+      config: {
+        // Recognition is perception, not deliberation. Left on, thinking accounts
+        // for most of the latency and most of the tokens.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            recognized: {
+              type: Type.BOOLEAN,
+              description: "False when the frame shows nothing identifiable.",
+            },
+            title: { type: Type.STRING, description: "The subject's specific name. Empty when not recognized." },
+            category: { type: Type.STRING, description: "Short type label: Statue, Altar, Window, Painting, Relic, Architecture." },
+            confidence: { type: Type.NUMBER, description: "0 to 1. Be honest; a low number is more useful than a confident guess." },
+            summary: { type: Type.STRING, description: "2-4 sentences for someone standing in front of it." },
+            highlights: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Three short standalone facts.",
+            },
+          },
+          required: ["recognized", "title", "category", "confidence", "summary", "highlights"],
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      return res.status(502).json({ error: "The vision model returned no content." });
+    }
+
+    return res.json(JSON.parse(text));
+  } catch (error: any) {
+    const message = String(error?.message ?? error);
+
+    // The free tier allows a small number of requests per model per day. Say so
+    // plainly rather than surfacing a raw stack trace to a pilgrim.
+    if (message.includes("429") || message.toUpperCase().includes("RESOURCE_EXHAUSTED")) {
+      return res.status(429).json({
+        error: "Daily recognition limit reached. Please try again tomorrow.",
+        code: "quota_exhausted",
+      });
+    }
+
+    console.error("[/api/identify]", message);
+    return res.status(500).json({ error: "Recognition failed. Please try again." });
   }
 });
 
