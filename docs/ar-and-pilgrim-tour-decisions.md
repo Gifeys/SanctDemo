@@ -82,3 +82,33 @@ The pieces already exist in `data.ts` and `types.ts` — `ROUTES`, `Station.refl
 3. Print the target cards for defense. If the demo happens in a classroom, printed cards behave identically to the ones mounted in the church — this is the single most important demo affordance after the location simulator.
 4. Photograph the remaining stations that need targets.
 5. Decide where a pilgrim reads their saved reflections back.
+
+---
+
+## 6. The visit session — what you scanned becomes the quiz
+
+**Decision (client, 2026-08-19):** Everything a pilgrim scans during one visit is recorded as a **visit session**. When they finish, the app offers a quiz and a reflection drawn from **what they actually saw** — not a fixed question bank.
+
+This is a better design than the generic `PILGRIM_QUIZ` currently in `data.ts`, for three reasons:
+
+1. **It cannot be answered without visiting.** A fixed quiz can be guessed or looked up. A quiz built from the four stations *this* pilgrim scanned, in the order they scanned them, only makes sense to someone who was there.
+2. **It closes the loop.** Presence gates the station, AR rewards arriving, the session remembers the walk, and the quiz and reflection turn it into something learned rather than something visited.
+3. **It scales without new content.** Add a station and its questions join the pool automatically. No separate quiz to maintain per parish.
+
+**Shape:**
+
+- A session opens when the pilgrim scans their first station at a parish and stays open while they are inside its geofence.
+- Each scan appends `{ stationId, timestamp, verified }`, where `verified` records whether presence was confirmed by geofence, by QR, or overridden manually.
+- Ending the visit — by tapping finish, or by leaving the geofence — offers two optional things:
+  - **A quiz** of 3–5 questions drawn only from the stations in this session.
+  - **A reflection**, using the `Station.reflection` prompts the client already wrote, saved as the pilgrim's own words.
+- Neither is compulsory. A pilgrim who simply prayed and left has still completed the visit.
+
+**What the pilgrim keeps:** the session becomes a dated record — where they went, which stations they saw, what they answered, what they wrote. That is the memento, and it is the part nothing else in the app provides.
+
+**Open questions for the client:**
+
+1. Does a session end automatically on leaving the geofence, or only when the pilgrim taps finish?
+2. If they leave and come back the same day, is that one session or two?
+3. Are quiz questions authored per station, or generated from each station's `history` text?
+4. Where does a pilgrim read back their past visits and reflections?
