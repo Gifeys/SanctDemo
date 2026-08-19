@@ -22,6 +22,10 @@ export interface Route {
   estimatedSteps: number;
   category: "Marian Church" | "Historic Heritage" | "Spiritual Retreat" | "Wellness Trail";
   accentColor: string;
+  coordinates?: { lat: number; lng: number };
+  coordinatesVerified?: boolean;
+  geofenceRadius?: number;
+  status?: "live" | "coming_soon";
 }
 
 export interface UserProgress {

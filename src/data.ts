@@ -254,6 +254,10 @@ export const ROUTES: Route[] = [
     estimatedSteps: 600,
     category: "Marian Church",
     accentColor: "from-[#5A5A40] to-[#4A4A35]",
+    coordinates: { lat: 14.6305, lng: 120.9711 },
+    coordinatesVerified: false,
+    geofenceRadius: 100,
+    status: "live",
     stations: [
       {
         id: "mhcp-altar",
@@ -301,6 +305,10 @@ export const ROUTES: Route[] = [
     estimatedSteps: 1100,
     category: "Historic Heritage",
     accentColor: "from-[#5A5A40] to-[#33332D]",
+    coordinates: { lat: 14.6510, lng: 120.9686 },
+    coordinatesVerified: false,
+    geofenceRadius: 100,
+    status: "live",
     stations: [
       {
         id: "src-sanctuary",
