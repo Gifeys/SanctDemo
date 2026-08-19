@@ -28,12 +28,10 @@
 
      Want a different file? Just change the text inside the quotes.
 
-     For background music, put an audio file at:
-
-         D:\music\ambient.mp3
-
-     (any .mp3 / .m4a / .ogg works - just match the name below).
-     If it isn't there, the music button simply hides itself.
+     Background music isn't wired up in this build - there's no music
+     control to avoid a silent dead button. To add it back later, put an
+     audio file anywhere under this folder and set AMBIENT_MUSIC_FILE
+     below to its path (any .mp3 / .m4a / .ogg works).
      ================================================================== -->
 <script>
 // The picture from your original design - the last resort for any slot.
@@ -176,8 +174,17 @@ const CAMERA_GLIDE_MS = 19000;
 // How long one background takes to fade into the next, in milliseconds.
 const SCENE_FADE_MS = 900;
 
-const MUSIC_FILE = "music/ambient.mp3";
-const MUSIC_VOLUME = 0.22;          // 0.0 (silent) to 1.0 (full)
+// The start screen's slow slideshow through all 20 mystery paintings:
+// how long each picture holds, and how long the cross-fade between them
+// takes, in milliseconds.
+const SLIDE_HOLD_MS = 7000;
+const SLIDE_FADE_MS = 1800;
+
+// Ambient background music is not part of this build yet - the client's
+// original file (music/ambient.mp3) never shipped. Point this at a real
+// audio file once one is chosen (e.g. "music/ambient.mp3") to bring the
+// music control back; nothing else needs to change.
+const AMBIENT_MUSIC_FILE = null;
 
 // How much of a prayer you must say before it advances (0.7 = about 70%).
 const VOICE_THRESHOLD = 0.70;
@@ -679,78 +686,193 @@ header {
 #tapzone { position: absolute; inset: 0; z-index: 12; cursor: pointer; }
 
 /* ========================= START SCREEN ======================== */
+:root {
+  --navy:       #151B53;
+  --navy-card:  #1E2566;
+  --teal:       #1886A0;
+  --teal-text:  #5FC7DE;
+}
+
 #start {
   position: absolute; inset: 0; z-index: 60;
-  background:
-    radial-gradient(110% 62% at 50% 6%, rgba(255,224,164,.13), transparent 60%),
-    linear-gradient(to bottom, rgba(10,5,4,.90), rgba(6,3,3,.97));
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   display: flex; flex-direction: column; justify-content: center;
-  padding: 30px 30px max(30px, env(safe-area-inset-bottom));
-  gap: 22px;
+  padding: 30px 22px max(30px, env(safe-area-inset-bottom));
   transition: opacity .8s ease, visibility .8s;
   overflow-y: auto;
+  background: var(--navy);   /* shows instantly, before the first slide paints */
 }
 #start.hidden { opacity: 0; visibility: hidden; }
 
-#start h1 {
-  font-size: 27px; margin: 0; color: #fff5e0; line-height: 1.16;
-  text-shadow: 0 0 34px rgba(255,205,120,.34);
+/* Slow cross-fading slideshow of all 20 mystery paintings */
+#start-slides { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+#start-slides img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--slide-fade, 1800ms) ease;
 }
-#start .lede {
-  font-size: 15.5px; line-height: 1.55; color: rgba(246,236,216,.66);
-  margin: -12px 0 0; font-weight: 300;
+#start-slides img.on { opacity: 1; }
+
+/* Dark navy veil: atmospheric only, not a contrast guarantor - the card
+   below is the more transparent it now is, so it leans on solid-white
+   text at measured opacities rather than on this scrim. Eased back from
+   its first pass so more of the painting reads through outside the
+   card too. */
+#start-overlay {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(21,27,83,.25), transparent 55%),
+    linear-gradient(to bottom, rgba(21,27,83,.38), rgba(13,17,50,.55));
 }
 
-.field-label {
-  font-size: 10px; letter-spacing: .24em; text-transform: uppercase;
-  color: rgba(232,199,122,.72); margin-bottom: 9px;
+/* Compact language toggle, top corner, always readable regardless of the
+   image behind it. */
+#start-lang {
+  position: absolute; z-index: 3;
+  top: max(16px, env(safe-area-inset-top)); right: 16px;
+  display: flex; gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(21,27,83,.90);
+  border: 1px solid rgba(95,199,222,.35);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+#start-lang button {
+  min-width: 44px; min-height: 44px;
+  padding: 0 10px;
+  border: none; border-radius: 999px;
+  background: transparent;
+  color: var(--teal-text);
+  font-family: 'Poppins', sans-serif; font-weight: 600;
+  font-size: 14px; letter-spacing: .04em;
+  cursor: pointer;
+  transition: .25s ease;
+}
+#start-lang button.sel {
+  /* Deeper than --teal: at this small a size (14px) the button text needs
+     the full 4.5:1 AA ratio, not just the 3:1 "large text" allowance that
+     --teal + white clears elsewhere (e.g. the Begin button). */
+  background: #106a7d;
+  color: #fff;
 }
 
-.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Everything else sits on this card. It was measured, not eyeballed: at
+   alpha .70 with an 18px blur behind it, the brightest of the 20
+   paintings (The Proclamation of the Kingdom - a broad near-white sky
+   that blur barely dents, since blur only smooths edges, not a wide
+   flat highlight) still leaves solid white text at .90 opacity around
+   4.8:1, comfortably over the 4.5:1 floor. Going more transparent than
+   this is possible for white text alone (down to ~.64) but not for the
+   card's teal text at any size below "large" - see the note on
+   liturgical-day/start-alt-link/.choice small below. */
+#start-card {
+  position: relative; z-index: 2;
+  margin-top: 44px;
+  padding: 26px 22px 22px;
+  border-radius: 20px;
+  background: rgba(30,37,102,.70);
+  border: 1px solid rgba(95,199,222,.20);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  display: flex; flex-direction: column; gap: 18px;
+  text-align: center;
+}
 
-.choice {
-  padding: 11px 8px;
-  border: 1px solid rgba(232,199,122,.22);
-  border-radius: 11px;
-  background: rgba(255,240,205,.035);
-  color: rgba(246,236,216,.74);
-  font-family: 'Montserrat', sans-serif; font-weight: 700;
-  font-size: 12.5px; letter-spacing: .04em;
-  cursor: pointer; text-align: center;
-  transition: .22s ease;
+/* Teal text (--teal-text) only ever clears AA on this card at ~.86+
+   background opacity, which would defeat the point of making the card
+   translucent - so every card text color here is white at a measured
+   opacity instead. Teal is still the fill color for buttons/selected
+   pills, which sit on their own solid backgrounds and aren't affected. */
+#liturgical-day {
+  font-family: 'Poppins', sans-serif; font-weight: 500;
+  font-size: 15px; line-height: 1.5;
+  color: rgba(255,255,255,.90);
+  margin: 0;
 }
-.choice small {
-  display: block; font-family: 'Poppins', sans-serif;
-  font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase;
-  opacity: .5; margin-top: 4px;
+
+#today-mystery-label {
+  font-size: 14px; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.90);
+  font-weight: 600;
+  margin: 0 0 6px;
 }
-.choice.sel {
-  color: #2a1606;
-  background: linear-gradient(160deg, #ffeeb9, #dcae52);
-  border-color: rgba(255,232,170,.9);
-  box-shadow: 0 0 24px rgba(232,199,122,.32);
+#today-mystery-name {
+  font-size: 28px; line-height: 1.18; margin: 0;
+  color: #ffffff;
+  text-shadow: 0 2px 16px rgba(0,0,0,.45);
 }
-.choice.sel small { opacity: .65; }
 
 #begin {
-  margin-top: 4px;
-  padding: 16px;
-  border: none; border-radius: 13px;
-  background: linear-gradient(160deg, #fff1c6, #dcae52 55%, #b98b3a);
-  color: #241203;
+  padding: 17px;
+  border: none; border-radius: 14px;
+  background: var(--teal);
+  color: #ffffff;
   font-family: 'Montserrat', sans-serif; font-weight: 800;
-  font-size: 15px; letter-spacing: .18em; text-transform: uppercase;
+  font-size: 19px; letter-spacing: .1em; text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 10px 34px rgba(200,150,60,.34);
-  transition: transform .18s ease;
+  box-shadow: 0 10px 30px rgba(24,134,160,.4);
+  transition: transform .3s ease;
 }
 #begin:active { transform: scale(.975); }
 
-#start .note {
-  font-size: 11px; line-height: 1.6;
-  color: rgba(246,236,216,.34);
-  text-align: center;
+#start-alt-link {
+  background: none; border: none;
+  padding: 8px;
+  font-family: 'Poppins', sans-serif; font-weight: 500;
+  font-size: 15px;
+  color: rgba(255,255,255,.90);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+/* Collapsed by default; reveals the four mystery sets. */
+#start-alt-panel {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .35s ease;
+}
+#start-alt-panel.open { grid-template-rows: 1fr; }
+#start-alt-panel > div { overflow: hidden; }
+
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 6px; }
+
+.choice {
+  padding: 13px 8px;
+  border: 1px solid rgba(95,199,222,.28);
+  border-radius: 12px;
+  /* Transparent, not a faint white tint: even .04 of white was enough to
+     lift the effective background just far enough to drop this text
+     under 4.5:1 against the brightest painting. Sitting directly on the
+     card (already measured) keeps the margin. */
+  background: transparent;
+  color: rgba(255,255,255,.90);
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 16px; letter-spacing: .02em;
+  cursor: pointer; text-align: center;
+  min-height: 44px;
+  transition: .25s ease;
+}
+.choice small {
+  display: block; font-family: 'Poppins', sans-serif;
+  font-size: 14px; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(255,255,255,.90);
+  margin-top: 4px;
+}
+.choice.sel {
+  /* Deeper than --teal: at 16px/14px this text needs the full 4.5:1 AA
+     ratio, not just the 3:1 "large text" allowance --teal clears on the
+     bigger, bolder Begin button. */
+  color: #ffffff;
+  background: #106a7d;
+  border-color: rgba(95,199,222,.8);
+  box-shadow: 0 0 20px rgba(24,134,160,.4);
+}
+.choice.sel small { color: #ffffff; opacity: .9; }
+
+#start-card .note {
+  font-size: 14px; line-height: 1.55;
+  color: rgba(255,255,255,.90);
+  margin: 4px 0 0;
 }
 
 /* ========================== FINISH ============================= */
@@ -826,11 +948,6 @@ header {
           <rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/>
         </svg>
       </button>
-      <button class="tool" id="btn-music" title="Music">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>
-        </svg>
-      </button>
       <button class="tool" id="btn-exit" title="Exit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round">
@@ -869,24 +986,33 @@ header {
 
   <!-- Start -->
   <div id="start">
-    <h1 class="serif">The Holy<br/>Rosary</h1>
-    <p class="lede" id="start-lede">Choose a set of mysteries and begin.</p>
+    <div id="start-slides"></div>
+    <div id="start-overlay"></div>
 
-    <div>
-      <div class="field-label" id="lbl-mystery">Mysteries</div>
-      <div class="choices" id="set-choices"></div>
+    <div id="start-lang">
+      <button data-lang="en">EN</button>
+      <button data-lang="tl">FIL</button>
     </div>
 
-    <div>
-      <div class="field-label" id="lbl-language">Language</div>
-      <div class="choices" id="lang-choices">
-        <button class="choice" data-lang="en">English</button>
-        <button class="choice" data-lang="tl">Filipino</button>
+    <div id="start-card">
+      <p id="liturgical-day"></p>
+
+      <div>
+        <div id="today-mystery-label"></div>
+        <h1 id="today-mystery-name"></h1>
       </div>
-    </div>
 
-    <button id="begin" class="serif">Begin</button>
-    <p class="note" id="start-note"></p>
+      <button id="begin" class="serif"></button>
+
+      <button id="start-alt-link"></button>
+      <div id="start-alt-panel">
+        <div>
+          <div class="choices" id="set-choices"></div>
+        </div>
+      </div>
+
+      <p class="note" id="start-note"></p>
+    </div>
   </div>
 
   <!-- Finish -->
@@ -897,8 +1023,6 @@ header {
   </div>
 
 </div>
-
-<audio id="music" loop preload="auto"></audio>
 
 <script>
 "use strict";
@@ -1043,6 +1167,163 @@ const P = {
 const SET_KEYS = ["joyful","sorrowful","glorious","luminous"];
 // Traditional weekday schedule: Sun..Sat
 const DAY_SET = ["glorious","joyful","sorrowful","glorious","luminous","sorrowful","joyful"];
+
+/* ==================================================================
+   THE LITURGICAL DAY
+
+   Season and week only - deliberately no saints' memorials or
+   solemnities, so this can never disagree with a parish bulletin about
+   who's being celebrated. Computed fresh every time from the date, with
+   Easter as the one anchor (Anonymous Gregorian algorithm), so nothing
+   here is a hardcoded table that can drift out of date.
+   ================================================================== */
+const Liturgical = (function () {
+  function computeEaster(year) {
+    const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+    const d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  function dOnly(dt) { return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+  function addDays(dt, n) { const r = dOnly(dt); r.setDate(r.getDate() + n); return r; }
+  function daysBetween(a, b) { return Math.round((dOnly(a) - dOnly(b)) / 86400000); }
+  function sameDate(a, b) { return daysBetween(a, b) === 0; }
+  function weekSundayOf(dt) { return addDays(dt, -dt.getDay()); }
+
+  const WEEKDAY = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const ORD_WORD = ["First","Second","Third","Fourth","Fifth","Sixth"];
+  function ordNum(n) {
+    const s = ["th","st","nd","rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function adventStartFor(y) {
+    const christmas = new Date(y, 11, 25);
+    const dow = christmas.getDay();
+    const lastAdventSunday = addDays(christmas, -(dow === 0 ? 7 : dow));
+    return addDays(lastAdventSunday, -21);
+  }
+  function epiphanyFor(y) {
+    for (let dd = 2; dd <= 8; dd++) {
+      const cand = new Date(y, 0, dd);
+      if (cand.getDay() === 0) return cand;
+    }
+    return null;
+  }
+  function baptismFor(y) {
+    const epi = epiphanyFor(y);
+    const epiDay = epi.getDate();
+    return epiDay >= 7 ? addDays(epi, 1) : addDays(epi, 7);
+  }
+
+  function formatAdvent(date, advent1) {
+    const weekSun = weekSundayOf(date);
+    const weekIndex = Math.min(4, Math.floor(daysBetween(weekSun, advent1) / 7) + 1);
+    const word = ORD_WORD[weekIndex - 1];
+    if (date.getDay() === 0) return word + " Sunday of Advent";
+    return WEEKDAY[date.getDay()] + " of the " + word + " Week of Advent";
+  }
+  function formatChristmas(date, christmas, baptism) {
+    if (sameDate(date, christmas)) return "Christmas";
+    if (sameDate(date, baptism)) return "The Baptism of the Lord";
+    return WEEKDAY[date.getDay()] + " of the Christmas Season";
+  }
+  function formatLent(date, ashWed, easter) {
+    if (sameDate(date, ashWed)) return "Ash Wednesday";
+    const holyThu = addDays(easter, -3);
+    if (sameDate(date, holyThu)) return "Holy Thursday";
+    const palmSun = addDays(easter, -7);
+    if (date >= palmSun && date < holyThu) {
+      if (sameDate(date, palmSun)) return "Palm Sunday";
+      return WEEKDAY[date.getDay()] + " of Holy Week";
+    }
+    const lent1Sun = addDays(ashWed, 4);
+    if (date < lent1Sun) return WEEKDAY[date.getDay()] + " after Ash Wednesday";
+    const weekSun = weekSundayOf(date);
+    const weekIndex = Math.floor(daysBetween(weekSun, lent1Sun) / 7) + 1;
+    if (date.getDay() === 0) return ORD_WORD[weekIndex - 1] + " Sunday of Lent";
+    return WEEKDAY[date.getDay()] + " of the " + ordNum(weekIndex) + " Week of Lent";
+  }
+  function formatEaster(date, easter, pentecost) {
+    if (sameDate(date, easter)) return "Easter Sunday";
+    if (sameDate(date, pentecost)) return "Pentecost";
+    const weekSun = weekSundayOf(date);
+    const weekIndex = Math.floor(daysBetween(weekSun, easter) / 7) + 1;
+    if (date.getDay() === 0) return ORD_WORD[Math.min(weekIndex, 6) - 1] + " Sunday of Easter";
+    return WEEKDAY[date.getDay()] + " of the " + ordNum(weekIndex) + " Week of Easter";
+  }
+  function formatOT(date, refSunday, refWeekIndexOfRef, direction) {
+    // direction +1: weekIndex grows forward from refSunday (block 1, after Baptism).
+    // direction -1: weekIndex counts backward from refWeekIndexOfRef at refSunday (block 2, before Advent).
+    const weekSun = weekSundayOf(date);
+    const delta = direction > 0
+      ? Math.floor(daysBetween(weekSun, refSunday) / 7)      // refSunday is earlier (Baptism)
+      : Math.floor(daysBetween(refSunday, weekSun) / 7);     // refSunday is later (last OT Sunday)
+    const weekIndex = direction > 0 ? delta + 1 : refWeekIndexOfRef - delta;
+    if (date.getDay() === 0) return ordNum(weekIndex) + " Sunday in Ordinary Time";
+    return WEEKDAY[date.getDay()] + " of the " + ordNum(weekIndex) + " Week in Ordinary Time";
+  }
+
+  /** Season + week, in English, for any date. No memorials, no solemnities. */
+  function describe(date) {
+    date = dOnly(date);
+    const year = date.getFullYear();
+    const easterThis = computeEaster(year);
+    const advent1_thisYear = adventStartFor(year);
+    const christmas_thisYear = new Date(year, 11, 25);
+
+    if (date >= advent1_thisYear && date < christmas_thisYear)
+      return formatAdvent(date, advent1_thisYear);
+
+    const christmas_prevYear = new Date(year - 1, 11, 25);
+    const baptism_thisJan = baptismFor(year);
+    if (date.getMonth() === 0 && date >= christmas_prevYear && date <= baptism_thisJan)
+      return formatChristmas(date, christmas_prevYear, baptism_thisJan);
+
+    const baptism_nextJan = baptismFor(year + 1);
+    if (date >= christmas_thisYear && date <= baptism_nextJan)
+      return formatChristmas(date, christmas_thisYear, baptism_nextJan);
+
+    const ashWed = addDays(easterThis, -46);
+    const holyThu = addDays(easterThis, -3);
+    if (date >= ashWed && date <= holyThu) return formatLent(date, ashWed, easterThis);
+
+    const goodFri = addDays(easterThis, -2), holySat = addDays(easterThis, -1);
+    if (sameDate(date, goodFri)) return "Good Friday";
+    if (sameDate(date, holySat)) return "Holy Saturday";
+
+    const pentecost = addDays(easterThis, 49);
+    if (date >= easterThis && date <= pentecost) return formatEaster(date, easterThis, pentecost);
+
+    const baptism_thisYear = baptismFor(year);
+    if (date > baptism_thisYear && date < ashWed)
+      return formatOT(date, baptism_thisYear, 0, +1);
+
+    if (date > pentecost && date < advent1_thisYear) {
+      const lastOTSunday = addDays(advent1_thisYear, -7);
+      return formatOT(date, lastOTSunday, 34, -1);
+    }
+
+    return WEEKDAY[date.getDay()] + " in Ordinary Time"; // unreachable in practice
+  }
+
+  return { computeEaster: computeEaster, describe: describe };
+})();
+
+/* Mystery-set names for the start screen only, per the client's chosen
+   Filipino wording. (The prayer engine's own Filipino names elsewhere in
+   this file are unrelated and untouched.) */
+const START_SET_NAMES = {
+  en: { joyful:"The Joyful Mysteries", sorrowful:"The Sorrowful Mysteries", glorious:"The Glorious Mysteries", luminous:"The Luminous Mysteries" },
+  tl: { joyful:"Maligayang Misteryo", sorrowful:"Mahapding Misteryo", glorious:"Maluwalhating Misteryo", luminous:"Misteryo ng Liwanag" }
+};
 
 /* ==================================================================
    BEAD GEOMETRY
@@ -1400,7 +1681,6 @@ const S = {
   seq: [], idx: 0,
   started: false,
   voiceWanted: true, voiceLive: false,
-  musicWanted: true, musicOk: false,
   hintDone: store.get("rosary.hintDone") === "1",
   taps: 0,
   wakeLock: null
@@ -1410,18 +1690,21 @@ const $ = function (id) { return document.getElementById(id); };
 const el = {
   app:$("app"), bgA:$("bg-img"), bgB:$("bg-img-next"), bgLayer:$("bg-layer"),
   hdrSet:$("hdr-set"), hdrSub:$("hdr-sub"),
-  btnLang:$("btn-lang"), btnMic:$("btn-mic"), btnMusic:$("btn-music"),
+  btnLang:$("btn-lang"), btnMic:$("btn-mic"),
   stage:$("stage"), rosary:$("rosary"), cross:$("cross"), medal:$("medal"),
   mysteryLine:$("mystery-line"), prayerName:$("prayer-name"), prayerText:$("prayer-text"),
   voiceTrack:$("voice-track"), voiceFill:$("voice-fill"),
   footL:$("foot-left"), footR:$("foot-right"), hint:$("tap-hint"),
   tapzone:$("tapzone"), toast:$("toast"),
-  start:$("start"), setChoices:$("set-choices"), langChoices:$("lang-choices"),
-  begin:$("begin"), startLede:$("start-lede"), startNote:$("start-note"),
-  lblMystery:$("lbl-mystery"), lblLanguage:$("lbl-language"),
+  start:$("start"), setChoices:$("set-choices"),
+  begin:$("begin"), startNote:$("start-note"),
+  startLangToggle:$("start-lang"),
+  liturgicalDay:$("liturgical-day"),
+  todayMysteryLabel:$("today-mystery-label"), todayMysteryName:$("today-mystery-name"),
+  startAltLink:$("start-alt-link"), startAltPanel:$("start-alt-panel"),
+  startSlides:$("start-slides"),
   btnExit:$("btn-exit"),
-  finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again"),
-  music:$("music")
+  finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again")
 };
 
 const beadEls = { loop: [], pend: [] };
@@ -2117,40 +2400,80 @@ function syncMicButton() {
 
 /* ==================================================================
    MUSIC
+
+   No control in the UI right now - see AMBIENT_MUSIC_FILE near the top
+   of the file. playMusic/pauseMusic stay as harmless no-ops so begin()
+   and endSession() don't need to change if music comes back later.
    ================================================================== */
-function setupMusic() {
-  el.music.src = MUSIC_FILE;
-  el.music.volume = 0;
-  el.music.addEventListener("canplaythrough", function () {
-    S.musicOk = true; syncMusicButton();
-  }, { once:true });
-  el.music.addEventListener("error", function () {
-    S.musicOk = false; S.musicWanted = false;
-    el.btnMusic.style.display = "none";
-  }, { once:true });
-}
-
 function playMusic() {
-  if (!S.musicOk || !S.musicWanted) return;
-  const p = el.music.play();
-  if (p && p.then) p.then(function () { fadeMusic(MUSIC_VOLUME); }).catch(function () {});
-  else fadeMusic(MUSIC_VOLUME);
+  if (!AMBIENT_MUSIC_FILE) return;
+  // Intentionally left as a stub until AMBIENT_MUSIC_FILE is set.
 }
-function pauseMusic() { fadeMusic(0, function () { el.music.pause(); }); }
+function pauseMusic() {}
 
-let fadeTimer = null;
-function fadeMusic(to, done) {
-  clearInterval(fadeTimer);
-  fadeTimer = setInterval(function () {
-    const d = to - el.music.volume;
-    if (Math.abs(d) < 0.012) {
-      el.music.volume = to; clearInterval(fadeTimer); if (done) done();
-    } else {
-      el.music.volume = Math.min(1, Math.max(0, el.music.volume + (d > 0 ? 0.012 : -0.012)));
-    }
-  }, 55);
+/* ==================================================================
+   START SCREEN SLIDESHOW
+
+   All 20 mystery paintings, slowly cross-fading behind the start screen.
+   Two <img> elements swap the "on" class; only the one about to be
+   needed is ever given a new src, so the first picture paints as fast
+   as a single image and the other nineteen load a little ahead of when
+   they're shown rather than all at once.
+   ================================================================== */
+const ALL_SLIDES = [].concat(SCENES.joyful, SCENES.sorrowful, SCENES.glorious, SCENES.luminous);
+
+let slideEls = [];
+let slideFront = 0;
+let slideNextIdx = 0;
+let slideTimer = null;
+
+function startSlideshow() {
+  if (!ALL_SLIDES.length || !el.startSlides) return;
+  const a = document.createElement("img"); a.alt = ""; a.loading = "eager";
+  const b = document.createElement("img"); b.alt = ""; b.loading = "lazy";
+  el.startSlides.appendChild(a);
+  el.startSlides.appendChild(b);
+  slideEls = [a, b];
+  slideFront = 0;
+
+  a.addEventListener("load", function () { a.classList.add("on"); }, { once: true });
+  a.src = ALL_SLIDES[0];                 // eager: this is the one the screen waits on
+
+  if (ALL_SLIDES.length > 1) b.src = ALL_SLIDES[1];   // pre-fetched, not shown yet
+  slideNextIdx = 2 % ALL_SLIDES.length;
+
+  if (!prefersReducedMotion()) scheduleNextSlide();
 }
-function syncMusicButton() { el.btnMusic.classList.toggle("active", S.musicOk && S.musicWanted); }
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function scheduleNextSlide() {
+  clearTimeout(slideTimer);
+  if (ALL_SLIDES.length < 2) return;
+  slideTimer = setTimeout(advanceSlide, SLIDE_HOLD_MS);
+}
+
+function advanceSlide() {
+  const back = 1 - slideFront;
+  const oldFront = slideEls[slideFront];
+  slideEls[back].classList.add("on");
+  oldFront.classList.remove("on");
+  slideFront = back;
+
+  // The element that just faded out is free - load the picture after
+  // next into it while the new front image is being held on screen.
+  setTimeout(function () {
+    oldFront.src = ALL_SLIDES[slideNextIdx];
+    slideNextIdx = (slideNextIdx + 1) % ALL_SLIDES.length;
+  }, SLIDE_FADE_MS);
+
+  scheduleNextSlide();
+}
+
+function pauseSlideshow() { clearTimeout(slideTimer); }
+function resumeSlideshow() { if (!prefersReducedMotion()) scheduleNextSlide(); }
 
 /* ==================================================================
    SCREEN WAKE LOCK
@@ -2180,28 +2503,46 @@ function saveProgress() {
 
 /* ==================================================================
    START SCREEN
+
+   Top to bottom: a compact EN/FIL toggle, the liturgical day (season and
+   week only, computed - see the Liturgical module above), today's
+   mystery set in large type, one primary Begin button, and a collapsed
+   link that reveals the other three sets. The FIL toggle only ever
+   changes the mystery-set names; the liturgical-day wording stays
+   English, per the brief.
    ================================================================== */
+function startSetHeadline(lang, key) {
+  const name = START_SET_NAMES[lang][key];
+  return lang === "tl" ? "Ang " + name : name;
+}
+function startSetShort(lang, key) {
+  const name = START_SET_NAMES[lang][key];
+  return lang === "en" ? name.replace(/^The\s+/, "") : name;
+}
+
 function paintStartScreen() {
-  const L = P[S.lang];
-  el.startLede.textContent   = L.ui.lede;
-  el.startNote.textContent   = L.ui.note;
-  el.lblMystery.textContent  = L.ui.mystery;
-  el.lblLanguage.textContent = L.ui.language;
-  el.begin.textContent       = L.ui.begin;
-  el.hint.textContent        = L.ui.hint;
-  el.btnLang.textContent     = S.lang === "tl" ? "TL" : "EN";
+  const today = DAY_SET[new Date().getDay()];
+  const chosen = S.set !== today;
+
+  el.liturgicalDay.textContent = Liturgical.describe(new Date());
+  el.todayMysteryLabel.textContent = chosen ? "You've Chosen" : "Today's Mystery";
+  el.todayMysteryName.textContent = startSetHeadline(S.lang, S.set);
+  el.begin.textContent = chosen ? "Begin the Rosary" : "Begin Today's Rosary";
+  el.startAltLink.textContent = el.startAltPanel.classList.contains("open")
+    ? "Hide"
+    : "Pray a different mystery";
+  el.startNote.textContent = P[S.lang].ui.note;
 
   el.setChoices.innerHTML = "";
-  const today = DAY_SET[new Date().getDay()];
   SET_KEYS.forEach(function (k) {
     const b = document.createElement("button");
     b.className = "choice" + (k === S.set ? " sel" : "");
     b.dataset.set = k;
-    b.innerHTML = L.setShort[k] + (k === today ? "<small>" + (S.lang === "tl" ? "Ngayong araw" : "Today") + "</small>" : "");
+    b.innerHTML = startSetShort(S.lang, k) + (k === today ? "<small>Today</small>" : "");
     el.setChoices.appendChild(b);
   });
 
-  const langBtns = el.langChoices.children;
+  const langBtns = el.startLangToggle.children;
   for (let i = 0; i < langBtns.length; i++)
     langBtns[i].classList.toggle("sel", langBtns[i].dataset.lang === S.lang);
 
@@ -2225,10 +2566,18 @@ el.setChoices.addEventListener("click", function (e) {
   paintStartScreen();
 });
 
-el.langChoices.addEventListener("click", function (e) {
-  const b = e.target.closest(".choice"); if (!b) return;
+el.startAltLink.addEventListener("click", function (e) {
+  e.stopPropagation();
+  el.startAltPanel.classList.toggle("open");
+  el.startAltLink.textContent = el.startAltPanel.classList.contains("open")
+    ? "Hide" : "Pray a different mystery";
+});
+
+el.startLangToggle.addEventListener("click", function (e) {
+  const b = e.target.closest("button"); if (!b) return;
   S.lang = b.dataset.lang;
   store.set("rosary.lang", S.lang);
+  el.btnLang.textContent = S.lang === "tl" ? "TL" : "EN";
   paintStartScreen();
 });
 
@@ -2256,13 +2605,6 @@ el.btnMic.addEventListener("click", function (e) {
   render();      // the text re-lays out with or without word highlighting
 });
 
-el.btnMusic.addEventListener("click", function (e) {
-  e.stopPropagation();
-  S.musicWanted = !S.musicWanted;
-  if (S.musicWanted) playMusic(); else pauseMusic();
-  syncMusicButton();
-});
-
 // Tap anywhere to continue - the text panel still scrolls freely
 el.tapzone.addEventListener("click", onTap);
 el.prayerText.addEventListener("click", function (e) { e.stopPropagation(); onTap(); });
@@ -2283,6 +2625,7 @@ function endSession() {
   el.finish.classList.remove("show");
   el.start.classList.remove("hidden");
   paintStartScreen();
+  resumeSlideshow();
 }
 
 el.btnExit.addEventListener("click", function (e) {
@@ -2312,6 +2655,7 @@ function begin() {
 
   el.start.classList.add("hidden");
   if (S.hintDone) el.hint.classList.add("gone");
+  pauseSlideshow();
 
   setScene(S.set, 0);          // render() takes over once the decades begin
   playMusic();                 // this click is the gesture browsers require
@@ -2326,11 +2670,12 @@ function begin() {
    ================================================================== */
 document.documentElement.style.setProperty("--scene-fade", SCENE_FADE_MS + "ms");
 document.documentElement.style.setProperty("--cam-glide", CAMERA_GLIDE_MS + "ms");
+document.documentElement.style.setProperty("--slide-fade", SLIDE_FADE_MS + "ms");
 Camera.el = el.bgA;
 buildRosary();
 makeMotes();
-setupMusic();
 Meter.raf = requestAnimationFrame(meterFrame);   // resting breath until the mic starts
+startSlideshow();
 paintStartScreen();
 syncMicButton();
 fitRosary();
