@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+<meta name="theme-color" content="#0d0806"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Holy Rosary</title>
+
+<!-- =====================================================================
+     ============  EDIT HERE - YOUR PICTURES AND MUSIC  ==================
+     =====================================================================
+
+     ONE BACKGROUND PER MYSTERY - 20 IN ALL
+
+     Each decade shows its own scene. Save 20 pictures into a folder called
+     images  next to this file, using exactly the names listed below:
+
+         D:\rosary.html
+         D:\images\joyful-1-annunciation.jpg
+         D:\images\joyful-2-visitation.jpg
+         ... and so on, all 20
+
+     You do not have to add them all at once. Any picture that is missing
+     simply falls back to that set's own picture, then to the original
+     design picture, then to a dark gradient - nothing ever breaks.
+
+     Want a different file? Just change the text inside the quotes.
+
+     For background music, put an audio file at:
+
+         D:\music\ambient.mp3
+
+     (any .mp3 / .m4a / .ogg works - just match the name below).
+     If it isn't there, the music button simply hides itself.
+     ================================================================== -->
+<script>
+// The picture from your original design - the last resort for any slot.
+const DESIGN_IMAGE = "https://lh3.googleusercontent.com/aida-public/AB6AXuAILQ0OYZYPkNTPnw_2o3NKvCgAwCrAMbjjo2xD44zI04A3tHF4WbuhWeenrSS62-qtAe6BGojzgIK3FqEofU-ywGgFxtIRI0dDH-beUM7OQwHM3auu9MCPwaRTWM8cJiE9f-UQK24j298kcZRkAEfoWV1UHjY8cwOQO1HaJn_AcQUL1Ii6galjyTbWiN7DcJ9EadW9dYWObnmPzBszQyvm9k6gKzxBb637XdADKtTuZH8g692Csgxbkw4vldYvpMTULw";
+
+/* One scene per decade, in prayer order 1-5 - your own pictures. */
+const SCENES = {
+  joyful: [
+    "20 Mysteries/Joyful/The Annunciation.jpg",
+    "20 Mysteries/Joyful/The Visitation.jpg",
+    "20 Mysteries/Joyful/The Nativity.jpg",
+    "20 Mysteries/Joyful/The Presentation in the Temple.jpg",
+    "20 Mysteries/Joyful/Finding Jesus at the Temple.jpg"
+  ],
+  sorrowful: [
+    "20 Mysteries/Sorrowful/The Agony in the Garden.jpg",
+    "20 Mysteries/Sorrowful/Socurging at the pillar.jpg",
+    "20 Mysteries/Sorrowful/The Crowning with Thorns.jpg",
+    "20 Mysteries/Sorrowful/The Carrying of the Cross.jpg",
+    "20 Mysteries/Sorrowful/The Crucifixion.jpg"
+  ],
+  glorious: [
+    "20 Mysteries/Glorious/The Resurrection.jpg",
+    "20 Mysteries/Glorious/The Ascension.jpg",
+    "20 Mysteries/Glorious/The Descent of the Holy Spirit.jpg",
+    "20 Mysteries/Glorious/The Assumption of Mary.jpg",
+    "20 Mysteries/Glorious/The Coronation of Mary.jpg"
+  ],
+  luminous: [
+    "20 Mysteries/Luminous/Baptism of jesus.jpg",
+    "20 Mysteries/Luminous/The Wedding at Cana.jpg",
+    "20 Mysteries/Luminous/The Proclamation of the Kingdom.jpg",
+    "20 Mysteries/Luminous/The Transfiguration.jpg",
+    "20 Mysteries/Luminous/The Institution of the Eucharist.jpg"
+  ]
+};
+
+/* Shown during the opening prayers, and the fallback if a decade's own
+   picture is ever missing. */
+const SET_IMAGE = {
+  joyful:    "20 Mysteries/Joyful/The Annunciation.jpg",
+  sorrowful: "20 Mysteries/Sorrowful/The Agony in the Garden.jpg",
+  glorious:  "20 Mysteries/Glorious/The Resurrection.jpg",
+  luminous:  "20 Mysteries/Luminous/Baptism of jesus.jpg"
+};
+
+/* ===================================================================
+   THE VIRTUAL CAMERA
+
+   Each mystery gets ten framings - one per Hail Mary. A framing is
+   [x, y, zoom]: x and y are the point of the painting to centre on, as
+   a fraction across (0 = left edge, 1 = right edge) and down (0 = top,
+   1 = bottom). zoom 1 shows the whole picture; 1.6 is a close push.
+
+   Each path opens wide, travels through the figures that matter in that
+   scene, and pulls back at the tenth. Every mystery moves differently,
+   because every painting is composed differently.
+
+   To re-aim a shot, just change its numbers - nothing else needs editing.
+   =================================================================== */
+const CAMERA_PATHS = {
+  joyful: [
+    // 1. The Annunciation - between Gabriel and Mary, by way of the dove
+    [[0.50,0.50,1.05],[0.34,0.58,1.35],[0.36,0.50,1.48],[0.52,0.34,1.32],[0.50,0.19,1.42],
+     [0.68,0.50,1.40],[0.70,0.44,1.56],[0.60,0.62,1.34],[0.50,0.44,1.26],[0.50,0.50,1.05]],
+    // 2. The Visitation - Mary to Elizabeth, their hands, the witnesses
+    [[0.50,0.50,1.05],[0.38,0.42,1.36],[0.38,0.35,1.52],[0.50,0.58,1.42],[0.62,0.40,1.46],
+     [0.62,0.33,1.56],[0.86,0.38,1.34],[0.14,0.44,1.34],[0.50,0.44,1.28],[0.50,0.50,1.05]],
+    // 3. The Nativity - Mary, Joseph, the Child, angels above, shepherds
+    [[0.50,0.50,1.05],[0.40,0.50,1.40],[0.60,0.50,1.40],[0.50,0.58,1.46],[0.50,0.58,1.66],
+     [0.50,0.18,1.40],[0.16,0.60,1.40],[0.84,0.55,1.40],[0.48,0.52,1.50],[0.50,0.50,1.05]],
+    // 4. The Presentation - Simeon and the Child, then Mary and Joseph
+    [[0.50,0.50,1.05],[0.30,0.44,1.40],[0.42,0.50,1.52],[0.42,0.50,1.66],[0.62,0.58,1.46],
+     [0.62,0.52,1.56],[0.80,0.40,1.34],[0.52,0.48,1.34],[0.44,0.52,1.46],[0.50,0.50,1.05]],
+    // 5. The Finding - the boy Jesus, then the doctors listening
+    [[0.50,0.50,1.05],[0.38,0.34,1.40],[0.38,0.30,1.60],[0.20,0.55,1.40],[0.55,0.60,1.40],
+     [0.75,0.55,1.40],[0.88,0.50,1.34],[0.60,0.40,1.34],[0.40,0.34,1.50],[0.50,0.50,1.05]]
+  ],
+  sorrowful: [
+    // 1. The Agony - Christ, then the angel and the chalice
+    [[0.50,0.50,1.05],[0.40,0.60,1.35],[0.38,0.56,1.55],[0.50,0.45,1.34],[0.66,0.32,1.45],
+     [0.68,0.34,1.60],[0.60,0.40,1.40],[0.40,0.60,1.46],[0.42,0.55,1.30],[0.50,0.50,1.05]],
+    // 2. The Scourging - slower and tighter, held on Christ
+    [[0.50,0.50,1.08],[0.46,0.48,1.30],[0.44,0.42,1.50],[0.44,0.42,1.62],[0.20,0.32,1.40],
+     [0.46,0.55,1.45],[0.78,0.45,1.40],[0.46,0.50,1.50],[0.45,0.45,1.34],[0.50,0.50,1.08]],
+    // 3. The Crowning - a slow climb to the face and the crown
+    [[0.50,0.50,1.05],[0.48,0.55,1.35],[0.48,0.42,1.55],[0.48,0.33,1.70],[0.20,0.40,1.40],
+     [0.82,0.42,1.40],[0.48,0.50,1.45],[0.48,0.40,1.60],[0.50,0.50,1.30],[0.50,0.50,1.05]],
+    // 4. The Carrying - travels left to right, the way the Cross is borne
+    [[0.50,0.50,1.05],[0.32,0.48,1.40],[0.32,0.44,1.58],[0.45,0.55,1.46],[0.58,0.48,1.46],
+     [0.72,0.38,1.46],[0.78,0.35,1.34],[0.55,0.45,1.34],[0.34,0.46,1.50],[0.50,0.50,1.05]],
+    // 5. The Crucifixion - to the Cross, then down to those who remain
+    [[0.50,0.50,1.05],[0.50,0.34,1.35],[0.50,0.28,1.55],[0.50,0.26,1.70],[0.38,0.72,1.46],
+     [0.30,0.78,1.40],[0.74,0.62,1.40],[0.52,0.55,1.30],[0.50,0.35,1.40],[0.50,0.50,1.05]]
+  ],
+  glorious: [
+    // 1. The Resurrection - the open tomb, then those who find it
+    [[0.50,0.50,1.05],[0.42,0.48,1.35],[0.40,0.45,1.55],[0.55,0.55,1.40],[0.70,0.55,1.46],
+     [0.78,0.52,1.40],[0.60,0.50,1.34],[0.42,0.46,1.46],[0.50,0.48,1.25],[0.50,0.50,1.05]],
+    // 2. The Ascension - rises to Christ, down to the apostles, up again
+    [[0.50,0.50,1.05],[0.50,0.34,1.35],[0.50,0.26,1.55],[0.50,0.22,1.68],[0.45,0.78,1.46],
+     [0.28,0.80,1.40],[0.78,0.82,1.40],[0.55,0.60,1.30],[0.50,0.32,1.46],[0.50,0.50,1.05]],
+    // 3. Pentecost - the light descending, then Mary and the apostles
+    [[0.50,0.50,1.05],[0.50,0.22,1.40],[0.50,0.16,1.58],[0.48,0.48,1.46],[0.48,0.44,1.60],
+     [0.22,0.55,1.40],[0.78,0.58,1.40],[0.50,0.70,1.40],[0.50,0.38,1.34],[0.50,0.50,1.05]],
+    // 4. The Assumption - lifted with her, angels beneath
+    [[0.50,0.50,1.05],[0.50,0.44,1.35],[0.50,0.36,1.52],[0.50,0.32,1.66],[0.35,0.72,1.42],
+     [0.65,0.75,1.42],[0.50,0.85,1.38],[0.50,0.55,1.30],[0.50,0.40,1.46],[0.50,0.50,1.05]],
+    // 5. The Coronation - the crown, the Son, the Father, the Spirit
+    [[0.50,0.50,1.05],[0.50,0.55,1.35],[0.50,0.36,1.52],[0.30,0.42,1.42],[0.72,0.42,1.42],
+     [0.50,0.18,1.46],[0.50,0.40,1.40],[0.50,0.58,1.46],[0.50,0.48,1.25],[0.50,0.50,1.05]]
+  ],
+  luminous: [
+    // 1. The Baptism - Christ, the dove, the Baptist, the waiting angels
+    [[0.50,0.50,1.05],[0.50,0.55,1.35],[0.50,0.48,1.55],[0.50,0.34,1.50],[0.68,0.50,1.46],
+     [0.72,0.42,1.40],[0.20,0.55,1.40],[0.35,0.60,1.34],[0.50,0.52,1.46],[0.50,0.50,1.05]],
+    // 2. Cana - Mary asks, the servants pour, Christ answers
+    [[0.50,0.50,1.05],[0.18,0.42,1.40],[0.20,0.38,1.55],[0.35,0.62,1.46],[0.30,0.78,1.50],
+     [0.52,0.48,1.46],[0.54,0.42,1.58],[0.75,0.45,1.34],[0.40,0.50,1.30],[0.50,0.50,1.05]],
+    // 3. The Proclamation - the Teacher, then those who listen
+    [[0.50,0.50,1.05],[0.55,0.36,1.38],[0.56,0.30,1.56],[0.40,0.55,1.40],[0.22,0.62,1.46],
+     [0.12,0.70,1.40],[0.45,0.72,1.40],[0.60,0.45,1.34],[0.55,0.34,1.48],[0.50,0.50,1.05]],
+    // 4. The Transfiguration - into the light, Moses and Elijah, the three below
+    [[0.50,0.50,1.05],[0.48,0.36,1.38],[0.48,0.30,1.58],[0.22,0.32,1.42],[0.74,0.34,1.42],
+     [0.55,0.78,1.46],[0.40,0.80,1.40],[0.50,0.55,1.30],[0.48,0.34,1.48],[0.50,0.50,1.05]],
+    // 5. The Eucharist - the Bread lifted, the cup, the Twelve
+    [[0.50,0.50,1.05],[0.50,0.44,1.38],[0.50,0.32,1.58],[0.46,0.56,1.50],[0.22,0.45,1.42],
+     [0.78,0.45,1.42],[0.50,0.68,1.40],[0.50,0.40,1.46],[0.50,0.36,1.55],[0.50,0.50,1.05]]
+  ]
+};
+
+// A gentle default for the opening and closing prayers.
+const CAMERA_REST = [[0.50,0.46,1.12],[0.50,0.46,1.12],[0.50,0.46,1.12],[0.50,0.46,1.12],
+                     [0.50,0.46,1.12],[0.50,0.46,1.12],[0.50,0.46,1.12],[0.50,0.46,1.12],
+                     [0.50,0.46,1.12],[0.50,0.46,1.12]];
+
+// How long the camera takes to glide from one framing to the next.
+const CAMERA_GLIDE_MS = 19000;
+
+// How long one background takes to fade into the next, in milliseconds.
+const SCENE_FADE_MS = 900;
+
+const MUSIC_FILE = "music/ambient.mp3";
+const MUSIC_VOLUME = 0.22;          // 0.0 (silent) to 1.0 (full)
+
+// How much of a prayer you must say before it advances (0.7 = about 70%).
+const VOICE_THRESHOLD = 0.70;
+
+// How long a pause (in seconds) before it moves on after you've finished.
+const SILENCE_SECONDS = 1.2;
+</script>
+<!-- ==============  END OF THE PART YOU EDIT  ======================== -->
+
+<style>
+/* Primary: Montserrat Bold, for every title and heading.
+   Secondary: Poppins, for prayer text and everything else. */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  /* Live microphone loudness, 0..1. Written every frame by the audio
+     meter; every glow value in the rosary is derived from it. */
+  --voice: 0;
+
+  --gold:        #e8c77a;
+  --gold-bright: #fff3cf;
+  --gold-deep:   #b98b3a;
+  --ink:         #0d0806;
+  --parch:       #f6ecd8;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--parch);
+  font-family: 'Poppins', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+
+body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+/* Primary type: every title and heading. Montserrat is geometric and wide,
+   so it wants less letter-spacing than the old serif did. */
+.serif {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: .005em;
+}
+/* Secondary type: the prayers themselves. */
+.body-serif { font-family: 'Poppins', system-ui, sans-serif; }
+
+/* ============================ SHELL ============================ */
+#app {
+  position: relative;
+  width: 100%; height: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 0 80px rgba(0,0,0,.9);
+}
+
+/* ========================= BACKGROUND ========================== */
+#bg-layer { position: absolute; inset: 0; z-index: 0; overflow: hidden; background: #0d0806; }
+
+/* The painting is the camera's film plane. It exactly covers the frame and
+   is moved only by the virtual camera - position and zoom are written by
+   JS, and the long eased transition is what makes the move cinematic
+   rather than mechanical. transform-origin sits at the top-left so the
+   translate/scale maths stays simple and clamping is exact. */
+#bg-img, #bg-img-next {
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: 100%;
+  /* Width and height are written by the camera to the painting's own
+     proportions, so it is never squashed and never pre-cropped. */
+  object-fit: cover;
+  opacity: 0;
+  transform-origin: 0 0;
+  transform: scale(1.05);
+  /* The light dips a little while the camera crosses a long distance. */
+  filter: brightness(var(--cam-dim, 1));
+  transition: opacity var(--scene-fade, 900ms) ease,
+              transform var(--cam-glide, 19000ms) cubic-bezier(.36,0,.24,1),
+              filter var(--cam-dim-dur, 2600ms) ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+#bg-img.on, #bg-img-next.on { opacity: 1; }
+
+/* Holy light: warm veil, halo from above, deep floor for text legibility.
+   The tint shifts with the set of mysteries, so each carries its own
+   atmosphere - and the lower half always stays dark enough to read on. */
+#bg-veil {
+  position: absolute; inset: 0;
+  transition: background 1.2s ease;
+  background:
+    radial-gradient(120% 80% at 50% -12%,
+      rgba(var(--halo, 255,222,160), .20) 0%,
+      rgba(var(--halo, 255,200,120), .07) 32%, transparent 62%),
+    linear-gradient(to bottom,
+      rgba(var(--veil, 28,12,10), .52) 0%,
+      rgba(var(--veil, 22,10,9),  .40) 34%,
+      rgba(14,7,6,.74) 68%,
+      rgba(8,4,4,.95) 100%);
+}
+
+/* Joyful - warm and peaceful */
+#app[data-set="joyful"]    { --halo: 255,214,150; --veil: 44,24,12; }
+/* Sorrowful - solemn, cooler and heavier */
+#app[data-set="sorrowful"] { --halo: 198,178,168; --veil: 20,14,16; }
+/* Glorious - bright and heavenly */
+#app[data-set="glorious"]  { --halo: 255,236,190; --veil: 20,20,38; }
+/* Luminous - radiant, clear light */
+#app[data-set="luminous"]  { --halo: 214,232,255; --veil: 14,22,34; }
+
+/* Faint radiant beams from the top - very slow, almost subliminal */
+#bg-rays {
+  position: absolute; inset: -30% -30% 0 -30%;
+  background: conic-gradient(from 180deg at 50% 0%,
+    transparent 0deg, rgba(255,226,168,.055) 12deg, transparent 24deg,
+    transparent 40deg, rgba(255,226,168,.04) 52deg, transparent 64deg,
+    transparent 116deg, rgba(255,226,168,.045) 128deg, transparent 140deg,
+    transparent 156deg, rgba(255,226,168,.035) 168deg, transparent 180deg);
+  animation: rays 90s linear infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+@keyframes rays { to { transform: rotate(360deg); } }
+
+#vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(105% 78% at 50% 44%, transparent 42%, rgba(0,0,0,.62) 100%);
+}
+
+/* Drifting motes of light */
+.mote {
+  position: absolute; border-radius: 50%;
+  background: #ffeec2;
+  pointer-events: none;
+  filter: blur(.4px);
+  animation: mote-rise linear infinite;
+}
+@keyframes mote-rise {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  14%  { opacity: .55; }
+  76%  { opacity: .38; }
+  100% { transform: translateY(-125vh) translateX(22px); opacity: 0; }
+}
+
+/* ========================== HEADER ============================= */
+header {
+  position: relative; z-index: 20;
+  padding: max(14px, env(safe-area-inset-top)) 18px 8px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  flex: 0 0 auto;
+}
+
+.set-name {
+  font-size: 15px; line-height: 1.25;
+  color: #fdf3dc;
+  text-shadow: 0 2px 10px rgba(0,0,0,.85);
+  margin: 0;
+}
+.set-sub {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(232,199,122,.78);
+  margin-top: 5px; font-weight: 400;
+}
+
+.tools { display: flex; gap: 7px; align-items: center; }
+
+.tool {
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(232,199,122,.26);
+  background: rgba(20,10,8,.42);
+  color: rgba(246,236,216,.72);
+  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  cursor: pointer;
+  transition: .25s ease;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+}
+.tool:active { transform: scale(.9); }
+.tool.active {
+  color: #2a1606;
+  background: linear-gradient(160deg, #ffeab4, #d9a94f);
+  border-color: rgba(255,228,160,.85);
+  box-shadow: 0 0 16px rgba(232,199,122,.5);
+}
+.tool.listening { animation: mic-breathe 2.6s ease-in-out infinite; }
+@keyframes mic-breathe {
+  0%,100% { box-shadow: 0 0 12px rgba(232,199,122,.4); }
+  50%     { box-shadow: 0 0 24px rgba(255,236,180,.85); }
+}
+.tool svg { width: 16px; height: 16px; }
+
+/* ========================== ROSARY ============================= */
+#stage {
+  position: relative; z-index: 10;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+
+#rosary {
+  position: relative;
+  width: 336px; height: 515px;   /* kept in step with GEO */
+  /* Scaled from the top-left, with fitRosary() also shrinking the layout
+     box to match. A transform alone leaves the box its full 396px, and
+     once that is taller than the stage the browser stops centring it and
+     start-aligns instead, pushing the rosary out of view. */
+  transform: scale(var(--rs, 1));
+  transform-origin: 0 0;
+  /* Deliberately not transitioned. The text panel resizes the stage in one
+     frame, so an eased scale would leave the rosary briefly too large for
+     its stage and `overflow: hidden` would clip it - most visibly on the
+     long Apostles' Creed. Resizing in step with the text keeps it whole. */
+}
+
+/* Bead material, exactly as drawn in the original design.
+   Size and position come from the layout spec, applied inline by place(). */
+.bead {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f0f0f0 40%, #d1d1d1 80%, #a3a3a3 100%);
+  box-shadow:
+    inset -2px -2px 4px rgba(0,0,0,0.15),
+    inset 1px 1px 2px rgba(255,255,255,0.8),
+    0 2px 3px rgba(0,0,0,0.4);
+  border: 1px solid rgba(200,200,200,0.3);
+  transition: transform .55s cubic-bezier(.22,1,.36,1), filter .55s ease;
+}
+
+
+/* Prayed beads take the design's gold, the same as its lit beads */
+.bead.done {
+  background: radial-gradient(circle at 35% 35%, #fef08a 0%, #eab308 50%, #b45309 100%);
+  box-shadow:
+    inset -2px -2px 4px rgba(120,60,0,0.3),
+    inset 1px 1px 2px rgba(255,255,255,0.8),
+    0 2px 4px rgba(0,0,0,0.5);
+  border: 1px solid rgba(234,179,8,0.5);
+}
+
+/* The bead you are on - lit by the microphone.
+   Every value below is driven by --voice (0..1), which the audio meter
+   writes each animation frame. Smoothing happens in JS, so there is no
+   CSS transition here: a transition would lag behind the voice. At
+   --voice: 0 the bead still carries a calm, clearly visible glow. */
+.bead.active {
+  background: radial-gradient(circle at 35% 35%, #fffbe0 0%, #fde047 38%, #eab308 70%, #b45309 100%);
+  border: 1px solid rgba(253, 224, 71, calc(0.55 + var(--voice) * 0.45));
+  z-index: 6;
+  transition: none;
+  transform: scale(calc(1.16 + var(--voice) * 0.46));
+  box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,.95),
+    0 0 calc( 6px + var(--voice) * 14px) rgba(255, 238, 180, calc(0.55 + var(--voice) * 0.45)),
+    0 0 calc(16px + var(--voice) * 34px) rgba(255, 213, 120, calc(0.26 + var(--voice) * 0.52)),
+    0 0 calc(30px + var(--voice) * 68px) rgba(255, 196,  90, calc(0.09 + var(--voice) * 0.33));
+}
+
+/* Four-point star flare behind the active bead - turns very slowly */
+.bead.active::after {
+  content: "";
+  position: absolute; left: 50%; top: 50%;
+  width: 74px; height: 74px;
+  margin: -37px 0 0 -37px;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side, rgba(255,238,190,.34), transparent 72%),
+    linear-gradient(0deg,  transparent 47.2%, rgba(255,240,200,.60) 50%, transparent 52.8%),
+    linear-gradient(90deg, transparent 47.2%, rgba(255,240,200,.60) 50%, transparent 52.8%);
+  -webkit-mask-image: radial-gradient(closest-side, #000 12%, transparent 78%);
+          mask-image: radial-gradient(closest-side, #000 12%, transparent 78%);
+  /* The slow turn is decoration and stays constant; the flare's SIZE and
+     BRIGHTNESS come from the voice. `scale` is a separate property from
+     `transform`, so it composes with the rotation instead of fighting it. */
+  opacity: calc(0.30 + var(--voice) * 0.70);
+  scale: calc(0.80 + var(--voice) * 0.85);
+  animation: star-turn 14s linear infinite;
+}
+@keyframes star-turn { to { transform: rotate(360deg); } }
+
+/* Crucifix - the design's shape and dark metal, sized by the layout spec */
+#cross {
+  position: absolute;
+  background-color: rgba(30, 30, 40, 0.9);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.8), 0 4px 8px rgba(0,0,0,0.6);
+  clip-path: polygon(40% 0, 60% 0, 60% 30%, 100% 30%, 100% 45%, 60% 45%, 60% 100%, 40% 100%, 40% 45%, 0 45%, 0 30%, 40% 30%);
+  /* A resting filter with the SAME three layers as the lit state. Going
+     from `none` would interpolate out of nothing and the glow could sit
+     invisible; matching layers makes it fade in properly. */
+  filter:
+    drop-shadow(0 0 0 rgba(255,243,200,0))
+    drop-shadow(0 0 0 rgba(255,208,115,0))
+    drop-shadow(0 0 0 rgba(255,176, 60,0));
+  transition: filter .9s ease, background-color .9s ease;
+}
+
+/* The crucifix and the medal, lit. Bright enough to read against a
+   painting, and breathing with the voice like the beads do. */
+#cross.active, #medal.active {
+  filter:
+    drop-shadow(0 0 calc( 7px + var(--voice) * 15px) rgba(255, 243, 200, calc(0.95 + var(--voice) * 0.05)))
+    drop-shadow(0 0 calc(20px + var(--voice) * 32px) rgba(255, 208, 115, calc(0.70 + var(--voice) * 0.30)))
+    drop-shadow(0 0 calc(44px + var(--voice) * 66px) rgba(255, 176,  60, calc(0.34 + var(--voice) * 0.36)));
+}
+#cross.active {
+  background-color: #f4cc46;
+  background-image: linear-gradient(150deg, #fff6d0 0%, #f2c53f 46%, #b9820c 100%);
+}
+#cross.done { background-color: rgba(48, 42, 34, 0.92); }
+
+/* Centrepiece medal - a tall oval, not a circle. The wrapper carries the
+   spec's position and size; the face inside is the drawn metal. */
+#medal {
+  position: absolute;
+  filter:
+    drop-shadow(0 0 0 rgba(255,243,200,0))
+    drop-shadow(0 0 0 rgba(255,208,115,0))
+    drop-shadow(0 0 0 rgba(255,176, 60,0));
+  transition: filter .9s ease;
+}
+
+#medal-face {
+  position: absolute;
+  border-radius: 50% / 42%;
+  background-color: rgba(30, 30, 40, 0.9);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.8), 0 3px 6px rgba(0,0,0,0.6);
+  border: 1px solid rgba(100,100,100,0.4);
+}
+#medal.active #medal-face {
+  background-color: #eab308;
+  border-color: rgba(234,179,8,0.6);
+}
+#medal.done #medal-face { background-color: rgba(48, 42, 34, 0.92); }
+
+/* The cord - a light warm stroke. A dark one vanishes against the dark
+   prayer background and the rosary reads as disconnected beads. */
+/* Fixed to the canvas size, not 100%, so the viewBox maps 1:1 to pixels
+   and the parent's scale is the only scaling applied. */
+#chain {
+  position: absolute; left: 0; top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+#cord {
+  fill: none;
+  stroke: rgba(226,214,192,0.32);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+#chain line {
+  stroke: rgba(226,214,192,0.42);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* ======================== PRAYER TEXT ========================== */
+#reading {
+  position: relative; z-index: 15;
+  flex: 0 0 auto;
+  padding: 4px 22px max(18px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 6px;
+  /* A FIXED share of the screen, whatever the prayer. If this panel grew
+     and shrank with the text it would resize the rosary on every bead,
+     which is distracting to pray with. Long prayers scroll instead. */
+  /* Poppins sets taller lines than the old serif, so the panel needs a
+     little more room for the Hail Mary - the prayer said 53 times - to
+     fit without scrolling. */
+  flex: 0 0 40%;
+  min-height: 0;
+}
+
+#mystery-line {
+  font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  color: rgba(232,199,122,.85);
+  text-shadow: 0 1px 8px rgba(0,0,0,.9);
+  min-height: 13px;
+}
+
+#prayer-name {
+  font-size: 18px; line-height: 1.18;
+  color: #fff8e6;
+  text-shadow: 0 2px 14px rgba(0,0,0,.95), 0 0 26px rgba(255,210,130,.22);
+  margin: 0;
+}
+
+#prayer-text {
+  flex: 1 1 auto; min-height: 0;     /* takes the leftover room, scrolls inside it */
+  font-size: 16px; line-height: 1.48;
+  color: rgba(250,242,226,.93);
+  text-shadow: 0 1px 12px rgba(0,0,0,.95);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  font-weight: 400;      /* Poppins 300 reads too thin over a painting */
+  transition: opacity .45s ease;
+}
+#prayer-text::-webkit-scrollbar { width: 2px; }
+#prayer-text::-webkit-scrollbar-thumb { background: rgba(232,199,122,.35); border-radius: 2px; }
+
+/* ---------- Karaoke: two levels of light ----------
+   LEVEL 1, the line being prayed: a soft, steady glow so you know where
+   you are. LEVEL 2, each word as you actually say it: brighter, warmer,
+   and slightly larger, so the spoken words clearly stand above the line. */
+
+.pline {
+  padding: 1px 0;
+  transition: opacity .55s ease, filter .55s ease;
+}
+
+/* Without the microphone the prayer is simply a prayer - no dimming. */
+#prayer-text:not(.karaoke) .pline { opacity: 1; }
+
+#prayer-text.karaoke .pline        { opacity: .38; }
+#prayer-text.karaoke .pline.done   { opacity: .46; }   /* prayed, still readable */
+#prayer-text.karaoke .pline.active {
+  opacity: 1;
+  filter: drop-shadow(0 0 14px rgba(255, 216, 140, .28));
+}
+
+/* Inside the line being prayed, words not yet said sit back a little so the
+   spoken ones clearly lead. This is the gap between LEVEL 1 and LEVEL 2. */
+#prayer-text.karaoke .pline.active .pword { color: rgba(248, 240, 224, .60); }
+
+.pword {
+  display: inline-block;
+  transition: color .42s ease, text-shadow .42s ease,
+              transform .42s cubic-bezier(.22,1,.36,1);
+  will-change: transform;
+}
+
+/* A word that has been spoken. Selector kept at the same weight as the
+   active-line rule above, and placed after it, so spoken words win. */
+#prayer-text.karaoke .pline .pword.spoken {
+  color: #fff6d8;
+  transform: scale(1.055);
+  text-shadow:
+    0 0 10px rgba(255, 238, 185, .92),
+    0 0 22px rgba(255, 208, 120, .55),
+    0 1px 12px rgba(0,0,0,.9);
+}
+
+/* One gentle bloom at the moment it is recognised - never a loop. */
+@keyframes word-bloom {
+  0%   { transform: scale(1.055); }
+  38%  { transform: scale(1.16); }
+  100% { transform: scale(1.055); }
+}
+#prayer-text.karaoke .pline .pword.bloom { animation: word-bloom .62s cubic-bezier(.22,1,.36,1); }
+
+@media (prefers-reduced-motion: reduce) {
+  #prayer-text.karaoke .pline .pword.bloom { animation: none; }
+}
+
+/* Voice progress - a thin filament of light */
+#voice-track {
+  height: 1.5px;
+  background: rgba(255,255,255,.10);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0; transition: opacity .4s ease;
+}
+#voice-track.on { opacity: 1; }
+#voice-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, rgba(232,199,122,.5), #fff0c8);
+  box-shadow: 0 0 9px rgba(255,225,160,.85);
+  transition: width .3s ease;
+}
+
+#footline {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(246,236,216,.5);
+}
+
+/* The tap guide - fades away for good once learned */
+#tap-hint {
+  text-align: center;
+  font-size: 10.5px; letter-spacing: .26em; text-transform: uppercase;
+  color: rgba(255,236,190,.68);
+  text-shadow: 0 0 14px rgba(255,205,120,.5);
+  animation: hint-pulse 2.9s ease-in-out infinite;
+  transition: opacity .9s ease, height .9s ease, margin .9s ease;
+  height: 13px;
+}
+@keyframes hint-pulse { 0%,100% { opacity: .42; } 50% { opacity: .95; } }
+#tap-hint.gone { opacity: 0 !important; height: 0; margin: 0; pointer-events: none; animation: none; }
+
+/* Whole-screen tap target, sits under the controls */
+#tapzone { position: absolute; inset: 0; z-index: 12; cursor: pointer; }
+
+/* ========================= START SCREEN ======================== */
+#start {
+  position: absolute; inset: 0; z-index: 60;
+  background:
+    radial-gradient(110% 62% at 50% 6%, rgba(255,224,164,.13), transparent 60%),
+    linear-gradient(to bottom, rgba(10,5,4,.90), rgba(6,3,3,.97));
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 30px 30px max(30px, env(safe-area-inset-bottom));
+  gap: 22px;
+  transition: opacity .8s ease, visibility .8s;
+  overflow-y: auto;
+}
+#start.hidden { opacity: 0; visibility: hidden; }
+
+#start h1 {
+  font-size: 27px; margin: 0; color: #fff5e0; line-height: 1.16;
+  text-shadow: 0 0 34px rgba(255,205,120,.34);
+}
+#start .lede {
+  font-size: 15.5px; line-height: 1.55; color: rgba(246,236,216,.66);
+  margin: -12px 0 0; font-weight: 300;
+}
+
+.field-label {
+  font-size: 10px; letter-spacing: .24em; text-transform: uppercase;
+  color: rgba(232,199,122,.72); margin-bottom: 9px;
+}
+
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.choice {
+  padding: 11px 8px;
+  border: 1px solid rgba(232,199,122,.22);
+  border-radius: 11px;
+  background: rgba(255,240,205,.035);
+  color: rgba(246,236,216,.74);
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 12.5px; letter-spacing: .04em;
+  cursor: pointer; text-align: center;
+  transition: .22s ease;
+}
+.choice small {
+  display: block; font-family: 'Poppins', sans-serif;
+  font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase;
+  opacity: .5; margin-top: 4px;
+}
+.choice.sel {
+  color: #2a1606;
+  background: linear-gradient(160deg, #ffeeb9, #dcae52);
+  border-color: rgba(255,232,170,.9);
+  box-shadow: 0 0 24px rgba(232,199,122,.32);
+}
+.choice.sel small { opacity: .65; }
+
+#begin {
+  margin-top: 4px;
+  padding: 16px;
+  border: none; border-radius: 13px;
+  background: linear-gradient(160deg, #fff1c6, #dcae52 55%, #b98b3a);
+  color: #241203;
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 15px; letter-spacing: .18em; text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 34px rgba(200,150,60,.34);
+  transition: transform .18s ease;
+}
+#begin:active { transform: scale(.975); }
+
+#start .note {
+  font-size: 11px; line-height: 1.6;
+  color: rgba(246,236,216,.34);
+  text-align: center;
+}
+
+/* ========================== FINISH ============================= */
+#finish {
+  position: absolute; inset: 0; z-index: 55;
+  background: radial-gradient(110% 62% at 50% 32%, rgba(255,224,164,.15), rgba(6,3,3,.95) 66%);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 34px; text-align: center;
+}
+#finish.show { display: flex; animation: fade-in 1.4s ease; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+#finish h2 { font-size: 25px; margin: 0; color: #fff5e0; }
+#finish p { font-size: 15.5px; color: rgba(246,236,216,.66); margin: 0; line-height: 1.6; font-weight: 300; }
+
+.ghost-btn {
+  margin-top: 8px; padding: 12px 30px;
+  border: 1px solid rgba(232,199,122,.42); border-radius: 11px;
+  background: transparent; color: rgba(255,236,190,.88);
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 12px;
+  letter-spacing: .18em; text-transform: uppercase; cursor: pointer;
+}
+
+/* ============================ MISC ============================= */
+#toast {
+  position: absolute; z-index: 70;
+  left: 50%; bottom: 96px; transform: translateX(-50%);
+  padding: 9px 17px; border-radius: 20px;
+  background: rgba(18,9,7,.92);
+  border: 1px solid rgba(232,199,122,.24);
+  color: rgba(246,236,216,.9);
+  font-size: 11.5px; letter-spacing: .05em;
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s ease;
+  max-width: 82%; text-align: center;
+}
+#toast.show { opacity: 1; }
+
+@media (max-height: 700px) {
+  #prayer-text { font-size: 15px; line-height: 1.44; }
+  #prayer-name { font-size: 17px; }
+  #reading { flex-basis: 46%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #bg-rays, .mote { animation: none !important; }
+  /* The camera holds still rather than travelling. */
+  #bg-img, #bg-img-next { transition: opacity var(--scene-fade, 900ms) ease !important; }
+  /* The flare stops turning, but the glow still answers the voice - that
+     is the point of the effect, not decoration. */
+  .bead.active::after { animation: none !important; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- Background -->
+  <div id="bg-layer">
+    <img id="bg-img" alt=""/>
+    <img id="bg-img-next" alt=""/>
+    <div id="bg-rays"></div>
+    <div id="bg-veil"></div>
+    <div id="vignette"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1 class="serif set-name" id="hdr-set">Holy Rosary<span class="set-sub" id="hdr-sub">Ready</span></h1>
+    <div class="tools">
+      <button class="tool serif" id="btn-lang" title="Language">EN</button>
+      <button class="tool" id="btn-mic" title="Voice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/>
+        </svg>
+      </button>
+      <button class="tool" id="btn-music" title="Music">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>
+        </svg>
+      </button>
+      <button class="tool" id="btn-exit" title="Exit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>
+          <path d="M16 17l5-5-5-5"/><path d="M21 12H10"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Rosary -->
+  <div id="stage">
+    <div id="rosary">
+      <svg id="chain" viewBox="0 0 340 396">
+        <polyline id="cord"/>
+        <line id="cord-a"/>
+        <line id="cord-b"/>
+      </svg>
+      <div id="cross"></div>
+      <div id="medal"><span id="medal-face"></span></div>
+    </div>
+  </div>
+
+  <!-- Prayer text -->
+  <div id="reading">
+    <div id="mystery-line"></div>
+    <h2 class="serif" id="prayer-name">&nbsp;</h2>
+    <div class="body-serif" id="prayer-text"></div>
+    <div id="voice-track"><div id="voice-fill"></div></div>
+    <div id="footline"><span id="foot-left"></span><span id="foot-right"></span></div>
+    <div id="tap-hint">Tap anywhere to continue</div>
+  </div>
+
+  <div id="tapzone"></div>
+  <div id="toast"></div>
+
+  <!-- Start -->
+  <div id="start">
+    <h1 class="serif">The Holy<br/>Rosary</h1>
+    <p class="lede" id="start-lede">Choose a set of mysteries and begin.</p>
+
+    <div>
+      <div class="field-label" id="lbl-mystery">Mysteries</div>
+      <div class="choices" id="set-choices"></div>
+    </div>
+
+    <div>
+      <div class="field-label" id="lbl-language">Language</div>
+      <div class="choices" id="lang-choices">
+        <button class="choice" data-lang="en">English</button>
+        <button class="choice" data-lang="tl">Filipino</button>
+      </div>
+    </div>
+
+    <button id="begin" class="serif">Begin</button>
+    <p class="note" id="start-note"></p>
+  </div>
+
+  <!-- Finish -->
+  <div id="finish">
+    <h2 class="serif" id="fin-title">Amen.</h2>
+    <p id="fin-body"></p>
+    <button class="ghost-btn serif" id="fin-again">Pray again</button>
+  </div>
+
+</div>
+
+<audio id="music" loop preload="auto"></audio>
+
+<script>
+"use strict";
+
+/* ==================================================================
+   PRAYERS
+   ================================================================== */
+const P = {
+  en: {
+    setNames: { joyful:"Joyful Mysteries", sorrowful:"Sorrowful Mysteries", glorious:"Glorious Mysteries", luminous:"Luminous Mysteries" },
+    setShort: { joyful:"Joyful", sorrowful:"Sorrowful", glorious:"Glorious", luminous:"Luminous" },
+    names: {
+      sign:"The Sign of the Cross", creed:"The Apostles' Creed", of:"Our Father", hm:"Hail Mary",
+      glory:"Glory Be", fatima:"The Fatima Prayer", salve:"Hail, Holy Queen", closing:"Closing Prayer"
+    },
+    sign:"In the name of the Father, and of the Son, and of the Holy Spirit. Amen.",
+    creed:"I believe in God, the Father Almighty, Creator of heaven and earth; and in Jesus Christ, His only Son, our Lord; who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died, and was buried. He descended into hell; the third day He rose again from the dead; He ascended into heaven, and sits at the right hand of God the Father Almighty; from thence He shall come to judge the living and the dead. I believe in the Holy Spirit, the Holy Catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.",
+    of:"Our Father, who art in heaven, hallowed be Thy name; Thy kingdom come; Thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+    hm:"Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+    glory:"Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+    fatima:"O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to Heaven, especially those in most need of Thy mercy.",
+    salve:"Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve. To thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious Advocate, thine eyes of mercy toward us, and after this our exile show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Amen.",
+    closing:"O God, whose only begotten Son, by His life, death and resurrection, has purchased for us the rewards of eternal life; grant, we beseech Thee, that meditating upon these mysteries of the most holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ our Lord. Amen.",
+    ui: {
+      mystery:"Mysteries", language:"Language", begin:"Begin", again:"Pray again",
+      lede:"Choose a set of mysteries and begin.",
+      note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
+      hint:"Tap anywhere to continue",
+      decade:d=>"Decade " + d + " of 5",
+      mysteryOf:n=>"Mystery " + n + " of 5",
+      bead:(n,t)=>"Bead " + n + " of " + t,
+      opening:"Opening Prayers", closingLabel:"Closing Prayers",
+      finTitle:"Amen.", finBody:"The Rosary is complete. May the peace of Christ remain with you.",
+      micOn:"Listening - pray aloud", micOff:"Voice guidance off",
+      micUnsupported:"Voice needs Chrome or Edge. Tap to continue instead.",
+      micDenied:"Microphone blocked. Tap to continue instead.",
+      micNoDevice:"No microphone found. Tap to continue instead.",
+      micBusy:"Microphone is in use by another app.",
+      exited:"Rosary closed. Peace be with you.",
+      announce:n=>"The " + n + " Mystery"
+    },
+    ordinals:["First","Second","Third","Fourth","Fifth"],
+    mysteries: {
+      joyful:[
+        ["The Annunciation","The angel Gabriel announces to Mary that she will bear the Son of God."],
+        ["The Visitation","Mary visits Elizabeth, who greets her as the mother of her Lord."],
+        ["The Nativity","Jesus is born in Bethlehem and laid in a manger."],
+        ["The Presentation","Mary and Joseph present the child Jesus in the temple."],
+        ["The Finding in the Temple","After three days, Jesus is found among the teachers."]
+      ],
+      sorrowful:[
+        ["The Agony in the Garden","In Gethsemane, Jesus prays: not my will, but Thine be done."],
+        ["The Scourging at the Pillar","Jesus is bound and scourged for our sins."],
+        ["The Crowning with Thorns","A crown of thorns is pressed upon His head."],
+        ["The Carrying of the Cross","Jesus bears the weight of the cross to Calvary."],
+        ["The Crucifixion","Jesus is crucified and dies for the salvation of the world."]
+      ],
+      glorious:[
+        ["The Resurrection","On the third day, Jesus rises victorious over death."],
+        ["The Ascension","Jesus ascends into heaven and is seated at the right hand of the Father."],
+        ["The Descent of the Holy Spirit","The Spirit descends upon Mary and the apostles at Pentecost."],
+        ["The Assumption","Mary is taken up, body and soul, into heavenly glory."],
+        ["The Coronation of Mary","Mary is crowned Queen of Heaven and Earth."]
+      ],
+      luminous:[
+        ["The Baptism in the Jordan","The Father's voice proclaims Jesus His beloved Son."],
+        ["The Wedding at Cana","At Mary's word, Jesus works His first sign."],
+        ["The Proclamation of the Kingdom","Jesus calls all to conversion and forgives sins."],
+        ["The Transfiguration","Jesus is transfigured in glory before His disciples."],
+        ["The Institution of the Eucharist","Jesus gives His Body and Blood at the Last Supper."]
+      ]
+    }
+  },
+
+  tl: {
+    setNames: { joyful:"Misteryo ng Tuwa", sorrowful:"Misteryo ng Hapis", glorious:"Misteryo ng Luwalhati", luminous:"Misteryo ng Liwanag" },
+    setShort: { joyful:"Tuwa", sorrowful:"Hapis", glorious:"Luwalhati", luminous:"Liwanag" },
+    names: {
+      sign:"Ang Tanda ng Krus", creed:"Sumasampalataya", of:"Ama Namin", hm:"Aba Ginoong Maria",
+      glory:"Luwalhati sa Ama", fatima:"Panalangin sa Fatima", salve:"Aba Po Santa Mariang Hari", closing:"Panalanging Pangwakas"
+    },
+    sign:"Sa ngalan ng Ama, at ng Anak, at ng Espiritu Santo. Amen.",
+    creed:"Sumasampalataya ako sa Diyos Amang makapangyarihan sa lahat, na may gawa ng langit at lupa. Sumasampalataya ako kay Hesukristo, iisang Anak ng Diyos, Panginoon nating lahat. Nagkatawang-tao Siya lalang ng Espiritu Santo, ipinanganak ni Santa Mariang Birhen. Pinagpakasakit ni Poncio Pilato, ipinako sa krus, namatay, inilibing. Nanaog sa kinaroroonan ng mga yumao. Nang may ikatlong araw nabuhay na mag-uli. Umakyat sa langit, naluluklok sa kanan ng Diyos Amang makapangyarihan sa lahat. Doon magmumulang paririto at huhukom sa nangabubuhay at nangamatay na tao. Sumasampalataya naman ako sa Diyos Espiritu Santo, sa banal na Simbahang Katolika, sa kasamahan ng mga banal, sa kapatawaran ng mga kasalanan, sa pagkabuhay na mag-uli ng nangamatay na tao, at sa buhay na walang hanggan. Amen.",
+    of:"Ama namin, sumasalangit Ka, sambahin ang ngalan Mo. Mapasaamin ang kaharian Mo. Sundin ang loob Mo dito sa lupa para nang sa langit. Bigyan Mo kami ngayon ng aming kakanin sa araw-araw. At patawarin Mo kami sa aming mga sala, para nang pagpapatawad namin sa nagkakasala sa amin. At huwag Mo kaming ipahintulot sa tukso, at iadya Mo kami sa lahat ng masama. Amen.",
+    hm:"Aba Ginoong Maria, napupuno ka ng grasya, ang Panginoong Diyos ay sumasaiyo. Bukod kang pinagpala sa babaeng lahat, at pinagpala naman ang iyong Anak na si Hesus. Santa Maria, Ina ng Diyos, ipanalangin mo kaming makasalanan, ngayon at kung kami ay mamamatay. Amen.",
+    glory:"Luwalhati sa Ama, sa Anak, at sa Espiritu Santo. Kapara noong unang-una, ngayon at magpakailanman, at magpasawalang hanggan. Amen.",
+    fatima:"O Hesus ko, patawarin Mo kami sa aming mga kasalanan. Iligtas Mo kami sa apoy ng impiyerno. Hanguin Mo ang lahat ng mga kaluluwa patungo sa langit, lalo na yaong mga higit na nangangailangan ng Iyong awa.",
+    salve:"Aba po, Santa Mariang Hari, Ina ng awa. Ikaw ang kabuhayan at katamisan, aba pinananaligan ka namin. Ikaw nga ang tinatawagan namin, pinapanaw na taong anak ni Eva. Ikaw rin ang pinagbubuntuhang hininga namin ng aming pagtangis dini sa lupang bayang kahapis-hapis. Ay aba, pintakasi ka namin, ilingon mo sa amin ang mata mong maawain. At saka kung matapos yaring pagpanaw sa amin, ipakita mo sa amin ang iyong Anak na si Hesus. Santa Maria, Ina ng Diyos, maawain, maalam, at matamis na Birhen. Amen.",
+    closing:"O Diyos, na ang Bugtong Mong Anak, sa pamamagitan ng Kanyang buhay, kamatayan at muling pagkabuhay, ay ipinagkamit kami ng gantimpala ng buhay na walang hanggan. Ipagkaloob Mo po, isinasamo namin, na sa pagbubulay-bulay namin sa mga misteryong ito ng banal na Rosaryo ng Mahal na Birheng Maria, aming matularan ang tinutukoy nito at makamtan ang ipinangangako nito, alang-alang kay Kristong aming Panginoon. Amen.",
+    ui: {
+      mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Manalangin muli",
+      lede:"Pumili ng misteryo at magsimula.",
+      note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
+      hint:"I-tap kahit saan upang magpatuloy",
+      decade:d=>"Dekada " + d + " ng 5",
+      mysteryOf:n=>"Misteryo " + n + " ng 5",
+      bead:(n,t)=>"Butil " + n + " ng " + t,
+      opening:"Panimulang Panalangin", closingLabel:"Panalanging Pangwakas",
+      finTitle:"Amen.", finBody:"Tapos na ang Rosaryo. Sumaiyo nawa ang kapayapaan ni Kristo.",
+      micOn:"Nakikinig - manalangin nang malakas", micOff:"Naka-patay ang gabay sa boses",
+      micUnsupported:"Kailangan ng Chrome o Edge. Mag-tap na lang upang magpatuloy.",
+      micDenied:"Naka-block ang mikropono. Mag-tap na lang upang magpatuloy.",
+      micNoDevice:"Walang nakitang mikropono. Mag-tap na lang upang magpatuloy.",
+      micBusy:"Ginagamit ang mikropono ng ibang app.",
+      exited:"Isinara ang Rosaryo. Sumaiyo ang kapayapaan.",
+      announce:n=>"Ang Ika-" + n + " Misteryo"
+    },
+    ordinals:["Una","Ikalawa","Ikatlo","Ikaapat","Ikalima"],
+    mysteries: {
+      joyful:[
+        ["Ang Pagbabalita ng Anghel kay Maria","Ipinahayag ni Anghel Gabriel na magiging Ina siya ng Anak ng Diyos."],
+        ["Ang Pagdalaw ni Maria kay Santa Isabel","Dinalaw ni Maria si Isabel na bumati sa kanya bilang Ina ng Panginoon."],
+        ["Ang Pagsilang ng Panginoong Hesus","Isinilang si Hesus sa Bethlehem at inihiga sa sabsaban."],
+        ["Ang Paghahain kay Hesus sa Templo","Inihandog nina Maria at Jose ang sanggol na si Hesus sa templo."],
+        ["Ang Pagkatagpo kay Hesus sa Templo","Pagkaraan ng tatlong araw, natagpuan si Hesus kasama ng mga guro."]
+      ],
+      sorrowful:[
+        ["Ang Paghihirap ni Hesus sa Halamanan","Sa Getsemani, nanalangin si Hesus: hindi ang kalooban ko, kundi ang Iyo."],
+        ["Ang Paghampas kay Hesus sa Haliging Bato","Iginapos at hinampas si Hesus dahil sa ating mga kasalanan."],
+        ["Ang Pagpuputong ng Koronang Tinik","Ipinutong sa Kanyang ulo ang koronang tinik."],
+        ["Ang Pagpasan ni Hesus ng Krus","Pinasan ni Hesus ang bigat ng krus patungong Kalbaryo."],
+        ["Ang Pagkapako at Pagkamatay sa Krus","Ipinako at namatay si Hesus para sa kaligtasan ng sanlibutan."]
+      ],
+      glorious:[
+        ["Ang Muling Pagkabuhay ni Hesus","Sa ikatlong araw, muling nabuhay si Hesus, matagumpay laban sa kamatayan."],
+        ["Ang Pag-akyat ni Hesus sa Langit","Umakyat si Hesus sa langit at naluklok sa kanan ng Ama."],
+        ["Ang Pagpanaog ng Espiritu Santo","Bumaba ang Espiritu Santo kay Maria at sa mga apostol."],
+        ["Ang Pag-akyat sa Langit ng Mahal na Birhen","Iniakyat si Maria sa langit, katawan at kaluluwa."],
+        ["Ang Pagpuputong kay Maria","Kinoronahan si Maria bilang Reyna ng Langit at Lupa."]
+      ],
+      luminous:[
+        ["Ang Pagbibinyag kay Hesus sa Jordan","Ipinahayag ng Ama na si Hesus ang Kanyang minamahal na Anak."],
+        ["Ang Kasalan sa Cana","Sa pakiusap ni Maria, ginawa ni Hesus ang unang himala."],
+        ["Ang Pagpapahayag ng Kaharian","Tinawag ni Hesus ang lahat sa pagbabalik-loob."],
+        ["Ang Pagbabagong-Anyo ni Hesus","Nagbagong-anyo si Hesus sa harap ng Kanyang mga alagad."],
+        ["Ang Pagtatatag ng Banal na Eukaristiya","Ibinigay ni Hesus ang Kanyang Katawan at Dugo sa Huling Hapunan."]
+      ]
+    }
+  }
+};
+
+const SET_KEYS = ["joyful","sorrowful","glorious","luminous"];
+// Traditional weekday schedule: Sun..Sat
+const DAY_SET = ["glorious","joyful","sorrowful","glorious","luminous","sorrowful","joyful"];
+
+/* ==================================================================
+   BEAD GEOMETRY
+
+   One coordinate space: the SVG viewBox matches the wrapper's pixel
+   size, so SVG user units are CSS pixels. Every number below lives in
+   that space, and every bead is placed by its centre.
+
+   The loop is spaced by ARC LENGTH, not by parametric angle - equal
+   angle steps bunch beads up at the left and right extremes of an
+   ellipse. Beads occupy one more slot than there are beads, and the
+   unused slot lands exactly at 6 o'clock, where the medal hangs.
+   ================================================================== */
+/* A round loop, per the reference image. A circle carries far more
+   perimeter than a flat ellipse of the same width, so the beads sit much
+   further apart without any of them getting smaller. */
+const GEO = { w:336, h:515, cx:168, cy:165, rx:155, ry:155 };
+
+const BEAD_SMALL = 9, BEAD_LARGE = 17, MEDAL_SIZE = 28, CROSS_SIZE = 32;
+
+const JX = GEO.cx, JY = GEO.cy + GEO.ry;      // (170, 194) - the 6 o'clock point
+const TAIL_STEP = 20, TAIL_TOP = JY + 40;     // 234
+
+const rad = d => d * Math.PI / 180;
+
+/* --- sample the ellipse once, walking clockwise from 6 o'clock --- */
+const SAMPLES = 2000, cum = [0];
+(function measure() {
+  let px = GEO.cx + GEO.rx * Math.cos(rad(90)),
+      py = GEO.cy + GEO.ry * Math.sin(rad(90));
+  for (let s = 1; s <= SAMPLES; s++) {
+    const t = rad(90) - 2 * Math.PI * s / SAMPLES;
+    const nx = GEO.cx + GEO.rx * Math.cos(t),
+          ny = GEO.cy + GEO.ry * Math.sin(t);
+    cum.push(cum[s - 1] + Math.hypot(nx - px, ny - py));
+    px = nx; py = ny;
+  }
+})();
+const PERIM = cum[SAMPLES];
+
+/** The point a given arc length clockwise from the 6 o'clock join. */
+function atArc(target) {
+  let lo = 0, hi = SAMPLES;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < target) lo = mid + 1; else hi = mid; }
+  const t = rad(90) - 2 * Math.PI * lo / SAMPLES;
+  return { x: GEO.cx + GEO.rx * Math.cos(t), y: GEO.cy + GEO.ry * Math.sin(t) };
+}
+
+/* The loop holds 54 beads: 50 small + 4 large. Four large beads serve five
+   decades because each one carries the END of the decade just prayed and
+   the START of the next; the first Our Father sits on the tail, and the
+   fifth decade closes on the medal. Walking clockwise from the medal:
+   ten small, a large, ten small, a large, ... ending on the fifth ten. */
+const LOOP_COUNT = 54;
+const LOOP_LARGE = [10, 21, 32, 43];
+const DECADE_START = [0, 11, 22, 33, 44];   // first Hail Mary bead of each decade
+
+function loopPos(i) { return atArc(PERIM * (i + 1) / (LOOP_COUNT + 1)); }
+
+/* --- medal and pendant: one straight vertical line at x = JX --- */
+const MEDAL_POS = { x: JX, y: JY + 18 };                       // 212
+const PENDANT_POS = [                                           // 0 = nearest the cross
+  { x: JX, y: TAIL_TOP + 100, size: BEAD_LARGE },   // 334  Our Father
+  { x: JX, y: TAIL_TOP +  80, size: BEAD_SMALL },   // 314  Hail Mary 1
+  { x: JX, y: TAIL_TOP +  60, size: BEAD_SMALL },   // 294  Hail Mary 2
+  { x: JX, y: TAIL_TOP +  40, size: BEAD_SMALL },   // 274  Hail Mary 3
+  { x: JX, y: TAIL_TOP +  20, size: BEAD_LARGE }    // 254  Glory Be
+];
+const CROSS_POS = { x: JX, y: TAIL_TOP + 130 };                 // 364
+
+/** Place an element by its centre. */
+function place(elm, x, y, size) {
+  elm.style.left   = (x - size / 2) + "px";
+  elm.style.top    = (y - size / 2) + "px";
+  elm.style.width  = size + "px";
+  elm.style.height = size + "px";
+}
+
+/* ==================================================================
+   SEQUENCE - the complete Rosary
+   ================================================================== */
+/**
+ * A walk around the rosary. Every step belongs to exactly one bead, and a
+ * bead may own several consecutive steps - the crucifix owns two at the
+ * start, a large loop bead owns four. The crucifix appears twice, so it
+ * shines again at the very end.
+ */
+function buildSequence(setKey, lang) {
+  const L = P[lang], s = [];
+  const M = kind => ({ kind:kind, name:L.names[kind], text:L[kind], voice:true });
+  const CROSS = { t:"cross" }, MEDAL = { t:"medal" };
+  const pend = i => ({ t:"pend", i:i });
+  const loop = i => ({ t:"loop", i:i });
+
+  const announce = d => {
+    const pair = L.mysteries[setKey][d];
+    return { kind:"mystery", voice:false, decade:d + 1,
+             name:pair[0], text:pair[1], announce:L.ui.announce(L.ordinals[d]) };
+  };
+
+  // 1. The crucifix - Sign of the Cross, then the Creed.
+  s.push(Object.assign(M("sign"),  { bead:CROSS, section:"open" }));
+  s.push(Object.assign(M("creed"), { bead:CROSS, section:"open" }));
+
+  // 2. The large bead above the cross - Our Father.
+  s.push(Object.assign(M("of"), { bead:pend(0), section:"open" }));
+
+  // 3. Three small beads - Hail Mary each, for Faith, Hope and Charity.
+  for (let i = 1; i <= 3; i++)
+    s.push(Object.assign(M("hm"), { bead:pend(i), section:"open", beadNum:i, beadTotal:3 }));
+
+  // 4. The second large tail bead - Glory Be, announce Mystery 1, its Our Father.
+  s.push(Object.assign(M("glory"), { bead:pend(4), section:"open" }));
+  s.push(Object.assign(announce(0), { bead:pend(4) }));
+  s.push(Object.assign(M("of"),    { decade:1, bead:pend(4) }));
+
+  // 5-7. Each decade's ten small beads, then a large bead closing that
+  //      decade and opening the next.
+  for (let d = 0; d < 5; d++) {
+    for (let b = 1; b <= 10; b++)
+      s.push(Object.assign(M("hm"), { decade:d + 1, beadNum:b, beadTotal:10,
+                                      bead: loop(DECADE_START[d] + b - 1) }));
+    if (d < 4) {
+      const big = loop(LOOP_LARGE[d]);
+      s.push(Object.assign(M("glory"),  { decade:d + 1, bead:big }));
+      s.push(Object.assign(M("fatima"), { decade:d + 1, bead:big }));
+      s.push(Object.assign(announce(d + 1), { bead:big }));
+      s.push(Object.assign(M("of"),     { decade:d + 2, bead:big }));
+    }
+  }
+
+  // 8. The medal - the fifth decade's Glory Be and Fatima, then Hail Holy Queen.
+  s.push(Object.assign(M("glory"),  { decade:5, bead:MEDAL }));
+  s.push(Object.assign(M("fatima"), { decade:5, bead:MEDAL }));
+  s.push(Object.assign(M("salve"),  { bead:MEDAL, section:"close" }));
+
+  // 9. The crucifix again - the closing Sign of the Cross.
+  s.push(Object.assign(M("sign"), { bead:CROSS, section:"close" }));
+
+  return s;
+}
+
+/* ==================================================================
+   KARAOKE TEXT
+
+   The prayer is broken into lines, and each line into words. Two levels
+   of highlight: a soft glow on the line being prayed, and a much stronger
+   one on each word as it is actually spoken.
+   ================================================================== */
+const Karaoke = { words: [], lines: [], tokens: [], pointer: 0, on: false };
+
+/** Break a prayer into short, speakable lines at its natural pauses. */
+function splitLines(text) {
+  const parts = text.split(/(?<=[,;:.])\s+/);
+  const count = s => s.trim().split(/\s+/).filter(Boolean).length;
+
+  const merged = [];
+  let cur = [];
+  for (let i = 0; i < parts.length; i++) {
+    cur.push(parts[i].trim());
+    if (count(cur.join(" ")) >= 4) { merged.push(cur.join(" ")); cur = []; }
+  }
+  if (cur.length) {
+    const tail = cur.join(" ");
+    if (merged.length && count(tail) < 3) merged[merged.length - 1] += " " + tail;
+    else merged.push(tail);
+  }
+
+  const lines = [];                       // nothing longer than a glance
+  for (let i = 0; i < merged.length; i++) {
+    const w = merged[i].split(/\s+/).filter(Boolean);
+    if (w.length <= 9) lines.push(w.join(" "));
+    else for (let j = 0; j < w.length; j += 7) lines.push(w.slice(j, j + 7).join(" "));
+  }
+  return lines.filter(Boolean);
+}
+
+/** Strip a displayed word down to something worth comparing against. */
+function normWord(w) {
+  return w.toLowerCase().normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .replace(/[^a-z0-9]/g, "");
+}
+
+/** Build the line/word DOM for a step. */
+function renderPrayerText(step) {
+  const host = el.prayerText;
+  host.innerHTML = "";
+  Karaoke.words = []; Karaoke.lines = []; Karaoke.tokens = []; Karaoke.pointer = 0;
+
+  const body = step.kind === "mystery" ? step.announce + " — " + step.text : step.text;
+  const lines = splitLines(body);
+  let tokenCount = 0;
+
+  for (let li = 0; li < lines.length; li++) {
+    const lineEl = document.createElement("div");
+    lineEl.className = "pline";
+    const start = tokenCount;
+
+    const parts = lines[li].split(/\s+/).filter(Boolean);
+    for (let wi = 0; wi < parts.length; wi++) {
+      const span = document.createElement("span");
+      span.className = "pword";
+      span.textContent = parts[wi];
+      // This word lights once that many spoken words have been matched.
+      span.dataset.at = String(tokenCount);
+      lineEl.appendChild(span);
+      lineEl.appendChild(document.createTextNode(" "));
+      Karaoke.words.push(span);
+
+      const n = normWord(parts[wi]);
+      if (n) { Karaoke.tokens.push(n); tokenCount++; }
+    }
+
+    Karaoke.lines.push({ el: lineEl, start: start, end: tokenCount });
+    host.appendChild(lineEl);
+  }
+
+  host.classList.toggle("karaoke", !!Karaoke.on);
+  paintKaraoke(0, true);
+}
+
+/**
+ * Ease the type down a little, but only as far as needed, so a prayer sits
+ * whole on the screen. Prayer lengths differ a lot - the Tagalog Hail Mary
+ * runs well past the English one - and a single fixed size cannot serve
+ * both. The long ones (the Creed, the Hail Holy Queen) hit the floor and
+ * scroll, which is fine: they are said once. The Hail Mary is said fifty
+ * three times, and it always fits.
+ */
+const PRAYER_MIN_PX = 13;
+
+const PRAYER_LEAD_OPEN  = 1.48;   // roomy, for the short prayers
+const PRAYER_LEAD_TIGHT = 1.30;   // closer, once a prayer needs the space
+
+function fitPrayerText() {
+  const pt = el.prayerText;
+  pt.style.fontSize = "";                       // back to the stylesheet size
+  pt.style.lineHeight = "";
+  const start = parseFloat(getComputedStyle(pt).fontSize) || 16;
+  if (!pt.clientHeight) return;
+
+  let size = start;
+  while (size > PRAYER_MIN_PX && pt.scrollHeight > pt.clientHeight) {
+    size -= 0.5;
+    // Draw the lines closer together as the type gets smaller - tightening
+    // the leading buys more height than shrinking the letters alone.
+    const t = (start - size) / Math.max(0.5, start - PRAYER_MIN_PX);
+    pt.style.fontSize = size + "px";
+    pt.style.lineHeight = (PRAYER_LEAD_OPEN + (PRAYER_LEAD_TIGHT - PRAYER_LEAD_OPEN) * t).toFixed(3);
+  }
+}
+
+/** Light every word up to `p`, and glow the line being prayed. */
+function paintKaraoke(p, force) {
+  if (!force && p === Karaoke.pointer) return;
+  const prev = Karaoke.pointer;
+  Karaoke.pointer = p;
+
+  for (let i = 0; i < Karaoke.words.length; i++) {
+    const w = Karaoke.words[i];
+    const at = +w.dataset.at;
+    const spoken = at < p;
+    w.classList.toggle("spoken", spoken);
+    // One short bloom on the word just said - never on a plain repaint.
+    if (!force && spoken && at >= prev && at < p) {
+      w.classList.remove("bloom");
+      void w.offsetWidth;                       // restart the animation
+      w.classList.add("bloom");
+    }
+  }
+
+  let active = Karaoke.lines.length - 1;
+  for (let i = 0; i < Karaoke.lines.length; i++) {
+    if (p < Karaoke.lines[i].end) { active = i; break; }
+  }
+  for (let i = 0; i < Karaoke.lines.length; i++) {
+    const L = Karaoke.lines[i];
+    L.el.classList.toggle("active", i === active);
+    L.el.classList.toggle("done", p >= L.end);
+  }
+
+  const cur = Karaoke.lines[active];
+  if (cur && Karaoke.on) {
+    const host = el.prayerText;
+    const top = cur.el.offsetTop, h = cur.el.offsetHeight;
+    if (top < host.scrollTop || top + h > host.scrollTop + host.clientHeight)
+      host.scrollTo({ top: Math.max(0, top - host.clientHeight / 2 + h / 2), behavior: "smooth" });
+  }
+}
+
+/* ==================================================================
+   WORD MATCHING - medium strictness, in order, forgiving of mishears
+   ================================================================== */
+function words(str) {
+  return str.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/).filter(function (w) { return w.length > 0; });
+}
+
+function near(a, b) {
+  if (a === b) return true;
+  if (a.length >= 4 && b.length >= 4 && (a.indexOf(b) === 0 || b.indexOf(a) === 0)) return true;
+  if (Math.abs(a.length - b.length) > 1 || a.length < 5) return false;
+  var i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else { i++; j++; }
+  }
+  return true;
+}
+
+/**
+ * Longest in-order run through the prayer, allowing small resyncs.
+ * The window lets the recogniser drop or garble a few words in a row -
+ * including at the very start, which it often clips - without stranding
+ * the match at zero. Too wide and unrelated speech would start matching on
+ * common words like "the" and "and", so 6 is about the useful limit.
+ */
+const RESYNC_WINDOW = 6;
+
+/** How many of `target`'s words have been said, in order. */
+function matchPointer(target, heard) {
+  var p = 0;
+  for (var k = 0; k < heard.length; k++) {
+    for (var look = 0; look < RESYNC_WINDOW && p + look < target.length; look++) {
+      if (near(target[p + look], heard[k])) { p += look + 1; break; }
+    }
+  }
+  return p;
+}
+
+function matchProgress(target, heard) {
+  return target.length ? matchPointer(target, heard) / target.length : 1;
+}
+
+/* ==================================================================
+   STATE
+   ================================================================== */
+/* Opened straight from the hard drive, some browsers refuse localStorage
+   outright. Remembering things is a nicety - it must never stop the app. */
+const store = {
+  get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+const S = {
+  lang: store.get("rosary.lang") || "en",
+  set:  DAY_SET[new Date().getDay()],
+  seq: [], idx: 0,
+  started: false,
+  voiceWanted: true, voiceLive: false,
+  musicWanted: true, musicOk: false,
+  hintDone: store.get("rosary.hintDone") === "1",
+  taps: 0,
+  wakeLock: null
+};
+
+const $ = function (id) { return document.getElementById(id); };
+const el = {
+  app:$("app"), bgA:$("bg-img"), bgB:$("bg-img-next"), bgLayer:$("bg-layer"),
+  hdrSet:$("hdr-set"), hdrSub:$("hdr-sub"),
+  btnLang:$("btn-lang"), btnMic:$("btn-mic"), btnMusic:$("btn-music"),
+  stage:$("stage"), rosary:$("rosary"), cross:$("cross"), medal:$("medal"),
+  mysteryLine:$("mystery-line"), prayerName:$("prayer-name"), prayerText:$("prayer-text"),
+  voiceTrack:$("voice-track"), voiceFill:$("voice-fill"),
+  footL:$("foot-left"), footR:$("foot-right"), hint:$("tap-hint"),
+  tapzone:$("tapzone"), toast:$("toast"),
+  start:$("start"), setChoices:$("set-choices"), langChoices:$("lang-choices"),
+  begin:$("begin"), startLede:$("start-lede"), startNote:$("start-note"),
+  lblMystery:$("lbl-mystery"), lblLanguage:$("lbl-language"),
+  btnExit:$("btn-exit"),
+  finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again"),
+  music:$("music")
+};
+
+const beadEls = { loop: [], pend: [] };
+
+/* ==================================================================
+   BUILD THE ROSARY
+   ================================================================== */
+function buildRosary() {
+  const frag = document.createDocumentFragment();
+
+  for (let i = 0; i < LOOP_COUNT; i++) {
+    const large = LOOP_LARGE.indexOf(i) !== -1;
+    const b = document.createElement("div");
+    b.className = "bead" + (large ? " large" : "");
+    const p = loopPos(i);
+    place(b, p.x, p.y, large ? BEAD_LARGE : BEAD_SMALL);
+    beadEls.loop.push(b);
+    frag.appendChild(b);
+  }
+  for (let i = 0; i < PENDANT_POS.length; i++) {
+    const q = PENDANT_POS[i];
+    const b = document.createElement("div");
+    b.className = "bead" + (q.size === BEAD_LARGE ? " large" : "");
+    place(b, q.x, q.y, q.size);
+    beadEls.pend.push(b);
+    frag.appendChild(b);
+  }
+  el.rosary.appendChild(frag);
+
+  const svg = document.getElementById("chain");
+  svg.setAttribute("viewBox", "0 0 " + GEO.w + " " + GEO.h);
+  svg.setAttribute("width", GEO.w);
+  svg.setAttribute("height", GEO.h);
+  el.rosary.style.width  = GEO.w + "px";
+  el.rosary.style.height = GEO.h + "px";
+
+  place(el.medal, MEDAL_POS.x, MEDAL_POS.y, MEDAL_SIZE);
+  place(el.cross, CROSS_POS.x, CROSS_POS.y, CROSS_SIZE);
+
+  // The medal face is a tall oval rather than a circle.
+  const face = document.getElementById("medal-face");
+  face.style.left   = "1px";
+  face.style.top    = "-3px";
+  face.style.width  = (MEDAL_SIZE - 2) + "px";
+  face.style.height = (MEDAL_SIZE + 6) + "px";
+
+  drawCord();
+}
+
+/**
+ * The cord: one polyline through every bead centre in prayer order, plus
+ * two explicit lines joining each end of the loop to the medal - without
+ * them the join between ring and medal reads as a gap.
+ */
+function drawCord() {
+  const pts = [[CROSS_POS.x, CROSS_POS.y]];
+  for (let i = 0; i < PENDANT_POS.length; i++) pts.push([PENDANT_POS[i].x, PENDANT_POS[i].y]);
+  pts.push([MEDAL_POS.x, MEDAL_POS.y]);
+  for (let i = 0; i < LOOP_COUNT; i++) { const p = loopPos(i); pts.push([p.x, p.y]); }
+  pts.push([MEDAL_POS.x, MEDAL_POS.y]);
+
+  document.getElementById("cord").setAttribute("points",
+    pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "));
+
+  const first = loopPos(0), last = loopPos(LOOP_COUNT - 1);
+  const join = (id, p) => {
+    const l = document.getElementById(id);
+    l.setAttribute("x1", p.x.toFixed(1)); l.setAttribute("y1", p.y.toFixed(1));
+    l.setAttribute("x2", MEDAL_POS.x);    l.setAttribute("y2", MEDAL_POS.y);
+  };
+  join("cord-a", first);
+  join("cord-b", last);
+}
+
+// A little headroom so the beads never crowd the edges and the active
+// bead's halo stays whole while the stage eases to a new size.
+const FIT_MARGIN = 0.94;
+
+function fitRosary() {
+  const r = el.stage.getBoundingClientRect();
+  if (!r.height) return;
+  const s = Math.max(Math.min(r.width / GEO.w, r.height / GEO.h, 1.25) * FIT_MARGIN, 0.3);
+  el.rosary.style.setProperty("--rs", s.toFixed(3));
+  // Shrink the layout box to the painted size so the stage can centre it.
+  el.rosary.style.width  = (GEO.w * s).toFixed(1) + "px";
+  el.rosary.style.height = (GEO.h * s).toFixed(1) + "px";
+}
+
+/* ==================================================================
+   BACKGROUND
+   ================================================================== */
+let bgFront = true;
+let currentSceneSrc = null;
+let sceneToken = 0;
+const sceneCache = {};      // url -> true if it loaded, false if it is missing
+
+/**
+ * Try each candidate in turn and hand back the first that actually loads,
+ * so a decade with no picture of its own quietly borrows its set's, and a
+ * set with none borrows the design image. Results are remembered, so a
+ * missing file is only ever requested once.
+ */
+function resolveScene(candidates, done) {
+  let i = 0;
+  (function next() {
+    if (i >= candidates.length) return done(null);
+    const src = candidates[i++];
+    if (!src) return next();
+    if (sceneCache[src] === false) return next();
+    if (sceneCache[src]) return done(src);          // already measured
+    const probe = new Image();
+    // Remember the true pixel size: the camera uses it to avoid magnifying
+    // a small picture past the point where it turns soft.
+    probe.onload  = function () {
+      sceneCache[src] = { w: probe.naturalWidth, h: probe.naturalHeight };
+      done(src);
+    };
+    probe.onerror = function () { sceneCache[src] = false; next(); };
+    probe.src = src;
+  })();
+}
+
+/* ==================================================================
+   VIRTUAL CAMERA
+
+   One painting, ten framings, moved by the prayer itself. Nothing here
+   runs on a timer of its own: the Hail Mary you are on chooses the
+   framing, and the camera eases there. Arriving mid-glide simply
+   re-aims from wherever it currently is, so the motion never stops
+   dead and never snaps.
+   ================================================================== */
+const Camera = { el: null, path: CAMERA_REST, index: 0, key: "", dims: null };
+
+/* How far a picture may be enlarged beyond its own pixels before it turns
+   soft. Paintings sit behind a dark veil here, so they take more of this
+   than a photograph would - but a small file still cannot be pushed to
+   1.7x without showing it. */
+const UPSCALE_TOLERANCE = 2.2;
+const MIN_CAMERA_ZOOM   = 1.20;   // always leave room to move
+
+/* Every painting must actually travel. A tall picture in a tall frame has
+   almost no width to spare, so without this it could only creep. We push
+   in just far enough to open up room to move - never past MAX_CAMERA_ZOOM,
+   so it cannot turn to mush. */
+const MIN_TRAVEL   = 0.45;        // of the frame's short side
+const MAX_CAMERA_ZOOM = 1.95;
+
+/* A long move takes longer and dips slightly darker on the way, so
+   crossing the painting feels like a slow reveal rather than a rush. */
+const FAR_MOVE     = 0.30;        // how far counts as "far"
+let   dimTimer     = null;
+
+
+/**
+ * Centre the painting on a framing, clamped so no empty space shows.
+ *
+ * The picture is given its OWN aspect ratio, sized just large enough to
+ * cover the frame, and then moved. That is what makes a wide painting
+ * pannable: if it were squeezed into a frame-shaped box, the sides would
+ * be cropped away inside the element and the camera could never travel to
+ * them - on a tall phone screen a 2:1 painting would lose most of itself.
+ */
+function cameraApply(img, pt, immediate) {
+  if (!img || !pt) return;
+  const box = el.bgLayer.getBoundingClientRect();
+  const W = box.width, H = box.height;
+  if (!W || !H) return;
+
+  // The painting at its own proportions, scaled to just cover the frame.
+  const d = Camera.dims;
+  let cover = 1, cw = W, ch = H;
+  if (d && d.w && d.h) {
+    cover = Math.max(W / d.w, H / d.h);
+    cw = d.w * cover;
+    ch = d.h * cover;
+  }
+
+  const maxZ = (d && d.w) ? Math.max(MIN_CAMERA_ZOOM, UPSCALE_TOLERANCE / cover) : 99;
+  let z = Math.max(1, Math.min(pt[2], maxZ));
+
+  // Open up room to travel if this picture has none to spare.
+  const needed = Math.min(W, H) * MIN_TRAVEL;
+  if (Math.max(cw * z - W, ch * z - H) < needed) {
+    const forX = (W + needed) / cw, forY = (H + needed) / ch;
+    z = Math.min(MAX_CAMERA_ZOOM, Math.max(z, Math.min(forX, forY)));
+  }
+
+  // Put the focus point in the middle of the frame...
+  let tx = W / 2 - pt[0] * cw * z;
+  let ty = H / 2 - pt[1] * ch * z;
+  // ...then pull it back inside, so an edge never lifts off the frame.
+  tx = Math.max(W - cw * z, Math.min(0, tx));
+  ty = Math.max(H - ch * z, Math.min(0, ty));
+
+  if (immediate) img.style.transition = "none";
+  img.style.width  = cw.toFixed(1) + "px";
+  img.style.height = ch.toFixed(1) + "px";
+  img.style.transform = "translate(" + tx.toFixed(1) + "px," + ty.toFixed(1) + "px) scale(" + z.toFixed(3) + ")";
+  if (immediate) { void img.offsetWidth; img.style.transition = ""; }
+}
+
+function cameraPoint() {
+  const p = Camera.path || CAMERA_REST;
+  return p[Math.max(0, Math.min(Camera.index, p.length - 1))];
+}
+
+/**
+ * Aim the camera for this moment in the prayer. The framing index comes
+ * from the Hail Mary being said, so the picture and the prayer advance
+ * together.
+ */
+function cameraUpdate(setKey, decade, index) {
+  const path = (decade >= 1 && CAMERA_PATHS[setKey] && CAMERA_PATHS[setKey][decade - 1])
+             ? CAMERA_PATHS[setKey][decade - 1]
+             : CAMERA_REST;
+
+  const from = cameraPoint();
+  Camera.path = path;
+  Camera.key = setKey + ":" + decade;
+  Camera.index = index;
+  const to = cameraPoint();
+
+  // How far this move travels across the painting.
+  const dist = Math.hypot(to[0] - from[0], to[1] - from[1]) + Math.abs(to[2] - from[2]) * 0.4;
+
+  const img = Camera.el;
+  if (img) {
+    // Farther means slower - a long journey should not feel hurried.
+    const dur = Math.round(Math.max(12000, Math.min(34000, CAMERA_GLIDE_MS * (0.62 + dist * 1.7))));
+    img.style.setProperty("--cam-glide", dur + "ms");
+
+    // And a gentle dip in the light while crossing a long distance.
+    clearTimeout(dimTimer);
+    if (dist > FAR_MOVE) {
+      img.style.setProperty("--cam-dim-dur", Math.round(dur * 0.42) + "ms");
+      img.style.setProperty("--cam-dim", "0.74");
+      dimTimer = setTimeout(function () {
+        img.style.setProperty("--cam-dim", "1");
+      }, Math.round(dur * 0.5));
+    } else {
+      img.style.setProperty("--cam-dim", "1");
+    }
+  }
+
+  cameraApply(img, to, false);
+}
+
+/** Crossfade to `src`, the new painting entering already framed. */
+function crossfadeTo(src) {
+  const incoming = bgFront ? el.bgB : el.bgA;
+  const outgoing = bgFront ? el.bgA : el.bgB;
+  incoming.src = src;                       // already in cache from the probe
+  Camera.dims = sceneCache[src] || null;    // its true size caps the zoom
+  Camera.el = incoming;
+  cameraApply(incoming, cameraPoint(), true);   // place it before it is seen
+  incoming.classList.add("on");
+  outgoing.classList.remove("on");
+  bgFront = !bgFront;
+}
+
+/**
+ * Show the scene for a given set and decade. Decade 0 means the opening
+ * prayers, which use the set's own picture.
+ */
+function setScene(setKey, decade) {
+  el.app.dataset.set = setKey;              // drives the per-set veil tint
+  const list = SCENES[setKey] || [];
+  const candidates = [];
+  if (decade >= 1 && decade <= list.length) candidates.push(list[decade - 1]);
+  candidates.push(SET_IMAGE[setKey], DESIGN_IMAGE);
+
+  // If decades are crossed quickly, only the newest request may paint.
+  const token = ++sceneToken;
+  resolveScene(candidates, function (src) {
+    if (token !== sceneToken) return;
+    if (!src || src === currentSceneSrc) return;   // nothing to change
+    currentSceneSrc = src;
+    crossfadeTo(src);
+  });
+}
+
+/**
+ * Which decade is being prayed right now. Derived from the existing step
+ * pointer rather than kept as a second copy of the state: the opening
+ * prayers report 0, and the closing prayers keep the fifth decade's scene
+ * instead of jumping back.
+ */
+/**
+ * Which of the ten framings belongs to this step. The Hail Marys are the
+ * journey: bead 1 opens wide, bead 10 pulls back. The prayers that open
+ * and close a decade sit at those same two ends, so the move into a new
+ * mystery starts from the wide shot and the decade finishes on it.
+ */
+function cameraIndexFor(step) {
+  if (!step) return 0;
+  if (step.kind === "hm" && step.beadTotal === 10) return step.beadNum - 1;
+  if (step.kind === "glory" || step.kind === "fatima") return 9;
+  return 0;      // the announcement and its Our Father: the establishing shot
+}
+
+function currentDecade() {
+  for (let i = Math.min(S.idx, S.seq.length - 1); i >= 0; i--) {
+    const st = S.seq[i];
+    if (st && st.decade) return st.decade;
+  }
+  return 0;
+}
+
+function makeMotes() {
+  const layer = $("bg-layer");
+  for (let i = 0; i < 16; i++) {
+    const m = document.createElement("div");
+    m.className = "mote";
+    const size = 1 + Math.random() * 2.2;
+    m.style.width = m.style.height = size.toFixed(1) + "px";
+    m.style.left = (Math.random() * 100).toFixed(1) + "%";
+    m.style.top  = (100 + Math.random() * 30).toFixed(1) + "%";
+    m.style.boxShadow = "0 0 " + (4 + size * 3).toFixed(0) + "px rgba(255,228,168,.8)";
+    m.style.animationDuration = (26 + Math.random() * 34).toFixed(1) + "s";
+    m.style.animationDelay = (-Math.random() * 50).toFixed(1) + "s";
+    layer.appendChild(m);
+  }
+}
+
+/* ==================================================================
+   RENDER A STEP
+   ================================================================== */
+function beadElement(bead) {
+  if (!bead) return null;
+  if (bead.t === "cross") return el.cross;
+  if (bead.t === "medal") return el.medal;
+  if (bead.t === "loop")  return beadEls.loop[bead.i];
+  if (bead.t === "pend")  return beadEls.pend[bead.i];
+  return null;
+}
+
+/**
+ * Light every bead up to the furthest point reached so far - not merely the
+ * one in front of the current prayer. The closing prayers sit back on the
+ * medal and the cross, and without this the whole rosary would go dark again.
+ */
+function paintBeads(step) {
+  const order = [el.cross].concat(beadEls.pend, [el.medal], beadEls.loop);
+  for (let i = 0; i < order.length; i++) order[i].classList.remove("active", "done");
+
+  let far = -1;
+  for (let j = 0; j <= S.idx && j < S.seq.length; j++) {
+    const e = beadElement(S.seq[j].bead);
+    const k = e ? order.indexOf(e) : -1;
+    if (k > far) far = k;
+  }
+  for (let i = 0; i <= far; i++) order[i].classList.add("done");
+
+  const activeEl = beadElement(step.bead);
+  if (activeEl) { activeEl.classList.remove("done"); activeEl.classList.add("active"); }
+}
+
+function render() {
+  const step = S.seq[S.idx];
+  const L = P[S.lang];
+  if (!step) return finishRosary();
+
+  paintBeads(step);
+
+  // Header
+  el.hdrSet.childNodes[0].nodeValue = L.setNames[S.set];
+  el.hdrSub.textContent =
+    step.decade ? L.ui.decade(step.decade)
+    : step.section === "open" ? L.ui.opening
+    : L.ui.closingLabel;
+
+  // Mystery strip
+  if (step.decade) {
+    el.mysteryLine.textContent = L.ui.mysteryOf(step.decade) + " \u00b7 " + L.mysteries[S.set][step.decade - 1][0];
+  } else {
+    el.mysteryLine.textContent = step.section === "open" ? L.ui.opening : L.ui.closingLabel;
+  }
+
+  // The scene follows the decade being prayed, and the camera framing
+  // follows the Hail Mary. Both are read off the existing step pointer -
+  // the prayer drives the picture, not a timer.
+  const dec = currentDecade();
+  cameraUpdate(S.set, dec, cameraIndexFor(step));
+  setScene(S.set, dec);   // a repeat of the same picture is ignored
+
+  // Prayer, laid out as lines of individually lightable words
+  el.prayerName.textContent = step.name;
+  Karaoke.on = !!(S.voiceWanted && voiceSupported() && step.voice);
+  renderPrayerText(step);
+  el.prayerText.scrollTop = 0;
+
+  // Foot
+  el.footL.textContent = step.beadNum ? L.ui.bead(step.beadNum, step.beadTotal) : "";
+  el.footR.textContent = (S.idx + 1) + " / " + S.seq.length;
+
+  // Size the prayer LAST, once every other line in the panel is in place.
+  // Measured any earlier and the foot label is still missing, so the
+  // available height is wrong and a prayer can end up slightly too big.
+  fitPrayerText();
+
+  // The rosary is deliberately NOT re-fitted here. The stage is a fixed
+  // height, so its size is settled once on load and on resize only.
+  resetVoiceForStep();
+}
+
+/* ==================================================================
+   ADVANCE
+   ================================================================== */
+let advancing = false;
+function advance() {
+  if (advancing) return;
+  advancing = true;
+  setTimeout(function () { advancing = false; }, 260);
+
+  if (S.idx >= S.seq.length - 1) return finishRosary();
+  S.idx++;
+  saveProgress();
+  render();
+}
+
+function onTap() {
+  if (!S.started) return;
+  if (el.finish.classList.contains("show")) return;
+
+  S.taps++;
+  if (!S.hintDone && S.taps >= 3) {
+    S.hintDone = true;
+    store.set("rosary.hintDone", "1");
+    el.hint.classList.add("gone");
+  }
+  advance();
+}
+
+function finishRosary() {
+  const L = P[S.lang];
+  stopVoice();
+  el.finTitle.textContent = L.ui.finTitle;
+  el.finBody.textContent  = L.ui.finBody;
+  el.finAgain.textContent = L.ui.again;
+  el.finish.classList.add("show");
+  store.del("rosary.progress");
+}
+
+/* ==================================================================
+   MICROPHONE LOUDNESS METER
+
+   Voice -> microphone -> RMS amplitude -> smoothed 0..1 -> the glow.
+
+   Nothing here loops on its own. When the microphone is unavailable the
+   value falls to a calm resting glow and simply breathes very gently, so
+   the shining bead never disappears.
+   ================================================================== */
+const Meter = {
+  ctx: null, analyser: null, source: null, stream: null, buf: null,
+  level: 0,            // smoothed 0..1, what the glow reads
+  floorDb: -60,        // adaptive noise floor, learned from the room
+  running: false,
+  raf: 0,
+  supported: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+                (window.AudioContext || window.webkitAudioContext))
+};
+
+/* Loudness mapping, in dBFS. The bottom of the scale follows the room's
+   own noise; the top is anchored to where loud speech actually sits, so a
+   whisper stays a whisper instead of saturating the glow. */
+const NOISE_GATE_DB = 8;       // must clear the room tone by this much to register
+const FULL_SCALE_DB = -14;     // loud speech - the brightest the glow goes
+const MIN_SPAN_DB   = 24;      // never let the usable range collapse
+
+const ATTACK  = 0.34;          // rises quickly, so it feels responsive
+const RELEASE = 0.055;         // falls slowly, so it settles rather than snaps
+const BREATH_PERIOD = 4600;    // ms, the resting breath when it is quiet
+
+async function startMeter() {
+  if (!Meter.supported || Meter.running) return false;
+  try {
+    Meter.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false   // AGC would flatten exactly what we measure
+      }
+    });
+  } catch (err) {
+    handleMicError(err);
+    return false;
+  }
+
+  const AC = window.AudioContext || window.webkitAudioContext;
+  Meter.ctx = new AC();
+  // Browsers start the context suspended until a gesture; begin() is one.
+  if (Meter.ctx.state === "suspended") { try { await Meter.ctx.resume(); } catch (e) {} }
+
+  Meter.source = Meter.ctx.createMediaStreamSource(Meter.stream);
+  Meter.analyser = Meter.ctx.createAnalyser();
+  Meter.analyser.fftSize = 1024;
+  Meter.analyser.smoothingTimeConstant = 0.25;
+  Meter.source.connect(Meter.analyser);   // analyser only - never to the speakers
+  Meter.buf = new Float32Array(Meter.analyser.fftSize);
+
+  Meter.running = true;
+  syncMicButton();
+  return true;
+}
+
+function stopMeter() {
+  Meter.running = false;
+  if (Meter.stream) { Meter.stream.getTracks().forEach(t => t.stop()); Meter.stream = null; }
+  if (Meter.source) { try { Meter.source.disconnect(); } catch (e) {} Meter.source = null; }
+  if (Meter.ctx)    { try { Meter.ctx.close(); } catch (e) {} Meter.ctx = null; }
+  Meter.analyser = null; Meter.buf = null;
+  syncMicButton();
+}
+
+/** One frame: read the microphone, turn it into a 0..1 loudness. */
+function readLoudness() {
+  if (!Meter.running || !Meter.analyser) return 0;
+
+  Meter.analyser.getFloatTimeDomainData(Meter.buf);
+
+  let sum = 0;
+  for (let i = 0; i < Meter.buf.length; i++) sum += Meter.buf[i] * Meter.buf[i];
+  const rms = Math.sqrt(sum / Meter.buf.length);
+  const db  = 20 * Math.log10(rms + 1e-7);      // roughly -140 (silent) .. 0 (clipping)
+
+  // Learn the room's own noise: settle down towards quiet moments, creep
+  // back up slowly so it can recover if the room gets louder. Clamped to a
+  // plausible range so one digitally-silent frame cannot drag it away.
+  if (db < Meter.floorDb) Meter.floorDb += (db - Meter.floorDb) * 0.08;
+  else                    Meter.floorDb += 0.008;
+  Meter.floorDb = Math.min(-40, Math.max(-62, Meter.floorDb));
+
+  // Anything not clearly above the room tone is silence.
+  const start = Meter.floorDb + NOISE_GATE_DB;
+  const full  = Math.max(FULL_SCALE_DB, start + MIN_SPAN_DB);
+  if (db <= start) return 0;
+
+  const norm = Math.min(1, (db - start) / (full - start));
+  return Math.pow(norm, 0.75);    // soft knee, so quiet praying still registers
+}
+
+/**
+ * The render loop. Runs whether or not the microphone is on: without it the
+ * value eases to a calm resting glow with a barely-there breath.
+ */
+function meterFrame(now) {
+  Meter.raf = requestAnimationFrame(meterFrame);
+
+  const target = Meter.running ? readLoudness() : 0;
+
+  // Asymmetric smoothing: quick to answer the voice, slow to let go.
+  const k = target > Meter.level ? ATTACK : RELEASE;
+  Meter.level += (target - Meter.level) * k;
+
+  // A resting breath, only while quiet - it fades out as soon as you speak,
+  // so the voice, not a timer, is what drives the glow.
+  const breath = 0.055 * (0.5 + 0.5 * Math.sin(now * 2 * Math.PI / BREATH_PERIOD));
+  const v = Math.min(1, Meter.level + breath * (1 - Meter.level));
+
+  el.app.style.setProperty("--voice", v.toFixed(4));
+}
+
+function handleMicError(err) {
+  const L = P[S.lang];
+  const name = err && err.name;
+  if (name === "NotAllowedError" || name === "SecurityError")      toast(L.ui.micDenied);
+  else if (name === "NotFoundError" || name === "OverconstrainedError") toast(L.ui.micNoDevice);
+  else if (name === "NotReadableError")                            toast(L.ui.micBusy);
+  else                                                             toast(L.ui.micDenied);
+  S.voiceWanted = false;
+  syncMicButton();
+}
+
+/* ==================================================================
+   VOICE
+   ================================================================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recRunning = false, wantRunning = false;
+let heardWords = [], targetWords = [], silenceTimer = null, thresholdMet = false;
+let spokenPointer = 0;      // words lit so far in this step; only ever grows
+
+function voiceSupported() { return !!SR; }
+function langTag() { return S.lang === "tl" ? "fil-PH" : "en-US"; }
+
+function startVoice() {
+  // The loudness meter is what lights the bead, so start it even where
+  // speech recognition itself is unavailable.
+  startMeter();
+
+  if (!voiceSupported()) {
+    // No speech recognition here. If the meter cannot run either, there is
+    // nothing the microphone can do for us - say so and fall back to taps.
+    if (!Meter.supported) { S.voiceWanted = false; toast(P[S.lang].ui.micUnsupported); }
+    syncMicButton();
+    return;
+  }
+  wantRunning = true;
+  ensureRec();
+  try { if (!recRunning) rec.start(); } catch (e) { /* already starting */ }
+  syncMicButton();
+}
+
+function stopVoice() {
+  wantRunning = false;
+  clearTimeout(silenceTimer);
+  if (rec && recRunning) { try { rec.stop(); } catch (e) {} }
+  S.voiceLive = false;
+  stopMeter();
+  syncMicButton();
+}
+
+function ensureRec() {
+  if (rec) { rec.lang = langTag(); return; }
+  rec = new SR();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = langTag();
+
+  rec.onstart = function () { recRunning = true; S.voiceLive = true; syncMicButton(); };
+
+  rec.onresult = function (ev) {
+    let interim = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) heardWords = heardWords.concat(words(t));
+      else interim += " " + t;
+    }
+    evaluate(interim);
+  };
+
+  rec.onerror = function (ev) {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+      wantRunning = false; S.voiceWanted = false;
+      toast(P[S.lang].ui.micDenied);
+      syncMicButton();
+    }
+  };
+
+  rec.onend = function () {
+    recRunning = false; S.voiceLive = false;
+    syncMicButton();
+    if (wantRunning) setTimeout(function () { try { rec.start(); } catch (e) {} }, 260);
+  };
+}
+
+function evaluate(interim) {
+  const step = S.seq[S.idx];
+  if (!step || !step.voice || !targetWords.length) return;
+
+  const all = interim ? heardWords.concat(words(interim)) : heardWords;
+
+  // Interim results are rewritten as the recogniser changes its mind, so the
+  // raw pointer can jump backwards. Words already lit must never go dark:
+  // the pointer only ever moves forward.
+  let p = matchPointer(targetWords, all);
+  if (p < spokenPointer) p = spokenPointer;
+  spokenPointer = p;
+
+  paintKaraoke(p);
+
+  const prog = p / targetWords.length;
+  el.voiceFill.style.width = Math.min(100, prog * 100).toFixed(0) + "%";
+  if (prog >= VOICE_THRESHOLD) thresholdMet = true;
+
+  // Wait for you to finish speaking: any new speech resets the silence clock.
+  clearTimeout(silenceTimer);
+  if (thresholdMet) {
+    silenceTimer = setTimeout(function () {
+      if (S.seq[S.idx] === step) advance();
+    }, SILENCE_SECONDS * 1000);
+  }
+}
+
+function resetVoiceForStep() {
+  const step = S.seq[S.idx];
+  heardWords = [];
+  spokenPointer = 0;
+  thresholdMet = false;
+  clearTimeout(silenceTimer);
+  el.voiceFill.style.width = "0%";
+
+  const on = S.voiceWanted && voiceSupported() && step && step.voice;
+  // Match against exactly the words on screen, so the highlight and the
+  // progress can never disagree.
+  targetWords = on ? Karaoke.tokens.slice() : [];
+  el.voiceTrack.classList.toggle("on", !!on);
+}
+
+function syncMicButton() {
+  el.btnMic.classList.toggle("active", S.voiceWanted && (voiceSupported() || Meter.supported));
+  el.btnMic.classList.toggle("listening", Meter.running || S.voiceLive);
+}
+
+/* ==================================================================
+   MUSIC
+   ================================================================== */
+function setupMusic() {
+  el.music.src = MUSIC_FILE;
+  el.music.volume = 0;
+  el.music.addEventListener("canplaythrough", function () {
+    S.musicOk = true; syncMusicButton();
+  }, { once:true });
+  el.music.addEventListener("error", function () {
+    S.musicOk = false; S.musicWanted = false;
+    el.btnMusic.style.display = "none";
+  }, { once:true });
+}
+
+function playMusic() {
+  if (!S.musicOk || !S.musicWanted) return;
+  const p = el.music.play();
+  if (p && p.then) p.then(function () { fadeMusic(MUSIC_VOLUME); }).catch(function () {});
+  else fadeMusic(MUSIC_VOLUME);
+}
+function pauseMusic() { fadeMusic(0, function () { el.music.pause(); }); }
+
+let fadeTimer = null;
+function fadeMusic(to, done) {
+  clearInterval(fadeTimer);
+  fadeTimer = setInterval(function () {
+    const d = to - el.music.volume;
+    if (Math.abs(d) < 0.012) {
+      el.music.volume = to; clearInterval(fadeTimer); if (done) done();
+    } else {
+      el.music.volume = Math.min(1, Math.max(0, el.music.volume + (d > 0 ? 0.012 : -0.012)));
+    }
+  }, 55);
+}
+function syncMusicButton() { el.btnMusic.classList.toggle("active", S.musicOk && S.musicWanted); }
+
+/* ==================================================================
+   SCREEN WAKE LOCK
+   ================================================================== */
+function keepAwake() {
+  if (!("wakeLock" in navigator)) return;
+  navigator.wakeLock.request("screen").then(function (lock) {
+    S.wakeLock = lock;
+    lock.addEventListener("release", function () { S.wakeLock = null; });
+  }).catch(function () {});
+}
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "visible") {
+    if (S.started && !S.wakeLock) keepAwake();
+    if (Meter.ctx && Meter.ctx.state === "suspended") { try { Meter.ctx.resume(); } catch (e) {} }
+  } else if (Meter.ctx && Meter.ctx.state === "running") {
+    try { Meter.ctx.suspend(); } catch (e) {}   // don't hold the mic in the background
+  }
+});
+
+/* ==================================================================
+   PROGRESS
+   ================================================================== */
+function saveProgress() {
+  store.set("rosary.progress", JSON.stringify({ set:S.set, lang:S.lang, idx:S.idx, at:Date.now() }));
+}
+
+/* ==================================================================
+   START SCREEN
+   ================================================================== */
+function paintStartScreen() {
+  const L = P[S.lang];
+  el.startLede.textContent   = L.ui.lede;
+  el.startNote.textContent   = L.ui.note;
+  el.lblMystery.textContent  = L.ui.mystery;
+  el.lblLanguage.textContent = L.ui.language;
+  el.begin.textContent       = L.ui.begin;
+  el.hint.textContent        = L.ui.hint;
+  el.btnLang.textContent     = S.lang === "tl" ? "TL" : "EN";
+
+  el.setChoices.innerHTML = "";
+  const today = DAY_SET[new Date().getDay()];
+  SET_KEYS.forEach(function (k) {
+    const b = document.createElement("button");
+    b.className = "choice" + (k === S.set ? " sel" : "");
+    b.dataset.set = k;
+    b.innerHTML = L.setShort[k] + (k === today ? "<small>" + (S.lang === "tl" ? "Ngayong araw" : "Today") + "</small>" : "");
+    el.setChoices.appendChild(b);
+  });
+
+  const langBtns = el.langChoices.children;
+  for (let i = 0; i < langBtns.length; i++)
+    langBtns[i].classList.toggle("sel", langBtns[i].dataset.lang === S.lang);
+
+  setScene(S.set, 0);        // the set's own picture while choosing
+}
+
+let toastTimer = null;
+function toast(msg) {
+  el.toast.textContent = msg;
+  el.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.toast.classList.remove("show"); }, 3400);
+}
+
+/* ==================================================================
+   EVENTS
+   ================================================================== */
+el.setChoices.addEventListener("click", function (e) {
+  const b = e.target.closest(".choice"); if (!b) return;
+  S.set = b.dataset.set;
+  paintStartScreen();
+});
+
+el.langChoices.addEventListener("click", function (e) {
+  const b = e.target.closest(".choice"); if (!b) return;
+  S.lang = b.dataset.lang;
+  store.set("rosary.lang", S.lang);
+  paintStartScreen();
+});
+
+el.btnLang.addEventListener("click", function (e) {
+  e.stopPropagation();
+  S.lang = S.lang === "en" ? "tl" : "en";
+  store.set("rosary.lang", S.lang);
+  el.btnLang.textContent = S.lang === "tl" ? "TL" : "EN";
+  el.hint.textContent = P[S.lang].ui.hint;
+  if (S.started) {
+    S.seq = buildSequence(S.set, S.lang);   // same length, so your place is kept
+    if (rec) { rec.lang = langTag(); if (recRunning) { try { rec.stop(); } catch (err) {} } }
+    render();
+  } else {
+    paintStartScreen();
+  }
+});
+
+el.btnMic.addEventListener("click", function (e) {
+  e.stopPropagation();
+  if (!voiceSupported()) { toast(P[S.lang].ui.micUnsupported); return; }
+  S.voiceWanted = !S.voiceWanted;
+  if (S.voiceWanted) { startVoice(); toast(P[S.lang].ui.micOn); }
+  else { stopVoice(); toast(P[S.lang].ui.micOff); }
+  render();      // the text re-lays out with or without word highlighting
+});
+
+el.btnMusic.addEventListener("click", function (e) {
+  e.stopPropagation();
+  S.musicWanted = !S.musicWanted;
+  if (S.musicWanted) playMusic(); else pauseMusic();
+  syncMusicButton();
+});
+
+// Tap anywhere to continue - the text panel still scrolls freely
+el.tapzone.addEventListener("click", onTap);
+el.prayerText.addEventListener("click", function (e) { e.stopPropagation(); onTap(); });
+
+document.addEventListener("keydown", function (e) {
+  if (!S.started) return;
+  if (e.key === " " || e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); onTap(); }
+  if (e.key === "ArrowLeft" && S.idx > 0) { S.idx--; render(); }
+});
+
+el.begin.addEventListener("click", begin);
+/** Put the rosary down: release the microphone, the music and the screen. */
+function endSession() {
+  stopVoice();
+  pauseMusic();
+  if (S.wakeLock) { try { S.wakeLock.release(); } catch (e) {} S.wakeLock = null; }
+  S.started = false;
+  el.finish.classList.remove("show");
+  el.start.classList.remove("hidden");
+  paintStartScreen();
+}
+
+el.btnExit.addEventListener("click", function (e) {
+  e.stopPropagation();
+  endSession();
+  toast(P[S.lang].ui.exited);
+});
+
+el.finAgain.addEventListener("click", function () { endSession(); });
+
+function onViewportChange() {
+  fitRosary();
+  fitPrayerText();
+  // The framing is measured in pixels, so re-place it without a glide.
+  cameraApply(Camera.el, cameraPoint(), true);
+}
+window.addEventListener("resize", onViewportChange);
+window.addEventListener("orientationchange", function () { setTimeout(onViewportChange, 240); });
+
+/* ==================================================================
+   BEGIN
+   ================================================================== */
+function begin() {
+  S.seq = buildSequence(S.set, S.lang);
+  S.idx = 0;
+  S.started = true;
+
+  el.start.classList.add("hidden");
+  if (S.hintDone) el.hint.classList.add("gone");
+
+  setScene(S.set, 0);          // render() takes over once the decades begin
+  playMusic();                 // this click is the gesture browsers require
+  if (S.voiceWanted) startVoice();   // and the gesture that unlocks the mic
+  keepAwake();
+
+  requestAnimationFrame(function () { fitRosary(); render(); });
+}
+
+/* ==================================================================
+   BOOT
+   ================================================================== */
+document.documentElement.style.setProperty("--scene-fade", SCENE_FADE_MS + "ms");
+document.documentElement.style.setProperty("--cam-glide", CAMERA_GLIDE_MS + "ms");
+Camera.el = el.bgA;
+buildRosary();
+makeMotes();
+setupMusic();
+Meter.raf = requestAnimationFrame(meterFrame);   // resting breath until the mic starts
+paintStartScreen();
+syncMicButton();
+fitRosary();
+setTimeout(fitRosary, 120);
+</script>
+</body>
+</html>
