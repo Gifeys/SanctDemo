@@ -17,6 +17,9 @@ import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
 import AdminPortal from "./components/AdminPortal";
 import RosarySettingsModal from "./components/RosarySettingsModal";
+import PresenceBanner from "./components/PresenceBanner";
+import PresenceSheet from "./components/PresenceSheet";
+import SimulatorPanel from "./components/SimulatorPanel";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -44,6 +47,7 @@ export default function App() {
   const [isMobileOnly, setIsMobileOnly] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isRosarySettingsOpen, setIsRosarySettingsOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
   // Identity state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -254,6 +258,20 @@ export default function App() {
   }, [isAdmin]);
 
   const activeChurchRoute = ROUTES.find(r => r.id === selectedChurchId) || ROUTES[0];
+
+  // Presence sheet actions: the pilgrim may be physically near a parish they
+  // haven't selected in-app yet (e.g. they came straight from the church
+  // selector), so opening the tour or AR screen also switches the active
+  // church context to the one presence detected.
+  const handleOpenTourFromPresence = (parishId: string) => {
+    setSelectedChurchId(parishId);
+    setActiveTab("navigator");
+  };
+
+  const handleOpenARFromPresence = (parishId: string) => {
+    setSelectedChurchId(parishId);
+    setActiveTab("ar");
+  };
 
   // Global methods to update progress
   const addPoints = async (pointsToAdd: number) => {
@@ -777,6 +795,14 @@ export default function App() {
                           <span>Devotee Authentication</span>
                         </button>
 
+                        <button
+                          onClick={() => { setIsSimulatorOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 pl-9 rounded-xl text-left flex items-center gap-2.5 text-sm text-[#666655] hover:bg-[#EBEBE0] transition-all"
+                        >
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>Location Simulator (Demo)</span>
+                        </button>
+
                         {/* Admin portal panel entry */}
                         {(isAdmin || isLoggedIn) && (
                           <button
@@ -1119,6 +1145,18 @@ export default function App() {
               isOpen={isRosarySettingsOpen}
               onClose={() => setIsRosarySettingsOpen(false)}
             />
+
+            <SimulatorPanel
+              isOpen={isSimulatorOpen}
+              onClose={() => setIsSimulatorOpen(false)}
+            />
+
+            {/* Presence is global, not a property of one tab — rendered here
+                so it rises over whatever screen the pilgrim is on, and
+                bounded by this same relative container so it never escapes
+                the phone frame. */}
+            <PresenceBanner />
+            <PresenceSheet onOpenTour={handleOpenTourFromPresence} onOpenAR={handleOpenARFromPresence} />
 
           </div>
         </PhoneContainer>
