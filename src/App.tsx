@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { PresenceProvider } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
 import ExploreTab from "./components/ExploreTab";
 import MapTab from "./components/MapTab";
@@ -459,6 +460,7 @@ export default function App() {
   };
 
   return (
+    <PresenceProvider>
     <div className="min-h-screen bg-[#F5F5F0] text-[#33332D] flex flex-col justify-between font-sans">
       {/* Top Desktop Workspace Header Bar */}
       <header className="bg-[#EBEBE0] border-b border-[#D6D6C2] py-4 px-6 select-none shrink-0">
@@ -1127,5 +1129,6 @@ export default function App() {
         <p>Prepared for STI College Kalookan Capstone 2 Defense (March 2026). SanctiWalk is optimized for offline-first rendering across Windows, iOS, and Android platforms.</p>
       </footer>
     </div>
+    </PresenceProvider>
   );
 }
