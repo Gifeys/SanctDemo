@@ -14,6 +14,7 @@
   --color-brand-card: #EBEBE0;         /* Card/Surface background — cream (unchanged) */
   --color-brand-border: #D6D6C2;       /* Borders and dividers — light neutral (was mistakenly #161603, near-black) */
   --color-brand-text: #33332D;         /* Main body text color (Dark Charcoal, on cream/white cards) */
+  --color-brand-success: #1F7A54;      /* "You are here" indicator on the diocese map — distinct from the brand palette so it always reads as location, never as a brand accent */
 
   /* ─── TYPOGRAPHY VARIABLES ─── */
   --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
@@ -36,7 +37,48 @@
   --color-brand-card: var(--color-brand-card);
   --color-brand-border: var(--color-brand-border);
   --color-brand-text: var(--color-brand-text);
+  --color-brand-success: var(--color-brand-success);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DIOCESE MAP (DioceseMap.tsx)
+   A hand-drawn, geographically-calibrated illustration of the
+   diocese — not a street map. All colour comes from the brand
+   variables above; no literal colours here. The map is displayed
+   inside a height-capped card, so its 300x400 viewBox is rendered
+   below 1x scale on screen. SVG text scales down with the whole
+   graphic, so the font-sizes below are inflated well past the
+   14px legibility floor to compensate — see DioceseMap.tsx's
+   wrapLabel/PinLabel, which wraps names onto two lines so the
+   larger text still fits the frame.
+   ───────────────────────────────────────────────────────────── */
+.dmap { display: block; width: 100%; height: 100%; }
+.dmap__land { fill: var(--color-brand-card); }
+.dmap__water { fill: color-mix(in srgb, var(--color-brand-accent) 30%, var(--color-brand-bg)); }
+.dmap__river { stroke: color-mix(in srgb, var(--color-brand-accent) 55%, var(--color-brand-bg)); fill: none; }
+.dmap__road { stroke: color-mix(in srgb, var(--color-brand-text) 18%, transparent); fill: none; }
+.dmap__area-label {
+  fill: var(--color-brand-secondary);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-anchor: middle;
+}
+.dmap__pin--live { fill: var(--color-brand-primary); stroke: var(--color-brand-card); }
+.dmap__pin--soon { fill: color-mix(in srgb, var(--color-brand-secondary) 40%, transparent); stroke: var(--color-brand-secondary); }
+.dmap__pin-label { fill: var(--color-brand-text); font-size: 21px; font-weight: 700; text-anchor: middle; }
+.dmap__you { fill: var(--color-brand-success); stroke: var(--color-brand-card); }
+.dmap__you-ring {
+  fill: none;
+  stroke: var(--color-brand-success);
+  animation: dmap-pulse 2s ease-out infinite;
+}
+@keyframes dmap-pulse {
+  0% { r: 8; opacity: 0.8; }
+  100% { r: 20; opacity: 0; }
+}
+.dmap__hit { cursor: pointer; }
+.dmap__hit:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 2px; }
 
 /* Base Typography Configuration */
 body {

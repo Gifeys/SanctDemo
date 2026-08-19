@@ -20,6 +20,7 @@ import RosarySettingsModal from "./components/RosarySettingsModal";
 import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
+import DioceseMap from "./components/DioceseMap";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -552,6 +553,15 @@ export default function App() {
                     <p className="text-[15px] text-[#EBEBE0] leading-relaxed font-sans">
                       Select a historical parish of the Diocese of Kalookan to begin your interactive spiritual walking tour.
                     </p>
+                  </div>
+
+                  {/* Diocese map — a geographically calibrated illustration
+                      showing both parishes (and the pilgrim's own position,
+                      when known) before a church is chosen. Tapping a live
+                      pin opens that parish's tour, same as the presence
+                      sheet does. */}
+                  <div className="bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-3 h-72">
+                    <DioceseMap onSelectParish={handleOpenTourFromPresence} />
                   </div>
 
                   {/* Church Selector Cards (Figure 2 / Page 34) */}
