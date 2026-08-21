@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { PresenceProvider } from "./context/PresenceContext";
+import React, { useState, useEffect, useMemo } from "react";
+import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
+import HomeParishChooser from "./components/HomeParishChooser";
+import ChangeParishModal from "./components/ChangeParishModal";
 import ExploreTab from "./components/ExploreTab";
 import MapTab from "./components/MapTab";
 import CompanionTab from "./components/CompanionTab";
@@ -29,17 +31,47 @@ import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getD
 
 import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
+import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 
 import { 
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon,
   ScanLine as ArIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Church
 } from "lucide-react";
 
+// Watches presence from inside the provider and reports an arrival upward.
+// App itself renders PresenceProvider, so it cannot call usePresence(); this
+// tiny child can. Only `present` switches the dashboard — `approaching` is
+// still just passing by, and switching then would yank the screen around
+// while someone walks down the street.
+function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void }) {
+  const { presence } = usePresence();
+
+  useEffect(() => {
+    if (presence.mode === "present" && presence.parishId) {
+      onArrive(presence.parishId);
+    }
+  }, [presence.mode, presence.parishId, onArrive]);
+
+  return null;
+}
+
 export default function App() {
-  // Navigation & Frame settings
-  const [selectedChurchId, setSelectedChurchId] = useState<string | null>(null);
+  // The pilgrim's home parish, chosen once and remembered. This is the
+  // fallback the dashboard shows whenever GPS says they are not at a parish.
+  const [homeParishId, setHomeParishId] = useState<string | null>(() =>
+    loadHomeParishId(ROUTES.map(r => r.id))
+  );
+  const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
+
+  // Navigation & Frame settings. Seeded from the home parish so the app opens
+  // on that parish's dashboard rather than asking which church to pick — the
+  // app can work that out, so it should not ask.
+  const [selectedChurchId, setSelectedChurchId] = useState<string | null>(
+    () => loadHomeParishId(ROUTES.map(r => r.id))
+  );
   const [activeTab, setActiveTab] = useState<
     "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "login" | "admin" | "pwa-devkit"
   >("home");
@@ -478,8 +510,34 @@ export default function App() {
     });
   };
 
+  const liveParishes = ROUTES.filter(r => r.status !== "coming_soon");
+
+  const handleChooseHomeParish = (parishId: string) => {
+    saveHomeParishId(parishId);
+    setHomeParishId(parishId);
+    setSelectedChurchId(parishId);
+    setActiveTab("home");
+    setIsChangeParishOpen(false);
+  };
+
+  // First run only: no home parish stored yet. One short question, then the
+  // dashboard becomes the front door for good.
+  if (homeParishId === null) {
+    return (
+      <HomeParishChooser parishes={liveParishes} onChoose={handleChooseHomeParish} />
+    );
+  }
+
   return (
     <PresenceProvider>
+      <PresenceParishSync onArrive={setSelectedChurchId} />
+      <ChangeParishModal
+        isOpen={isChangeParishOpen}
+        onClose={() => setIsChangeParishOpen(false)}
+        parishes={liveParishes}
+        currentParishId={homeParishId}
+        onChoose={handleChooseHomeParish}
+      />
     <div className="min-h-screen bg-[#F5F5F0] text-[#33332D] flex flex-col justify-between font-sans">
       {/* Top Desktop Workspace Header Bar */}
       <header className="bg-[#EBEBE0] border-b border-[#D6D6C2] py-4 px-6 select-none shrink-0">
@@ -713,6 +771,15 @@ export default function App() {
                         >
                           <Map className="w-4 h-4" />
                           <span>Pilgrimage Trail Guide</span>
+                        </button>
+
+                        {/* The "change it later" promised by the one-time chooser. */}
+                        <button
+                          onClick={() => { setIsChangeParishOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all text-[#4A4A35] hover:bg-[#EBEBE0]"
+                        >
+                          <Church className="w-4 h-4" />
+                          <span>Change Home Parish</span>
                         </button>
 
                         <button

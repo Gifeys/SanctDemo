@@ -34,7 +34,12 @@ export default function PhoneContainer({
   }, []);
 
   return (
-    <div id="phone-container" className="flex flex-col lg:flex-row gap-6 w-full max-w-7xl mx-auto px-4 py-6">
+    // flex-col-reverse below lg: the phone is the second child, so reversing
+    // puts the app itself at the top on narrow screens and pushes the capstone
+    // guide beneath it. Without this the guide is the front door and the app
+    // renders ~1200px down the page, which reads as "the feature is missing".
+    // On lg and up the original side-by-side layout is unchanged.
+    <div id="phone-container" className="flex flex-col-reverse lg:flex-row gap-6 w-full max-w-7xl mx-auto px-4 py-6">
       {/* Sidebar Controls & Capstone Guide */}
       <div className="flex-1 flex flex-col justify-between space-y-6">
         <div>
