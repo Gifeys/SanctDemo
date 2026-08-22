@@ -10,17 +10,21 @@ interface PresenceSheetProps {
 }
 
 function nextMassLabel(parishId: string): string {
-  const schedule = MASS_SCHEDULES[parishId] ?? [];
-  const upcoming = nextMass(schedule, new Date());
+  const parishSchedule = MASS_SCHEDULES[parishId];
+  const upcoming = nextMass(parishSchedule?.schedule ?? [], new Date());
 
-  // San Roque's schedule is deliberately empty in data.ts (not yet
-  // published) — nextMass() correctly returns null for that, and this must
-  // read as a calm, complete sentence rather than a blank or broken line.
+  // A parish with no schedule at all (real or placeholder) reads as a calm,
+  // complete sentence rather than a blank or broken line.
   if (!upcoming) return "Mass schedule coming soon";
 
   const today = new Date();
   const isToday = upcoming.date.toDateString() === today.toDateString();
-  return `Next Mass: ${isToday ? "Today" : upcoming.day}, ${upcoming.time}`;
+  const label = `Next Mass: ${isToday ? "Today" : upcoming.day}, ${upcoming.time}`;
+
+  // The times behind this label may be an unverified placeholder (see
+  // data.ts's scheduleVerified flag) — this quick-glance sheet must not
+  // state a Mass time as fact when it hasn't been confirmed by the parish.
+  return parishSchedule?.scheduleVerified === false ? `${label} (sample, unconfirmed)` : label;
 }
 
 // Rendered only in `present`. Anchored `absolute` (never `fixed`) against the

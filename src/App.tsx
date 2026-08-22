@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
-import HomeParishChooser from "./components/HomeParishChooser";
 import ChangeParishModal from "./components/ChangeParishModal";
 import ExploreTab from "./components/ExploreTab";
 import MapTab from "./components/MapTab";
@@ -36,7 +35,7 @@ import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { 
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon,
-  ScanLine as ArIcon, Users as MinistryIcon, MapPin, MessageSquare, ChevronRight, Bookmark, ArrowLeft,
+  ScanLine as ArIcon, Users as MinistryIcon, MapPin, ChevronRight, Bookmark, ArrowLeft,
   Settings as SettingsIcon,
   Church
 } from "lucide-react";
@@ -58,11 +57,19 @@ function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void
   return null;
 }
 
+// No home parish stored yet (first run, or storage was cleared) falls back
+// to this rather than asking — the client does not want a welcome screen
+// standing between install and the dashboard. The choice is still changeable
+// afterward from the sidebar's "Change Home Parish" entry.
+function firstLiveParishId(): string | null {
+  return ROUTES.find(r => r.status !== "coming_soon")?.id ?? ROUTES[0]?.id ?? null;
+}
+
 export default function App() {
   // The pilgrim's home parish, chosen once and remembered. This is the
   // fallback the dashboard shows whenever GPS says they are not at a parish.
   const [homeParishId, setHomeParishId] = useState<string | null>(() =>
-    loadHomeParishId(ROUTES.map(r => r.id))
+    loadHomeParishId(ROUTES.map(r => r.id)) ?? firstLiveParishId()
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
 
@@ -70,7 +77,7 @@ export default function App() {
   // on that parish's dashboard rather than asking which church to pick — the
   // app can work that out, so it should not ask.
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(
-    () => loadHomeParishId(ROUTES.map(r => r.id))
+    () => loadHomeParishId(ROUTES.map(r => r.id)) ?? firstLiveParishId()
   );
   const [activeTab, setActiveTab] = useState<
     "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "login" | "admin" | "pwa-devkit"
@@ -520,14 +527,6 @@ export default function App() {
     setIsChangeParishOpen(false);
   };
 
-  // First run only: no home parish stored yet. One short question, then the
-  // dashboard becomes the front door for good.
-  if (homeParishId === null) {
-    return (
-      <HomeParishChooser parishes={liveParishes} onChoose={handleChooseHomeParish} />
-    );
-  }
-
   return (
     <PresenceProvider>
       <PresenceParishSync onArrive={setSelectedChurchId} />
@@ -926,44 +925,34 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Featured iOS Card - Interactive Agos scan */}
-                      <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs relative overflow-hidden mx-4 mt-2">
-                        <div className="absolute right-0 top-0 opacity-5 translate-x-4 -translate-y-4">
-                          <Compass className="w-32 h-32 text-black animate-[spin_80s_linear_infinite]" />
-                        </div>
-                        <div className="relative z-10 space-y-3">
-                          <div className="inline-flex items-center gap-1 bg-[#5A5A40]/10 px-2.5 py-0.5 rounded-full text-[#5A5A40] font-extrabold text-sm tracking-widest uppercase font-sans">
-                            <Sparkles className="w-3 h-3 text-[#C2A649]" /> PILGRIMAGE SCANNER
-                          </div>
-                          <p className="text-[15px] text-[#8A8A70] leading-relaxed font-sans max-w-xs">
-                            Bring the physical <strong className="text-[#33332D]">Agos</strong> book to life. Scan parish points inside the church to play rich audio guides.
-                          </p>
-                          <div className="pt-1.5">
-                            <button
-                              onClick={() => setActiveTab("navigator")}
-                              className="bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-sm font-bold uppercase tracking-wider px-4 py-2.5 rounded-full transition-all flex items-center gap-1 shadow-sm active:scale-95"
-                            >
-                              <span>Scan Book / Altar</span> <ChevronRight className="w-3 h-3 stroke-[2.5]" />
-                            </button>
-                          </div>
-                        </div>
+                      {/* SECTION 1: content tied to the active parish. Its
+                          heading names that parish explicitly so switching
+                          parish (Location Simulator) makes the change
+                          obvious without needing an explanation — everything
+                          under this heading is specific to
+                          {activeChurchRoute.name}, and only this section
+                          should change when the active parish changes. */}
+                      <div className="px-4 pt-2">
+                        <h3 className="text-sm font-bold text-[#5FC7DE] uppercase tracking-widest font-serif italic">
+                          At {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
+                        </h3>
+                      </div>
+
+                      {/* Diocese map card — replaces the old "Pilgrimage
+                          Scanner" placeholder card. Tapping a live pin opens
+                          that parish's tour, same handler the Walk tab uses. */}
+                      <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-xs p-3 mx-4 mt-2 h-64">
+                        <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
                       </div>
 
                       <div className="p-4 space-y-4 font-sans">
-                        {/* Quick Navigation grid (Figure 35: 6 buttons) */}
+                        {/* Quick Navigation grid — everything here belongs to
+                            the active parish and follows it when it changes. */}
                         <div className="space-y-2">
                           <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-wider pl-1 font-sans">
                             Explore Faith and History
                           </h3>
                           <div className="grid grid-cols-2 gap-2 text-[15px] font-bold text-[#4A4A35]">
-                            <button
-                              onClick={() => setActiveTab("rosary")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <BookOpen className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>Daily Rosary</span>
-                            </button>
-
                             <button
                               onClick={() => setActiveTab("mass")}
                               className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
@@ -1003,30 +992,25 @@ export default function App() {
                               <ArIcon className="w-4 h-4 text-[#5A5A40] shrink-0 animate-pulse" />
                               <span>AR Tour</span>
                             </button>
+
+                            <button
+                              onClick={() => setActiveTab("navigator")}
+                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+                            >
+                              <Map className="w-4 h-4 text-[#5A5A40] shrink-0" />
+                              <span>The Walk</span>
+                            </button>
                           </div>
                         </div>
 
-                        {/* Verse of the day matching Figure 35/37 */}
-                        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-2">
-                          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
-                            Verse of the Day
-                          </h4>
-                          <blockquote className="text-[15px] text-[#33332D] leading-relaxed italic font-serif">
-                            "He has given us his very great and precious promises, so that through them you may participate in the divine nature and escape the corruption in the world caused by evil desires."
-                          </blockquote>
-                          <cite className="text-sm font-bold text-[#5A5A40] block font-mono">
-                            — 2 Peter 1:4
-                          </cite>
-                        </div>
-
-                        {/* Dynamic Announcements Bulletin board */}
+                        {/* Dynamic Announcements Bulletin board — parish events */}
                         <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
                           <div className="flex justify-between items-center border-b border-[#EBEBE0] pb-1.5">
                             <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
                               Upcoming Parish Events
                             </h4>
                             <span className="text-sm font-mono text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded">
-                              Maypajo Bulletin
+                              {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")} Bulletin
                             </span>
                           </div>
 
@@ -1044,6 +1028,37 @@ export default function App() {
                             ))}
                           </div>
                         </div>
+
+                        {/* SECTION 2: content that never changes with the
+                            active parish — kept visually and structurally
+                            separate from Section 1 above so the split is
+                            obvious without a word of explanation. */}
+                        <div className="pt-2">
+                          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest pl-1 font-sans border-t border-white/15 pt-4">
+                            Every Day
+                          </h3>
+                        </div>
+
+                        <button
+                          onClick={() => setActiveTab("rosary")}
+                          className="w-full bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors text-[15px] font-bold text-[#4A4A35]"
+                        >
+                          <BookOpen className="w-4 h-4 text-[#5A5A40] shrink-0" />
+                          <span>Daily Rosary</span>
+                        </button>
+
+                        {/* Verse of the day — diocese-wide, not tied to any parish */}
+                        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-2">
+                          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
+                            Verse of the Day
+                          </h4>
+                          <blockquote className="text-[15px] text-[#33332D] leading-relaxed italic font-serif">
+                            "He has given us his very great and precious promises, so that through them you may participate in the divine nature and escape the corruption in the world caused by evil desires."
+                          </blockquote>
+                          <cite className="text-sm font-bold text-[#5A5A40] block font-mono">
+                            — 2 Peter 1:4
+                          </cite>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1058,64 +1073,8 @@ export default function App() {
                             they were the pilgrim's own, which was not a walk
                             at all. Station-by-station progress returns when
                             it is driven by real QR scans at each station. */}
-                        <div className="p-4">
+                        <div className="p-4 pb-16">
                           <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
-                        </div>
-
-                        {/* DYNAMIC STATION COMMENT FORUM as requested */}
-                        <div className="px-4 pb-16 pt-2 font-sans text-left">
-                          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-4">
-                            <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/45 pb-1.5 flex items-center gap-1">
-                              <MessageSquare className="w-4 h-4 text-[#5A5A40]" /> Pilgrim Station Comments
-                            </h4>
-
-                            {/* Comment Write Box */}
-                            <div className="space-y-2">
-                              <textarea
-                                rows={2}
-                                placeholder="Post a spiritual reflection comment or prayers for this parish station..."
-                                value={activeCommentInput}
-                                onChange={(e) => setActiveCommentInput(e.target.value)}
-                                className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D] resize-none placeholder-[#8A8A70]"
-                              />
-                              <button
-                                onClick={() => {
-                                  // Find the currently active station id dynamically
-                                  const currentRouteObj = ROUTES.find(r => r.id === selectedChurchId) || ROUTES[0];
-                                  // Simple simulated indexing from MapTab, but default to Altar/Patron appropriately
-                                  const currentStationId = currentRouteObj.stations[0]?.id || "mhcp-altar";
-                                  handlePostComment(currentStationId);
-                                }}
-                                disabled={!activeCommentInput.trim()}
-                                className="w-full py-1.5 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white text-sm font-bold uppercase tracking-wider rounded-xl border border-[#4A4A35] transition-colors"
-                              >
-                                Post Public Devotional Note (+100 pts)
-                              </button>
-                            </div>
-
-                            {/* Comment Stream */}
-                            <div className="space-y-2 max-h-[160px] overflow-y-auto pt-1">
-                              {(() => {
-                                const currentRouteObj = ROUTES.find(r => r.id === selectedChurchId) || ROUTES[0];
-                                const currentStationId = currentRouteObj.stations[0]?.id || "mhcp-altar";
-                                const commList = commentsByStation[currentStationId] || [];
-                                
-                                if (commList.length === 0) {
-                                  return <p className="text-sm text-[#8A8A70] italic text-center py-2">No pilgrim reflections posted yet for this station. Be the first!</p>;
-                                }
-
-                                return commList.map((comm, idx) => (
-                                  <div key={idx} className="p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30 text-[15px]">
-                                    <div className="flex justify-between font-bold text-[#5A5A40] text-sm mb-0.5 font-serif italic">
-                                      <span>@{comm.user}</span>
-                                      <span className="text-sm text-[#8A8A70] font-mono font-normal">{comm.date}</span>
-                                    </div>
-                                    <p className="text-[#33332D] italic font-sans">"{comm.text}"</p>
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -1126,24 +1085,26 @@ export default function App() {
                     <DailyRosary />
                   )}
 
-                  {/* TAB 4: Mass schedule table */}
+                  {/* TAB 4: Mass schedule table — follows the active parish,
+                      not hardcoded to any one church (see MassSchedule.tsx). */}
                   {activeTab === "mass" && (
-                    <MassSchedule />
+                    <MassSchedule parish={activeChurchRoute} />
                   )}
 
-                  {/* TAB 5: Church History archive */}
+                  {/* TAB 5: Church History archive — same fix: renders the
+                      active parish's own history rather than an internal tab. */}
                   {activeTab === "history" && (
-                    <ChurchHistory />
+                    <ChurchHistory parish={activeChurchRoute} />
                   )}
 
                   {/* TAB 6: Volunteer Guilds list */}
                   {activeTab === "ministries" && (
-                    <MinistriesTab onAddApplication={handleAddApplication} />
+                    <MinistriesTab parish={activeChurchRoute} onAddApplication={handleAddApplication} />
                   )}
 
                   {/* TAB 7: Sacraments office */}
                   {activeTab === "sacraments" && (
-                    <SacramentsTab onAddApplication={handleAddApplication} />
+                    <SacramentsTab parish={activeChurchRoute} onAddApplication={handleAddApplication} />
                   )}
 
                   {/* TAB 8: AR Tour */}
@@ -1206,16 +1167,6 @@ export default function App() {
                   >
                     <Map className="w-5 h-5" />
                     <span className="text-sm font-bold font-serif italic">Walk</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("rosary")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
-                      activeTab === "rosary" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
-                    }`}
-                  >
-                    <BookOpen className="w-5 h-5" />
-                    <span className="text-sm font-bold font-serif italic">Rosary</span>
                   </button>
                 </nav>
 

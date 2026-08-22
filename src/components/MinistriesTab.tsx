@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { MINISTRIES, Ministry } from "../data";
-import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle } from "lucide-react";
+import { MINISTRIES } from "../data";
+import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info } from "lucide-react";
+import { Route } from "../types";
 
 interface MinistriesTabProps {
+  parish: Route;
   onAddApplication: (app: { id: string; type: string; applicant: string; details: string; date: string; status: string }) => void;
 }
 
-export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) {
+export default function MinistriesTab({ parish, onAddApplication }: MinistriesTabProps) {
+  const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedMinistryId, setSelectedMinistryId] = useState<string>("min-socom");
   
@@ -73,6 +76,16 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
       </div>
 
       <div className="p-4 space-y-4">
+        {/* These ministry types are the same across the diocese — this is
+            not {parishName}'s own private list, and the app should say so
+            rather than implying otherwise. */}
+        <div className="flex items-start gap-2 p-3 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
+          <Info className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
+          <p className="text-[15px] text-[#4A4A35] font-sans leading-snug">
+            These ministries are offered diocese-wide. Applying below will route your application to <strong>{parishName}</strong>, your current parish.
+          </p>
+        </div>
+
         {/* Ministries List Accordion */}
         <div className="space-y-2.5">
           <h3 className="text-[15px] font-bold text-[#EBEBE0] uppercase tracking-widest font-serif italic pl-1">
@@ -157,7 +170,7 @@ export default function MinistriesTab({ onAddApplication }: MinistriesTabProps) 
               <div className="space-y-0.5">
                 <h4 className="text-[15px] font-bold text-green-900 font-serif italic">Application Filed Successfully!</h4>
                 <p className="text-[15px] text-green-800 leading-relaxed font-sans">
-                  Your volunteer profile has been sent to Father Paul Woo and the parish panel. A SOCOM coordinator will contact you shortly for an interview.
+                  Your volunteer profile has been sent to the {parishName} parish office. A ministry coordinator will contact you shortly for an interview.
                 </p>
               </div>
               <button

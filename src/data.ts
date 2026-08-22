@@ -242,17 +242,68 @@ export const PILGRIM_QUIZ: QuizQuestion[] = [
   }
 ];
 
-export const MASS_SCHEDULES: Record<string, { day: string; time: string }[]> = {
-  "route-mhcp": [
-    { day: "Monday", time: "6:00 AM" },
-    { day: "Tuesday", time: "6:00 AM" },
-    { day: "Wednesday", time: "6:00 AM, 6:00 PM" },
-    { day: "Thursday", time: "6:00 AM, 6:00 PM" },
-    { day: "Friday", time: "6:00 AM, 6:00 PM" },
-    { day: "Saturday", time: "6:00 AM, 6:00 PM" },
-    { day: "Sunday", time: "6:00 AM, 7:30 AM, 9:00 AM, 10:30 AM, 4:30 PM, 6:00 PM" },
-  ],
-  "route-src": [],
+export interface ParishMassSchedule {
+  // Mirrors the `coordinatesVerified` pattern already used for parish
+  // coordinates elsewhere in this codebase: true only when the times below
+  // came from the parish's own published schedule. False means the schedule
+  // is a stand-in and must be visibly flagged as such wherever it renders —
+  // never presented as if it were the parish's real Mass times.
+  scheduleVerified: boolean;
+  schedule: { day: string; time: string }[];
+}
+
+export const MASS_SCHEDULES: Record<string, ParishMassSchedule> = {
+  "route-mhcp": {
+    scheduleVerified: true,
+    schedule: [
+      { day: "Monday", time: "6:00 AM" },
+      { day: "Tuesday", time: "6:00 AM" },
+      { day: "Wednesday", time: "6:00 AM, 6:00 PM" },
+      { day: "Thursday", time: "6:00 AM, 6:00 PM" },
+      { day: "Friday", time: "6:00 AM, 6:00 PM" },
+      { day: "Saturday", time: "6:00 AM, 6:00 PM" },
+      { day: "Sunday", time: "6:00 AM, 7:30 AM, 9:00 AM, 10:30 AM, 4:30 PM, 6:00 PM" },
+    ],
+  },
+  // PLACEHOLDER SCHEDULE — not from the parish. San Roque Cathedral's real
+  // Mass schedule loads dynamically on the diocese site and could not be
+  // scraped, so this is a deliberately-different stand-in that exists only
+  // so the per-parish switch can be demoed before the parish office
+  // supplies real times. scheduleVerified stays false until someone replaces
+  // the array below with confirmed times from the parish and flips it to
+  // true — do not remove the flag, and do not treat these times as real.
+  "route-src": {
+    scheduleVerified: false,
+    schedule: [
+      { day: "Monday", time: "6:00 PM" },
+      { day: "Tuesday", time: "6:00 PM" },
+      { day: "Wednesday", time: "6:00 PM" },
+      { day: "Thursday", time: "6:00 PM" },
+      { day: "Friday", time: "6:00 PM" },
+      { day: "Saturday", time: "6:00 AM, 5:00 PM" },
+      { day: "Sunday", time: "6:30 AM, 8:00 AM, 10:00 AM, 5:00 PM" },
+    ],
+  },
+};
+
+export interface ParishContact {
+  address: string;
+  phone?: string;
+  email?: string;
+}
+
+// Only Mary Help of Christians' contact details were ever actually scraped
+// from the diocese site. San Roque's are not yet available — MassSchedule
+// must say so rather than leaving blank fields or borrowing MHCP's.
+export const PARISH_CONTACTS: Record<string, ParishContact> = {
+  "route-mhcp": {
+    address: "J.P Rizal Street, Maypajo, Caloocan City",
+    phone: "(8) 288-7482 / 0945 253 5329",
+    email: "maryhelpofchristians@dioceseofkalookan.ph",
+  },
+  "route-src": {
+    address: "A. Mabini St, Caloocan City",
+  },
 };
 
 export const ROUTES: Route[] = [

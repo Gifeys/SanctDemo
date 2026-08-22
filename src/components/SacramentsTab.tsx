@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { SACRAMENTS, Sacrament } from "../data";
-import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark } from "lucide-react";
+import { SACRAMENTS } from "../data";
+import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark, Info } from "lucide-react";
+import { Route } from "../types";
 
 interface SacramentsTabProps {
+  parish: Route;
   onAddApplication: (app: { id: string; type: string; applicant: string; details: string; date: string; status: string }) => void;
 }
 
-export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) {
+export default function SacramentsTab({ parish, onAddApplication }: SacramentsTabProps) {
+  const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedSacramentId, setSelectedSacramentId] = useState<string>("sac-baptism");
   
@@ -85,6 +88,16 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Canon law requirements for these sacraments do not change from
+            parish to parish — this note keeps the app honest about that
+            rather than implying the list below is {parishName}-specific. */}
+        <div className="flex items-start gap-2 p-3 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
+          <Info className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
+          <p className="text-[15px] text-[#4A4A35] font-sans leading-snug">
+            Canonical requirements are the same diocese-wide. Booking below will be handled by <strong>{parishName}</strong>, your current parish.
+          </p>
+        </div>
+
         {/* Sacraments Guide Accordion */}
         <div className="space-y-2.5">
           <h3 className="text-[15px] font-bold text-[#EBEBE0] uppercase tracking-widest font-serif italic pl-1">
@@ -174,7 +187,7 @@ export default function SacramentsTab({ onAddApplication }: SacramentsTabProps) 
               <div className="space-y-0.5">
                 <h4 className="text-[15px] font-bold text-amber-900 font-serif italic">Pre-Booking Submitted!</h4>
                 <p className="text-[15px] text-amber-800 leading-relaxed font-sans">
-                  Your reservation request has been logged! Please bring the physical documents to our Maypajo Parish Office for verification and canonical approval.
+                  Your reservation request has been logged! Please bring the physical documents to the {parishName} Parish Office for verification and canonical approval.
                 </p>
               </div>
               <button
