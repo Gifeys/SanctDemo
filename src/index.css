@@ -58,20 +58,27 @@
    larger text still fits the frame.
    ───────────────────────────────────────────────────────────── */
 .dmap { display: block; width: 100%; height: 100%; }
-.dmap__land { fill: var(--color-brand-card); }
-.dmap__water { fill: color-mix(in srgb, var(--color-brand-accent) 30%, var(--color-brand-bg)); }
-.dmap__river { stroke: color-mix(in srgb, var(--color-brand-accent) 55%, var(--color-brand-bg)); fill: none; }
-.dmap__road { stroke: color-mix(in srgb, var(--color-brand-text) 18%, transparent); fill: none; }
+/* This is a DARK map. Land is a navy one step lighter than the page, not the
+   cream card colour — filling land with --color-brand-card put beige blobs on
+   a navy page, which is what made this look wrong. Water sits darker than
+   land, the way it does on any night map, so the two read apart without a
+   border. */
+.dmap__land { fill: color-mix(in srgb, var(--color-brand-bg) 84%, white); }
+.dmap__water { fill: color-mix(in srgb, var(--color-brand-bg) 88%, black); }
+.dmap__river { stroke: color-mix(in srgb, var(--color-brand-accent) 60%, var(--color-brand-bg)); fill: none; }
+.dmap__road { stroke: color-mix(in srgb, white 14%, transparent); fill: none; }
 .dmap__area-label {
-  fill: var(--color-brand-secondary);
+  fill: color-mix(in srgb, white 62%, transparent);
   font-size: 21px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   text-anchor: middle;
 }
-.dmap__pin--live { fill: var(--color-brand-primary); stroke: var(--color-brand-card); }
-.dmap__pin--soon { fill: color-mix(in srgb, var(--color-brand-secondary) 40%, transparent); stroke: var(--color-brand-secondary); }
-.dmap__pin-label { fill: var(--color-brand-text); font-size: 21px; font-weight: 700; text-anchor: middle; }
+/* Live parishes are the only bright thing on the map — everything else is
+   context, they are the destinations. */
+.dmap__pin--live { fill: var(--color-brand-accent); stroke: white; }
+.dmap__pin--soon { fill: color-mix(in srgb, white 28%, transparent); stroke: color-mix(in srgb, white 45%, transparent); }
+.dmap__pin-label { fill: white; font-size: 21px; font-weight: 700; text-anchor: middle; }
 .dmap__you { fill: var(--color-brand-success); stroke: var(--color-brand-card); }
 .dmap__you-ring {
   fill: none;

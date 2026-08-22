@@ -1052,13 +1052,15 @@ export default function App() {
                   {activeTab === "navigator" && (
                     <div className="flex-1 flex flex-col overflow-hidden">
                       <div className="flex-1 flex flex-col overflow-y-auto">
-                        <MapTab
-                          routeId={selectedChurchId}
-                          onSelectRoute={setSelectedChurchId}
-                          isOffline={isOffline}
-                          onStationVisited={handleStationVisited}
-                          visitedStations={userProgress.completedStations}
-                        />
+                        {/* The real diocese map replaces the old simulated
+                            walk. That simulation advanced a timer between
+                            stations and displayed stored coordinates as if
+                            they were the pilgrim's own, which was not a walk
+                            at all. Station-by-station progress returns when
+                            it is driven by real QR scans at each station. */}
+                        <div className="p-4">
+                          <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
+                        </div>
 
                         {/* DYNAMIC STATION COMMENT FORUM as requested */}
                         <div className="px-4 pb-16 pt-2 font-sans text-left">

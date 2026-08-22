@@ -141,7 +141,10 @@ export default function DioceseMap({ onSelectParish }: DioceseMapProps) {
       {/* Nudged up from the land shape's visual centre so it clears Mary
           Help of Christians' pin label below it — measured with getBBox()
           (see Task 9 report). */}
-      <text x="103" y="298" className="dmap__area-label">NAVOTAS</text>
+      {/* Moved 298 -> 248 after Mary Help's coordinates were corrected to the
+          diocese's real value, which shifted its pin label up into this one.
+          Measured collision was 34.9 x 20.4 units. */}
+      <text x="103" y="248" className="dmap__area-label">NAVOTAS</text>
       <text x="225" y="100" className="dmap__area-label">CALOOCAN</text>
 
       {live.map((route, i) => {
