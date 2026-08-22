@@ -22,7 +22,7 @@ import RosarySettingsModal from "./components/RosarySettingsModal";
 import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
-import DioceseMap from "./components/DioceseMap";
+import DioceseMapLive from "./components/DioceseMapLive";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -619,7 +619,7 @@ export default function App() {
                       pin opens that parish's tour, same as the presence
                       sheet does. */}
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-3 h-72">
-                    <DioceseMap onSelectParish={handleOpenTourFromPresence} />
+                    <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
                   </div>
 
                   {/* Church Selector Cards (Figure 2 / Page 34) */}

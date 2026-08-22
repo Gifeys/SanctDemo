@@ -11,6 +11,17 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    optimizeDeps: {
+      // maplibre-gl loads its tile-processing code as a separate module
+      // Worker (`new Worker(new URL(...), { type: 'module' })`), which
+      // esbuild's dependency pre-bundler can't see statically. Pre-bundling
+      // the package anyway leaves the worker chunk out of the optimized
+      // deps directory, which desyncs Vite's dev-time module graph (stale
+      // "does not provide an export named 'default'" errors after HMR).
+      // Excluding it serves the package straight from node_modules, where
+      // the worker file resolves correctly.
+      exclude: ['maplibre-gl'],
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

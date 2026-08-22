@@ -36,8 +36,8 @@ describe('projectToMap', () => {
   it('places both live parishes inside the frame', () => {
     // route-mhcp (Mary Help of Christians) and route-src (San Roque Cathedral),
     // from src/data.ts.
-    const mhc = projectToMap({ lat: 14.6305, lng: 120.9711 }, B, 300, 400)
-    const sr = projectToMap({ lat: 14.6510, lng: 120.9686 }, B, 300, 400)
+    const mhc = projectToMap({ lat: 14.637702, lng: 120.97344 }, B, 300, 400)
+    const sr = projectToMap({ lat: 14.651647, lng: 120.972648 }, B, 300, 400)
     for (const p of [mhc, sr]) {
       expect(p!.x).toBeGreaterThan(0)
       expect(p!.x).toBeLessThan(300)

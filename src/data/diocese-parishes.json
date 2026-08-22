@@ -1,0 +1,500 @@
+{
+  "parishes": [
+    {
+      "id": "parish-birhen-ng-lourdes-parish",
+      "name": "Birhen ng Lourdes Parish",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.664308,
+        "lng": 120.995994
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "August 17, 1972",
+      "fiestaDay": "Every 2nd Sunday of February",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-birhen-ng-lourdes-parish/"
+    },
+    {
+      "id": "parish-exaltation-of-the-holy-cross-parish",
+      "name": "Exaltation of the Holy Cross Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.678595,
+        "lng": 120.940327
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": null,
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-exaltation-of-the-holy-cross-parish/"
+    },
+    {
+      "id": "parish-hearts-of-jesus-and-mary-parish",
+      "name": "Hearts of Jesus and Mary Parish",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.648439,
+        "lng": 120.978446
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": "June 19 Address: Nadurata Street, 8th Av",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-hearts-of-jesus-and-mary-parish/"
+    },
+    {
+      "id": "parish-holy-trinity-quasi-parish",
+      "name": "Holy Trinity Quasi Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.67282,
+        "lng": 120.966206
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "December 7, 2018",
+      "fiestaDay": "June 16",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-holy-trinity-quasi-parish/"
+    },
+    {
+      "id": "parish-immaculate-conception-parish",
+      "name": "Immaculate Conception Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.668666,
+        "lng": 120.947323
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "September 8, 1907",
+      "fiestaDay": null,
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-immaculate-conception-parish/"
+    },
+    {
+      "id": "parish-immaculate-heart-of-mary-parish",
+      "name": "Immaculate Heart of Mary Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.680857,
+        "lng": 120.961433
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "December 9, 1988",
+      "fiestaDay": "A week after the feast of the Sacred Hea",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-immaculate-heart-of-mary-parish/"
+    },
+    {
+      "id": "parish-mary-help-of-christians-parish",
+      "name": "Mary Help of Christians Parish",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.637702,
+        "lng": 120.97344
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "live",
+      "established": "April 27, 1956",
+      "fiestaDay": "May 24",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-mary-help-of-christians-parish/"
+    },
+    {
+      "id": "parish-nuestra-senora-delos-remedios-quasi-parish",
+      "name": "Nuestra Senora Delos Remedios Quasi Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.647164,
+        "lng": 120.95198
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": "3rd Sunday of November Address: 442 M. N",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-nuestra-senora-delos-remedios-quasi-parish/"
+    },
+    {
+      "id": "parish-our-lady-of-lujan-parish",
+      "name": "Our Lady of Lujan Parish",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.662728,
+        "lng": 120.993383
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "May 8, 2010",
+      "fiestaDay": "May 8 or second Sunday of May",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-our-lady-of-lujan-parish/"
+    },
+    {
+      "id": "parish-sacred-heart-of-jesus-parish-morning-breeze",
+      "name": "Sacred Heart of Jesus Parish (Morning Breeze)",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.661205,
+        "lng": 120.988285
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "April 8, 1815",
+      "fiestaDay": null,
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-sacred-heart-of-jesus-parish-morning-breeze/"
+    },
+    {
+      "id": "parish-sacred-heart-of-jesus-parish-tugatog",
+      "name": "Sacred Heart of Jesus Parish Tugatog",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.661678,
+        "lng": 120.970115
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "November 6, 1960",
+      "fiestaDay": null,
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-sacred-heart-of-jesus-parish-tugatog/"
+    },
+    {
+      "id": "parish-sagrada-familia-parish",
+      "name": "Sagrada Familia Parish",
+      "vicariate": "Vicariate of Our Lady of Grace",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.6457,
+        "lng": 120.991723
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "August 15, 1983",
+      "fiestaDay": "Every 2nd Sunday of January",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-sagrada-familia-parish/"
+    },
+    {
+      "id": "parish-saint-gabriel-the-archangel-parish",
+      "name": "Saint Gabriel the Archangel Parish",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.658714,
+        "lng": 120.980699
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "August 9, 1963",
+      "fiestaDay": "Last Sunday of September",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-saint-gabriel-the-archangel-parish/"
+    },
+    {
+      "id": "parish-saint-joseph-the-workman-parish",
+      "name": "Saint Joseph the Workman Parish",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.64337,
+        "lng": 120.975848
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "April 8, 1815",
+      "fiestaDay": "May 1",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-saint-joseph-the-workman-parish/"
+    },
+    {
+      "id": "parish-saints-peter-and-john-parish",
+      "name": "Saints Peter and John Parish",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.662965,
+        "lng": 120.98551
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "August 9, 1963",
+      "fiestaDay": "Saint Peter \\u2013 June 28",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-saints-peter-and-john-parish/"
+    },
+    {
+      "id": "parish-san-antonio-de-padua-parish",
+      "name": "San Antonio de Padua Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.663206,
+        "lng": 120.956843
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "July 1, 1989",
+      "fiestaDay": "Every 13th of June",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-antonio-de-padua-parish/"
+    },
+    {
+      "id": "parish-san-bartolome-parish",
+      "name": "San Bartolome Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.658854,
+        "lng": 120.95143
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "May 17, 1614",
+      "fiestaDay": "August 24",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-bartolome-parish/"
+    },
+    {
+      "id": "parish-san-exequiel-moreno-parish",
+      "name": "San Exequiel Moreno Parish",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.648495,
+        "lng": 120.962413
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "December 3, 1992",
+      "fiestaDay": "Every 3rd Sunday of August",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-exequiel-moreno-parish/"
+    },
+    {
+      "id": "parish-san-ildefonso-parish",
+      "name": "San Ildefonso Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.655013,
+        "lng": 120.948825
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "January 23, 1983 / Year 1735",
+      "fiestaDay": "January 23",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-ildefonso-parish/"
+    },
+    {
+      "id": "parish-san-jose-de-agudo-parish",
+      "name": "San Jose de Agudo Parish",
+      "vicariate": "Vicariate of Our Lady of Grace",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.637588,
+        "lng": 120.990657
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "May 1, 1989",
+      "fiestaDay": "Every first Sunday of May",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-jose-de-agudo-parish/"
+    },
+    {
+      "id": "parish-san-jose-de-navotas-parish",
+      "name": "San Jose de Navotas Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.662795,
+        "lng": 120.944757
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "January 11, 1976",
+      "fiestaDay": "March 19 / May 1",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-jose-de-navotas-parish/"
+    },
+    {
+      "id": "parish-san-lorenzo-ruiz-and-companion-martyrs-parish",
+      "name": "San Lorenzo Ruiz and Companion Martyrs Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.644844,
+        "lng": 120.958121
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "June 21, 1982",
+      "fiestaDay": "September 28",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-lorenzo-ruiz-and-companion-martyrs-parish/"
+    },
+    {
+      "id": "parish-san-pancratio-parish",
+      "name": "San Pancratio Parish",
+      "vicariate": "Vicariate of Our Lady of Grace",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.63726,
+        "lng": 120.984337
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "OCTOBER 11, 1962",
+      "fiestaDay": "May 12",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-pancratio-parish/"
+    },
+    {
+      "id": "parish-san-roque-cathedral",
+      "name": "San Roque Cathedral",
+      "vicariate": "Vicariate of San Roque",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.651647,
+        "lng": 120.972648
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "live",
+      "established": "April 8, 1815",
+      "fiestaDay": "August 16",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-roque-cathedral/"
+    },
+    {
+      "id": "parish-san-roque-de-navotas-parish",
+      "name": "San Roque de Navotas Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.671663,
+        "lng": 120.937837
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "1951",
+      "fiestaDay": "August 16 / January 29",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-san-roque-de-navotas-parish/"
+    },
+    {
+      "id": "parish-santa-cruz-parish",
+      "name": "Santa Cruz Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.678353,
+        "lng": 120.935656
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "APRIL 28, 1993",
+      "fiestaDay": "Every 2nd Saturday of May",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-santa-cruz-parish/"
+    },
+    {
+      "id": "parish-santo-rosario-parish",
+      "name": "Santo Rosario Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.683768,
+        "lng": 120.942546
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "March 15, 1983",
+      "fiestaDay": "January 1 n Mary the Mother of God",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-santo-rosario-parish/"
+    },
+    {
+      "id": "parish-shrine-of-our-lady-of-grace",
+      "name": "Shrine of Our Lady of Grace",
+      "vicariate": "Vicariate of Our Lady of Grace",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.652723,
+        "lng": 120.985151
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": "May 5, 1946",
+      "fiestaDay": "1st Sunday of May",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-shrine-of-our-lady-of-grace/"
+    },
+    {
+      "id": "parish-st-francis-of-assisi-and-sta-quiteria-parish",
+      "name": "St. Francis of Assisi and Sta. Quiteria Parish",
+      "vicariate": "Vicariate of Sacred Heart",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.681001,
+        "lng": 121.009408
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": "May 22 (Sta. Quiteria",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-st-francis-of-assisi-and-sta-quiteria-parish/"
+    },
+    {
+      "id": "parish-sta-clare-of-assisi-parish",
+      "name": "Sta. Clare of Assisi Parish",
+      "vicariate": "Vicariate of San Bartolome",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.652733,
+        "lng": 120.959287
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": null,
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-sta-clare-of-assisi-parish/"
+    },
+    {
+      "id": "parish-sto-nino-de-pasion-parish",
+      "name": "Sto. Nino de Pasion Parish",
+      "vicariate": "Vicariate of San Jose de Navotas",
+      "vicariateVerified": false,
+      "coordinates": {
+        "lat": 14.66944,
+        "lng": 120.941624
+      },
+      "coordinatesVerified": true,
+      "geofenceRadius": 100,
+      "status": "coming_soon",
+      "established": null,
+      "fiestaDay": "Address: 4 Daanghari St., Daanghari 1485",
+      "sourceUrl": "https://dioceseofkalookan.ph/dok-sto-nino-de-pasion-parish/"
+    }
+  ]
+}

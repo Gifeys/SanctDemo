@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=Poppins:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -16,16 +16,21 @@
   --color-brand-text: #33332D;         /* Main body text color (Dark Charcoal, on cream/white cards) */
   --color-brand-success: #1F7A54;      /* "You are here" indicator on the diocese map — distinct from the brand palette so it always reads as location, never as a brand accent */
 
-  /* ─── TYPOGRAPHY VARIABLES ─── */
+  /* ─── TYPOGRAPHY VARIABLES ───
+     The diocese's own site sets Montserrat for its typography (headings at
+     weight 600), so the app now borrows the same family everywhere —
+     --font-secondary used to be Poppins; both variables now point at
+     Montserrat so every existing .font-secondary/.font-poppins usage keeps
+     working without a find-and-replace across components. */
   --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-secondary: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-secondary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {
   --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-secondary: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-secondary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   
@@ -80,6 +85,70 @@
 .dmap__hit { cursor: pointer; }
 .dmap__hit:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 2px; }
 
+/* ─────────────────────────────────────────────────────────────
+   LIVE DIOCESE MAP (DioceseMapLive.tsx)
+   A real MapLibre GL map, restyled to the app's dark-navy palette
+   at runtime (DioceseMapLive.tsx reads these custom properties via
+   getComputedStyle, since MapLibre paint properties need literal
+   colour values, not CSS var() references). This block only styles
+   the HTML marker pins and the container chrome — the map's own
+   land/water/road colours are set in JS from these same variables.
+   Falls back to DioceseMap.tsx (the drawn SVG map, styled above)
+   when tiles are unreachable, so nothing here duplicates a colour
+   literal that isn't already a brand variable.
+   ───────────────────────────────────────────────────────────── */
+.dmap-live { position: relative; width: 100%; height: 100%; border-radius: 1rem; overflow: hidden; }
+.dmap-live__canvas { width: 100%; height: 100%; }
+
+.dmap-live__marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  padding: 0;
+  /* Positioning transform is applied inline by maplibregl.Marker itself
+     (per its "center" anchor) — nothing added here to avoid a conflicting
+     second transform. */
+}
+.dmap-live__marker--live {
+  background: var(--color-brand-accent);
+  border: 2px solid var(--color-brand-card);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-accent) 35%, transparent);
+  cursor: pointer;
+}
+.dmap-live__marker--live:focus-visible {
+  outline: 2px solid var(--color-brand-card);
+  outline-offset: 2px;
+}
+.dmap-live__marker--soon {
+  width: 10px;
+  height: 10px;
+  background: color-mix(in srgb, var(--color-brand-secondary) 55%, transparent);
+  border: 1.5px solid var(--color-brand-secondary);
+  cursor: default;
+  pointer-events: none;
+}
+.dmap-live__marker--you {
+  width: 14px;
+  height: 14px;
+  background: var(--color-brand-success);
+  border: 2px solid var(--color-brand-card);
+  pointer-events: none;
+}
+
+.dmap-live__fallback-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-text) 70%, transparent);
+  color: var(--color-brand-card);
+}
+
 /* Base Typography Configuration */
 body {
   font-family: var(--font-secondary);
@@ -87,7 +156,7 @@ body {
 
 h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   font-family: var(--font-primary);
-  font-weight: 700;
+  font-weight: 600; /* matches the diocese's own site: Montserrat headings at weight 600 */
 }
 
 .font-secondary, .font-poppins {
