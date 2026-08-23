@@ -2,12 +2,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
 import ChangeParishModal from "./components/ChangeParishModal";
-import ExploreTab from "./components/ExploreTab";
-import MapTab from "./components/MapTab";
-import CompanionTab from "./components/CompanionTab";
 import PwaBanner from "./components/PwaBanner";
 
 // New Components
+import Dashboard from "./components/Dashboard";
+import MeTab from "./components/MeTab";
 import DailyRosary from "./components/DailyRosary";
 import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
@@ -32,12 +31,12 @@ import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 
-import { 
-  Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart, 
+import {
+  Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon,
   ScanLine as ArIcon, Users as MinistryIcon, MapPin, ChevronRight, Bookmark, ArrowLeft,
   Settings as SettingsIcon,
-  Church
+  Church, Smartphone, Monitor, Wifi, WifiOff, FlaskConical
 } from "lucide-react";
 
 // Watches presence from inside the provider and reports an arrival upward.
@@ -80,7 +79,7 @@ export default function App() {
     () => loadHomeParishId(ROUTES.map(r => r.id)) ?? firstLiveParishId()
   );
   const [activeTab, setActiveTab] = useState<
-    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "login" | "admin" | "pwa-devkit"
+    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "me" | "admin" | "pwa-devkit"
   >("home");
   
   const [isOffline, setIsOffline] = useState(false);
@@ -704,7 +703,7 @@ export default function App() {
                   </div>
 
                   <button
-                    onClick={() => setActiveTab("login")}
+                    onClick={() => setActiveTab("me")}
                     className="p-1.5 bg-[#EBEBE0]/15 hover:bg-[#EBEBE0]/30 rounded-full border border-[#D6D6C2]/30 transition-all flex items-center gap-1"
                   >
                     <User className="w-3.5 h-3.5 text-white" />
@@ -740,155 +739,154 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Menu List of available Tabs */}
+                      {/* Menu List of available Tabs. Home, Map, Scan, Pray and
+                          Me each already have a dedicated bottom-nav tab, so
+                          they are deliberately not repeated here — this drawer
+                          now only holds what the bottom nav doesn't cover. */}
                       <div className="flex-1 overflow-y-auto p-3 space-y-1 font-sans">
+                        {/* One entry for "pick a different parish" — this used
+                            to be two entries (an exit-to-selector button and a
+                            separate change-home-parish modal) doing the same
+                            job under different names. */}
                         <button
-                          onClick={() => { setSelectedChurchId(null); setIsSidebarOpen(false); }}
-                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] text-red-800 font-bold hover:bg-red-50 transition-all border border-transparent"
+                          onClick={() => { setIsChangeParishOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all text-[#4A4A35] hover:bg-[#EBEBE0] font-bold"
                         >
-                          <ArrowLeft className="w-4 h-4 text-red-700" />
-                          <span>Switch Parish Church</span>
+                          <Church className="w-4 h-4" />
+                          <span>Change Parish</span>
                         </button>
 
                         <div className="border-t border-[#D6D6C2]/45 my-2"></div>
 
                         <button
-                          onClick={() => { setActiveTab("home"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
-                            activeTab === "home" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <Home className="w-4 h-4" />
-                          <span>App Home Dashboard</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveTab("navigator"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
-                            activeTab === "navigator" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <Map className="w-4 h-4" />
-                          <span>Pilgrimage Trail Guide</span>
-                        </button>
-
-                        {/* The "change it later" promised by the one-time chooser. */}
-                        <button
-                          onClick={() => { setIsChangeParishOpen(true); setIsSidebarOpen(false); }}
-                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all text-[#4A4A35] hover:bg-[#EBEBE0]"
-                        >
-                          <Church className="w-4 h-4" />
-                          <span>Change Home Parish</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveTab("rosary"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
-                            activeTab === "rosary" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <BookOpen className="w-4 h-4" />
-                          <span>Santo Rosary Mysteries</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setIsRosarySettingsOpen(true); setIsSidebarOpen(false); }}
-                          className="w-full p-2.5 pl-9 rounded-xl text-left flex items-center gap-2.5 text-sm text-[#666655] hover:bg-[#EBEBE0] transition-all"
-                        >
-                          <SettingsIcon className="w-3.5 h-3.5" />
-                          <span>Rosary Settings (Language &amp; Mystery)</span>
-                        </button>
-
-                        <button
                           onClick={() => { setActiveTab("mass"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
                             activeTab === "mass" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
                           <Clock className="w-4 h-4" />
-                          <span>Holy Mass Schedule</span>
+                          <span>Mass</span>
                         </button>
 
                         <button
                           onClick={() => { setActiveTab("history"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
                             activeTab === "history" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
                           <Bookmark className="w-4 h-4" />
-                          <span>Parish Church History</span>
+                          <span>History</span>
                         </button>
 
                         <button
                           onClick={() => { setActiveTab("ministries"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
                             activeTab === "ministries" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
                           <MinistryIcon className="w-4 h-4" />
-                          <span>Parish Volunteer Guilds</span>
+                          <span>Ministries</span>
                         </button>
 
                         <button
                           onClick={() => { setActiveTab("sacraments"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
                             activeTab === "sacraments" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
                           <Heart className="w-4 h-4" />
-                          <span>Canonical Sacraments Office</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveTab("ar"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
-                            activeTab === "ar" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <ArIcon className="w-4 h-4" />
-                          <span>AR Tour</span>
+                          <span>Sacraments</span>
                         </button>
 
                         <button
                           onClick={() => { setActiveTab("quiz"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
                             activeTab === "quiz" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
                           }`}
                         >
                           <QuizIcon className="w-4 h-4" />
-                          <span>Pilgrim Catechism Quiz</span>
-                        </button>
-
-                        <div className="border-t border-[#D6D6C2]/45 my-2"></div>
-
-                        <button
-                          onClick={() => { setActiveTab("login"); setIsSidebarOpen(false); }}
-                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all ${
-                            activeTab === "login" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
-                          }`}
-                        >
-                          <User className="w-4 h-4" />
-                          <span>Devotee Authentication</span>
+                          <span>Quiz</span>
                         </button>
 
                         <button
-                          onClick={() => { setIsSimulatorOpen(true); setIsSidebarOpen(false); }}
-                          className="w-full p-2.5 pl-9 rounded-xl text-left flex items-center gap-2.5 text-sm text-[#666655] hover:bg-[#EBEBE0] transition-all"
+                          onClick={() => { setIsRosarySettingsOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base text-[#4A4A35] hover:bg-[#EBEBE0] transition-all"
                         >
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span>Location Simulator (Demo)</span>
+                          <SettingsIcon className="w-4 h-4" />
+                          <span>Rosary Settings</span>
                         </button>
 
                         {/* Admin portal panel entry */}
                         {(isAdmin || isLoggedIn) && (
                           <button
                             onClick={() => { setActiveTab("admin"); setIsSidebarOpen(false); }}
-                            className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-[15px] transition-all bg-[#C2A649]/20 text-[#4A4A35] font-bold border border-[#C2A649]/45`}
+                            className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all bg-[#C2A649]/20 text-[#4A4A35] font-bold border border-[#C2A649]/45`}
                           >
                             <ShieldCheck className="w-4 h-4 text-[#5A5A40]" />
-                            <span>Church DB Admin Panel</span>
+                            <span>Admin Panel</span>
                           </button>
                         )}
+
+                        {/* DEMO TOOLS — deliberately separated (divider + its
+                            own heading) from the pilgrim's real features
+                            above, and reachable without a gesture: the client
+                            demonstrates location awareness from a classroom
+                            and needs the simulator to be one tap away, every
+                            time. */}
+                        <div className="border-t border-[#D6D6C2]/45 my-2"></div>
+                        <div className="px-2.5 pt-1 pb-1.5">
+                          <span className="text-sm font-bold text-[#8A8A70] uppercase tracking-widest">
+                            Demo Tools
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => { setIsSimulatorOpen(true); setIsSidebarOpen(false); }}
+                          className="w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base text-[#4A4A35] hover:bg-[#EBEBE0] transition-all"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          <span>Location Simulator</span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsMobileOnly(true)}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
+                            isMobileOnly ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
+                          }`}
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span>Smartphone Frame</span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsMobileOnly(false)}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
+                            !isMobileOnly ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
+                          }`}
+                        >
+                          <Monitor className="w-4 h-4" />
+                          <span>Full Responsive</span>
+                        </button>
+
+                        <button
+                          onClick={() => setIsOffline(!isOffline)}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
+                            !isOffline ? "text-emerald-800" : "text-amber-800"
+                          } hover:bg-[#EBEBE0]`}
+                        >
+                          {isOffline ? <WifiOff className="w-4 h-4" /> : <Wifi className="w-4 h-4" />}
+                          <span>{isOffline ? "Offline State" : "Online (Sim)"}</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setActiveTab("pwa-devkit"); setIsSidebarOpen(false); }}
+                          className={`w-full p-2.5 rounded-xl text-left flex items-center gap-2.5 text-base transition-all ${
+                            activeTab === "pwa-devkit" ? "bg-[#5A5A40] text-white font-bold" : "text-[#4A4A35] hover:bg-[#EBEBE0]"
+                          }`}
+                        >
+                          <FlaskConical className="w-4 h-4" />
+                          <span>PWA Workspace</span>
+                        </button>
                       </div>
 
                       {/* Sidebar Footer */}
@@ -904,163 +902,18 @@ export default function App() {
                 {/* PRIMARY VIEW CONTENT WORKSPACE */}
                 <div className="flex-1 flex flex-col overflow-y-auto pb-4">
                   
-                  {/* TAB 1: Parish Dashboard / Home Tab (Figure 35 / 37) */}
+                  {/* TAB 1: Parish Dashboard / Home Tab — TODAY first, then
+                      the parish grid, then diocese-wide content. Extracted
+                      into its own component (see src/components/Dashboard.tsx)
+                      once this block needed a TODAY section on top of the
+                      existing two; App.tsx was already large. */}
                   {activeTab === "home" && (
-                    <div className="flex-1 flex flex-col bg-[#F5F5F0] text-left">
-                      {/* Apple iOS Style Header */}
-                      <div className="px-5 pt-6 pb-2 shrink-0 flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest block font-sans">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                          </span>
-                          <h2 className="text-2xl font-black text-white tracking-tight leading-tight mt-0.5 uppercase">
-                            {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
-                          </h2>
-                        </div>
-                        <button 
-                          onClick={() => setActiveTab("login")}
-                          className="h-9 w-9 rounded-full bg-white border border-[#D6D6C2] text-[#5A5A40] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[#EBEBE0]"
-                        >
-                          <User className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* SECTION 1: content tied to the active parish. Its
-                          heading names that parish explicitly so switching
-                          parish (Location Simulator) makes the change
-                          obvious without needing an explanation — everything
-                          under this heading is specific to
-                          {activeChurchRoute.name}, and only this section
-                          should change when the active parish changes. */}
-                      <div className="px-4 pt-2">
-                        <h3 className="text-sm font-bold text-[#5FC7DE] uppercase tracking-widest font-serif italic">
-                          At {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
-                        </h3>
-                      </div>
-
-                      {/* Diocese map card — replaces the old "Pilgrimage
-                          Scanner" placeholder card. Tapping a live pin opens
-                          that parish's tour, same handler the Walk tab uses. */}
-                      <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-xs p-3 mx-4 mt-2 h-64">
-                        <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
-                      </div>
-
-                      <div className="p-4 space-y-4 font-sans">
-                        {/* Quick Navigation grid — everything here belongs to
-                            the active parish and follows it when it changes. */}
-                        <div className="space-y-2">
-                          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-wider pl-1 font-sans">
-                            Explore Faith and History
-                          </h3>
-                          <div className="grid grid-cols-2 gap-2 text-[15px] font-bold text-[#4A4A35]">
-                            <button
-                              onClick={() => setActiveTab("mass")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <Clock className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>Mass Schedule</span>
-                            </button>
-
-                            <button
-                              onClick={() => setActiveTab("history")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <Bookmark className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>Church History</span>
-                            </button>
-
-                            <button
-                              onClick={() => setActiveTab("ministries")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <MinistryIcon className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>Volunteer Guilds</span>
-                            </button>
-
-                            <button
-                              onClick={() => setActiveTab("sacraments")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <Heart className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>Sacraments Office</span>
-                            </button>
-
-                            <button
-                              onClick={() => setActiveTab("ar")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <ArIcon className="w-4 h-4 text-[#5A5A40] shrink-0 animate-pulse" />
-                              <span>AR Tour</span>
-                            </button>
-
-                            <button
-                              onClick={() => setActiveTab("navigator")}
-                              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
-                            >
-                              <Map className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                              <span>The Walk</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Dynamic Announcements Bulletin board — parish events */}
-                        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
-                          <div className="flex justify-between items-center border-b border-[#EBEBE0] pb-1.5">
-                            <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
-                              Upcoming Parish Events
-                            </h4>
-                            <span className="text-sm font-mono text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded">
-                              {activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")} Bulletin
-                            </span>
-                          </div>
-
-                          <div className="space-y-2.5">
-                            {announcements.map((ann) => (
-                              <div key={ann.id} className="flex gap-3 items-start text-[15px] border-b border-[#EBEBE0]/60 pb-2 last:border-0 last:pb-0">
-                                <div className="p-2 bg-[#EBEBE0] text-[#5A5A40] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-sm">
-                                  {ann.type}
-                                </div>
-                                <div>
-                                  <h5 className="font-bold text-[#4A4A35] font-sans text-[15px]">{ann.title}</h5>
-                                  <p className="text-sm text-[#8A8A70] font-sans mt-0.5">{ann.date} at {ann.time}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* SECTION 2: content that never changes with the
-                            active parish — kept visually and structurally
-                            separate from Section 1 above so the split is
-                            obvious without a word of explanation. */}
-                        <div className="pt-2">
-                          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest pl-1 font-sans border-t border-white/15 pt-4">
-                            Every Day
-                          </h3>
-                        </div>
-
-                        <button
-                          onClick={() => setActiveTab("rosary")}
-                          className="w-full bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors text-[15px] font-bold text-[#4A4A35]"
-                        >
-                          <BookOpen className="w-4 h-4 text-[#5A5A40] shrink-0" />
-                          <span>Daily Rosary</span>
-                        </button>
-
-                        {/* Verse of the day — diocese-wide, not tied to any parish */}
-                        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-2">
-                          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
-                            Verse of the Day
-                          </h4>
-                          <blockquote className="text-[15px] text-[#33332D] leading-relaxed italic font-serif">
-                            "He has given us his very great and precious promises, so that through them you may participate in the divine nature and escape the corruption in the world caused by evil desires."
-                          </blockquote>
-                          <cite className="text-sm font-bold text-[#5A5A40] block font-mono">
-                            — 2 Peter 1:4
-                          </cite>
-                        </div>
-                      </div>
-                    </div>
+                    <Dashboard
+                      parish={activeChurchRoute}
+                      announcements={announcements}
+                      onNavigate={(tab) => setActiveTab(tab)}
+                      onSelectParish={handleOpenTourFromPresence}
+                    />
                   )}
 
                   {/* TAB 2: Map / Trail Station Navigator */}
@@ -1123,20 +976,28 @@ export default function App() {
                     />
                   )}
 
-                  {/* TAB 10: Authenticator Profile */}
-                  {activeTab === "login" && (
-                    <LoginModal
-                      onLoginSuccess={handleLoginSuccess}
-                      onLogout={handleLogout}
+                  {/* TAB 10: "Me" — sign-in state, applications, prayer/visit
+                      progress, and links to Change Parish and Rosary
+                      Settings, all assembled from state the app already
+                      tracks. Replaces the old standalone "Devotee
+                      Authentication" screen, which is now folded in here. */}
+                  {activeTab === "me" && (
+                    <MeTab
                       isLoggedIn={isLoggedIn}
                       userEmail={userEmail}
                       isAdmin={isAdmin}
+                      userProgress={userProgress}
+                      applications={applications}
+                      onLoginSuccess={handleLoginSuccess}
+                      onLogout={handleLogout}
+                      onOpenChangeParish={() => setIsChangeParishOpen(true)}
+                      onOpenRosarySettings={() => setIsRosarySettingsOpen(true)}
                     />
                   )}
 
                   {/* TAB 11: Admin Control Panel */}
                   {activeTab === "admin" && (
-                    <AdminPortal 
+                    <AdminPortal
                       applications={applications}
                       onDeleteApplication={handleDeleteApplication}
                       onUpdateApplicationStatus={handleUpdateApplicationStatus}
@@ -1145,28 +1006,77 @@ export default function App() {
                       onDeleteAnnouncement={handleDeleteAnnouncement}
                     />
                   )}
+
+                  {/* TAB 12: PWA Workspace — a Demo Tools entry, not a
+                      pilgrim-facing feature; see the sidebar's "Demo Tools"
+                      section. */}
+                  {activeTab === "pwa-devkit" && <PwaBanner />}
                 </div>
 
-                {/* BOTTOM STICKY PHONE SIM NAVIGATION BAR (Figure 35 style) */}
-                <nav className="absolute bottom-0 inset-x-0 h-16 bg-[#EBEBE0] border-t border-[#D6D6C2] flex items-center justify-around px-4 z-40 shadow-md">
+                {/* BOTTOM STICKY PHONE SIM NAVIGATION BAR — five tabs, Scan
+                    centred and visually raised as the app's signature
+                    feature, every tab keeping a visible text label. */}
+                <nav className="absolute bottom-0 inset-x-0 h-16 bg-[#EBEBE0] border-t border-[#D6D6C2] flex items-center justify-around px-1 z-40 shadow-md">
                   <button
                     onClick={() => setActiveTab("home")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
                       activeTab === "home" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
                     }`}
                   >
                     <Home className="w-5 h-5" />
-                    <span className="text-sm font-bold font-serif italic">Home</span>
+                    <span className="text-base font-bold leading-none">Home</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("navigator")}
-                    className={`flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all ${
+                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
                       activeTab === "navigator" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
                     }`}
                   >
                     <Map className="w-5 h-5" />
-                    <span className="text-sm font-bold font-serif italic">Walk</span>
+                    <span className="text-base font-bold leading-none">Map</span>
+                  </button>
+
+                  {/* Scan: the app's signature feature, given a raised,
+                      filled treatment so it reads as the visual anchor of
+                      the bar — but still carries a text label like every
+                      other tab, not an icon-only control. */}
+                  <button
+                    onClick={() => setActiveTab("ar")}
+                    className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 -translate-y-3"
+                  >
+                    <span
+                      className={`h-12 w-12 rounded-full flex items-center justify-center shadow-lg border-2 transition-all ${
+                        activeTab === "ar"
+                          ? "bg-[#5A5A40] border-[#EBEBE0] text-white"
+                          : "bg-[#5A5A40] border-[#EBEBE0] text-white opacity-90"
+                      }`}
+                    >
+                      <ArIcon className="w-5 h-5" />
+                    </span>
+                    <span className={`text-base font-bold leading-none ${activeTab === "ar" ? "text-[#5A5A40]" : "text-[#8A8A70]"}`}>
+                      Scan
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("rosary")}
+                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
+                      activeTab === "rosary" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
+                    }`}
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    <span className="text-base font-bold leading-none">Pray</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("me")}
+                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
+                      activeTab === "me" ? "text-[#5A5A40] font-bold" : "text-[#8A8A70] hover:text-[#5A5A40]"
+                    }`}
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="text-base font-bold leading-none">Me</span>
                   </button>
                 </nav>
 
