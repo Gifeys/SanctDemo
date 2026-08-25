@@ -97,12 +97,15 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
         }
 
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {
-            /* Autoplay may reject before a gesture; the stream is still live. */
-          });
-        }
+
+        // Deliberately NOT attaching the stream here.
+        //
+        // The <video> element only exists once status is "ready" — ArTour
+        // returns a different screen for every other status. So at this point
+        // videoRef.current is still null, the assignment would be skipped
+        // silently, and the user would get a live camera behind a black
+        // rectangle with no error to explain it. The attach happens in the
+        // effect below, once React has actually mounted the element.
         setStatus("ready");
 
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -142,6 +145,27 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
       return next;
     });
   }, [start]);
+
+  // Attach the live stream once the <video> is actually on the page.
+  //
+  // This runs after the render that mounts the element, which is the whole
+  // point: start() acquires the stream while the video element does not yet
+  // exist, so the attach cannot happen there. Keyed on `status` so it fires
+  // exactly when the element appears, and re-runs after a camera switch.
+  useEffect(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (status !== "ready" || !video || !stream) return;
+
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+
+    // play() can reject if the browser wants a fresher gesture; the stream is
+    // still live and the element will usually paint anyway, so this must never
+    // throw into the UI.
+    void video.play().catch(() => {});
+  }, [status]);
 
   /** Current frame as base64 JPEG, or null when the video isn't ready. */
   const captureFrame = useCallback((): CapturedFrame | null => {
