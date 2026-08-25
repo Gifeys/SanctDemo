@@ -17,6 +17,7 @@
   --color-brand-success: #1F7A54;      /* "You are here" indicator on the diocese map — distinct from the brand palette so it always reads as location, never as a brand accent */
   --color-brand-error: #B3543F;        /* Camera/permission error icon and copy — was already used as a literal in ArTour.tsx; named here so new error UI doesn't add another literal */
   --color-brand-error-soft: #FFB4A2;   /* Error text on a dark/black overlay (status pill over the camera feed) */
+  --color-brand-scope: #E65100;        /* Client's original My Map orange, kept ONLY for the study-area polygon fill/outline — pins are teal, so the coverage area needs a different hue or it reads as one giant pin. */
 
   /* ─── TYPOGRAPHY VARIABLES ───
      The diocese's own site sets Montserrat for its typography (headings at
@@ -47,6 +48,7 @@
   --color-brand-success: var(--color-brand-success);
   --color-brand-error: var(--color-brand-error);
   --color-brand-error-soft: var(--color-brand-error-soft);
+  --color-brand-scope: var(--color-brand-scope);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -122,6 +124,7 @@
      second transform. */
 }
 .dmap-live__marker--live {
+  position: relative;
   background: var(--color-brand-accent);
   border: 2px solid var(--color-brand-card);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-accent) 35%, transparent);
@@ -130,6 +133,23 @@
 .dmap-live__marker--live:focus-visible {
   outline: 2px solid var(--color-brand-card);
   outline-offset: 2px;
+}
+/* Visible name label on the two live pins only — with 31 pins on screen,
+   labelling every one collided (measured at 8 pins: 15 overlaps), so only
+   the two tappable, navigable parishes get a permanent label. */
+.dmap-live__marker-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 2px);
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-brand-card);
+  background: color-mix(in srgb, var(--color-brand-text) 78%, transparent);
+  padding: 1px 6px;
+  border-radius: 999px;
+  pointer-events: none;
 }
 .dmap-live__marker--soon {
   width: 10px;
@@ -221,6 +241,39 @@
 .dmap-live__panel-distance {
   color: color-mix(in srgb, var(--color-brand-card) 85%, transparent);
   text-align: right;
+}
+
+/* Caption under the map explaining the shaded polygon — a shaded area with
+   no explanation reads as decoration, so this states plainly what it is. */
+.dmap-live__legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--color-brand-secondary);
+}
+.dmap-live__legend-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-brand-scope) 35%, transparent);
+  border: 1.5px solid var(--color-brand-scope);
+}
+
+.dmap-live__open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--color-brand-card);
+  color: var(--color-brand-primary);
 }
 
 /* Base Typography Configuration */

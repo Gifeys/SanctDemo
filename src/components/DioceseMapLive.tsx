@@ -12,6 +12,64 @@ interface DioceseMapLiveProps {
   onSelectParish: (parishId: string) => void;
 }
 
+// The client's own Google My Map ("SanctDemoMap") — a fully public link that
+// costs nothing to keep around and is genuinely useful (e.g. sharing outside
+// the app), even though the map itself is now reproduced here instead of
+// embedded.
+const MY_MAP_ID = "1gNkblHn4JSJoWLb6zP4D_h6E6WIZomg";
+export const OPEN_IN_GOOGLE_MAPS_URL = `https://www.google.com/maps/d/viewer?mid=${MY_MAP_ID}`;
+
+// The client's study-area polygon, reproduced exactly from their exported
+// KML — 7 points in [lng, lat] order, the last repeating the first to close
+// the ring (GeoJSON requires a closed LinearRing). This is the client's
+// stated scope of their capstone study, not a decorative shape, hence the
+// caption drawn under the map explaining what it is.
+export const SCOPE_POLYGON_RING: [number, number][] = [
+  [120.972677, 14.651797],
+  [120.971767, 14.643635],
+  [120.971149, 14.637125],
+  [120.976676, 14.638188],
+  [120.976539, 14.639782],
+  [120.975187, 14.652067],
+  [120.972677, 14.651797],
+];
+
+const SCOPE_SOURCE_ID = "scope-polygon-src";
+const SCOPE_FILL_LAYER_ID = "scope-polygon-fill";
+const SCOPE_LINE_LAYER_ID = "scope-polygon-line";
+
+function scopePolygonFeature(): GeoJSON.Feature<GeoJSON.Polygon> {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "Polygon", coordinates: [SCOPE_POLYGON_RING] },
+  };
+}
+
+// Added once, right after the base style is decluttered/restyled and before
+// any marker or route layer exists — so the fill/outline always sits below
+// everything else MapLibre draws, and (since parish/you-are-here pins are
+// HTML markers layered on top of the whole canvas by the browser, not
+// MapLibre paint layers) it is never able to hide a pin regardless of add
+// order.
+function addScopePolygon(map: MapLibreMap, fillColor: string, lineColor: string) {
+  if (map.getSource(SCOPE_SOURCE_ID)) return;
+  map.addSource(SCOPE_SOURCE_ID, { type: "geojson", data: scopePolygonFeature() });
+  map.addLayer({
+    id: SCOPE_FILL_LAYER_ID,
+    type: "fill",
+    source: SCOPE_SOURCE_ID,
+    paint: { "fill-color": fillColor, "fill-opacity": 0.22 },
+  });
+  map.addLayer({
+    id: SCOPE_LINE_LAYER_ID,
+    type: "line",
+    source: SCOPE_SOURCE_ID,
+    layout: { "line-join": "round" },
+    paint: { "line-color": lineColor, "line-width": 2 },
+  });
+}
+
 interface ParishRecord {
   id: string;
   name: string;
@@ -364,6 +422,7 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
       window.clearTimeout(loadTimeout);
       if (cancelled) return;
       declutterAndRestyle(map);
+      addScopePolygon(map, resolveColor("var(--color-brand-scope)"), resolveColor("var(--color-brand-scope)"));
       map.fitBounds(
         [
           [DIOCESE_BOUNDS.lngMin, DIOCESE_BOUNDS.latMin],
@@ -410,6 +469,15 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
         button.type = "button";
         button.setAttribute("aria-label", `Open ${shortLabel(parish.name)}`);
         button.addEventListener("click", () => onSelectParish(routeId));
+
+        // Only the 2 live, tappable parishes get a permanent text label —
+        // with all 31 pins on screen, labelling every one collides (measured
+        // at 8 pins: 15 overlaps). The 29 coming-soon pins stay label-free,
+        // identified only by the title tooltip set below.
+        const label = document.createElement("span");
+        label.className = "dmap-live__marker-label";
+        label.textContent = shortLabel(parish.name);
+        button.appendChild(label);
       }
 
       const marker = new MapLibreMarker({ element: el, anchor: "center" })
@@ -491,30 +559,46 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
     </div>
   );
 
+  // The scope-polygon caption only applies to the live MapLibre map (the
+  // fallback is a separate hand-drawn illustration that never draws the
+  // polygon), so it renders alongside the canvas, not in the fallback
+  // branch below.
+  const scopeLegend = (
+    <p className="dmap-live__legend">
+      <span className="dmap-live__legend-swatch" aria-hidden="true" />
+      Shaded area marks the study/coverage area for this capstone.
+    </p>
+  );
+
   if (mode === "fallback") {
     return (
-      <div className="dmap-live" data-map-mode="fallback">
-        {offlineFlagged && <div className="dmap-live__fallback-badge">Offline map</div>}
-        <DioceseMap onSelectParish={onSelectParish} />
-        {distancePanel}
+      <div className="flex flex-col gap-2 h-full min-h-0">
+        <div className="dmap-live flex-1 min-h-0" data-map-mode="fallback">
+          {offlineFlagged && <div className="dmap-live__fallback-badge">Offline map</div>}
+          <DioceseMap onSelectParish={onSelectParish} />
+          {distancePanel}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dmap-live" data-map-mode={mode}>
-      <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
-      <button
-        type="button"
-        className="dmap-live__recentre"
-        onClick={recentreOnMe}
-        disabled={!position}
-        title={position ? "Recentre the map on your position" : "Your position is unknown — enable GPS or the location simulator"}
-        aria-label="Recentre map on my location"
-      >
-        Recentre on me
-      </button>
-      {distancePanel}
+    <div className="flex flex-col gap-2 h-full min-h-0">
+      <div className="dmap-live flex-1 min-h-0" data-map-mode={mode}>
+        <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
+        <button
+          type="button"
+          className="dmap-live__recentre"
+          onClick={recentreOnMe}
+          disabled={!position}
+          title={position ? "Recentre the map on your position" : "Your position is unknown — enable GPS or the location simulator"}
+          aria-label="Recentre map on my location"
+        >
+          Recentre on me
+        </button>
+        {distancePanel}
+      </div>
+      {scopeLegend}
     </div>
   );
 }
