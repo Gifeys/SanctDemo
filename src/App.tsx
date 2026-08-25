@@ -20,7 +20,7 @@ import RosarySettingsModal from "./components/RosarySettingsModal";
 import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
-import DioceseMapLive from "./components/DioceseMapLive";
+import CustomDioceseMap from "./components/CustomDioceseMap";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -617,7 +617,7 @@ export default function App() {
                       pin opens that parish's tour, same as the presence
                       sheet does. */}
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-3 h-72">
-                    <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
+                    <CustomDioceseMap onSelectParish={handleOpenTourFromPresence} />
                   </div>
 
                   {/* Church Selector Cards (Figure 2 / Page 34) */}
@@ -927,7 +927,7 @@ export default function App() {
                             at all. Station-by-station progress returns when
                             it is driven by real QR scans at each station. */}
                         <div className="p-4 pb-16">
-                          <DioceseMapLive onSelectParish={handleOpenTourFromPresence} />
+                          <CustomDioceseMap onSelectParish={handleOpenTourFromPresence} />
                         </div>
                       </div>
                     </div>

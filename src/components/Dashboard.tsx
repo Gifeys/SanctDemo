@@ -6,7 +6,7 @@ import {
 import { Route } from "../types";
 import { MASS_SCHEDULES, ROSARY_MYSTERIES } from "../data";
 import { nextMass } from "../lib/schedule";
-import DioceseMapLive from "./DioceseMapLive";
+import CustomDioceseMap from "./CustomDioceseMap";
 
 type Announcement = {
   id: string;
@@ -179,7 +179,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
         {/* Diocese map card — tapping a live pin opens that parish's tour,
             same handler the Map tab uses. */}
         <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-xs p-3 h-64">
-          <DioceseMapLive onSelectParish={onSelectParish} />
+          <CustomDioceseMap onSelectParish={onSelectParish} />
         </div>
 
         {/* Quick Navigation grid — everything here belongs to the active
