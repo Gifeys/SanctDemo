@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker as MapLibreMarker, Popup, NavigationControl, type GeoJSONSource } from "maplibre-gl";
+import { Map as MapLibreMap, Marker as MapLibreMarker, Popup, NavigationControl, LngLatBounds, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
 import { haversineMeters, type Coordinates } from "../lib/geo";
-import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, type WalkingRoute } from "../lib/routing";
+import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishes, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
 import parishData from "../data/diocese-parishes.json";
@@ -151,9 +151,21 @@ function shortLabel(name: string): string {
   return name.replace(/ Guide$/, "").replace(/ Tour$/, "").replace(/ Parish$/, "");
 }
 
-// Search treats a parish's vicariate as its "location" line — the same role
-// `location` plays in the client's prototype data (churches.json), which
-// this dataset doesn't carry a dedicated field for.
+// Every parish's vicariate in diocese-parishes.json is flagged
+// `vicariateVerified: false` — each one was assigned to its nearest
+// vicariate seat, not sourced from the diocese as official. It's still
+// shown (the rule this codebase holds itself to: unverified data is
+// labelled, never hidden — see coordinatesVerified/scheduleVerified), but
+// never as a bare fact, and — per mapSearch.ts — never matched against.
+function vicariateLabel(vicariate: string): string {
+  return `${vicariate} (unconfirmed)`;
+}
+
+// Search shows a parish's vicariate as its secondary "location" line — the
+// same role `location` plays in the client's prototype data
+// (churches.json), which this dataset doesn't carry a dedicated field for
+// — but, unlike the prototype, does not match against it (see
+// mapSearch.ts's searchParishes for why).
 interface SearchParish extends SearchableParish {
   routeId?: string;
   isLive: boolean;
@@ -162,7 +174,7 @@ interface SearchParish extends SearchableParish {
 const SEARCHABLE_PARISHES: SearchParish[] = PARISHES.map(p => ({
   id: p.id,
   name: shortLabel(p.name),
-  location: p.vicariate,
+  location: vicariateLabel(p.vicariate),
   routeId: LIVE_PARISH_TO_ROUTE_ID[p.id],
   isLive: p.status === "live" && Boolean(LIVE_PARISH_TO_ROUTE_ID[p.id]),
 }));
@@ -232,7 +244,7 @@ function isTileHostError(error: unknown): boolean {
 }
 
 export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapLiveProps) {
-  const { position } = usePresence();
+  const { position, accuracyMeters, simulation } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   // Parish markers keyed by parish id, so a search result can fly to and
@@ -255,6 +267,70 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   // every marker for no reason.
   const onSelectParishRef = useRef(onSelectParish);
   onSelectParishRef.current = onSelectParish;
+
+  // Read by the popup's "Get directions" click handler, which is wired once
+  // when markers are built (see the marker-building effect) and must always
+  // see the pilgrim's *current* position, not whatever it was when the
+  // popup happened to be constructed.
+  const positionRef = useRef<Coordinates | null>(position);
+  positionRef.current = position;
+
+  // A second, independent request counter from the auto-drawn routes'
+  // `routeRequestRef` above — "Get directions" is a distinct, explicitly
+  // requested action with its own in-flight request that a newer explicit
+  // request must be able to supersede/clear, regardless of what the
+  // passive per-position route-drawing effect is doing.
+  const directionsRequestRef = useRef(0);
+
+  // Fetches and draws the walking route to one live parish on demand, for
+  // the popup's "Get directions" button — independent of the effect below
+  // that quietly draws routes to every live parish once a position is
+  // known, since a parish's popup can be opened, and directions requested,
+  // before that effect has ever run (e.g. GPS was denied when the map
+  // first loaded, then granted afterwards).
+  function getDirectionsFor(
+    routeId: string,
+    coords: Coordinates,
+    statusEl: HTMLParagraphElement,
+    buttonEl: HTMLButtonElement,
+  ) {
+    const from = positionRef.current;
+    const requestId = ++directionsRequestRef.current;
+    buttonEl.disabled = true;
+    statusEl.textContent = from
+      ? "Finding a route…"
+      : "Your position is unknown — enable GPS or the location simulator to get directions.";
+    if (!from) {
+      buttonEl.disabled = false;
+      return;
+    }
+
+    getWalkingDirections(from, coords).then(result => {
+      // A newer "Get directions" click (this parish or another) landed
+      // first — this response is stale and must not clobber it.
+      if (directionsRequestRef.current !== requestId) return;
+      buttonEl.disabled = false;
+      if (result.status === "no-position") return; // from was truthy above; unreachable, kept for type narrowing
+
+      const { route, label } = result;
+      const map = mapRef.current;
+      if (map) {
+        const accent = resolveColor("var(--color-brand-accent)");
+        upsertRouteLayer(map, routeId, route, accent);
+        setRoutes(prev => ({ ...prev, [routeId]: route }));
+        const [first, ...rest] = route.path;
+        const bounds = rest.reduce(
+          (b, p) => b.extend([p.lng, p.lat]),
+          new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]),
+        );
+        map.fitBounds(bounds, { padding: 64, duration: 500 });
+      }
+      statusEl.textContent = label;
+    });
+  }
+
+  const getDirectionsRef = useRef(getDirectionsFor);
+  getDirectionsRef.current = getDirectionsFor;
 
   const results = useMemo(() => searchParishes(query, SEARCHABLE_PARISHES), [query]);
 
@@ -383,9 +459,9 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
       const displayName = shortLabel(parish.name);
 
       const el = buildChurchPinElement({ name: displayName, isLive });
-      const { el: card, action } = buildPopupContent({
+      const { el: card, action, directionsAction, directionsStatus } = buildPopupContent({
         name: displayName,
-        location: parish.vicariate,
+        location: vicariateLabel(parish.vicariate),
         isLive,
       });
 
@@ -404,6 +480,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
 
       if (action && routeId) {
         action.addEventListener("click", () => onSelectParishRef.current(routeId));
+      }
+      if (directionsAction && directionsStatus && routeId) {
+        directionsAction.addEventListener("click", () =>
+          getDirectionsRef.current(routeId, parish.coordinates, directionsStatus, directionsAction),
+        );
       }
 
       const lngLat: [number, number] = [parish.coordinates.lng, parish.coordinates.lat];
@@ -601,11 +682,34 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
           className="dmap-live__recentre"
           onClick={recentreOnMe}
           disabled={!position}
-          title={position ? "Recentre the map on your position" : "Your position is unknown — enable GPS or the location simulator"}
+          title={
+            !position
+              ? "Your position is unknown — enable GPS or the location simulator"
+              : simulation !== "off"
+                ? "Recentre the map on your simulated position"
+                : accuracyMeters != null
+                  ? `Recentre the map on your position (accurate to ±${Math.round(accuracyMeters)} m)`
+                  : "Recentre the map on your position"
+          }
           aria-label="Recentre map on my location"
         >
           Recentre on me
         </button>
+
+        {/* Honest status for the you-are-here marker: a simulated position
+            is clearly labelled as such (never mistaken for a real fix), and
+            a real GPS fix shows its own reported accuracy radius rather than
+            asserting a precise dot — wifi-based geolocation on a desktop is
+            routinely only accurate to within a few hundred metres, and this
+            says so instead of pretending otherwise. */}
+        {position && (
+          <div
+            className={simulation !== "off" ? "dmap-live__position-badge dmap-live__position-badge--sim" : "dmap-live__position-badge"}
+            data-testid="position-accuracy-badge"
+          >
+            {simulation !== "off" ? "Simulated location" : accuracyMeters != null ? `Accurate to ±${Math.round(accuracyMeters)} m` : "Accuracy unknown"}
+          </div>
+        )}
         {distancePanel}
       </div>
       {scopeLegend}

@@ -98,3 +98,34 @@ export function formatWalkingMinutes(minutes: number): string {
   if (minutes < 1) return '<1 min walk'
   return `${Math.round(minutes)} min walk`
 }
+
+// Pure result + label logic behind the map popup's "Get directions" action,
+// extracted so it's unit-testable without MapLibre/DOM (mirrors mapSearch.ts
+// and mapMarkers.ts, extracted for the same reason). The caller (
+// DioceseMapLive.tsx) is responsible for everything this can't express as a
+// pure function: reading the pilgrim's *current* position at click time,
+// superseding a stale in-flight request with a newer one, drawing/updating
+// the map layer, and fitting the camera to the route.
+export type DirectionsResult =
+  // No known position yet — the caller must say why it can't route rather
+  // than failing silently (no position, no button spinner that never ends).
+  | { status: 'no-position' }
+  | { status: 'ok'; route: WalkingRoute; label: string }
+
+export async function getWalkingDirections(
+  from: Coordinates | null,
+  to: Coordinates,
+  options: FetchWalkingRouteOptions = {},
+): Promise<DirectionsResult> {
+  if (!from) return { status: 'no-position' }
+
+  const route = await fetchWalkingRoute(from, to, options)
+  const label =
+    route.kind === 'routed'
+      ? `${formatDistance(route.distanceMeters)} walk · ${formatWalkingMinutes(route.durationMinutes)}`
+      // OSRM was unreachable/timed out/returned nothing usable — this is a
+      // straight-line distance, never presented as a walking route.
+      : `${formatDistance(route.distanceMeters)} direct (straight-line — walking route unavailable)`
+
+  return { status: 'ok', route, label }
+}

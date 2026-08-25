@@ -48,13 +48,27 @@ describe('buildPopupContent', () => {
     expect(el.querySelector('.dmap-card__soon')).toBeNull()
   })
 
-  it('shows the coming-soon note for a non-live parish, with no action button', () => {
-    const { el, action } = buildPopupContent({
+  it('gives a live parish a "Get directions" action and an (initially empty) status line', () => {
+    const { directionsAction, directionsStatus } = buildPopupContent({
+      name: 'San Roque Cathedral',
+      isLive: true,
+    })
+    expect(directionsAction).not.toBeNull()
+    expect(directionsAction!.tagName).toBe('BUTTON')
+    expect(directionsAction!.textContent).toBe('Get directions')
+    expect(directionsStatus).not.toBeNull()
+    expect(directionsStatus!.textContent).toBe('')
+  })
+
+  it('shows the coming-soon note for a non-live parish, with no action buttons at all', () => {
+    const { el, action, directionsAction, directionsStatus } = buildPopupContent({
       name: 'Birhen ng Lourdes Parish',
       location: 'Vicariate of Sacred Heart',
       isLive: false,
     })
     expect(action).toBeNull()
+    expect(directionsAction).toBeNull()
+    expect(directionsStatus).toBeNull()
     expect(el.querySelector('.dmap-card__soon')?.textContent).toBe('Coming soon to SanctiWalk')
     expect(el.querySelector('.dmap-card__action')).toBeNull()
   })

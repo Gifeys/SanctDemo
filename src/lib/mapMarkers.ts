@@ -36,6 +36,15 @@ export function buildChurchPinElement(parish: MarkerParish): HTMLButtonElement {
 export interface PopupBuild {
   el: HTMLDivElement
   action: HTMLButtonElement | null
+  // "Get directions" — live parishes only, alongside "View parish". Built
+  // here (not added later) so it exists in the DOM from the start and the
+  // caller can wire a click handler without re-querying/rebuilding the
+  // popup. `directionsStatus` is the paragraph the caller updates in place
+  // (distance/time once known, or why it can't route yet) — starts empty
+  // and hidden via :empty in CSS, so a parish nobody has asked directions
+  // for yet shows no stray blank line.
+  directionsAction: HTMLButtonElement | null
+  directionsStatus: HTMLParagraphElement | null
 }
 
 // Popup body. Built as DOM rather than JSX for the same reason as the pin,
@@ -60,12 +69,24 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
   }
 
   let action: HTMLButtonElement | null = null
+  let directionsAction: HTMLButtonElement | null = null
+  let directionsStatus: HTMLParagraphElement | null = null
   if (parish.isLive) {
     action = document.createElement('button')
     action.type = 'button'
     action.className = 'dmap-card__action'
     action.textContent = 'View parish'
     el.append(action)
+
+    directionsAction = document.createElement('button')
+    directionsAction.type = 'button'
+    directionsAction.className = 'dmap-card__action dmap-card__action--secondary'
+    directionsAction.textContent = 'Get directions'
+    el.append(directionsAction)
+
+    directionsStatus = document.createElement('p')
+    directionsStatus.className = 'dmap-card__directions-status'
+    el.append(directionsStatus)
   } else {
     const soon = document.createElement('p')
     soon.className = 'dmap-card__soon'
@@ -73,5 +94,5 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
     el.append(soon)
   }
 
-  return { el, action }
+  return { el, action, directionsAction, directionsStatus }
 }

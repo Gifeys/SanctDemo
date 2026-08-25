@@ -210,6 +210,26 @@
   outline-offset: 2px;
 }
 
+/* Honest status for the you-are-here marker — sits directly under the
+   recentre control, in the same right-hand margin. A real GPS fix states
+   its own reported accuracy radius rather than a bare, over-precise dot; a
+   simulated position is labelled as such so it is never mistaken for one. */
+.dmap-live__position-badge {
+  position: absolute;
+  top: 132px;
+  right: 8px;
+  z-index: 5;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-text) 82%, transparent);
+  color: var(--color-brand-card);
+}
+.dmap-live__position-badge--sim {
+  background: color-mix(in srgb, var(--color-brand-scope) 85%, transparent);
+}
+
 /* Floating pill-shaped search bar, top-left, inset on the right to leave
    room for the NavigationControl's zoom buttons (top-right) — matches the
    client's prototype layout exactly. Chrome uses the cream card surface
@@ -278,6 +298,25 @@
   font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
 }
 .dmap-card__action:hover { filter: brightness(1.08); }
+.dmap-card__action--secondary {
+  margin-top: 6px;
+  background: var(--color-brand-card);
+  color: var(--color-brand-accent);
+  border: 1px solid var(--color-brand-accent);
+}
+.dmap-card__action--secondary:hover { background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-brand-card)); }
+.dmap-card__action--secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+/* Filled in after "Get directions" is tapped: distance/time once routed,
+   a straight-line figure clearly labelled "direct" when OSRM couldn't be
+   reached, or why it can't route yet (no known position). Empty (no text
+   content) collapses to nothing so a card nobody asked directions for shows
+   no stray blank line. */
+.dmap-card__directions-status:empty { display: none; }
+.dmap-card__directions-status {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--color-brand-secondary);
+}
 
 /* Per-parish distance panel — shown in both live (MapLibre) and offline
    (drawn SVG) modes, since distance needs no network. In live mode it

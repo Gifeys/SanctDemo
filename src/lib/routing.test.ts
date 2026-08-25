@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, WALK_SPEED_MPS } from './routing'
+import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, getWalkingDirections, WALK_SPEED_MPS } from './routing'
 import { haversineMeters } from './geo'
 
 const MHCP = { lat: 14.637729, lng: 120.973456 }
@@ -82,6 +82,48 @@ describe('fetchWalkingRoute', () => {
     const route = await fetchWalkingRoute(MHCP, SRC, { fetchImpl })
 
     expect(route.kind).toBe('direct')
+  })
+})
+
+describe('getWalkingDirections', () => {
+  // The pure logic behind the map popup's "Get directions" action — see
+  // docs/reports/map-fixes-and-directions.md, defect 4.
+
+  it("reports 'no-position' — never fails silently — when the pilgrim's position is unknown", async () => {
+    const fetchImpl = vi.fn()
+    const result = await getWalkingDirections(null, SRC, { fetchImpl })
+    expect(result).toEqual({ status: 'no-position' })
+    // Must not even attempt a network call with a null origin.
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('labels a successful routed result with distance and walking time, never OSRM duration', async () => {
+    const coordinates = [[120.973, 14.638], [120.9726, 14.6516]]
+    const fetchImpl = vi.fn().mockResolvedValue(
+      okResponse({
+        code: 'Ok',
+        routes: [{ distance: 1850.5, duration: 240.2, geometry: { coordinates } }],
+      }),
+    )
+
+    const result = await getWalkingDirections(MHCP, SRC, { fetchImpl })
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') throw new Error('unreachable')
+    expect(result.route.kind).toBe('routed')
+    expect(result.label).toBe('1.9 km walk · 22 min walk')
+  })
+
+  it('falls back to a clearly-labelled direct/straight-line distance when OSRM is unreachable', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('network error'))
+
+    const result = await getWalkingDirections(MHCP, SRC, { fetchImpl })
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') throw new Error('unreachable')
+    expect(result.route.kind).toBe('direct')
+    // Must read as a straight-line estimate, never presented as a walking route.
+    expect(result.label).toContain('direct')
+    expect(result.label).toContain('straight-line')
+    expect(result.label).not.toContain('walk ·')
   })
 })
 

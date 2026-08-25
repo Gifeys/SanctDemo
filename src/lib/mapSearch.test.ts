@@ -23,11 +23,18 @@ describe('searchParishes', () => {
     expect(results.map(r => r.id)).toEqual(['p1'])
   })
 
-  it('matches a substring of the location', () => {
+  it('does not match on location — vicariate is unverified data', () => {
+    // p2 matches "cathedral" by name ("San Roque Cathedral"); every other
+    // parish's location also contains "Vicariate of the Cathedral"/"Sacred
+    // Heart" etc, but those must NOT surface — vicariate is an inferred
+    // guess (vicariateVerified: false in diocese-parishes.json), and search
+    // must never present a guess as if it were a known fact.
     const results = searchParishes('cathedral', PARISHES)
-    // Matches p2 by name ("San Roque Cathedral") AND by location
-    // ("Vicariate of the Cathedral") — both should surface, each once.
     expect(results.map(r => r.id)).toEqual(['p2'])
+
+    // "vicariate" appears in every parish's *location* and in no parish's
+    // name — nothing should match now that location is excluded.
+    expect(searchParishes('vicariate', PARISHES)).toEqual([])
   })
 
   it('is case-insensitive', () => {
@@ -46,10 +53,11 @@ describe('searchParishes', () => {
   })
 
   it('preserves input order among matches', () => {
-    // All six of p3..p8 are in "Vicariate of Sacred Heart" — the result
+    // p2 ("San Roque"), p5 ("Santo Nino" — "san" is a substring of "santo"),
+    // p6, p7, p8 (all "San …") all contain "san" in their name — the result
     // order should follow the input array, not be resorted.
-    const results = searchParishes('sacred heart', PARISHES)
-    expect(results.map(r => r.id)).toEqual(['p3', 'p4', 'p5', 'p6', 'p7', 'p8'])
+    const results = searchParishes('san', PARISHES)
+    expect(results.map(r => r.id)).toEqual(['p2', 'p5', 'p6', 'p7', 'p8'])
   })
 
   it('returns an empty array when nothing matches', () => {

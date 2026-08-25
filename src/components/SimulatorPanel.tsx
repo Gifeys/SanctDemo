@@ -10,7 +10,7 @@ interface SimulatorPanelProps {
 // hidden behind a debug flag — it is how presence gets demonstrated in a
 // defense room where real GPS is nowhere near either parish.
 export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps) {
-  const { presence, parish, position, gpsStatus, simulation, setSimulation } = usePresence();
+  const { presence, parish, position, accuracyMeters, gpsStatus, simulation, setSimulation } = usePresence();
 
   if (!isOpen) return null;
 
@@ -100,12 +100,23 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
                   {position ? `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}` : "—"}
                 </span>
               </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-white/70">Accuracy</span>
+                <span className="font-bold text-white text-right">
+                  {simulation !== "off"
+                    ? "Simulated — not a real fix"
+                    : accuracyMeters != null
+                      ? `±${Math.round(accuracyMeters)} m`
+                      : "—"}
+                </span>
+              </div>
             </div>
           </div>
 
           <p className="text-sm text-white/70 leading-snug">
             Real GPS is used automatically whenever simulation is "Off". This panel exists for defense-room
-            demonstrations where the diocese's parishes are out of reach.
+            demonstrations where the diocese's parishes are out of reach. A simulated position is clearly
+            labelled as such wherever it appears on screen — never shown as a real GPS fix.
           </p>
         </div>
       </div>

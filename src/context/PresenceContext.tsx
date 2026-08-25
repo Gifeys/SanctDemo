@@ -18,6 +18,15 @@ interface PresenceContextValue {
   presence: PresenceState
   parish: Route | null
   position: Coordinates | null
+  // The browser's own reported accuracy radius for `position`, in metres —
+  // straight from GeolocationCoordinates.accuracy. Null whenever the
+  // position isn't a real GPS fix (no position yet, or the simulator is
+  // engaged and the position is fabricated) — a simulated position has no
+  // honest accuracy figure to report, so it must not display one. On
+  // desktop, wifi-based geolocation is routinely accurate only to within a
+  // few hundred metres; there is no code fix for that, only surfacing it
+  // instead of asserting a precise dot.
+  accuracyMeters: number | null
   gpsStatus: GpsStatus
   simulation: SimulationValue
   setSimulation: (value: SimulationValue) => void
@@ -77,6 +86,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('idle')
   const [simulation, setSimulation] = useState<SimulationValue>('off')
   const [position, setPosition] = useState<Coordinates | null>(null)
+  const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null)
   const presenceRef = useRef<PresenceState>(INITIAL_PRESENCE)
 
   function applyPosition(pos: Coordinates | null, options: { instant?: boolean } = {}) {
@@ -101,15 +111,23 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       applyPosition(null, { instant: true })
       return
     }
+    // A simulated position is fabricated, not measured — it never carries
+    // an honest accuracy figure, so any previous real-GPS accuracy reading
+    // must not linger and be shown alongside it.
+    setAccuracyMeters(null)
     applyPosition(simulatedPosition(simulation, parishes), { instant: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulation])
 
-  // Real GPS, only while the simulator is off.
+  // Real GPS, only while the simulator is off. Real GPS always takes
+  // precedence over the simulator whenever the simulator is off — this
+  // effect and the one above are mutually exclusive on `simulation`, so a
+  // real fix can never be silently overridden by a stale simulated one.
   useEffect(() => {
     if (simulation !== 'off') return
     if (!('geolocation' in navigator)) {
       setGpsStatus('unavailable')
+      setAccuracyMeters(null)
       applyPosition(null, { instant: true })
       return
     }
@@ -117,6 +135,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     const id = navigator.geolocation.watchPosition(
       p => {
         setGpsStatus('granted')
+        setAccuracyMeters(p.coords.accuracy ?? null)
         applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude })
       },
       () => {
@@ -124,8 +143,16 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         // applying a null position here, the app would keep asserting the
         // pilgrim is standing at whatever parish was last resolved.
         setGpsStatus('denied')
+        setAccuracyMeters(null)
         applyPosition(null, { instant: true })
       },
+      // enableHighAccuracy asks the device for its best available fix
+      // (GPS chip over coarse wifi/cell triangulation where possible).
+      // maximumAge: 5000 means a cached fix is only reused if it is under
+      // 5 seconds old — short enough that "it thinks I'm somewhere I was
+      // an hour ago" cannot happen from this cache. timeout: 15000 gives
+      // the device up to 15s to produce a fix before watchPosition's error
+      // callback fires (handled above) rather than hanging silently.
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     )
     return () => navigator.geolocation.clearWatch(id)
@@ -142,11 +169,12 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       presence,
       parish,
       position,
+      accuracyMeters,
       gpsStatus: simulation === 'off' ? gpsStatus : 'granted',
       simulation,
       setSimulation,
     }),
-    [presence, parish, position, gpsStatus, simulation],
+    [presence, parish, position, accuracyMeters, gpsStatus, simulation],
   )
 
   return <PresenceCtx.Provider value={value}>{children}</PresenceCtx.Provider>

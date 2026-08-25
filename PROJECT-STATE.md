@@ -1,6 +1,6 @@
 # SanctiWalk — Project State
 
-**Last updated:** 2026-08-25 · 43 commits · 70 tests passing · typecheck clean
+**Last updated:** 2026-08-25 · 44 commits · 81 tests passing · typecheck clean
 
 Read this first. It exists so a new session, or a new person, can pick the project up without reading back through months of conversation.
 
@@ -17,7 +17,7 @@ A Catholic parish companion PWA for the **Diocese of Kalookan** (southern Calooc
 ```bash
 npm run dev --prefix D:/SanctDemo          # http://localhost:5173
 npm run dev:https --prefix D:/SanctDemo    # https://<LAN-IP>:5173 — needed for the camera on a phone
-npm test --prefix D:/SanctDemo             # 44 tests
+npm test --prefix D:/SanctDemo             # 81 tests
 ./node_modules/.bin/tsc --noEmit           # NOT `npx tsc` — that resolves to an unrelated package
 ```
 
@@ -61,7 +61,8 @@ These were arrived at through real bugs. Breaking them reintroduces those bugs.
 - **Ministries and Sacraments are diocese-wide**, not per-parish — no per-parish data exists yet. Both screens say so rather than implying otherwise.
 - **Station progress is not real yet.** The old simulated walk was removed. Real progress needs QR scanning at each station; see the AR decisions doc.
 - Dead state remains in `App.tsx` (`commentsByStation`, `handlePostComment`, `activeCommentInput`) after the station comments block was removed.
-- **The live diocese map now matches the client's own earlier prototype** (`D:\SanctiWalk-Saved\app\src\components\DioceseMap.jsx`): light `positron` basemap, a floating search bar (substring match over name + vicariate, capped at 6 results — `src/lib/mapSearch.ts`), church-glyph pins for all 31 parishes (all tappable, including coming-soon ones — `src/lib/mapMarkers.ts` builds the pin/popup DOM), and a `NavigationControl` (zoom only) top-right. The client's own additions ride on top unchanged: the 7-point study-area polygon and legend, the pulsing "you are here" marker, walking routes/distance panel, the recentre control, and the offline SVG fallback. Polygon/route/you-are-here colours were retuned for the new light ground (see `docs/reports/map-prototype-design-swap.md` for contrast numbers). **This environment's headless browser cannot paint the MapLibre canvas** (confirmed by sampling the canvas centre pixel: `[0,0,0,0]`), so the basemap, pin glyphs and popup positioning were verified by DOM/unit test and by reading the rendered accessibility tree, not by screenshot — check those by hand on a real device.
+- **The live diocese map now matches the client's own earlier prototype** (`D:\SanctiWalk-Saved\app\src\components\DioceseMap.jsx`): light `positron` basemap, a floating search bar (substring match over **name only** — see below — capped at 6 results, `src/lib/mapSearch.ts`), church-glyph pins for all 31 parishes (all tappable, including coming-soon ones — `src/lib/mapMarkers.ts` builds the pin/popup DOM), and a `NavigationControl` (zoom only) top-right. The client's own additions ride on top unchanged: the 7-point study-area polygon and legend, the pulsing "you are here" marker, walking routes/distance panel, the recentre control, and the offline SVG fallback. Polygon/route/you-are-here colours were retuned for the new light ground (see `docs/reports/map-prototype-design-swap.md` for contrast numbers). **This environment's headless browser cannot paint the MapLibre canvas** (confirmed by sampling the canvas centre pixel: `[0,0,0,0]`), so the basemap, pin glyphs and popup positioning were verified by DOM/unit test and by reading the rendered accessibility tree, not by screenshot — check those by hand on a real device.
+- **Four client-reported map defects were fixed and "Get directions" was added** — see `docs/reports/map-fixes-and-directions.md`. In short: (1) the map popup's "View parish" now opens the parish's own profile (`"home"` tab) instead of the map tab it was already on — see `tabForParishSelection()` in `src/lib/parishSelection.ts`; (2) search now matches parish **names only**, never `vicariate` (unverified — see below), and the vicariate shown as a secondary line is now suffixed "(unconfirmed)"; (3) `PresenceContext` now tracks and surfaces the browser's own reported GPS accuracy radius (`accuracyMeters`), and the location simulator is now visibly labelled on the map itself whenever engaged, not just inside its own panel; (4) live parish popups have a "Get directions" action (`getWalkingDirections()` in `src/lib/routing.ts`) that draws the OSRM walking route and shows distance + `WALK_SPEED_MPS`-derived time, honestly reporting "position unknown" or falling back to a clearly-labelled straight-line distance when OSRM is unreachable.
 
 ---
 

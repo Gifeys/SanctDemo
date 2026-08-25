@@ -31,6 +31,7 @@ import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getD
 import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
+import { tabForParishSelection } from "./lib/parishSelection";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
@@ -302,15 +303,33 @@ export default function App() {
   // Presence sheet actions: the pilgrim may be physically near a parish they
   // haven't selected in-app yet (e.g. they came straight from the church
   // selector), so opening the tour or AR screen also switches the active
-  // church context to the one presence detected.
+  // church context to the one presence detected. "Open Tour" (map icon,
+  // next to the sheet's own "AR Tour" button) means "show me the diocese
+  // map" — the pilgrim is already standing at the parish, so jumping to the
+  // map tab is the correct destination here, distinct from selecting a
+  // parish elsewhere (see handleSelectParish below).
   const handleOpenTourFromPresence = (parishId: string) => {
     setSelectedChurchId(parishId);
-    setActiveTab("navigator");
+    setActiveTab(tabForParishSelection("presence-open-tour"));
   };
 
   const handleOpenARFromPresence = (parishId: string) => {
     setSelectedChurchId(parishId);
     setActiveTab("ar");
+  };
+
+  // Selecting a parish from a map pin, a search result, or a parish card —
+  // anywhere the pilgrim is picking *which parish* to look at — opens that
+  // parish's own profile (the "home" tab: Dashboard, with its Mass
+  // schedule/History/Ministries/Sacraments links), not the map tab. Using
+  // "navigator" here was the bug behind "View parish does nothing": when
+  // the map pin lives on the map tab itself (App.tsx's "navigator" tab),
+  // setActiveTab("navigator") is a no-op because that tab is already active.
+  // Matches the "Start Sanctuary Walk" card button in the church-selector
+  // screen below, which already does exactly this for the same action.
+  const handleSelectParish = (parishId: string) => {
+    setSelectedChurchId(parishId);
+    setActiveTab(tabForParishSelection("pin"));
   };
 
   // Global methods to update progress
@@ -615,10 +634,11 @@ export default function App() {
                   {/* Diocese map — a geographically calibrated illustration
                       showing both parishes (and the pilgrim's own position,
                       when known) before a church is chosen. Tapping a live
-                      pin opens that parish's tour, same as the presence
-                      sheet does. */}
+                      pin opens that parish's profile, same as the "Start
+                      Sanctuary Walk" card button below does for the same
+                      selection action. */}
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-3 h-72">
-                    <CustomDioceseMap onSelectParish={handleOpenTourFromPresence} />
+                    <CustomDioceseMap onSelectParish={handleSelectParish} />
                   </div>
 
                   {/* Church Selector Cards (Figure 2 / Page 34) */}
@@ -913,7 +933,7 @@ export default function App() {
                       parish={activeChurchRoute}
                       announcements={announcements}
                       onNavigate={(tab) => setActiveTab(tab)}
-                      onSelectParish={handleOpenTourFromPresence}
+                      onSelectParish={handleSelectParish}
                     />
                   )}
 
@@ -939,12 +959,12 @@ export default function App() {
                             </p>
                           </header>
 
-                          <CustomDioceseMap mapHeight={374} onSelectParish={handleOpenTourFromPresence} />
+                          <CustomDioceseMap mapHeight={374} onSelectParish={handleSelectParish} />
 
                           <div className="space-y-3">
                             {liveParishes.map((parish) => (
                               <div key={parish.id}>
-                                <ParishCard parish={parish} onSelect={handleOpenTourFromPresence} />
+                                <ParishCard parish={parish} onSelect={handleSelectParish} />
                               </div>
                             ))}
                           </div>
