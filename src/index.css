@@ -565,3 +565,26 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .text-\[\#B3543F\] { color: var(--color-brand-error) !important; }
 .border-\[\#B3543F\] { border-color: var(--color-brand-error) !important; }
 .text-\[\#FFB4A2\] { color: var(--color-brand-error-soft) !important; }
+
+/* "Clear directions" — only rendered while a route is actually drawn, so it
+   sits directly beneath "Recentre on me" rather than reserving space that is
+   empty most of the time. Same pill treatment; the accent border marks it as
+   acting on the route rather than the camera. */
+.dmap-live__clear-route {
+  position: absolute;
+  top: 130px;
+  right: 8px;
+  z-index: 5;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-brand-accent);
+  background: color-mix(in srgb, var(--color-brand-text) 82%, transparent);
+  color: var(--color-brand-card);
+  cursor: pointer;
+}
+.dmap-live__clear-route:focus-visible {
+  outline: 2px solid var(--color-brand-card);
+  outline-offset: 2px;
+}

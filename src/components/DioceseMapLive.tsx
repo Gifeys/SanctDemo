@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
 import { haversineMeters, type Coordinates } from "../lib/geo";
-import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
+import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishes, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
 import parishData from "../data/diocese-parishes.json";
@@ -256,11 +256,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   const [offlineFlagged, setOfflineFlagged] = useState(false);
   const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
   const [query, setQuery] = useState("");
-  // Invalidates in-flight OSRM requests when a newer position arrives
-  // before they resolve, so a stale fetch can never overwrite a fresher
-  // route once it lands late.
-  const routeRequestRef = useRef(0);
-
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
   // and re-running that effect on every render would tear down and rebuild
@@ -275,19 +270,13 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   const positionRef = useRef<Coordinates | null>(position);
   positionRef.current = position;
 
-  // A second, independent request counter from the auto-drawn routes'
-  // `routeRequestRef` above — "Get directions" is a distinct, explicitly
-  // requested action with its own in-flight request that a newer explicit
-  // request must be able to supersede/clear, regardless of what the
-  // passive per-position route-drawing effect is doing.
+  // Invalidates an in-flight OSRM request when a newer "Get directions" tap
+  // lands first, so a slow response can never overwrite a fresher route.
   const directionsRequestRef = useRef(0);
 
-  // Fetches and draws the walking route to one live parish on demand, for
-  // the popup's "Get directions" button — independent of the effect below
-  // that quietly draws routes to every live parish once a position is
-  // known, since a parish's popup can be opened, and directions requested,
-  // before that effect has ever run (e.g. GPS was denied when the map
-  // first loaded, then granted afterwards).
+  // Fetches and draws the walking route to one live parish, for the popup's
+  // "Get directions" button. This is the only path that ever draws a route
+  // line — nothing is drawn merely because a position became known.
   function getDirectionsFor(
     routeId: string,
     coords: Coordinates,
@@ -527,35 +516,24 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, position?.lat, position?.lng]);
 
-  // Draws a walking route from the pilgrim's current position to each live
-  // parish. Each fetchWalkingRoute call is independently timed-out and
-  // falls back to a straight line (see src/lib/routing.ts) — this effect
-  // itself never blocks the map or shows a spinner; the last-drawn route
-  // simply stays on screen until a newer one resolves.
-  useEffect(() => {
+  // No route is drawn automatically. Directions appear only when the pilgrim
+  // asks for them from a parish's popup — the same contract as Google Maps or
+  // Waze, where turning location on shows you where you are and nothing more.
+  // An earlier version quietly drew a line to every live parish the moment a
+  // position was known, which read as the app having already decided where you
+  // were going.
+
+  // Dismisses a drawn route. Directions are a thing the pilgrim asked for,
+  // so there has to be a way to take them back off the map without hunting
+  // for the popup that produced them.
+  function clearDirections() {
     const map = mapRef.current;
-    if (mode !== "live" || !map) return;
-
-    if (!position) {
-      setRoutes({});
-      for (const parish of LIVE_PARISHES) removeRouteLayer(map, parish.routeId);
-      return;
+    directionsRequestRef.current++; // any in-flight response is now stale
+    if (map) {
+      for (const routeId of Object.keys(routes)) removeRouteLayer(map, routeId);
     }
-
-    const requestId = ++routeRequestRef.current;
-    const accent = resolveColor("var(--color-brand-accent)");
-    const from = position;
-
-    LIVE_PARISHES.forEach(async parish => {
-      const route = await fetchWalkingRoute(from, parish.coordinates);
-      if (routeRequestRef.current !== requestId) return; // superseded by a newer position
-      const currentMap = mapRef.current;
-      if (!currentMap) return; // unmounted / fell back to the offline map while this was in flight
-      setRoutes(prev => ({ ...prev, [parish.routeId]: route }));
-      upsertRouteLayer(currentMap, parish.routeId, route, accent);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, position?.lat, position?.lng]);
+    setRoutes({});
+  }
 
   function recentreOnMe() {
     const map = mapRef.current;
@@ -581,6 +559,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     if (!marker.getPopup()?.isOpen()) marker.togglePopup();
   }
 
+  // Straight-line distance only, and labelled "direct" so it is never
+  // mistaken for a walking distance. A real routed figure needs an OSRM
+  // round-trip per parish, and firing those off just to populate a caption
+  // is what used to draw an unasked-for line across the map.
   const distancePanel = (
     <div className="dmap-live__panel" data-testid="parish-distances">
       {LIVE_PARISHES.map(parish => {
@@ -590,15 +572,13 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
           <div className="dmap-live__panel-row" key={parish.routeId}>
             <span className="dmap-live__panel-name">{shortLabel(parish.name)}</span>
             <span className="dmap-live__panel-distance">
-              {straightLine === null
-                ? "Distance unknown"
-                : mode === "live" && route
-                  ? route.kind === "routed"
-                    ? `${formatDistance(route.distanceMeters)} walk · ${formatWalkingMinutes(route.durationMinutes)}`
-                    : `${formatDistance(route.distanceMeters)} direct (no route)`
-                  : mode === "fallback"
-                    ? `${formatDistance(straightLine)} direct · routing unavailable offline`
-                    : `${formatDistance(straightLine)} direct · finding a route…`}
+              {route
+                ? route.kind === "routed"
+                  ? `${formatDistance(route.distanceMeters)} walk · ${formatWalkingMinutes(route.durationMinutes)}`
+                  : `${formatDistance(route.distanceMeters)} direct (no route)`
+                : straightLine === null
+                  ? "Distance unknown"
+                  : `${formatDistance(straightLine)} direct`}
             </span>
           </div>
         );
@@ -695,6 +675,17 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
         >
           Recentre on me
         </button>
+
+        {Object.keys(routes).length > 0 && (
+          <button
+            type="button"
+            className="dmap-live__clear-route"
+            onClick={clearDirections}
+            aria-label="Clear directions from the map"
+          >
+            Clear directions
+          </button>
+        )}
 
         {/* Honest status for the you-are-here marker: a simulated position
             is clearly labelled as such (never mistaken for a real fix), and
