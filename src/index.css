@@ -160,6 +160,69 @@
   color: var(--color-brand-card);
 }
 
+/* Recentre-on-me control — sits above the MapLibre canvas. Disabled (with
+   an explanatory title/aria-label set inline) whenever position is null,
+   since flying to an unknown position would be meaningless. */
+.dmap-live__recentre {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-brand-card) 40%, transparent);
+  background: color-mix(in srgb, var(--color-brand-text) 82%, transparent);
+  color: var(--color-brand-card);
+  cursor: pointer;
+}
+.dmap-live__recentre:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.dmap-live__recentre:focus-visible {
+  outline: 2px solid var(--color-brand-card);
+  outline-offset: 2px;
+}
+
+/* Per-parish distance panel — shown in both live (MapLibre) and offline
+   (drawn SVG) modes, since distance needs no network. In live mode it
+   overlays the map canvas; in fallback mode it sits below the SVG. */
+.dmap-live__panel {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-brand-text) 82%, transparent);
+}
+[data-map-mode="fallback"] .dmap-live__panel {
+  position: static;
+  margin-top: 8px;
+  background: color-mix(in srgb, var(--color-brand-bg) 92%, black);
+}
+.dmap-live__panel-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.dmap-live__panel-name {
+  font-weight: 600;
+  color: var(--color-brand-card);
+}
+.dmap-live__panel-distance {
+  color: color-mix(in srgb, var(--color-brand-card) 85%, transparent);
+  text-align: right;
+}
+
 /* Base Typography Configuration */
 body {
   font-family: var(--font-secondary);

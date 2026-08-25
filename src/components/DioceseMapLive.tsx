@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
+import { Map as MapLibreMap, Marker as MapLibreMarker, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
+import { haversineMeters, type Coordinates } from "../lib/geo";
+import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, type WalkingRoute } from "../lib/routing";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
 
@@ -37,6 +39,23 @@ const LIVE_PARISH_TO_ROUTE_ID: Record<string, string> = {
   "parish-mary-help-of-christians-parish": "route-mhcp",
   "parish-san-roque-cathedral": "route-src",
 };
+
+interface LiveParish {
+  routeId: string;
+  name: string;
+  coordinates: Coordinates;
+}
+
+// The subset of PARISHES that are actually navigable (status "live" and
+// mapped to a route id) — both the distance panel and the walking-route
+// layers only ever target these, never a "coming soon" pin.
+const LIVE_PARISHES: LiveParish[] = PARISHES.filter(
+  p => p.status === "live" && LIVE_PARISH_TO_ROUTE_ID[p.id],
+).map(p => ({
+  routeId: LIVE_PARISH_TO_ROUTE_ID[p.id],
+  name: p.name,
+  coordinates: p.coordinates,
+}));
 
 // Reads a CSS custom property (optionally through a color-mix() expression,
 // exactly like the ones already used in index.css for DioceseMap.tsx's SVG)
@@ -181,6 +200,60 @@ function declutterAndRestyle(map: MapLibreMap) {
   }
 }
 
+function routeLineId(routeId: string): { sourceId: string; layerId: string } {
+  return { sourceId: `route-line-src-${routeId}`, layerId: `route-line-${routeId}` };
+}
+
+function routeFeature(route: WalkingRoute): GeoJSON.Feature<GeoJSON.LineString> {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: route.path.map(p => [p.lng, p.lat]),
+    },
+  };
+}
+
+// Draws (or updates) one parish's walking-route line. A 'direct' route
+// (OSRM unreachable/timed out — see routing.ts) is dashed so it reads
+// visually distinct from a real routed street path, matching the
+// distance-panel label ("direct" vs a walking time).
+function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute, accentColor: string) {
+  const { sourceId, layerId } = routeLineId(routeId);
+  const data = routeFeature(route);
+  const dasharray = route.kind === "direct" ? [2, 2] : [1, 0];
+
+  const existingSource = map.getSource(sourceId) as GeoJSONSource | undefined;
+  if (existingSource) {
+    existingSource.setData(data);
+  } else {
+    map.addSource(sourceId, { type: "geojson", data });
+  }
+
+  if (map.getLayer(layerId)) {
+    map.setPaintProperty(layerId, "line-dasharray", dasharray);
+  } else {
+    map.addLayer({
+      id: layerId,
+      type: "line",
+      source: sourceId,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: {
+        "line-color": accentColor,
+        "line-width": 3,
+        "line-dasharray": dasharray,
+      },
+    });
+  }
+}
+
+function removeRouteLayer(map: MapLibreMap, routeId: string) {
+  const { sourceId, layerId } = routeLineId(routeId);
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+}
+
 function shortLabel(name: string): string {
   return name.replace(/ Guide$/, "").replace(/ Tour$/, "").replace(/ Parish$/, "");
 }
@@ -202,6 +275,11 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
   const markersRef = useRef<MapLibreMarker[]>([]);
   const [mode, setMode] = useState<"loading" | "live" | "fallback">("loading");
   const [offlineFlagged, setOfflineFlagged] = useState(false);
+  const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
+  // Invalidates in-flight OSRM requests when a newer position arrives
+  // before they resolve, so a stale fetch can never overwrite a fresher
+  // route once it lands late.
+  const routeRequestRef = useRef(0);
 
   // Falls back the instant the browser reports offline, even mid-session —
   // a live map needs network and this app must never be caught showing an
@@ -352,11 +430,73 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, position?.lat, position?.lng]);
 
+  // Draws a walking route from the pilgrim's current position to each live
+  // parish. Each fetchWalkingRoute call is independently timed-out and
+  // falls back to a straight line (see src/lib/routing.ts) — this effect
+  // itself never blocks the map or shows a spinner; the last-drawn route
+  // simply stays on screen until a newer one resolves.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mode !== "live" || !map) return;
+
+    if (!position) {
+      setRoutes({});
+      for (const parish of LIVE_PARISHES) removeRouteLayer(map, parish.routeId);
+      return;
+    }
+
+    const requestId = ++routeRequestRef.current;
+    const accent = resolveColor("var(--color-brand-accent)");
+    const from = position;
+
+    LIVE_PARISHES.forEach(async parish => {
+      const route = await fetchWalkingRoute(from, parish.coordinates);
+      if (routeRequestRef.current !== requestId) return; // superseded by a newer position
+      const currentMap = mapRef.current;
+      if (!currentMap) return; // unmounted / fell back to the offline map while this was in flight
+      setRoutes(prev => ({ ...prev, [parish.routeId]: route }));
+      upsertRouteLayer(currentMap, parish.routeId, route, accent);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, position?.lat, position?.lng]);
+
+  function recentreOnMe() {
+    const map = mapRef.current;
+    if (!map || !position) return;
+    map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 15) });
+  }
+
+  const distancePanel = (
+    <div className="dmap-live__panel" data-testid="parish-distances">
+      {LIVE_PARISHES.map(parish => {
+        const straightLine = position ? haversineMeters(position, parish.coordinates) : null;
+        const route = routes[parish.routeId];
+        return (
+          <div className="dmap-live__panel-row" key={parish.routeId}>
+            <span className="dmap-live__panel-name">{shortLabel(parish.name)}</span>
+            <span className="dmap-live__panel-distance">
+              {straightLine === null
+                ? "Distance unknown"
+                : mode === "live" && route
+                  ? route.kind === "routed"
+                    ? `${formatDistance(route.distanceMeters)} walk · ${formatWalkingMinutes(route.durationMinutes)}`
+                    : `${formatDistance(route.distanceMeters)} direct (no route)`
+                  : mode === "fallback"
+                    ? `${formatDistance(straightLine)} direct · routing unavailable offline`
+                    : `${formatDistance(straightLine)} direct · finding a route…`}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   if (mode === "fallback") {
     return (
       <div className="dmap-live" data-map-mode="fallback">
         {offlineFlagged && <div className="dmap-live__fallback-badge">Offline map</div>}
         <DioceseMap onSelectParish={onSelectParish} />
+        {distancePanel}
       </div>
     );
   }
@@ -364,6 +504,17 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
   return (
     <div className="dmap-live" data-map-mode={mode}>
       <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
+      <button
+        type="button"
+        className="dmap-live__recentre"
+        onClick={recentreOnMe}
+        disabled={!position}
+        title={position ? "Recentre the map on your position" : "Your position is unknown — enable GPS or the location simulator"}
+        aria-label="Recentre map on my location"
+      >
+        Recentre on me
+      </button>
+      {distancePanel}
     </div>
   );
 }
