@@ -7,8 +7,13 @@ import {
   Sparkles,
   AlertTriangle,
   Loader2,
+  ListChecks,
+  ChevronRight,
+  ChevronLeft,
+  WifiOff,
 } from "lucide-react";
-import { useCamera } from "../lib/useCamera";
+import { useCamera, type CameraStatus } from "../lib/useCamera";
+import type { Station } from "../types";
 
 /**
  * ArTour — the camera experience behind the AR Tour tab.
@@ -18,29 +23,68 @@ import { useCamera } from "../lib/useCamera";
  * docs/ar-and-pilgrim-tour-decisions.md — an information card anchored over the
  * camera view, not a 3D model.
  *
- * `stationNames` is the accuracy lever. Passing the current parish's stations
- * turns open-ended recognition ("what statue is this, out of everything in the
- * world") into a multiple choice, which the model is far better at. See
- * /api/identify in server.ts.
+ * `stations` is the accuracy lever for the live scan (names become the
+ * `candidates` shortlist — see /api/identify in server.ts) AND the source
+ * list for manual selection below, so the two paths describe the same set of
+ * places.
+ *
+ * The camera can only open on a secure origin (https, or localhost) — a
+ * browser rule, not a bug this app can route around. Most real-world use is
+ * a phone on the parish wifi at a bare LAN IP, which is insecure by default.
+ * Rather than dead-ending there, every non-ready state offers "choose your
+ * station manually" as a fallback that always works — see docs/CAMERA-SETUP.md
+ * for how to get the camera itself working (HTTPS).
  */
 
 interface Recognition {
   recognized: boolean;
   title: string;
   category: string;
-  confidence: number;
+  /** Omitted for manual selections — there's no vision-model confidence to show. */
+  confidence?: number;
   summary: string;
   highlights: string[];
+  /** "ai" = the camera actually recognised this. "manual" = the pilgrim
+   *  picked it from the list because the camera couldn't open or couldn't
+   *  tell. Mirrors the coordinatesVerified / scheduleVerified pattern in
+   *  data.ts: unverified data is shown, but never labelled as confirmed. */
+  source: "ai" | "manual";
 }
 
 type Phase = "idle" | "scanning" | "done";
 
-export default function ArTour({ stationNames = [] }: { stationNames?: string[] }) {
+const STATUS_COPY: Partial<Record<CameraStatus, { title: string; icon: "warning" | "offline" }>> = {
+  denied: { title: "Camera permission needed", icon: "warning" },
+  insecure: { title: "Camera needs a secure connection", icon: "offline" },
+  unavailable: { title: "Camera unavailable", icon: "warning" },
+  "in-use": { title: "Camera is busy", icon: "warning" },
+  error: { title: "Camera unavailable", icon: "warning" },
+};
+
+function stationToRecognition(station: Station): Recognition {
+  const highlights = [
+    station.history && `History: ${station.history}`,
+    station.reflection && `Reflection: ${station.reflection}`,
+  ].filter((v): v is string => Boolean(v));
+
+  return {
+    recognized: true,
+    title: station.name,
+    category: "Station",
+    summary: station.description,
+    highlights,
+    source: "manual",
+  };
+}
+
+export default function ArTour({ stations = [] }: { stations?: Station[] }) {
   const camera = useCamera();
+  const stationNames = stations.map((s) => s.name);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Recognition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const scan = useCallback(async () => {
     const frame = camera.captureFrame();
@@ -75,7 +119,7 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
         return;
       }
 
-      setResult(data as Recognition);
+      setResult({ ...(data as Omit<Recognition, "source">), source: "ai" });
       setSheetOpen(true);
       setPhase("done");
     } catch {
@@ -84,9 +128,136 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
     }
   }, [camera, stationNames]);
 
+  const pickStation = useCallback((station: Station) => {
+    setResult(stationToRecognition(station));
+    setSheetOpen(true);
+    setPhase("done");
+    setPickerOpen(false);
+  }, []);
+
   /* ------------------------------------------------------------ permission */
 
   if (camera.status !== "ready") {
+    const statusCopy = STATUS_COPY[camera.status];
+    const showManualFallback = camera.status !== "idle" && camera.status !== "requesting";
+
+    // A manual pick was made while the camera was unavailable — show the
+    // station's info card right here, same shape as a real scan would, with
+    // a way back to either try the camera again or pick a different station.
+    if (result && result.source === "manual" && sheetOpen) {
+      return (
+        <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+          <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+            <button
+              onClick={() => setSheetOpen(false)}
+              aria-label="Back"
+              className="flex items-center gap-1 text-[15px] font-bold text-white/90 font-sans mb-2"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#5FC7DE] font-sans">
+                {result.category}
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold font-serif italic tracking-tight">{result.title}</h2>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {/* Unverified badge — mirrors scheduleVerified's amber "sample,
+                unconfirmed" treatment in MassSchedule.tsx / Dashboard.tsx. A
+                manual pick is not a scan, and must never look like one. */}
+            <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-300 rounded-xl">
+              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+              <span className="text-[15px] font-bold text-amber-900 leading-snug font-sans">
+                Selected manually — not confirmed by a camera scan.
+              </span>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs">
+              <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">{result.summary}</p>
+
+              {result.highlights.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {result.highlights.map((fact) => (
+                    <li key={fact} className="flex gap-2.5 items-start">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#147288] mt-2 shrink-0" />
+                      <span className="text-[14px] text-[#33332D] leading-relaxed font-sans">
+                        {fact}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="w-full bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+            >
+              Choose a different station
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // The manual station picker — the fallback that "always works" per the
+    // parish's request, since the camera itself is a browser permission the
+    // app cannot force.
+    if (pickerOpen) {
+      return (
+        <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+          <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+            <button
+              onClick={() => setPickerOpen(false)}
+              aria-label="Back"
+              className="flex items-center gap-1 text-[15px] font-bold text-white/90 font-sans mb-2"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </button>
+            <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+              <ListChecks className="w-3.5 h-3.5" /> Choose your station
+            </div>
+            <h2 className="text-2xl font-bold font-serif italic tracking-tight">
+              Where are you standing?
+            </h2>
+            <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+              Pick the station in front of you and we&rsquo;ll show what the scan would have.
+            </p>
+          </div>
+
+          <div className="p-4 space-y-2.5">
+            {stations.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs text-center">
+                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
+                  No stations are listed for this parish yet.
+                </p>
+              </div>
+            ) : (
+              stations.map((station) => (
+                <button
+                  key={station.id}
+                  onClick={() => pickStation(station)}
+                  className="w-full flex items-center justify-between gap-3 bg-white rounded-2xl border border-[#D6D6C2] p-4 shadow-xs text-left active:scale-[0.98] transition-transform"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-bold text-[#4A4A35] font-serif italic truncate">
+                      {station.name}
+                    </span>
+                    <span className="block text-[14px] text-[#33332D]/70 font-sans truncate">
+                      {station.description}
+                    </span>
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-[#8A8A70] shrink-0" />
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
         <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
@@ -102,11 +273,13 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
           </p>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs space-y-3 text-center">
             <div className="h-14 w-14 rounded-2xl bg-[#EBEBE0] border border-[#D6D6C2] flex items-center justify-center mx-auto text-[#147288]">
               {camera.status === "requesting" ? (
                 <Loader2 className="w-7 h-7 animate-spin" />
+              ) : statusCopy?.icon === "offline" ? (
+                <WifiOff className="w-7 h-7 text-[#B3543F]" />
               ) : camera.error ? (
                 <AlertTriangle className="w-7 h-7 text-[#B3543F]" />
               ) : (
@@ -115,13 +288,7 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
             </div>
 
             <h3 className="text-base font-bold text-[#4A4A35] font-serif italic">
-              {camera.status === "requesting"
-                ? "Opening the camera…"
-                : camera.status === "denied"
-                  ? "Camera permission needed"
-                  : camera.error
-                    ? "Camera unavailable"
-                    : "Start the AR Tour"}
+              {camera.status === "requesting" ? "Opening the camera…" : statusCopy?.title ?? "Start the AR Tour"}
             </h3>
 
             <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
@@ -129,22 +296,45 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
                 "The tour uses your camera to recognise altars, statues, and markers around the parish. Nothing is recorded — frames are analysed and discarded."}
             </p>
 
-            {camera.status === "denied" && (
-              <p className="text-[13px] text-[#33332D]/70 leading-relaxed font-sans">
-                Re-enable the camera from the icon in your browser&rsquo;s address bar, then try
-                again.
-              </p>
-            )}
-
-            {camera.status !== "requesting" && (
+            {camera.status !== "requesting" && camera.status !== "insecure" && (
               <button
                 onClick={() => void camera.start()}
                 className="w-full bg-[#5A5A40] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
               >
-                {camera.status === "denied" ? "Try again" : "Open camera"}
+                {camera.status === "denied" || camera.status === "in-use" || camera.status === "error"
+                  ? "Try again"
+                  : "Open camera"}
               </button>
             )}
           </div>
+
+          {result && !sheetOpen && (
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="w-full flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
+            >
+              <span className="min-w-0 text-left">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A70]">
+                  Last result
+                </span>
+                <span className="block text-[15px] font-bold truncate">{result.title}</span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-[#8A8A70] shrink-0" />
+            </button>
+          )}
+
+          {/* The fallback that "always works": the camera is a browser
+              permission the app cannot force open on an insecure origin, so
+              offer the same station information another way rather than
+              leaving a dead end. */}
+          {showManualFallback && (
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="w-full flex items-center justify-center gap-2 bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+            >
+              <ListChecks className="w-4 h-4" /> Choose your station manually instead
+            </button>
+          )}
         </div>
       </div>
     );
@@ -266,9 +456,11 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
                 <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#147288] font-sans">
                   {result.category}
                 </span>
-                <span className="text-[11px] text-[#33332D]/50 font-sans">
-                  {Math.round(result.confidence * 100)}% match
-                </span>
+                {result.confidence != null && (
+                  <span className="text-[11px] text-[#33332D]/50 font-sans">
+                    {Math.round(result.confidence * 100)}% match
+                  </span>
+                )}
               </div>
               <h3 className="text-xl font-bold text-[#4A4A35] font-serif italic leading-tight">
                 {result.title}
@@ -299,12 +491,22 @@ export default function ArTour({ stationNames = [] }: { stationNames?: string[] 
               </ul>
             )}
 
-            {/* Recognition is AI-generated. Say so — a pilgrim should know which
-                text is parish-verified and which is not. */}
-            <p className="mt-5 text-[12px] text-[#33332D]/60 leading-relaxed font-sans bg-[#EBEBE0]/70 border border-[#D6D6C2] rounded-xl p-3">
-              Identified by AI from your camera. Details may be incomplete — the parish record
-              is the authority.
-            </p>
+            {/* Recognition is AI-generated (or, on the fallback path, a
+                manual pick). Say which — a pilgrim should know which text is
+                parish-verified and which is not. */}
+            {result.source === "manual" ? (
+              <div className="mt-5 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-300 rounded-xl">
+                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                <span className="text-sm font-bold text-amber-900 leading-snug font-sans">
+                  Selected manually — not confirmed by a camera scan.
+                </span>
+              </div>
+            ) : (
+              <p className="mt-5 text-[12px] text-[#33332D]/60 leading-relaxed font-sans bg-[#EBEBE0]/70 border border-[#D6D6C2] rounded-xl p-3">
+                Identified by AI from your camera. Details may be incomplete — the parish record
+                is the authority.
+              </p>
+            )}
           </div>
         </div>
       )}

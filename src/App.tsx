@@ -962,9 +962,7 @@ export default function App() {
 
                   {/* TAB 8: AR Tour */}
                   {activeTab === "ar" && (
-                    <ArTour
-                      stationNames={activeChurchRoute.stations.map((s) => s.name)}
-                    />
+                    <ArTour stations={activeChurchRoute.stations} />
                   )}
 
                   {/* TAB 9: Pilgrim Catechism Quiz */}

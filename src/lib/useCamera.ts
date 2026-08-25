@@ -18,11 +18,34 @@ export type CameraStatus =
   | "ready"
   | "denied"
   | "unavailable"
+  | "insecure"
+  | "in-use"
   | "error";
 
 export interface CapturedFrame {
   base64: string;
   mimeType: string;
+}
+
+/**
+ * True when getUserMedia can even be attempted here. False on a bare LAN IP
+ * over plain HTTP (e.g. http://192.168.1.7:5173) — the browser hides
+ * mediaDevices entirely rather than prompting and denying, so this has to be
+ * checked before calling start(), not inferred from a caught error.
+ */
+export function isCameraSecureContext(): boolean {
+  return typeof window !== "undefined" && window.isSecureContext && !!navigator.mediaDevices;
+}
+
+function insecureContextMessage(): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "this address";
+  return (
+    `The camera needs a secure connection, and ${origin} is not one. ` +
+    "Open the app's HTTPS address instead (ask whoever set this up for the " +
+    "https:// link), or use the app's deployed URL. On a self-signed HTTPS " +
+    "address your phone will show a one-time security warning — that is " +
+    "expected, tap through it."
+  );
 }
 
 export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
@@ -47,11 +70,9 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
 
   const start = useCallback(
     async (mode: "environment" | "user" = facingMode) => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setStatus("unavailable");
-        setError(
-          "Your browser cannot open the camera here. This usually means the page is not served over HTTPS.",
-        );
+      if (!isCameraSecureContext() || !navigator.mediaDevices?.getUserMedia) {
+        setStatus("insecure");
+        setError(insecureContextMessage());
         return;
       }
 
@@ -91,10 +112,20 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
         const e = err as DOMException;
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
           setStatus("denied");
-          setError("Camera permission was denied.");
+          setError(
+            "Camera permission was denied. Re-enable it from the camera icon in your " +
+              "browser's address bar (or Settings → Site settings → Camera on mobile), " +
+              "then try again.",
+          );
         } else if (e.name === "NotFoundError" || e.name === "OverconstrainedError") {
           setStatus("unavailable");
           setError("No camera was found on this device.");
+        } else if (e.name === "NotReadableError" || e.name === "TrackStartError") {
+          setStatus("in-use");
+          setError(
+            "The camera is already in use by another app. Close any other camera app " +
+              "(or browser tab using the camera) and try again.",
+          );
         } else {
           setStatus("error");
           setError(e.message || "The camera could not be started.");

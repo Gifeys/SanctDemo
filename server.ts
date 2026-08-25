@@ -1,5 +1,8 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
+import os from "os";
+import https from "https";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
@@ -9,6 +12,60 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+
+// getUserMedia (the AR Tour camera) only works in a "secure context" — https,
+// or the literal hostname `localhost`. A phone on the church wifi visiting
+// http://192.168.x.x:5173 gets `navigator.mediaDevices === undefined` before
+// any permission prompt ever shows. HTTPS is how a phone on the LAN gets in.
+//
+// This is opt-in (HTTPS=1 npm run dev, or `npm run dev:https`) so the default
+// `npm run dev` / http://localhost:5173 workflow is unchanged and needs no
+// certificate. The cert is self-signed and generated on first run with the
+// `selfsigned` package (pure JS, no external binary, no account) — see
+// docs/CAMERA-SETUP.md for what the resulting phone warning means.
+const USE_HTTPS = process.env.HTTPS === "1" || process.env.HTTPS === "true";
+const CERT_DIR = path.join(process.cwd(), ".cert");
+const CERT_PATH = path.join(CERT_DIR, "cert.pem");
+const KEY_PATH = path.join(CERT_DIR, "key.pem");
+
+async function getOrCreateCert(): Promise<{ key: string; cert: string }> {
+  if (fs.existsSync(CERT_PATH) && fs.existsSync(KEY_PATH)) {
+    return { key: fs.readFileSync(KEY_PATH, "utf8"), cert: fs.readFileSync(CERT_PATH, "utf8") };
+  }
+
+  // Dynamic import: `selfsigned` is a devDependency, only ever touched when a
+  // developer opts into HTTPS locally — a production install must not need it.
+  const selfsigned = await import("selfsigned");
+  const lanIps = getLanIps();
+  const altNames: Array<{ type: 2 | 7; value?: string; ip?: string }> = [
+    { type: 2, value: "localhost" }, // DNS
+    { type: 7, ip: "127.0.0.1" }, // IP
+    ...lanIps.map((ip) => ({ type: 7 as const, ip })),
+  ];
+  const notAfterDate = new Date();
+  notAfterDate.setDate(notAfterDate.getDate() + 825);
+  const pems = await selfsigned.generate([{ name: "commonName", value: "localhost" }], {
+    notAfterDate,
+    keySize: 2048,
+    extensions: [{ name: "subjectAltName", altNames }],
+  });
+
+  fs.mkdirSync(CERT_DIR, { recursive: true });
+  fs.writeFileSync(KEY_PATH, pems.private);
+  fs.writeFileSync(CERT_PATH, pems.cert);
+  return { key: pems.private, cert: pems.cert };
+}
+
+function getLanIps(): string[] {
+  const ips: string[] = [];
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] ?? []) {
+      if (iface.family === "IPv4" && !iface.internal) ips.push(iface.address);
+    }
+  }
+  return ips;
+}
 
 app.use(express.json());
 
@@ -333,9 +390,29 @@ async function start() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`SanctiWalk Server running on http://0.0.0.0:${PORT}`);
-  });
+  const lanIps = getLanIps();
+
+  if (USE_HTTPS) {
+    const { key, cert } = await getOrCreateCert();
+    https.createServer({ key, cert }, app).listen(PORT, "0.0.0.0", () => {
+      console.log(`SanctiWalk Server running on https://localhost:${PORT}`);
+      for (const ip of lanIps) {
+        console.log(`  On your phone (same wifi): https://${ip}:${PORT}`);
+      }
+      console.log(
+        "  Self-signed certificate — the phone will show a security warning once. " +
+          "That is expected; see docs/CAMERA-SETUP.md.",
+      );
+    });
+  } else {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`SanctiWalk Server running on http://localhost:${PORT}`);
+      for (const ip of lanIps) {
+        console.log(`  On your LAN: http://${ip}:${PORT} (camera will NOT work here — no HTTPS)`);
+      }
+      console.log("  For a working phone camera, run: npm run dev:https");
+    });
+  }
 }
 
 start();
