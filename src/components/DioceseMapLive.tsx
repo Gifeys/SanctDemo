@@ -10,6 +10,12 @@ import DioceseMap from "./DioceseMap";
 
 interface DioceseMapLiveProps {
   onSelectParish: (parishId: string) => void;
+  // When set, the map surface itself is given this fixed pixel height and
+  // the legend/open-link stack below it at their natural height, instead of
+  // the map flexing to fill a fixed-height ancestor (the h-72/h-64 cards on
+  // the dashboard and church selector). Used by the dedicated map screen so
+  // the map keeps ~374px regardless of how tall the legend/link end up.
+  heightPx?: number;
 }
 
 // The client's own Google My Map ("SanctDemoMap") — a fully public link that
@@ -326,7 +332,7 @@ function isTileHostError(error: unknown): boolean {
   return message.includes(TILE_HOST) || /Failed to fetch|NetworkError|ERR_/.test(message);
 }
 
-export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) {
+export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapLiveProps) {
   const { position } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -570,10 +576,18 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
     </p>
   );
 
+  // With heightPx set, the map surface gets that fixed height directly and
+  // the wrapper stops relying on flex-1/h-full against an ancestor's fixed
+  // height — so the legend/link below it get their own natural height
+  // instead of being squeezed out of a shared budget.
+  const frameStyle = heightPx != null ? { height: heightPx } : undefined;
+  const frameClassName = heightPx != null ? "dmap-live" : "dmap-live flex-1 min-h-0";
+  const wrapClassName = heightPx != null ? "flex flex-col gap-2" : "flex flex-col gap-2 h-full min-h-0";
+
   if (mode === "fallback") {
     return (
-      <div className="flex flex-col gap-2 h-full min-h-0">
-        <div className="dmap-live flex-1 min-h-0" data-map-mode="fallback">
+      <div className={wrapClassName}>
+        <div className={frameClassName} style={frameStyle} data-map-mode="fallback">
           {offlineFlagged && <div className="dmap-live__fallback-badge">Offline map</div>}
           <DioceseMap onSelectParish={onSelectParish} />
           {distancePanel}
@@ -583,8 +597,8 @@ export default function DioceseMapLive({ onSelectParish }: DioceseMapLiveProps) 
   }
 
   return (
-    <div className="flex flex-col gap-2 h-full min-h-0">
-      <div className="dmap-live flex-1 min-h-0" data-map-mode={mode}>
+    <div className={wrapClassName}>
+      <div className={frameClassName} style={frameStyle} data-map-mode={mode}>
         <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
         <button
           type="button"

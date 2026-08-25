@@ -306,6 +306,16 @@ export const PARISH_CONTACTS: Record<string, ParishContact> = {
   },
 };
 
+// Patron saint per live parish, for the map screen's parish cards. Route
+// itself has no dedicated field for this, so it's pulled from the parish's
+// own station content above rather than invented: MHCP's "mhcp-patron"
+// station names Maria Auxiliadora, and SRC's "src-statue" station names
+// San Roque.
+export const PARISH_PATRON_SAINTS: Record<string, string> = {
+  "route-mhcp": "Maria Auxiliadora (Mary Help of Christians)",
+  "route-src": "San Roque",
+};
+
 export const ROUTES: Route[] = [
   {
     id: "route-mhcp",

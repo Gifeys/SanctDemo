@@ -18,6 +18,7 @@
   --color-brand-error: #B3543F;        /* Camera/permission error icon and copy — was already used as a literal in ArTour.tsx; named here so new error UI doesn't add another literal */
   --color-brand-error-soft: #FFB4A2;   /* Error text on a dark/black overlay (status pill over the camera feed) */
   --color-brand-scope: #E65100;        /* Client's original My Map orange, kept ONLY for the study-area polygon fill/outline — pins are teal, so the coverage area needs a different hue or it reads as one giant pin. */
+  --color-brand-card-navy: #1E2668;    /* Parish card surface on the map screen (prototype design) — a navy one step lighter than --color-brand-bg so cards read as raised surfaces, not literal-color copies. */
 
   /* ─── TYPOGRAPHY VARIABLES ───
      The diocese's own site sets Montserrat for its typography (headings at
@@ -49,6 +50,7 @@
   --color-brand-error: var(--color-brand-error);
   --color-brand-error-soft: var(--color-brand-error-soft);
   --color-brand-scope: var(--color-brand-scope);
+  --color-brand-card-navy: var(--color-brand-card-navy);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -274,6 +276,87 @@
   font-weight: 700;
   background: var(--color-brand-card);
   color: var(--color-brand-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAP SCREEN — diocese header + parish cards
+   Matches the client's earlier prototype (Churches.jsx/.css):
+   a centred diocese heading above the map, then one card per
+   live parish below it. Card surface uses --color-brand-card-navy
+   (#1E2668, added above) — the prototype's exact hex, one step
+   lighter than --color-brand-bg so it reads as a raised surface.
+   The "Live" chip reuses --color-brand-success rather than the
+   prototype's literal #2FA37A: that literal only clears 3.16:1
+   contrast with white text (fails AA's 4.5:1 floor for text this
+   size), while --color-brand-success is the same green family
+   already darkened for AA (5.29:1) — same fix pattern already
+   applied to --color-brand-accent above.
+   ───────────────────────────────────────────────────────────── */
+.map-screen__header {
+  text-align: center;
+  padding: 0 0.5rem;
+}
+.map-screen__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+}
+.map-screen__count {
+  font-size: 15px;
+  color: color-mix(in srgb, white 70%, transparent);
+  margin-top: 2px;
+}
+
+.parish-card {
+  display: block;
+  text-decoration: none;
+  background: var(--color-brand-card-navy);
+  border-radius: 20px;
+  padding: 1rem 1.125rem;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+.parish-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.parish-card__name {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.25;
+}
+.parish-card__patron {
+  font-size: 15px;
+  color: color-mix(in srgb, white 70%, transparent);
+  margin-top: 4px;
+}
+.parish-card__rule {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, white 18%, transparent);
+  margin: 0.75rem 0;
+}
+.parish-card__meta {
+  font-size: 15px;
+  color: color-mix(in srgb, white 70%, transparent);
+}
+
+.chip--live {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-brand-success);
+  color: white;
+  white-space: nowrap;
 }
 
 /* Base Typography Configuration */

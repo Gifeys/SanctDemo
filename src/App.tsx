@@ -21,6 +21,7 @@ import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
 import CustomDioceseMap from "./components/CustomDioceseMap";
+import ParishCard from "./components/ParishCard";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -916,7 +917,11 @@ export default function App() {
                     />
                   )}
 
-                  {/* TAB 2: Map / Trail Station Navigator */}
+                  {/* TAB 2: Map / Trail Station Navigator — restyled to match
+                      the client's earlier prototype (Churches.jsx): a
+                      centred diocese heading, the map at its full ~374px
+                      height (not squeezed by a fixed-height card), and one
+                      tappable card per live parish below it. */}
                   {activeTab === "navigator" && (
                     <div className="flex-1 flex flex-col overflow-hidden">
                       <div className="flex-1 flex flex-col overflow-y-auto">
@@ -926,8 +931,23 @@ export default function App() {
                             they were the pilgrim's own, which was not a walk
                             at all. Station-by-station progress returns when
                             it is driven by real QR scans at each station. */}
-                        <div className="p-4 pb-16">
-                          <CustomDioceseMap onSelectParish={handleOpenTourFromPresence} />
+                        <div className="p-4 pb-16 space-y-4">
+                          <header className="map-screen__header">
+                            <h1 className="map-screen__title">Diocese of Kalookan</h1>
+                            <p className="map-screen__count">
+                              {liveParishes.length} {liveParishes.length === 1 ? "parish is" : "parishes are"} live on SanctiWalk
+                            </p>
+                          </header>
+
+                          <CustomDioceseMap mapHeight={374} onSelectParish={handleOpenTourFromPresence} />
+
+                          <div className="space-y-3">
+                            {liveParishes.map((parish) => (
+                              <div key={parish.id}>
+                                <ParishCard parish={parish} onSelect={handleOpenTourFromPresence} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
