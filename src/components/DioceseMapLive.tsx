@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker as MapLibreMarker, type GeoJSONSource } from "maplibre-gl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Map as MapLibreMap, Marker as MapLibreMarker, Popup, NavigationControl, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
 import { haversineMeters, type Coordinates } from "../lib/geo";
 import { fetchWalkingRoute, formatDistance, formatWalkingMinutes, type WalkingRoute } from "../lib/routing";
+import { searchParishes, type SearchableParish } from "../lib/mapSearch";
+import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
 
@@ -52,12 +54,11 @@ function scopePolygonFeature(): GeoJSON.Feature<GeoJSON.Polygon> {
   };
 }
 
-// Added once, right after the base style is decluttered/restyled and before
-// any marker or route layer exists — so the fill/outline always sits below
-// everything else MapLibre draws, and (since parish/you-are-here pins are
-// HTML markers layered on top of the whole canvas by the browser, not
-// MapLibre paint layers) it is never able to hide a pin regardless of add
-// order.
+// Added once, right after the map is created and before any marker or route
+// layer exists — so the fill/outline always sits below everything else
+// MapLibre draws, and (since parish/you-are-here pins are HTML markers
+// layered on top of the whole canvas by the browser, not MapLibre paint
+// layers) it is never able to hide a pin regardless of add order.
 function addScopePolygon(map: MapLibreMap, fillColor: string, lineColor: string) {
   if (map.getSource(SCOPE_SOURCE_ID)) return;
   map.addSource(SCOPE_SOURCE_ID, { type: "geojson", data: scopePolygonFeature() });
@@ -65,7 +66,11 @@ function addScopePolygon(map: MapLibreMap, fillColor: string, lineColor: string)
     id: SCOPE_FILL_LAYER_ID,
     type: "fill",
     source: SCOPE_SOURCE_ID,
-    paint: { "fill-color": fillColor, "fill-opacity": 0.22 },
+    // Positron's ground is light, unlike the old dark basemap this polygon
+    // used to sit on — fill-opacity raised from 0.22 so the client's scope
+    // shape stays legible against it rather than washing out (see the
+    // contrast note on --color-brand-scope in index.css).
+    paint: { "fill-color": fillColor, "fill-opacity": 0.3 },
   });
   map.addLayer({
     id: SCOPE_LINE_LAYER_ID,
@@ -79,6 +84,7 @@ function addScopePolygon(map: MapLibreMap, fillColor: string, lineColor: string)
 interface ParishRecord {
   id: string;
   name: string;
+  vicariate: string;
   coordinates: { lat: number; lng: number };
   status: "live" | "coming_soon";
 }
@@ -88,17 +94,22 @@ const PARISHES = parishData.parishes as ParishRecord[];
 // Free, keyless vector tiles — OpenFreeMap (openfreemap.org), an unlimited
 // no-signup host of OpenMapTiles-schema data (MIT/ODbL). No API key, no
 // billing account, nothing that can expire mid-defense — the client's own
-// requirement, which is also why this isn't Google Maps or Mapbox (both
-// need billing set up).
-const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+// requirement. `positron` is the client's preferred design, taken from
+// their own earlier prototype (DioceseMap.jsx): a light, deliberately plain
+// basemap, so the church pins stay the loudest thing on screen. It ships
+// pre-styled and pre-decluttered, unlike the "liberty" style this replaces,
+// which needed hand-tuned layer-by-layer restyling to reach the same
+// result — that restyling is gone with it.
+const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 export const TILE_HOST = "tiles.openfreemap.org";
 
 // diocese-parishes.json carries all 31 parishes, including the 2 that are
 // already "live" in ROUTES (src/data.ts) — but under different ids
 // (parish-mary-help-of-christians-parish / parish-san-roque-cathedral
-// rather than route-mhcp / route-src). Tapping a live pin must open the
-// tour via the route id App.tsx already wires up, so this maps the JSON id
-// to the route id for just those two instead of drawing duplicate pins.
+// rather than route-mhcp / route-src). Tapping a live pin's popup action
+// must open the tour via the route id App.tsx already wires up, so this
+// maps the JSON id to the route id for just those two instead of drawing
+// duplicate pins.
 const LIVE_PARISH_TO_ROUTE_ID: Record<string, string> = {
   "parish-mary-help-of-christians-parish": "route-mhcp",
   "parish-san-roque-cathedral": "route-src",
@@ -121,12 +132,12 @@ const LIVE_PARISHES: LiveParish[] = PARISHES.filter(
   coordinates: p.coordinates,
 }));
 
-// Reads a CSS custom property (optionally through a color-mix() expression,
-// exactly like the ones already used in index.css for DioceseMap.tsx's SVG)
+// Reads a CSS custom property (optionally through a color-mix() expression)
 // by letting the browser resolve it on a detached element, rather than
 // hardcoding any hex value here. MapLibre paint properties need a literal
 // color string, not a live var() reference, so this is the runtime-read
-// equivalent of what the SVG map does purely in CSS.
+// equivalent of what plain CSS classes do for the HTML pin/popup/search
+// elements below.
 function resolveColor(expr: string): string {
   const probe = document.createElement("div");
   probe.style.color = expr;
@@ -136,133 +147,25 @@ function resolveColor(expr: string): string {
   return resolved || "#151B53";
 }
 
-interface Tokens {
-  land: string;
-  water: string;
-  road: string;
-  roadCasing: string;
-  roadLabel: string;
-  placeLabel: string;
-  waterLabel: string;
+function shortLabel(name: string): string {
+  return name.replace(/ Guide$/, "").replace(/ Tour$/, "").replace(/ Parish$/, "");
 }
 
-function readTokens(): Tokens {
-  return {
-    land: resolveColor("var(--color-brand-bg)"),
-    water: resolveColor("color-mix(in srgb, var(--color-brand-accent) 30%, var(--color-brand-bg))"),
-    road: resolveColor("color-mix(in srgb, var(--color-brand-card) 40%, transparent)"),
-    roadCasing: resolveColor("color-mix(in srgb, var(--color-brand-bg) 55%, black)"),
-    roadLabel: resolveColor("var(--color-brand-card)"),
-    placeLabel: resolveColor("color-mix(in srgb, var(--color-brand-card) 85%, var(--color-brand-accent))"),
-    waterLabel: resolveColor("color-mix(in srgb, var(--color-brand-card) 65%, var(--color-brand-accent))"),
-  };
+// Search treats a parish's vicariate as its "location" line — the same role
+// `location` plays in the client's prototype data (churches.json), which
+// this dataset doesn't carry a dedicated field for.
+interface SearchParish extends SearchableParish {
+  routeId?: string;
+  isLive: boolean;
 }
 
-// Declutters the OpenFreeMap "liberty" (OpenMapTiles schema) style down to
-// street geometry, water and the main road/place names, then restyles what
-// remains to the app's dark-navy palette. This is what the client's
-// complaint about the old OSM attempt ("not accurate", "hard to
-// understand") was really about: raw OSM shows every shop, house number
-// and bus stop. Hiding those, not swapping the map for a drawing, is the
-// fix — matched to source-layer/id rather than one frozen layer list, so a
-// future OpenFreeMap style update degrades gracefully instead of silently
-// re-cluttering.
-function declutterAndRestyle(map: MapLibreMap) {
-  const tokens = readTokens();
-  const style = map.getStyle();
-  if (!style?.layers) return;
-
-  const hide = (id: string) => map.setLayoutProperty(id, "visibility", "none");
-
-  for (const layer of style.layers) {
-    const id = layer.id;
-    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    const type = layer.type;
-
-    // Raster shaded-relief underlay: baked-in colours we can't restyle, so
-    // hide it and let the recoloured vector background stand in for it.
-    if (id === "natural_earth") {
-      hide(id);
-      continue;
-    }
-    if (id === "background") {
-      map.setPaintProperty(id, "background-color", tokens.land);
-      continue;
-    }
-
-    // POIs / business icons, buildings, landuse & landcover fills, parks,
-    // aeroway, administrative boundaries — the exact clutter the client
-    // rejected the old map for. None of it helps someone find a parish.
-    if (
-      sourceLayer === "poi" ||
-      sourceLayer === "building" ||
-      sourceLayer === "landuse" ||
-      sourceLayer === "landcover" ||
-      sourceLayer === "park" ||
-      sourceLayer === "aeroway" ||
-      sourceLayer === "aerodrome_label" ||
-      sourceLayer === "boundary"
-    ) {
-      hide(id);
-      continue;
-    }
-
-    if (sourceLayer === "water") {
-      map.setPaintProperty(id, "fill-color", tokens.water);
-      continue;
-    }
-    if (sourceLayer === "waterway") {
-      map.setPaintProperty(id, "line-color", tokens.water);
-      continue;
-    }
-    if (sourceLayer === "water_name") {
-      map.setPaintProperty(id, "text-color", tokens.waterLabel);
-      map.setPaintProperty(id, "text-halo-color", tokens.land);
-      map.setLayoutProperty(id, "text-size", 14);
-      continue;
-    }
-
-    if (sourceLayer === "transportation") {
-      // Rail (incl. transit hatching), one-way arrows and the textured
-      // road-area fill are transit/decoration, not street geometry.
-      if (/rail/.test(id) || id === "road_one_way_arrow" || id === "road_one_way_arrow_opposite" || id === "road_area_pattern") {
-        hide(id);
-        continue;
-      }
-      if (type === "line") {
-        const isCasing = id.includes("casing");
-        map.setPaintProperty(id, "line-color", isCasing ? tokens.roadCasing : tokens.road);
-      }
-      continue;
-    }
-
-    if (sourceLayer === "transportation_name") {
-      // Keep only the main road names; drop minor/path names and every
-      // route-shield layer (the client explicitly asked shields gone).
-      if (id === "highway-name-major") {
-        map.setPaintProperty(id, "text-color", tokens.roadLabel);
-        map.setPaintProperty(id, "text-halo-color", tokens.land);
-        map.setLayoutProperty(id, "text-size", 14);
-      } else {
-        hide(id);
-      }
-      continue;
-    }
-
-    if (sourceLayer === "place") {
-      // Village/"other" labels are barangay-level clutter; city/town names
-      // are what actually orients a viewer across Caloocan/Malabon/Navotas.
-      if (id === "label_village" || id === "label_other") {
-        hide(id);
-        continue;
-      }
-      map.setPaintProperty(id, "text-color", tokens.placeLabel);
-      map.setPaintProperty(id, "text-halo-color", tokens.land);
-      map.setLayoutProperty(id, "text-size", 14);
-      continue;
-    }
-  }
-}
+const SEARCHABLE_PARISHES: SearchParish[] = PARISHES.map(p => ({
+  id: p.id,
+  name: shortLabel(p.name),
+  location: p.vicariate,
+  routeId: LIVE_PARISH_TO_ROUTE_ID[p.id],
+  isLive: p.status === "live" && Boolean(LIVE_PARISH_TO_ROUTE_ID[p.id]),
+}));
 
 function routeLineId(routeId: string): { sourceId: string; layerId: string } {
   return { sourceId: `route-line-src-${routeId}`, layerId: `route-line-${routeId}` };
@@ -318,10 +221,6 @@ function removeRouteLayer(map: MapLibreMap, routeId: string) {
   if (map.getSource(sourceId)) map.removeSource(sourceId);
 }
 
-function shortLabel(name: string): string {
-  return name.replace(/ Guide$/, "").replace(/ Tour$/, "").replace(/ Parish$/, "");
-}
-
 // Detects whether a request the browser attempted actually reached the
 // tile host — being "online" per navigator.onLine but unable to resolve or
 // reach the tile host (captive portal, DNS failure, firewalled venue
@@ -336,14 +235,28 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   const { position } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const markersRef = useRef<MapLibreMarker[]>([]);
+  // Parish markers keyed by parish id, so a search result can fly to and
+  // open the matching pin's popup — mirrors the client's prototype, which
+  // keeps the same lookup for the same reason.
+  const markersRef = useRef<Map<string, MapLibreMarker>>(new Map());
+  const youMarkerRef = useRef<MapLibreMarker | null>(null);
   const [mode, setMode] = useState<"loading" | "live" | "fallback">("loading");
   const [offlineFlagged, setOfflineFlagged] = useState(false);
   const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
+  const [query, setQuery] = useState("");
   // Invalidates in-flight OSRM requests when a newer position arrives
   // before they resolve, so a stale fetch can never overwrite a fresher
   // route once it lands late.
   const routeRequestRef = useRef(0);
+
+  // Held in a ref so the marker-building effect doesn't need `onSelectParish`
+  // in its dependency array — App.tsx passes a fresh function each render,
+  // and re-running that effect on every render would tear down and rebuild
+  // every marker for no reason.
+  const onSelectParishRef = useRef(onSelectParish);
+  onSelectParishRef.current = onSelectParish;
+
+  const results = useMemo(() => searchParishes(query, SEARCHABLE_PARISHES), [query]);
 
   // Falls back the instant the browser reports offline, even mid-session —
   // a live map needs network and this app must never be caught showing an
@@ -377,6 +290,8 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+
+    map.addControl(new NavigationControl({ showCompass: false }), "top-right");
 
     // MapLibre's error event fires for style/sprite/glyph/tile fetch
     // failures alike — this is the primary offline-detection path, since a
@@ -427,7 +342,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     map.on("load", () => {
       window.clearTimeout(loadTimeout);
       if (cancelled) return;
-      declutterAndRestyle(map);
       addScopePolygon(map, resolveColor("var(--color-brand-scope)"), resolveColor("var(--color-brand-scope)"));
       map.fitBounds(
         [
@@ -445,61 +359,89 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
       window.removeEventListener("unhandledrejection", onRejection);
       window.clearTimeout(loadTimeout);
       markersRef.current.forEach(m => m.remove());
-      markersRef.current = [];
+      markersRef.current.clear();
+      youMarkerRef.current?.remove();
+      youMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode === "fallback"]);
 
-  // Markers are (re)built whenever the map finishes loading or the
-  // pilgrim's own position changes, so "you are here" tracks live GPS/sim
-  // updates without tearing down the whole map.
+  // Parish pins are built once, when the map finishes loading — unlike the
+  // old dot markers, every pin here (including coming-soon ones) carries its
+  // own popup, so there is nothing about a pin that needs to change when the
+  // pilgrim's own GPS position updates. Rebuilding on every position tick
+  // would also tear down any popup the pilgrim currently has open.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mode !== "live" || !map || markersRef.current.size > 0) return;
+
+    for (const parish of PARISHES) {
+      const routeId = LIVE_PARISH_TO_ROUTE_ID[parish.id];
+      const isLive = parish.status === "live" && Boolean(routeId);
+      const displayName = shortLabel(parish.name);
+
+      const el = buildChurchPinElement({ name: displayName, isLive });
+      const { el: card, action } = buildPopupContent({
+        name: displayName,
+        location: parish.vicariate,
+        isLive,
+      });
+
+      // MapLibre popups render *inside* the map container, which is
+      // clipped by the canvas wrapper's overflow:hidden. Anchoring to
+      // 'bottom' opens the card upward over the map instead of downward
+      // past its edge.
+      const popup = new Popup({
+        anchor: "bottom",
+        offset: isLive ? 20 : 14,
+        closeButton: false,
+        focusAfterOpen: false,
+        maxWidth: "220px",
+        className: "dmap-popup",
+      }).setDOMContent(card);
+
+      if (action && routeId) {
+        action.addEventListener("click", () => onSelectParishRef.current(routeId));
+      }
+
+      const lngLat: [number, number] = [parish.coordinates.lng, parish.coordinates.lat];
+
+      // The map frame is short, so a pin near the top edge would have its
+      // card clipped. Easing the pin below centre on open reserves room
+      // above it.
+      popup.on("open", () => {
+        mapRef.current?.easeTo({ center: lngLat, offset: [0, 70], duration: 300 });
+      });
+
+      const marker = new MapLibreMarker({ element: el, anchor: "center" })
+        .setLngLat(lngLat)
+        .setPopup(popup)
+        .addTo(map);
+      markersRef.current.set(parish.id, marker);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // The pilgrim's own position gets its own marker, separate from the
+  // parish pins above, so GPS updates only ever touch this one element
+  // instead of rebuilding all 31 parish markers (and closing whatever
+  // popup the pilgrim currently has open) on every tick.
   useEffect(() => {
     const map = mapRef.current;
     if (mode !== "live" || !map) return;
 
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    for (const parish of PARISHES) {
-      const routeId = LIVE_PARISH_TO_ROUTE_ID[parish.id];
-      const isLive = parish.status === "live" && routeId;
-
-      const el = document.createElement(isLive ? "button" : "div");
-      el.className = `dmap-live__marker ${isLive ? "dmap-live__marker--live" : "dmap-live__marker--soon"}`;
-      el.title = shortLabel(parish.name);
-
-      if (isLive) {
-        const button = el as HTMLButtonElement;
-        button.type = "button";
-        button.setAttribute("aria-label", `Open ${shortLabel(parish.name)}`);
-        button.addEventListener("click", () => onSelectParish(routeId));
-
-        // Only the 2 live, tappable parishes get a permanent text label —
-        // with all 31 pins on screen, labelling every one collides (measured
-        // at 8 pins: 15 overlaps). The 29 coming-soon pins stay label-free,
-        // identified only by the title tooltip set below.
-        const label = document.createElement("span");
-        label.className = "dmap-live__marker-label";
-        label.textContent = shortLabel(parish.name);
-        button.appendChild(label);
-      }
-
-      const marker = new MapLibreMarker({ element: el, anchor: "center" })
-        .setLngLat([parish.coordinates.lng, parish.coordinates.lat])
-        .addTo(map);
-      markersRef.current.push(marker);
-    }
+    youMarkerRef.current?.remove();
+    youMarkerRef.current = null;
 
     if (position) {
       const you = document.createElement("div");
       you.className = "dmap-live__marker dmap-live__marker--you";
       you.title = "You are here";
-      const youMarker = new MapLibreMarker({ element: you, anchor: "center" })
+      youMarkerRef.current = new MapLibreMarker({ element: you, anchor: "center" })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
-      markersRef.current.push(youMarker);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, position?.lat, position?.lng]);
@@ -538,6 +480,24 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     const map = mapRef.current;
     if (!map || !position) return;
     map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 15) });
+  }
+
+  // Selecting a search result flies to the parish and opens its card, so
+  // search and tapping a pin directly end in exactly the same state —
+  // including for coming-soon parishes, which never navigate.
+  function selectSearchResult(parish: SearchParish) {
+    const map = mapRef.current;
+    const marker = markersRef.current.get(parish.id);
+    if (!map || !marker) return;
+
+    setQuery("");
+    map.flyTo({
+      center: marker.getLngLat(),
+      zoom: 16,
+      offset: [0, 70],
+      duration: 800,
+    });
+    if (!marker.getPopup()?.isOpen()) marker.togglePopup();
   }
 
   const distancePanel = (
@@ -600,6 +560,42 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     <div className={wrapClassName}>
       <div className={frameClassName} style={frameStyle} data-map-mode={mode}>
         <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
+
+        {/* Floating pill-shaped search bar, top-left, inset so it never
+            overlaps the NavigationControl's zoom buttons (top-right). */}
+        <div className="dmap-search">
+          <svg className="dmap-search__icon" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="9" cy="9" r="6" />
+            <line x1="13.5" y1="13.5" x2="18" y2="18" />
+          </svg>
+          <input
+            type="search"
+            className="dmap-search__input"
+            placeholder="Search parish or place"
+            aria-label="Search parish or place"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+        </div>
+
+        {query.trim() !== "" && (
+          <ul className="dmap-results">
+            {results.length === 0 && <li className="dmap-results__empty">No parish found</li>}
+            {results.map(parish => (
+              <li key={parish.id}>
+                <button
+                  type="button"
+                  className="dmap-results__item"
+                  onClick={() => selectSearchResult(parish)}
+                >
+                  <span className="dmap-results__name">{parish.name}</span>
+                  {parish.location && <span className="dmap-results__where">{parish.location}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <button
           type="button"
           className="dmap-live__recentre"

@@ -19,6 +19,7 @@
   --color-brand-error-soft: #FFB4A2;   /* Error text on a dark/black overlay (status pill over the camera feed) */
   --color-brand-scope: #E65100;        /* Client's original My Map orange, kept ONLY for the study-area polygon fill/outline — pins are teal, so the coverage area needs a different hue or it reads as one giant pin. */
   --color-brand-card-navy: #1E2668;    /* Parish card surface on the map screen (prototype design) — a navy one step lighter than --color-brand-bg so cards read as raised surfaces, not literal-color copies. */
+  --color-brand-on-accent: #FFFFFF;    /* Text/icon colour for anything placed on a solid --color-brand-accent fill (e.g. the map popup's "View parish" button) — 5.5:1 against #147288, clears AA. Nothing existing named this role. */
 
   /* ─── TYPOGRAPHY VARIABLES ───
      The diocese's own site sets Montserrat for its typography (headings at
@@ -51,6 +52,7 @@
   --color-brand-error-soft: var(--color-brand-error-soft);
   --color-brand-scope: var(--color-brand-scope);
   --color-brand-card-navy: var(--color-brand-card-navy);
+  --color-brand-on-accent: var(--color-brand-on-accent);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -102,71 +104,68 @@
 
 /* ─────────────────────────────────────────────────────────────
    LIVE DIOCESE MAP (DioceseMapLive.tsx)
-   A real MapLibre GL map, restyled to the app's dark-navy palette
-   at runtime (DioceseMapLive.tsx reads these custom properties via
-   getComputedStyle, since MapLibre paint properties need literal
-   colour values, not CSS var() references). This block only styles
-   the HTML marker pins and the container chrome — the map's own
-   land/water/road colours are set in JS from these same variables.
-   Falls back to DioceseMap.tsx (the drawn SVG map, styled above)
-   when tiles are unreachable, so nothing here duplicates a colour
-   literal that isn't already a brand variable.
+   The client's earlier prototype (DioceseMap.jsx/.css), reproduced: a real
+   MapLibre GL map on the light `positron` basemap, deliberately plain so
+   the church-glyph pins below stay the loudest thing on screen — no more
+   runtime restyling of the tile layers, since positron already ships
+   light and decluttered. Colours for the parts MapLibre itself draws (the
+   scope polygon, the route line) are still read from these custom
+   properties at runtime via getComputedStyle in DioceseMapLive.tsx, since
+   MapLibre paint properties need literal colour values, not CSS var()
+   references; everything below is plain CSS for the HTML pins, popup,
+   search UI and container chrome. Falls back to DioceseMap.tsx (the drawn
+   SVG map, a different, deliberately dark illustration — see its own block
+   above) when tiles are unreachable.
    ───────────────────────────────────────────────────────────── */
 .dmap-live { position: relative; width: 100%; height: 100%; border-radius: 1rem; overflow: hidden; }
 .dmap-live__canvas { width: 100%; height: 100%; }
 
-.dmap-live__marker {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  box-sizing: border-box;
-  padding: 0;
-  /* Positioning transform is applied inline by maplibregl.Marker itself
-     (per its "center" anchor) — nothing added here to avoid a conflicting
-     second transform. */
+/* Church-glyph pins — a real <button> per pin (built in mapMarkers.ts),
+   positioned by MapLibre, not SVG children of the map, so they need their
+   own reset. Every pin is tappable, including coming-soon ones: tapping is
+   how you find out which parish a pin is, so a silent pin would be a dead
+   end (the client's prototype makes the same point in its own comments). */
+.dmap__pin { display: block; padding: 0; border: 0; background: none; line-height: 0; cursor: pointer; }
+.dmap__pin svg { overflow: visible; }
+.dmap__pin--live svg { width: 32px; height: 32px; }
+/* Stroke is the app's navy, not the cream/white used elsewhere for
+   "on-accent" text — on the light positron ground a cream outline nearly
+   disappears into the basemap (both are pale near-whites), where navy
+   reads clearly as a pin silhouette. */
+.dmap__pin--live { fill: var(--color-brand-accent); stroke: var(--color-brand-primary); }
+.dmap__pin--live:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 2px; }
+/* Not yet destinations, so they read as context: smaller and dimmer, but
+   still a real focusable button — still tappable, per the rule above. */
+.dmap__pin--soon svg { width: 22px; height: 22px; }
+.dmap__pin--soon {
+  fill: color-mix(in srgb, var(--color-brand-secondary) 55%, transparent);
+  stroke: var(--color-brand-secondary);
 }
-.dmap-live__marker--live {
-  position: relative;
-  background: var(--color-brand-accent);
-  border: 2px solid var(--color-brand-card);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-accent) 35%, transparent);
-  cursor: pointer;
-}
-.dmap-live__marker--live:focus-visible {
-  outline: 2px solid var(--color-brand-card);
-  outline-offset: 2px;
-}
-/* Visible name label on the two live pins only — with 31 pins on screen,
-   labelling every one collided (measured at 8 pins: 15 overlaps), so only
-   the two tappable, navigable parishes get a permanent label. */
-.dmap-live__marker-label {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, 2px);
-  white-space: nowrap;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-brand-card);
-  background: color-mix(in srgb, var(--color-brand-text) 78%, transparent);
-  padding: 1px 6px;
-  border-radius: 999px;
-  pointer-events: none;
-}
-.dmap-live__marker--soon {
-  width: 10px;
-  height: 10px;
-  background: color-mix(in srgb, var(--color-brand-secondary) 55%, transparent);
-  border: 1.5px solid var(--color-brand-secondary);
-  cursor: default;
-  pointer-events: none;
-}
+
 .dmap-live__marker--you {
+  position: relative;
   width: 14px;
   height: 14px;
+  border-radius: 50%;
   background: var(--color-brand-success);
-  border: 2px solid var(--color-brand-card);
+  border: 2px solid var(--color-brand-primary);
   pointer-events: none;
+}
+/* The pulsing ring the client asked for, distinguishing "you are here"
+   from every parish pin. An HTML marker can't use the fallback SVG map's
+   `r` (radius) keyframe, so this pulses via a scaling pseudo-element ring
+   instead — same idea (grow and fade), different mechanism. */
+.dmap-live__marker--you::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--color-brand-success);
+  animation: dmap-live-pulse 2s ease-out infinite;
+}
+@keyframes dmap-live-pulse {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
 
 .dmap-live__fallback-badge {
@@ -182,13 +181,16 @@
   color: var(--color-brand-card);
 }
 
-/* Recentre-on-me control — sits above the MapLibre canvas. Disabled (with
-   an explanatory title/aria-label set inline) whenever position is null,
+/* Recentre-on-me control — sits above the MapLibre canvas, on the right so
+   it never collides with the search bar/results on the left. Stacked below
+   the NavigationControl's zoom buttons (top-right), in the same 52px-wide
+   right-hand margin the search bar is inset to avoid. Disabled (with an
+   explanatory title/aria-label set inline) whenever position is null,
    since flying to an unknown position would be meaningless. */
 .dmap-live__recentre {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 92px;
+  right: 8px;
   z-index: 5;
   font-size: 14px;
   font-weight: 600;
@@ -207,6 +209,75 @@
   outline: 2px solid var(--color-brand-card);
   outline-offset: 2px;
 }
+
+/* Floating pill-shaped search bar, top-left, inset on the right to leave
+   room for the NavigationControl's zoom buttons (top-right) — matches the
+   client's prototype layout exactly. Chrome uses the cream card surface
+   (not MapLibre's default white popup/control styling), since it now sits
+   directly over the light basemap and needs its own visual edge. */
+.dmap-search {
+  position: absolute; z-index: 6; top: 8px;
+  left: 8px; right: 52px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-card) 94%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+.dmap-search__icon {
+  width: 16px; height: 16px; flex: none;
+  fill: none; stroke: var(--color-brand-secondary); stroke-width: 2; stroke-linecap: round;
+}
+.dmap-search__input {
+  flex: 1; min-width: 0; border: 0; background: none; color: var(--color-brand-text);
+  font: inherit; font-size: 16px; outline: none;
+}
+.dmap-search__input::placeholder { color: var(--color-brand-secondary); }
+
+/* Result list, hanging below the search bar. */
+.dmap-results {
+  position: absolute; z-index: 6; top: 52px;
+  left: 8px; right: 52px;
+  margin: 0; padding: 4px; list-style: none;
+  max-height: 190px; overflow-y: auto;
+  border-radius: 0.75rem;
+  background: var(--color-brand-card);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+}
+.dmap-results__item {
+  display: block; width: 100%; padding: 8px 10px;
+  border: 0; border-radius: 0.5rem;
+  background: none; color: var(--color-brand-text); font: inherit; text-align: left;
+  cursor: pointer;
+}
+.dmap-results__item:hover { background: color-mix(in srgb, var(--color-brand-accent) 14%, transparent); }
+.dmap-results__name { display: block; font-size: 16px; font-weight: 600; line-height: 1.25; }
+.dmap-results__where { display: block; font-size: 15px; color: var(--color-brand-secondary); margin-top: 2px; }
+.dmap-results__empty { padding: 10px; font-size: 15px; color: var(--color-brand-secondary); }
+
+/* Info card shown when a pin (or a search result) is tapped. MapLibre
+   supplies the positioning and the little pointer tip; everything inside
+   is ours, so it is themed from the app's tokens rather than MapLibre's
+   default white popup. */
+.dmap-popup .maplibregl-popup-content {
+  background: var(--color-brand-card);
+  color: var(--color-brand-text);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+  min-width: 168px;
+}
+.dmap-popup .maplibregl-popup-tip { border-top-color: var(--color-brand-card); }
+.dmap-card__name { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--color-brand-text); }
+.dmap-card__where { margin: 4px 0 0; font-size: 15px; color: var(--color-brand-secondary); }
+.dmap-card__soon { margin: 8px 0 0; font-size: 15px; color: var(--color-brand-secondary); font-style: italic; }
+.dmap-card__action {
+  margin-top: 10px; width: 100%; padding: 7px 12px;
+  border: 0; border-radius: 0.5rem;
+  background: var(--color-brand-accent); color: var(--color-brand-on-accent);
+  font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+}
+.dmap-card__action:hover { filter: brightness(1.08); }
 
 /* Per-parish distance panel — shown in both live (MapLibre) and offline
    (drawn SVG) modes, since distance needs no network. In live mode it

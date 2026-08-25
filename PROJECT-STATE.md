@@ -1,6 +1,6 @@
 # SanctiWalk — Project State
 
-**Last updated:** 2026-08-25 · 34 commits · 44 tests passing · typecheck clean
+**Last updated:** 2026-08-25 · 43 commits · 70 tests passing · typecheck clean
 
 Read this first. It exists so a new session, or a new person, can pick the project up without reading back through months of conversation.
 
@@ -30,7 +30,7 @@ npm test --prefix D:/SanctDemo             # 44 tests
 | Area | Files |
 |---|---|
 | Location awareness | `src/lib/{geo,presence,project,schedule}.ts`, `src/context/PresenceContext.tsx` |
-| Maps | `DioceseMapLive.tsx` (real, MapLibre) falling back to `DioceseMap.tsx` (drawn SVG) |
+| Maps | `DioceseMapLive.tsx` (real, MapLibre, light `positron` basemap — the client's earlier prototype's design) falling back to `DioceseMap.tsx` (drawn SVG, stays dark) |
 | Parish content | `MassSchedule` · `ChurchHistory` · `MinistriesTab` · `SacramentsTab` — all take a parish prop |
 | Rosary | `public/rosary/index.html` — the client's own app, mounted in an iframe by `DailyRosary.tsx` |
 | AR | `ArTour.tsx` + `src/lib/useCamera.ts` + `/api/identify` in `server.ts` |
@@ -61,6 +61,7 @@ These were arrived at through real bugs. Breaking them reintroduces those bugs.
 - **Ministries and Sacraments are diocese-wide**, not per-parish — no per-parish data exists yet. Both screens say so rather than implying otherwise.
 - **Station progress is not real yet.** The old simulated walk was removed. Real progress needs QR scanning at each station; see the AR decisions doc.
 - Dead state remains in `App.tsx` (`commentsByStation`, `handlePostComment`, `activeCommentInput`) after the station comments block was removed.
+- **The live diocese map now matches the client's own earlier prototype** (`D:\SanctiWalk-Saved\app\src\components\DioceseMap.jsx`): light `positron` basemap, a floating search bar (substring match over name + vicariate, capped at 6 results — `src/lib/mapSearch.ts`), church-glyph pins for all 31 parishes (all tappable, including coming-soon ones — `src/lib/mapMarkers.ts` builds the pin/popup DOM), and a `NavigationControl` (zoom only) top-right. The client's own additions ride on top unchanged: the 7-point study-area polygon and legend, the pulsing "you are here" marker, walking routes/distance panel, the recentre control, and the offline SVG fallback. Polygon/route/you-are-here colours were retuned for the new light ground (see `docs/reports/map-prototype-design-swap.md` for contrast numbers). **This environment's headless browser cannot paint the MapLibre canvas** (confirmed by sampling the canvas centre pixel: `[0,0,0,0]`), so the basemap, pin glyphs and popup positioning were verified by DOM/unit test and by reading the rendered accessibility tree, not by screenshot — check those by hand on a real device.
 
 ---
 
@@ -88,4 +89,3 @@ These were arrived at through real bugs. Breaking them reintroduces those bugs.
 2. Deploy the Firestore rules
 3. Real station progress via QR scanning
 4. Load field data as it arrives
-5. Map pass — fit all 31 parishes, tell pins apart
