@@ -5,7 +5,7 @@ import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
 import { haversineMeters, type Coordinates } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
-import { searchParishes, type SearchableParish } from "../lib/mapSearch";
+import { searchParishesScored, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
@@ -192,6 +192,7 @@ const SEARCHABLE_PARISHES: SearchParish[] = PARISHES.map(p => ({
   id: p.id,
   name: shortLabel(p.name),
   location: vicariateLabel(p.vicariate),
+  coordinates: p.coordinates,
   routeId: LIVE_PARISH_TO_ROUTE_ID[p.id],
   isLive: p.status === "live" && Boolean(LIVE_PARISH_TO_ROUTE_ID[p.id]),
 }));
@@ -350,7 +351,13 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   const getDirectionsRef = useRef(getDirectionsFor);
   getDirectionsRef.current = getDirectionsFor;
 
-  const results = useMemo(() => searchParishes(query, SEARCHABLE_PARISHES), [query]);
+  // Scored rather than filtered, and ranked against the pilgrim's own
+  // position so "churches near me" can be answered with real distances and
+  // equally-relevant names break ties by which is closer.
+  const results = useMemo(
+    () => searchParishesScored(query, SEARCHABLE_PARISHES, { origin: position }),
+    [query, position?.lat, position?.lng],
+  );
 
   // Falls back the instant the browser reports offline, even mid-session —
   // a live map needs network and this app must never be caught showing an
@@ -775,7 +782,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
         {query.trim() !== "" && (
           <ul className="dmap-results">
             {results.length === 0 && <li className="dmap-results__empty">No parish found</li>}
-            {results.map(parish => (
+            {results.map(({ parish, distanceMeters }) => (
               <li key={parish.id}>
                 <button
                   type="button"
@@ -783,7 +790,16 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
                   onClick={() => selectSearchResult(parish)}
                 >
                   <span className="dmap-results__name">{parish.name}</span>
-                  {parish.location && <span className="dmap-results__where">{parish.location}</span>}
+                  <span className="dmap-results__where">
+                    {/* Distance leads when it is known — it is the more
+                        useful discriminator between two similarly-named
+                        parishes, and the vicariate behind it is an inferred
+                        guess, so it is labelled as one. */}
+                    {distanceMeters !== null && (
+                      <span className="dmap-results__distance">{formatDistance(distanceMeters)} away</span>
+                    )}
+                    {parish.location && <span>{parish.location} (unconfirmed)</span>}
+                  </span>
                 </button>
               </li>
             ))}

@@ -714,3 +714,20 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   background: color-mix(in srgb, var(--color-brand-text) 88%, transparent);
   color: var(--color-brand-bg);
 }
+
+/* Search result secondary line: distance first when known, then the
+   (inferred) vicariate. Stacked rather than inline so a long parish name
+   plus a distance never pushes the location off the row. */
+.dmap-results__where {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+  font-size: 15px;
+  color: var(--color-brand-secondary);
+}
+.dmap-results__distance {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-accent);
+}
