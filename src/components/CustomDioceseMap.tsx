@@ -15,6 +15,9 @@ import DioceseMapLive, { OPEN_IN_GOOGLE_MAPS_URL } from "./DioceseMapLive";
 // useful for sharing the client's original map outside the app.
 interface CustomDioceseMapProps {
   onSelectParish: (parishId: string) => void;
+  /** A parish to draw a walking route to as soon as the map is ready. */
+  walkToParishId?: string | null;
+  onWalkToConsumed?: () => void;
   // See DioceseMapLive's heightPx: when set, the map gets this fixed pixel
   // height and the legend/link below it grow the card instead of being
   // squeezed inside it. Omitted by the two callers that still live inside a
@@ -22,14 +25,19 @@ interface CustomDioceseMapProps {
   mapHeight?: number;
 }
 
-export default function CustomDioceseMap({ onSelectParish, mapHeight }: CustomDioceseMapProps) {
+export default function CustomDioceseMap({ onSelectParish, mapHeight, walkToParishId, onWalkToConsumed }: CustomDioceseMapProps) {
   const wrapClassName = mapHeight != null ? "flex flex-col gap-2" : "flex flex-col gap-2 h-full min-h-0";
   const mapSlotClassName = mapHeight != null ? "" : "flex-1 min-h-0";
 
   return (
     <div className={wrapClassName}>
       <div className={mapSlotClassName}>
-        <DioceseMapLive onSelectParish={onSelectParish} heightPx={mapHeight} />
+        <DioceseMapLive
+          onSelectParish={onSelectParish}
+          heightPx={mapHeight}
+          walkToParishId={walkToParishId}
+          onWalkToConsumed={onWalkToConsumed}
+        />
       </div>
 
       <a

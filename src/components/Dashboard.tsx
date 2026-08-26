@@ -7,6 +7,8 @@ import { Route } from "../types";
 import { MASS_SCHEDULES, ROSARY_MYSTERIES } from "../data";
 import { nextMass } from "../lib/schedule";
 import CustomDioceseMap from "./CustomDioceseMap";
+import HomeHero from "./HomeHero";
+import { liturgicalDay } from "../lib/liturgical";
 
 type Announcement = {
   id: string;
@@ -23,6 +25,8 @@ interface DashboardProps {
     tab: "mass" | "history" | "ministries" | "sacraments" | "ar" | "navigator" | "rosary" | "me"
   ) => void;
   onSelectParish: (parishId: string) => void;
+  /** Opens the Map tab with a walking route already drawn to this parish. */
+  onWalkThere: (parishId: string) => void;
 }
 
 // Standard Catholic weekday cycle for which set of Mysteries is prayed —
@@ -61,7 +65,7 @@ export function formatCountdown(target: Date, now: Date): string {
   return `in ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function Dashboard({ parish, announcements, onNavigate, onSelectParish }: DashboardProps) {
+export default function Dashboard({ parish, announcements, onNavigate, onSelectParish, onWalkThere }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
 
@@ -74,6 +78,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
   const parishSchedule = MASS_SCHEDULES[parish.id];
   const upcomingMass = nextMass(parishSchedule?.schedule ?? [], now);
 
+  const today = liturgicalDay(now);
   const todaysMysteryCategory = MYSTERY_BY_WEEKDAY[now.getDay()];
   const todaysMystery = ROSARY_MYSTERIES.find((m) => m.category === todaysMysteryCategory);
 
@@ -84,13 +89,14 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] text-left">
-      {/* Apple iOS Style Header */}
+      {/* Header — app first, home parish beneath it. The date moves into the
+          Today card, where it now sits with the liturgical day. */}
       <div className="px-5 pt-6 pb-2 shrink-0 flex items-center justify-between">
         <div>
-          <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest block font-sans">
-            {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)] block">
+            SanctiWalk
           </span>
-          <h2 className="text-2xl font-black text-[var(--color-brand-text)] tracking-tight leading-tight mt-0.5 uppercase">
+          <h2 className="text-[24px] font-bold text-[var(--color-brand-text)] tracking-tight leading-tight mt-0.5">
             {parishName}
           </h2>
         </div>
@@ -104,6 +110,29 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
       </div>
 
       <div className="p-4 space-y-4 font-sans">
+        {/* The redesign's hero. It features the parish you are actually
+            closest to, which is usually one of the 29 with no content
+            collected yet — see HomeHero for what it does about that. */}
+        <HomeHero onWalkThere={onWalkThere} onOpenParish={onSelectParish} />
+
+        {/* The day, named the way a parish bulletin names it. Computed from
+            the date of Easter rather than stored, so it stays right without
+            anyone maintaining a table. */}
+        <button
+          onClick={() => onNavigate("rosary")}
+          className="w-full text-left rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5"
+        >
+          <p className="text-[16px] font-semibold text-[var(--color-brand-text)]">
+            {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <p className="mt-1 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
+            {today.name}
+          </p>
+          <p className="mt-3 pt-3 border-t border-[var(--color-brand-border)] text-[16px] font-semibold text-[var(--color-brand-primary)]">
+            {todaysMysteryCategory} Mysteries ›
+          </p>
+        </button>
+
         {/* SECTION 0: TODAY — what a pilgrim needs right now, before anything
             else on the screen. Always the first thing rendered under the
             header, ahead of the parish grid and the diocese-wide section. */}

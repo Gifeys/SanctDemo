@@ -308,9 +308,20 @@ export default function App() {
   // map" — the pilgrim is already standing at the parish, so jumping to the
   // map tab is the correct destination here, distinct from selecting a
   // parish elsewhere (see handleSelectParish below).
+  const [walkToParishId, setWalkToParishId] = useState<string | null>(null);
+
   const handleOpenTourFromPresence = (parishId: string) => {
     setSelectedChurchId(parishId);
     setActiveTab(tabForParishSelection("presence-open-tour"));
+  };
+
+  // "Walk there" on the Home hero: switch to the map and hand it the parish
+  // to route to, rather than routing from Home and hoping the map picks it up.
+  // Cleared once the map has consumed it so returning to the tab later does
+  // not silently redraw a route the pilgrim did not ask for again.
+  const handleWalkThere = (parishId: string) => {
+    setWalkToParishId(parishId);
+    setActiveTab("navigator");
   };
 
   const handleOpenARFromPresence = (parishId: string) => {
@@ -934,6 +945,7 @@ export default function App() {
                       announcements={announcements}
                       onNavigate={(tab) => setActiveTab(tab)}
                       onSelectParish={handleSelectParish}
+                      onWalkThere={handleWalkThere}
                     />
                   )}
 
@@ -959,7 +971,12 @@ export default function App() {
                             </p>
                           </header>
 
-                          <CustomDioceseMap mapHeight={374} onSelectParish={handleSelectParish} />
+                          <CustomDioceseMap
+                            mapHeight={374}
+                            onSelectParish={handleSelectParish}
+                            walkToParishId={walkToParishId}
+                            onWalkToConsumed={() => setWalkToParishId(null)}
+                          />
 
                           <div className="space-y-3">
                             {liveParishes.map((parish) => (

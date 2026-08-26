@@ -29,6 +29,14 @@ const MAP_BEARING_EPSILON = 1;
 
 interface DioceseMapLiveProps {
   onSelectParish: (parishId: string) => void;
+  /**
+   * A diocese parish id handed over by Home's "Walk there". The map draws the
+   * walking route to it as soon as it is ready, then calls onWalkToConsumed
+   * so returning to this tab later does not silently redraw a route nobody
+   * asked for a second time.
+   */
+  walkToParishId?: string | null;
+  onWalkToConsumed?: () => void;
   // When set, the map surface itself is given this fixed pixel height and
   // the legend/open-link stack below it at their natural height, instead of
   // the map flexing to fill a fixed-height ancestor (the h-72/h-64 cards on
@@ -261,7 +269,7 @@ function isTileHostError(error: unknown): boolean {
   return message.includes(TILE_HOST) || /Failed to fetch|NetworkError|ERR_/.test(message);
 }
 
-export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapLiveProps) {
+export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
   const { position, accuracyMeters, simulation } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -674,6 +682,46 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
     }
     setRoutes({});
   }
+
+  // Honours Home's "Walk there". Waits for `mode === "live"` because a route
+  // layer cannot be added to a map that has not finished loading, and for a
+  // position because a route needs somewhere to start.
+  useEffect(() => {
+    if (!walkToParishId || mode !== "live") return;
+    const map = mapRef.current;
+    const from = positionRef.current;
+    const parish = PARISHES.find(p => p.id === walkToParishId);
+    if (!map || !parish) return;
+    if (!from) {
+      // No fix yet — drop the request rather than holding it forever, since
+      // the pilgrim is already looking at the map and can ask again.
+      onWalkToConsumed?.();
+      return;
+    }
+
+    let live = true;
+    const requestId = ++directionsRequestRef.current;
+    void getWalkingDirections(from, parish.coordinates).then(result => {
+      if (!live || directionsRequestRef.current !== requestId) return;
+      if (result.status === "no-position") return;
+      const currentMap = mapRef.current;
+      if (currentMap) {
+        upsertRouteLayer(currentMap, parish.id, result.route, resolveColor("var(--color-brand-accent)"));
+        setRoutes(prev => ({ ...prev, [parish.id]: result.route }));
+        const [first, ...rest] = result.route.path;
+        const bounds = rest.reduce(
+          (b, pt) => b.extend([pt.lng, pt.lat]),
+          new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]),
+        );
+        currentMap.fitBounds(bounds, { padding: 64, duration: 500 });
+      }
+      onWalkToConsumed?.();
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walkToParishId, mode]);
 
   function recentreOnMe() {
     const map = mapRef.current;

@@ -772,3 +772,12 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   font-variant-numeric: tabular-nums;
   color: var(--color-brand-accent);
 }
+
+/* MapLibre ships its attribution at 12px. The credit is required and stays,
+   but this app's floor is 14px with no exceptions — a rule with a carve-out
+   for "it's only third-party text" stops being a rule. */
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib-inner,
+.maplibregl-ctrl-attrib a {
+  font-size: 14px;
+}
