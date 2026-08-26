@@ -7,8 +7,25 @@ import { haversineMeters, type Coordinates } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishes, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
+import { shortestAngleDelta } from "../lib/heading";
+import { useDeviceHeading } from "../lib/useDeviceHeading";
+import CompassControl, { type MapOrientationMode } from "./CompassControl";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
+
+// Beyond this, a position change is a relocation (first fix, or the demo
+// simulator being switched) rather than walking, and easing across it looks
+// like the map flying somewhere. 120m is far more than GPS noise and far
+// less than a walk between parishes.
+const MARKER_SNAP_METERS = 120;
+
+// One GPS tick is roughly a second; easing a little under that keeps the
+// marker continuously in motion without lagging visibly behind the fix.
+const MARKER_EASE_MS = 800;
+
+// Below this the map is already pointing where it should be, and issuing a
+// fresh easeTo would restart the animation on every sensor event.
+const MAP_BEARING_EPSILON = 1;
 
 interface DioceseMapLiveProps {
   onSelectParish: (parishId: string) => void;
@@ -252,10 +269,22 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   // keeps the same lookup for the same reason.
   const markersRef = useRef<Map<string, MapLibreMarker>>(new Map());
   const youMarkerRef = useRef<MapLibreMarker | null>(null);
+  // The rotating direction cone inside the "you are here" marker, held
+  // directly so heading updates can be written to its style at sensor rate
+  // without re-rendering this component.
+  const youConeRef = useRef<HTMLDivElement | null>(null);
+  // Where the marker currently *appears*, which lags the latest fix while
+  // the ease runs — the start point for the next ease.
+  const animatedPositionRef = useRef<Coordinates | null>(null);
+  const moveFrameRef = useRef<number | null>(null);
   const [mode, setMode] = useState<"loading" | "live" | "fallback">("loading");
   const [offlineFlagged, setOfflineFlagged] = useState(false);
   const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
   const [query, setQuery] = useState("");
+  // North-up by default, matching Google Maps: the map only starts turning
+  // with the pilgrim once they ask it to.
+  const [orientationMode, setOrientationMode] = useState<MapOrientationMode>("north-up");
+  const { heading, status: headingStatus, requestPermission: requestHeadingPermission } = useDeviceHeading();
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
   // and re-running that effect on every render would tear down and rebuild
@@ -498,23 +527,127 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
   // parish pins above, so GPS updates only ever touch this one element
   // instead of rebuilding all 31 parish markers (and closing whatever
   // popup the pilgrim currently has open) on every tick.
+  //
+  // The marker is created once and then moved. An earlier version removed
+  // and re-added it on every fix, which is what made the dot jump: each
+  // update tore the element out of the DOM and dropped a new one at the new
+  // coordinates, so there was nothing left to animate between.
   useEffect(() => {
     const map = mapRef.current;
     if (mode !== "live" || !map) return;
 
-    youMarkerRef.current?.remove();
-    youMarkerRef.current = null;
+    if (!position) {
+      youMarkerRef.current?.remove();
+      youMarkerRef.current = null;
+      youConeRef.current = null;
+      animatedPositionRef.current = null;
+      return;
+    }
 
-    if (position) {
+    if (!youMarkerRef.current) {
       const you = document.createElement("div");
       you.className = "dmap-live__marker dmap-live__marker--you";
       you.title = "You are here";
+
+      // The direction cone is a child rather than the marker element
+      // itself, so heading rotation never fights MapLibre's own transform
+      // on the marker (which positions it, and would be overwritten).
+      const cone = document.createElement("div");
+      cone.className = "dmap-live__cone";
+      you.append(cone);
+      youConeRef.current = cone;
+
       youMarkerRef.current = new MapLibreMarker({ element: you, anchor: "center" })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
+      animatedPositionRef.current = position;
+      return;
     }
+
+    // Ease from wherever the marker currently is to the new fix, rather
+    // than teleporting. GPS delivers a fix every second or so and each one
+    // carries several metres of noise; without this the dot twitches
+    // constantly even when the pilgrim is standing still.
+    const marker = youMarkerRef.current;
+    const from = animatedPositionRef.current ?? position;
+    const to = position;
+
+    if (moveFrameRef.current !== null) cancelAnimationFrame(moveFrameRef.current);
+
+    // A large jump is a genuine relocation (first fix, or the simulator
+    // being switched) rather than walking, and easing across a kilometre
+    // looks like the map is flying somewhere. Snap those instead.
+    if (haversineMeters(from, to) > MARKER_SNAP_METERS) {
+      marker.setLngLat([to.lng, to.lat]);
+      animatedPositionRef.current = to;
+      return;
+    }
+
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - startedAt) / MARKER_EASE_MS);
+      // easeOutQuad — quick off the mark, settling gently, which reads as
+      // movement rather than as a slide.
+      const eased = 1 - (1 - t) * (1 - t);
+      const lat = from.lat + (to.lat - from.lat) * eased;
+      const lng = from.lng + (to.lng - from.lng) * eased;
+      marker.setLngLat([lng, lat]);
+      animatedPositionRef.current = { lat, lng };
+      moveFrameRef.current = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    moveFrameRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (moveFrameRef.current !== null) {
+        cancelAnimationFrame(moveFrameRef.current);
+        moveFrameRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, position?.lat, position?.lng]);
+
+  // Points the direction cone. Written straight to the element's style
+  // rather than through React, because heading updates arrive at sensor
+  // rate and re-rendering the whole map component on each one would be its
+  // own performance problem.
+  useEffect(() => {
+    const cone = youConeRef.current;
+    if (!cone) return;
+    if (heading === null) {
+      // No heading is not the same as "facing north" — an arrow that
+      // confidently points north on a device with no magnetometer is a lie.
+      // Fall back to the plain dot instead.
+      cone.style.opacity = "0";
+      return;
+    }
+    cone.style.opacity = "1";
+    // In heading-up mode the map is rotated to match the pilgrim, so the
+    // cone must sit still at the top of the screen; in north-up the map is
+    // fixed and the cone does the turning.
+    cone.style.transform = `rotate(${orientationMode === "heading-up" ? 0 : heading}deg)`;
+  }, [heading, orientationMode]);
+
+  // Heading-up mode: the map turns so the way the pilgrim faces is up.
+  //
+  // MapLibre keeps point labels viewport-aligned by default and flips
+  // street labels rather than letting them run upside-down, so place names
+  // stay readable at any bearing without extra work here.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mode !== "live" || !map) return;
+
+    if (orientationMode === "north-up") {
+      if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 });
+      return;
+    }
+    if (heading === null) return;
+
+    // `heading` is already smoothed and deadbanded upstream, so this only
+    // fires on real turns. easeTo's own interpolation then covers the gap
+    // between updates, which is what keeps the rotation from stepping.
+    if (Math.abs(shortestAngleDelta(map.getBearing(), heading)) < MAP_BEARING_EPSILON) return;
+    map.easeTo({ bearing: heading, duration: 300, easing: t => t });
+  }, [mode, heading, orientationMode]);
 
   // No route is drawn automatically. Directions appear only when the pilgrim
   // asks for them from a parish's popup — the same contract as Google Maps or
@@ -656,6 +789,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx }: DioceseMapL
             ))}
           </ul>
         )}
+
+        <CompassControl
+          heading={heading}
+          status={headingStatus}
+          mode={orientationMode}
+          onToggleMode={() => setOrientationMode(m => (m === "north-up" ? "heading-up" : "north-up"))}
+          onRequestPermission={() => void requestHeadingPermission()}
+        />
 
         <button
           type="button"

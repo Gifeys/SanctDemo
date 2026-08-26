@@ -588,3 +588,129 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   outline: 2px solid var(--color-brand-card);
   outline-offset: 2px;
 }
+
+/* ── Direction cone on the "you are here" marker ──────────────────────────
+   Google Maps' pattern: a dot for where you are, a cone for which way you
+   face. The cone is a child of the marker rather than the marker element
+   itself, because MapLibre owns the marker's own transform for positioning
+   and would overwrite any rotation written there. Hidden (opacity 0) when
+   no heading is available — an arrow that points north on a device with no
+   magnetometer is a confident lie. */
+.dmap-live__cone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  /* Rotation happens about the dot's centre, so the cone swings around the
+     pilgrim rather than orbiting some offset point. */
+  transform-origin: 0 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.dmap-live__cone::before {
+  content: "";
+  position: absolute;
+  left: -13px;
+  bottom: 6px;
+  width: 26px;
+  height: 22px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-brand-accent) 55%, transparent),
+    transparent
+  );
+  /* A cone rather than an arrowhead: the widening beam reads as "facing
+     roughly this way", which is honest about a magnetometer's precision. */
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dmap-live__cone { transition: none; }
+}
+
+/* ── Compass ──────────────────────────────────────────────────────────────
+   Sits below the zoom control, above "Recentre on me". Tapping it swaps
+   between north-up and heading-up. */
+.dmap-compass-wrap {
+  position: absolute;
+  top: 92px;
+  left: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.dmap-compass {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.35));
+}
+.dmap-compass:disabled { cursor: default; opacity: 0.55; }
+.dmap-compass:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 2px; }
+.dmap-compass svg { width: 100%; height: 100%; display: block; }
+.dmap-compass__face {
+  fill: color-mix(in srgb, var(--color-brand-text) 88%, transparent);
+  stroke: color-mix(in srgb, var(--color-brand-card) 45%, transparent);
+}
+/* The dial turns; the transition is what makes a turn read as a sweep
+   rather than a step between sensor updates. */
+.dmap-compass__dial {
+  transform-origin: center;
+  transition: transform 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dmap-compass__dial { transition: none; }
+}
+/* 14px is the floor, and these are two-character glyphs on a 56px dial —
+   any smaller and the ordinals are unreadable at arm's length. */
+.dmap-compass__cardinal {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--color-brand-bg);
+}
+.dmap-compass__ordinal {
+  font-size: 14px;
+  font-weight: 600;
+  fill: color-mix(in srgb, var(--color-brand-bg) 62%, transparent);
+}
+.dmap-compass__needle { fill: var(--color-brand-danger, #B9302F); }
+.dmap-compass__needle-tail { fill: color-mix(in srgb, var(--color-brand-bg) 35%, transparent); }
+/* Heading-up is the non-default state, so it is marked — otherwise there is
+   no way to tell which mode the map is in when the pilgrim faces north. */
+.dmap-compass[data-mode="heading-up"] .dmap-compass__face {
+  stroke: var(--color-brand-accent);
+  stroke-width: 2;
+}
+.dmap-compass__readout {
+  margin: 0;
+  max-width: 108px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-brand-text);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.55);
+}
+.dmap-compass__degrees {
+  display: block;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-brand-text) 78%, transparent);
+}
+.dmap-compass--prompt {
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-brand-text) 88%, transparent);
+  color: var(--color-brand-bg);
+}
