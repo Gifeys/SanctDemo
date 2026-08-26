@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
-import ChangeParishModal from "./components/ChangeParishModal";
+import Onboarding from "./components/Onboarding";
+import SearchScreen from "./components/SearchScreen";
 import PwaBanner from "./components/PwaBanner";
 
 // New Components
@@ -32,6 +33,7 @@ import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
+import parishData from "./data/diocese-parishes.json";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
@@ -66,19 +68,40 @@ function firstLiveParishId(): string | null {
   return ROUTES.find(r => r.status !== "coming_soon")?.id ?? ROUTES[0]?.id ?? null;
 }
 
+// A home parish may be any of the 31 in the diocese, not just the two with a
+// tour behind them — the redesign's onboarding lists them all, and a pilgrim's
+// own parish is very likely one of the 29 still being documented. The active
+// *tour* must still be one of the live routes, so the two are mapped rather
+// than conflated.
+const DIOCESE_PARISH_IDS = (parishData as { parishes: { id: string }[] }).parishes.map(p => p.id);
+const VALID_HOME_IDS = [...ROUTES.map(r => r.id), ...DIOCESE_PARISH_IDS];
+
+const HOME_PARISH_TO_ROUTE: Record<string, string> = {
+  "mary-help-of-christians-parish": "route-mhcp",
+  "san-roque-cathedral": "route-src",
+};
+
+/** The tour to open for a chosen home parish, falling back to a live one. */
+function routeForHomeParish(homeId: string | null): string | null {
+  if (!homeId) return firstLiveParishId();
+  if (ROUTES.some(r => r.id === homeId)) return homeId;
+  return HOME_PARISH_TO_ROUTE[homeId] ?? firstLiveParishId();
+}
+
 export default function App() {
   // The pilgrim's home parish, chosen once and remembered. This is the
   // fallback the dashboard shows whenever GPS says they are not at a parish.
   const [homeParishId, setHomeParishId] = useState<string | null>(() =>
-    loadHomeParishId(ROUTES.map(r => r.id)) ?? firstLiveParishId()
+    loadHomeParishId(VALID_HOME_IDS) ?? firstLiveParishId()
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Navigation & Frame settings. Seeded from the home parish so the app opens
   // on that parish's dashboard rather than asking which church to pick — the
   // app can work that out, so it should not ask.
-  const [selectedChurchId, setSelectedChurchId] = useState<string | null>(
-    () => loadHomeParishId(ROUTES.map(r => r.id)) ?? firstLiveParishId()
+  const [selectedChurchId, setSelectedChurchId] = useState<string | null>(() =>
+    routeForHomeParish(loadHomeParishId(VALID_HOME_IDS))
   );
   const [activeTab, setActiveTab] = useState<
     "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "me" | "admin" | "pwa-devkit"
@@ -552,7 +575,11 @@ export default function App() {
   const handleChooseHomeParish = (parishId: string) => {
     saveHomeParishId(parishId);
     setHomeParishId(parishId);
-    setSelectedChurchId(parishId);
+    // The home parish may be one of the 29 without a tour. The active route
+    // still has to be a live one, so it is mapped rather than set directly —
+    // setting a diocese id here would leave activeChurchRoute falling back to
+    // ROUTES[0] with no indication why.
+    setSelectedChurchId(routeForHomeParish(parishId));
     setActiveTab("home");
     setIsChangeParishOpen(false);
   };
@@ -560,13 +587,47 @@ export default function App() {
   return (
     <PresenceProvider>
       <PresenceParishSync onArrive={setSelectedChurchId} />
-      <ChangeParishModal
-        isOpen={isChangeParishOpen}
-        onClose={() => setIsChangeParishOpen(false)}
-        parishes={liveParishes}
-        currentParishId={homeParishId}
-        onChoose={handleChooseHomeParish}
-      />
+      {/* The redesign's onboarding screen. It is reached from "Change Home
+          Parish" rather than shown on first run, because the client's earlier
+          decision — recorded above firstLiveParishId — was that no welcome
+          screen should stand between install and the dashboard. The screen is
+          built and complete; making it first-run is a one-line change if that
+          decision has changed. */}
+      {isChangeParishOpen && (
+        <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
+          <div className="flex justify-end p-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsChangeParishOpen(false)}
+              className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
+            >
+              Cancel
+            </button>
+          </div>
+          <Onboarding onChoose={handleChooseHomeParish} />
+        </div>
+      )}
+
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
+          <SearchScreen
+            onClose={() => setIsSearchOpen(false)}
+            onSelectParish={parishId => {
+              setIsSearchOpen(false);
+              const route = HOME_PARISH_TO_ROUTE[parishId];
+              // Only the two live parishes have a page to open. Selecting any
+              // other is still useful — it centres the map on it — so this
+              // routes there instead of doing nothing.
+              if (route) {
+                handleSelectParish(route);
+              } else {
+                setWalkToParishId(parishId);
+                setActiveTab("navigator");
+              }
+            }}
+          />
+        </div>
+      )}
     <div className="min-h-screen bg-[var(--color-brand-card)] text-[var(--color-brand-text)] flex flex-col justify-between font-sans">
       {/* Top Desktop Workspace Header Bar */}
       <header className="bg-[var(--color-brand-card)] border-b border-[var(--color-brand-border)] py-4 px-6 select-none shrink-0">
@@ -946,6 +1007,7 @@ export default function App() {
                       onNavigate={(tab) => setActiveTab(tab)}
                       onSelectParish={handleSelectParish}
                       onWalkThere={handleWalkThere}
+                      onOpenSearch={() => setIsSearchOpen(true)}
                     />
                   )}
 

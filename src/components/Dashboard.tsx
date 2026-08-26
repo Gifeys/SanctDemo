@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Clock, Heart, BookOpen, User, MapPin, Bookmark,
-  ScanLine as ArIcon, Users as MinistryIcon, Map,
+  ScanLine as ArIcon, Users as MinistryIcon, Map, Search,
 } from "lucide-react";
 import { Route } from "../types";
 import { MASS_SCHEDULES, ROSARY_MYSTERIES } from "../data";
@@ -27,6 +27,8 @@ interface DashboardProps {
   onSelectParish: (parishId: string) => void;
   /** Opens the Map tab with a walking route already drawn to this parish. */
   onWalkThere: (parishId: string) => void;
+  /** Opens the full-screen parish search. */
+  onOpenSearch: () => void;
 }
 
 // Standard Catholic weekday cycle for which set of Mysteries is prayed —
@@ -65,7 +67,7 @@ export function formatCountdown(target: Date, now: Date): string {
   return `in ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function Dashboard({ parish, announcements, onNavigate, onSelectParish, onWalkThere }: DashboardProps) {
+export default function Dashboard({ parish, announcements, onNavigate, onSelectParish, onWalkThere, onOpenSearch }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
 
@@ -110,6 +112,15 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
       </div>
 
       <div className="p-4 space-y-4 font-sans">
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="w-full flex items-center gap-2.5 px-4 py-3 rounded-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-left"
+        >
+          <Search className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+          <span className="text-[16px] text-[var(--color-brand-secondary)]">Search parish or place</span>
+        </button>
+
         {/* The redesign's hero. It features the parish you are actually
             closest to, which is usually one of the 29 with no content
             collected yet — see HomeHero for what it does about that. */}
