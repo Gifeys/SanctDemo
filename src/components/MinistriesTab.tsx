@@ -56,20 +56,20 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       {/* Page Header */}
-      <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Users className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Serve and Volunteer
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Parish Ministries
           </h2>
-          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             "Go into the world and preach the Gospel." Join our lay ministries to serve the parish community.
           </p>
         </div>
@@ -79,16 +79,16 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
         {/* These ministry types are the same across the diocese — this is
             not {parishName}'s own private list, and the app should say so
             rather than implying otherwise. */}
-        <div className="flex items-start gap-2 p-3 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
-          <Info className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
-          <p className="text-[15px] text-[#4A4A35] font-sans leading-snug">
+        <div className="flex items-start gap-2 p-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl">
+          <Info className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 mt-0.5" />
+          <p className="text-[15px] text-[var(--color-brand-text)] font-sans leading-snug">
             These ministries are offered diocese-wide. Applying below will route your application to <strong>{parishName}</strong>, your current parish.
           </p>
         </div>
 
         {/* Ministries List Accordion */}
         <div className="space-y-2.5">
-          <h3 className="text-[15px] font-bold text-[#EBEBE0] uppercase tracking-widest font-serif italic pl-1">
+          <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic pl-1">
             Available Ministries
           </h3>
 
@@ -98,38 +98,38 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
               return (
                 <div
                   key={min.id}
-                  className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden shadow-xs transition-all"
+                  className="bg-white rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
                 >
                   <button
                     onClick={() => toggleExpand(min.id)}
                     className="w-full p-4 flex items-center justify-between text-left select-none"
                   >
                     <div>
-                      <h4 className="text-[15px] font-bold text-[#4A4A35] font-serif italic">
+                      <h4 className="text-[15px] font-bold text-[var(--color-brand-text)] font-serif italic">
                         {min.name}
                       </h4>
-                      <p className="text-sm text-[#8A8A70] line-clamp-1 font-sans mt-0.5">
+                      <p className="text-sm text-[var(--color-brand-secondary)] line-clamp-1 font-sans mt-0.5">
                         {min.description}
                       </p>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-[#5A5A40]" />
+                      <ChevronUp className="w-4 h-4 text-[var(--color-brand-secondary)]" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-[#8A8A70]" />
+                      <ChevronDown className="w-4 h-4 text-[var(--color-brand-secondary)]" />
                     )}
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[#EBEBE0] bg-[#EBEBE0]/30 space-y-3 font-sans">
-                      <p className="text-[15px] text-[#33332D] leading-relaxed">
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">
+                      <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed">
                         {min.description}
                       </p>
                       
                       <div className="space-y-1.5">
-                        <h5 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider">
+                        <h5 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
                           Requirements to Join:
                         </h5>
-                        <ul className="space-y-1 text-[15px] text-[#33332D]">
+                        <ul className="space-y-1 text-[15px] text-[var(--color-brand-text)]">
                           {min.requirements.map((req, idx) => (
                             <li key={idx} className="flex gap-2 items-center text-[15px]">
                               <Check className="w-3.5 h-3.5 text-green-700 shrink-0" />
@@ -146,7 +146,7 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
                           const element = document.getElementById("application-form");
                           element?.scrollIntoView({ behavior: "smooth" });
                         }}
-                        className="py-1.5 px-3 bg-[#5A5A40] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[#4A4A35] transition-colors"
+                        className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
                       >
                         Apply for this Guild
                       </button>
@@ -159,8 +159,8 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
         </div>
 
         {/* Application Form Section */}
-        <div id="application-form" className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-3">
-          <h3 className="text-sm font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/45 pb-1.5">
+        <div id="application-form" className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
+          <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/45 pb-1.5">
             Submit Ministry Application
           </h3>
 
@@ -175,7 +175,7 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
               </div>
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="mt-1.5 text-sm bg-[#5A5A40] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
+                className="mt-1.5 text-sm bg-[var(--color-brand-primary)] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
               >
                 Apply for Another
               </button>
@@ -191,13 +191,13 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
 
               {/* Selection */}
               <div className="space-y-1">
-                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                   Select Target Ministry
                 </label>
                 <select
                   value={selectedMinistryId}
                   onChange={(e) => setSelectedMinistryId(e.target.value)}
-                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2 font-bold font-serif italic text-[15px] outline-none"
+                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2 font-bold font-serif italic text-[15px] outline-none"
                 >
                   {MINISTRIES.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
@@ -207,7 +207,7 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
 
               {/* Full Name */}
               <div className="space-y-1">
-                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                   Full Name
                 </label>
                 <input
@@ -215,14 +215,14 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
                   placeholder="Juan dela Cruz"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
+                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
                 />
               </div>
 
               {/* Phone & Email */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                     Mobile No.
                   </label>
                   <input
@@ -230,11 +230,11 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
                     placeholder="0917-XXXXXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
+                    className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                     Email Address
                   </label>
                   <input
@@ -242,14 +242,14 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
                     placeholder="juan@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D]"
+                    className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
                   />
                 </div>
               </div>
 
               {/* Cover Letter */}
               <div className="space-y-1">
-                <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                   Why do you wish to join?
                 </label>
                 <textarea
@@ -257,13 +257,13 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
                   placeholder="I want to offer my talents for social media live streaming..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D] font-sans resize-none"
+                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)] font-sans resize-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] shadow-xs"
+                className="w-full py-2.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[var(--color-brand-primary-dark)] shadow-xs"
               >
                 Submit Volunteer Registration
               </button>

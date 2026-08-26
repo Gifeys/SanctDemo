@@ -83,20 +83,20 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
   });
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] text-left">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] text-left">
       {/* Apple iOS Style Header */}
       <div className="px-5 pt-6 pb-2 shrink-0 flex items-center justify-between">
         <div>
-          <span className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest block font-sans">
+          <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest block font-sans">
             {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </span>
-          <h2 className="text-2xl font-black text-white tracking-tight leading-tight mt-0.5 uppercase">
+          <h2 className="text-2xl font-black text-[var(--color-brand-text)] tracking-tight leading-tight mt-0.5 uppercase">
             {parishName}
           </h2>
         </div>
         <button
           onClick={() => onNavigate("me")}
-          className="h-9 w-9 rounded-full bg-white border border-[#D6D6C2] text-[#5A5A40] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[#EBEBE0]"
+          className="h-9 w-9 rounded-full bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[var(--color-brand-card)]"
           aria-label="Me"
         >
           <User className="w-4 h-4" />
@@ -108,24 +108,24 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
             else on the screen. Always the first thing rendered under the
             header, ahead of the parish grid and the diocese-wide section. */}
         <div className="space-y-2">
-          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest pl-1 font-sans">
+          <h3 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest pl-1 font-sans">
             Today
           </h3>
 
           <button
             onClick={() => onNavigate("mass")}
-            className="w-full bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-4 text-left transition-colors hover:border-[#5A5A40] space-y-1.5"
+            className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1.5"
           >
-            <div className="flex items-center gap-2 text-[15px] font-bold text-[#8A8A70] uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-[#5A5A40]" />
+            <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
+              <Clock className="w-4 h-4 text-[var(--color-brand-secondary)]" />
               <span>Next Mass at {parishName}</span>
             </div>
             {upcomingMass ? (
               <>
-                <p className="text-2xl font-black text-[#4A4A35] tracking-tight">
+                <p className="text-2xl font-black text-[var(--color-brand-text)] tracking-tight">
                   {formatCountdown(upcomingMass.date, now)}
                 </p>
-                <p className="text-[15px] text-[#33332D]">
+                <p className="text-[15px] text-[var(--color-brand-text)]">
                   {upcomingMass.date.toDateString() === now.toDateString() ? "Today" : upcomingMass.day}, {upcomingMass.time}
                 </p>
                 {parishSchedule?.scheduleVerified === false && (
@@ -135,32 +135,32 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
                 )}
               </>
             ) : (
-              <p className="text-[15px] text-[#33332D]">Mass schedule not yet published for this parish.</p>
+              <p className="text-[15px] text-[var(--color-brand-text)]">Mass schedule not yet published for this parish.</p>
             )}
           </button>
 
           <button
             onClick={() => onNavigate("rosary")}
-            className="w-full bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-4 text-left transition-colors hover:border-[#5A5A40] space-y-1"
+            className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1"
           >
-            <div className="flex items-center gap-2 text-[15px] font-bold text-[#8A8A70] uppercase tracking-wider">
-              <BookOpen className="w-4 h-4 text-[#5A5A40]" />
+            <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
+              <BookOpen className="w-4 h-4 text-[var(--color-brand-secondary)]" />
               <span>Today's Mystery</span>
             </div>
-            <p className="text-lg font-bold text-[#4A4A35]">
+            <p className="text-lg font-bold text-[var(--color-brand-text)]">
               {todaysMystery ? todaysMystery.title : "The Rosary"}
             </p>
-            <p className="text-[15px] text-[#8A8A70]">Tap to pray the Rosary</p>
+            <p className="text-[15px] text-[var(--color-brand-secondary)]">Tap to pray the Rosary</p>
           </button>
 
           {todaysEvent && (
-            <div className="w-full bg-white rounded-2xl border border-[#D6D6C2] shadow-xs p-4 space-y-1">
-              <div className="flex items-center gap-2 text-[15px] font-bold text-[#8A8A70] uppercase tracking-wider">
-                <Bookmark className="w-4 h-4 text-[#5A5A40]" />
+            <div className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 space-y-1">
+              <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
+                <Bookmark className="w-4 h-4 text-[var(--color-brand-secondary)]" />
                 <span>Happening Today</span>
               </div>
-              <p className="text-lg font-bold text-[#4A4A35]">{todaysEvent.title}</p>
-              <p className="text-[15px] text-[#8A8A70]">{todaysEvent.date} at {todaysEvent.time}</p>
+              <p className="text-lg font-bold text-[var(--color-brand-text)]">{todaysEvent.title}</p>
+              <p className="text-[15px] text-[var(--color-brand-secondary)]">{todaysEvent.date} at {todaysEvent.time}</p>
             </div>
           )}
         </div>
@@ -171,91 +171,91 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
             everything under this heading is specific to {parishName}, and
             only this section should change when the active parish changes. */}
         <div className="pt-2">
-          <h3 className="text-sm font-bold text-[#5FC7DE] uppercase tracking-widest font-serif italic">
+          <h3 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic">
             At {parishName}
           </h3>
         </div>
 
         {/* Diocese map card — tapping a live pin opens that parish's tour,
             same handler the Map tab uses. */}
-        <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-xs p-3 h-64">
+        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] shadow-xs p-3 h-64">
           <CustomDioceseMap onSelectParish={onSelectParish} />
         </div>
 
         {/* Quick Navigation grid — everything here belongs to the active
             parish and follows it when it changes. */}
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-base font-bold text-[#4A4A35]">
+          <div className="grid grid-cols-2 gap-2 text-base font-bold text-[var(--color-brand-text)]">
             <button
               onClick={() => onNavigate("mass")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <Clock className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <Clock className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Mass</span>
             </button>
 
             <button
               onClick={() => onNavigate("history")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <Bookmark className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <Bookmark className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>History</span>
             </button>
 
             <button
               onClick={() => onNavigate("ministries")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <MinistryIcon className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <MinistryIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Ministries</span>
             </button>
 
             <button
               onClick={() => onNavigate("sacraments")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <Heart className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <Heart className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Sacraments</span>
             </button>
 
             <button
               onClick={() => onNavigate("ar")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <ArIcon className="w-4 h-4 text-[#5A5A40] shrink-0 animate-pulse" />
+              <ArIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 animate-pulse" />
               <span>AR Tour</span>
             </button>
 
             <button
               onClick={() => onNavigate("navigator")}
-              className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors"
+              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
-              <Map className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <Map className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>The Walk</span>
             </button>
           </div>
         </div>
 
         {/* Dynamic Announcements Bulletin board — parish events */}
-        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
-          <div className="flex justify-between items-center border-b border-[#EBEBE0] pb-1.5">
-            <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
+        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
+          <div className="flex justify-between items-center border-b border-[var(--color-brand-card)] pb-1.5">
+            <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
               Upcoming Parish Events
             </h4>
-            <span className="text-sm font-mono text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded">
+            <span className="text-sm font-mono text-[var(--color-brand-secondary)] bg-[var(--color-brand-card)] px-2 py-0.5 rounded">
               {parishName} Bulletin
             </span>
           </div>
 
           <div className="space-y-2.5">
             {announcements.map((ann) => (
-              <div key={ann.id} className="flex gap-3 items-start text-[15px] border-b border-[#EBEBE0]/60 pb-2 last:border-0 last:pb-0">
-                <div className="p-2 bg-[#EBEBE0] text-[#5A5A40] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-sm">
+              <div key={ann.id} className="flex gap-3 items-start text-[15px] border-b border-[var(--color-brand-card)]/60 pb-2 last:border-0 last:pb-0">
+                <div className="p-2 bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-sm">
                   {ann.type}
                 </div>
                 <div>
-                  <h5 className="font-bold text-[#4A4A35] font-sans text-[15px]">{ann.title}</h5>
-                  <p className="text-sm text-[#8A8A70] font-sans mt-0.5">{ann.date} at {ann.time}</p>
+                  <h5 className="font-bold text-[var(--color-brand-text)] font-sans text-[15px]">{ann.title}</h5>
+                  <p className="text-sm text-[var(--color-brand-secondary)] font-sans mt-0.5">{ann.date} at {ann.time}</p>
                 </div>
               </div>
             ))}
@@ -266,28 +266,28 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
             kept visually and structurally separate from Section 1 above so
             the split is obvious without a word of explanation. */}
         <div className="pt-2">
-          <h3 className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest pl-1 font-sans border-t border-white/15 pt-4">
+          <h3 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest pl-1 font-sans border-t border-white/15 pt-4">
             Every Day
           </h3>
         </div>
 
         <button
           onClick={() => onNavigate("rosary")}
-          className="w-full bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors text-base font-bold text-[#4A4A35]"
+          className="w-full bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors text-base font-bold text-[var(--color-brand-text)]"
         >
-          <BookOpen className="w-4 h-4 text-[#5A5A40] shrink-0" />
+          <BookOpen className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
           <span>Daily Rosary</span>
         </button>
 
         {/* Verse of the day — diocese-wide, not tied to any parish */}
-        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-2">
-          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans">
+        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-2">
+          <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
             Verse of the Day
           </h4>
-          <blockquote className="text-[15px] text-[#33332D] leading-relaxed italic font-serif">
+          <blockquote className="text-[15px] text-[var(--color-brand-text)] leading-relaxed italic font-serif">
             "He has given us his very great and precious promises, so that through them you may participate in the divine nature and escape the corruption in the world caused by evil desires."
           </blockquote>
-          <cite className="text-sm font-bold text-[#5A5A40] block font-mono">
+          <cite className="text-sm font-bold text-[var(--color-brand-secondary)] block font-mono">
             — 2 Peter 1:4
           </cite>
         </div>

@@ -1,34 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* ─── DYNAMIC COLOR VARIABLES ─── */
-  /* Client palette: navy #151B53 + teal #1886A0, cream cards on navy (per the
-     application form reference). Values below are tuned so every text/background
-     pairing that uses them clears WCAG AA (4.5:1 normal text, 3:1 large text). */
-  --color-brand-primary: #151B53;      /* Client Navy (structural bars, buttons, active states) */
-  --color-brand-primary-dark: #0F1440; /* Hover/Pressed state — darker navy */
-  --color-brand-secondary: #666655;    /* Secondary/Muted elements — darkened khaki for AA contrast on cream/white cards */
-  --color-brand-accent: #147288;       /* Client Teal #1886A0, darkened ~18% so small accent text/badges clear 4.5:1 on cream/white */
-  --color-brand-bg: #151B53;           /* Outer body/canvas background — Client Navy */
-  --color-brand-card: #EBEBE0;         /* Card/Surface background — cream (unchanged) */
-  --color-brand-border: #D6D6C2;       /* Borders and dividers — light neutral (was mistakenly #161603, near-black) */
-  --color-brand-text: #33332D;         /* Main body text color (Dark Charcoal, on cream/white cards) */
-  --color-brand-success: #1F7A54;      /* "You are here" indicator on the diocese map — distinct from the brand palette so it always reads as location, never as a brand accent */
-  --color-brand-error: #B3543F;        /* Camera/permission error icon and copy — was already used as a literal in ArTour.tsx; named here so new error UI doesn't add another literal */
-  --color-brand-error-soft: #FFB4A2;   /* Error text on a dark/black overlay (status pill over the camera feed) */
-  --color-brand-scope: #E65100;        /* Client's original My Map orange, kept ONLY for the study-area polygon fill/outline — pins are teal, so the coverage area needs a different hue or it reads as one giant pin. */
-  --color-brand-card-navy: #1E2668;    /* Parish card surface on the map screen (prototype design) — a navy one step lighter than --color-brand-bg so cards read as raised surfaces, not literal-color copies. */
-  --color-brand-on-accent: #FFFFFF;    /* Text/icon colour for anything placed on a solid --color-brand-accent fill (e.g. the map popup's "View parish" button) — 5.5:1 against #147288, clears AA. Nothing existing named this role. */
+  /* ─── PALETTE — "warm paper" (Claude Design redesign, direction 1c) ───
+     The app used to be navy-on-navy: the client's #151B53 as the whole
+     background with cream cards floating on it. The redesign inverts that.
+     Paper is now the ground, and navy is demoted to an accent that marks
+     exactly three things — your position, your route, and actions you can
+     take. That is what gives it its job back; as a full background it
+     marked nothing.
 
-  /* ─── TYPOGRAPHY VARIABLES ───
-     The diocese's own site sets Montserrat for its typography (headings at
-     weight 600), so the app now borrows the same family everywhere —
-     --font-secondary used to be Poppins; both variables now point at
-     Montserrat so every existing .font-secondary/.font-poppins usage keeps
-     working without a find-and-replace across components. */
+     Token names are roles, not colours, which is why re-pointing the values
+     here re-skins every screen without touching a component. */
+
+  --color-brand-bg: #E7E4DD;           /* Page canvas — the paper the app sits on */
+  --color-brand-card: #FAF8F4;         /* Raised surface: screens, cards, the nav bar */
+  --color-brand-card-sunk: #F2EFE9;    /* Recessed surface — search field, inactive rows */
+  --color-brand-border: #DED9D0;       /* Dividers and card outlines */
+  --color-brand-hairline: rgb(20 23 31 / 0.07); /* The 1px rules between sections */
+
+  --color-brand-text: #14171F;         /* Ink — primary text. 16.4:1 on paper */
+  --color-brand-secondary: #63666D;    /* Muted text — 5.2:1 on paper, clears AA */
+
+  --color-brand-primary: #1C2C56;      /* Navy: position, routes, primary actions. 11.9:1 on paper */
+  --color-brand-primary-dark: #0F1A36; /* Pressed/hover navy */
+  --color-brand-accent: #1C2C56;       /* The accent IS the navy now — the redesign drops
+                                          the teal entirely. Kept as its own token so an
+                                          accent that is not the primary can return later
+                                          without touching every call site. */
+  --color-brand-on-accent: #FAF8F4;    /* Text on a solid navy fill — 11.9:1 */
+
+  /* Gold is decorative and structural, NEVER text on paper: #D9AD63 on
+     #FAF8F4 is 1.9:1 and #B98B45 only reaches 3.4:1, both short of AA for
+     body text. Use it for markers, rules, fills and large display type on
+     dark; use ink or navy for anything that has to be read. */
+  --color-brand-gold: #D9AD63;
+  --color-brand-gold-deep: #B98B45;
+
+  --color-brand-success: #4C7A5C;      /* "Open now", live parishes — 4.6:1 on paper */
+  --color-brand-success-soft: #7F9E8B; /* The same green on dark surfaces */
+  --color-brand-error: #B3543F;        /* Camera/permission failures */
+  --color-brand-error-soft: #FFB4A2;   /* Error text on a dark overlay */
+  --color-brand-scope: #E65100;        /* The client's own study-area polygon — unchanged,
+                                          it is their data and their colour */
+
+  --color-brand-ink-surface: #12141A;  /* Dark surfaces that survive the inversion:
+                                          the AR viewfinder, the phone status bar */
+
+  /* ─── TYPE ───
+     Montserrat throughout, DM Mono for small labels, per the redesign.
+
+     The mockup's ladder runs 10.5 / 11 / 12.5 / 14.5 / 21 / 27 at true phone
+     width. That is below this app's floor — 16px body, 14px absolute
+     minimum, set because the congregation includes people in their
+     seventies. The ladder below keeps the design's *proportions* and lifts
+     the whole thing so nothing lands under 14px. */
   --font-primary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-secondary: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-label: "DM Mono", ui-monospace, monospace;
+
+  --text-label: 14px;    /* was 10.5–11.5 — mono eyebrows, chips, nav labels */
+  --text-meta: 15px;     /* was 12–12.5 — secondary lines under a title */
+  --text-body: 16px;     /* was 13–14.5 — body copy and anything tappable */
+  --text-subhead: 20px;  /* was 17ish — section headings */
+  --text-title: 24px;    /* was 21 — card titles */
+  --text-display: 30px;  /* was 27 — the one big number or name per screen */
 }
 
 @theme {
@@ -37,7 +73,7 @@
   --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-mono: "DM Mono", ui-monospace, monospace;
   
   --color-brand-primary: var(--color-brand-primary);
   --color-brand-primary-dark: var(--color-brand-primary-dark);
@@ -51,7 +87,12 @@
   --color-brand-error: var(--color-brand-error);
   --color-brand-error-soft: var(--color-brand-error-soft);
   --color-brand-scope: var(--color-brand-scope);
-  --color-brand-card-navy: var(--color-brand-card-navy);
+  --color-brand-card-sunk: var(--color-brand-card-sunk);
+  --color-brand-hairline: var(--color-brand-hairline);
+  --color-brand-gold: var(--color-brand-gold);
+  --color-brand-gold-deep: var(--color-brand-gold-deep);
+  --color-brand-success-soft: var(--color-brand-success-soft);
+  --color-brand-ink-surface: var(--color-brand-ink-surface);
   --color-brand-on-accent: var(--color-brand-on-accent);
 }
 
@@ -197,8 +238,8 @@
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-brand-card) 40%, transparent);
-  background: color-mix(in srgb, var(--color-brand-text) 82%, transparent);
-  color: var(--color-brand-card);
+  background: color-mix(in srgb, var(--color-brand-text) 88%, transparent);
+  color: var(--color-brand-on-accent);
   cursor: pointer;
 }
 .dmap-live__recentre:disabled {
@@ -337,7 +378,7 @@
 [data-map-mode="fallback"] .dmap-live__panel {
   position: static;
   margin-top: 8px;
-  background: color-mix(in srgb, var(--color-brand-bg) 92%, black);
+  background: color-mix(in srgb, var(--color-brand-text) 88%, transparent);
 }
 .dmap-live__panel-row {
   display: flex;
@@ -348,10 +389,10 @@
 }
 .dmap-live__panel-name {
   font-weight: 600;
-  color: var(--color-brand-card);
+  color: var(--color-brand-on-accent);
 }
 .dmap-live__panel-distance {
-  color: color-mix(in srgb, var(--color-brand-card) 85%, transparent);
+  color: color-mix(in srgb, var(--color-brand-on-accent) 85%, transparent);
   text-align: right;
 }
 
@@ -392,7 +433,7 @@
    MAP SCREEN — diocese header + parish cards
    Matches the client's earlier prototype (Churches.jsx/.css):
    a centred diocese heading above the map, then one card per
-   live parish below it. Card surface uses --color-brand-card-navy
+   live parish below it. Card surface uses --color-brand-card-sunk
    (#1E2668, added above) — the prototype's exact hex, one step
    lighter than --color-brand-bg so it reads as a raised surface.
    The "Live" chip reuses --color-brand-success rather than the
@@ -420,7 +461,7 @@
 .parish-card {
   display: block;
   text-decoration: none;
-  background: var(--color-brand-card-navy);
+  background: var(--color-brand-card-sunk);
   border-radius: 20px;
   padding: 1rem 1.125rem;
   cursor: pointer;

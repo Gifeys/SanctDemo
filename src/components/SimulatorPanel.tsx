@@ -20,13 +20,13 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-[#5FC7DE]/30 bg-[#151B53] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
+        className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-on-accent)]/30 bg-[var(--color-brand-primary)] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/10">
           <div className="flex items-center gap-1.5">
-            <Navigation className="w-4 h-4 text-[#5FC7DE]" />
+            <Navigation className="w-4 h-4 text-[var(--color-brand-on-accent)]" />
             <h2 className="text-base font-bold tracking-tight font-primary">Location Simulator</h2>
           </div>
           <button
@@ -51,7 +51,7 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
                   key={opt.value}
                   className={`flex items-center gap-2.5 min-h-11 px-3 py-2 rounded-xl border cursor-pointer transition-colors duration-300 ${
                     simulation === opt.value
-                      ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                      ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                       : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                   }`}
                 >
@@ -61,7 +61,7 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
                     value={opt.value}
                     checked={simulation === opt.value}
                     onChange={() => setSimulation(opt.value)}
-                    className="w-4 h-4 accent-[#5FC7DE] shrink-0"
+                    className="w-4 h-4 accent-[var(--color-brand-on-accent)] shrink-0"
                   />
                   <span className="text-base font-bold">{opt.label}</span>
                 </label>

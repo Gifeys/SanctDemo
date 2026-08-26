@@ -237,16 +237,16 @@ Mary Help of Christians Parish`);
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#33332D] text-white overflow-hidden font-sans">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-text)] text-white overflow-hidden font-sans">
       {/* Admin Web Header Bar */}
-      <div className="bg-[#22221E] border-b border-[#5A5A40]/40 p-4 shrink-0 flex items-center justify-between">
+      <div className="bg-[var(--color-brand-text)] border-b border-[var(--color-brand-primary)]/40 p-4 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-[#5FC7DE]" />
+          <ShieldCheck className="w-5 h-5 text-[var(--color-brand-on-accent)]" />
           <div>
-            <h3 className="text-[15px] font-bold font-serif italic tracking-wide text-[#5FC7DE] uppercase">
+            <h3 className="text-[15px] font-bold font-serif italic tracking-wide text-[var(--color-brand-on-accent)] uppercase">
               SanctiWalk Admin Portal
             </h3>
-            <span className="text-sm font-mono text-[#A8A89C] uppercase">Maypajo Church DB Server</span>
+            <span className="text-sm font-mono text-[var(--color-brand-secondary)] uppercase">Maypajo Church DB Server</span>
           </div>
         </div>
         <span className="text-sm bg-red-800 text-white font-mono px-2 py-0.5 rounded uppercase tracking-wider font-bold">
@@ -257,11 +257,11 @@ Mary Help of Christians Parish`);
       {/* Main Admin Workspace split */}
       <div className="flex-1 flex overflow-hidden">
         {/* Figure 9: Admin Left Menu sidebar */}
-        <div className="w-18 bg-[#22221E] border-r border-[#5A5A40]/30 flex flex-col items-center py-4 space-y-3 shrink-0">
+        <div className="w-18 bg-[var(--color-brand-text)] border-r border-[var(--color-brand-primary)]/30 flex flex-col items-center py-4 space-y-3 shrink-0">
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-              activeTab === "dashboard" ? "bg-[#5A5A40] text-white font-bold" : "text-[#A8A89C] hover:text-[#EBEBE0]"
+              activeTab === "dashboard" ? "bg-[var(--color-brand-primary)] text-white font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
             }`}
           >
             <BarChart2 className="w-4 h-4" />
@@ -271,7 +271,7 @@ Mary Help of Christians Parish`);
           <button
             onClick={() => setActiveTab("content")}
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-              activeTab === "content" ? "bg-[#5A5A40] text-white font-bold" : "text-[#A8A89C] hover:text-[#EBEBE0]"
+              activeTab === "content" ? "bg-[var(--color-brand-primary)] text-white font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
             }`}
           >
             <Edit className="w-4 h-4" />
@@ -281,7 +281,7 @@ Mary Help of Christians Parish`);
           <button
             onClick={() => setActiveTab("analytics")}
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-              activeTab === "analytics" ? "bg-[#5A5A40] text-white font-bold" : "text-[#A8A89C] hover:text-[#EBEBE0]"
+              activeTab === "analytics" ? "bg-[var(--color-brand-primary)] text-white font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -291,7 +291,7 @@ Mary Help of Christians Parish`);
           <button
             onClick={() => setActiveTab("database")}
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-              activeTab === "database" ? "bg-[#5A5A40] text-white font-bold" : "text-[#A8A89C] hover:text-[#EBEBE0]"
+              activeTab === "database" ? "bg-[var(--color-brand-primary)] text-white font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
             }`}
           >
             <Database className="w-4 h-4" />
@@ -300,76 +300,76 @@ Mary Help of Christians Parish`);
         </div>
 
         {/* Dynamic Admin Sub-view screen */}
-        <div className="flex-1 overflow-y-auto p-4 bg-[#33332D]">
+        <div className="flex-1 overflow-y-auto p-4 bg-[var(--color-brand-text)]">
           {/* TAB 1: Admin Dashboard (Figure 9) */}
           {activeTab === "dashboard" && (
             <div className="space-y-4 font-sans text-[15px]">
-              <div className="flex justify-between items-center border-b border-[#5A5A40]/30 pb-2">
-                <h4 className="font-serif italic text-sm font-bold text-[#5FC7DE]">Overview & Stats</h4>
-                <span className="text-sm font-mono text-[#A8A89C]">Updated 1 min ago</span>
+              <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/30 pb-2">
+                <h4 className="font-serif italic text-sm font-bold text-[var(--color-brand-on-accent)]">Overview & Stats</h4>
+                <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Updated 1 min ago</span>
               </div>
 
               {/* Grid 4 Stats */}
               <div className="grid grid-cols-2 gap-2 text-center select-none">
-                <div className="bg-[#22221E] p-2.5 rounded-xl border border-[#5A5A40]/25">
-                  <span className="block text-sm text-[#A8A89C] uppercase font-mono">Total Visitors</span>
+                <div className="bg-[var(--color-brand-text)] p-2.5 rounded-xl border border-[var(--color-brand-primary)]/25">
+                  <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono">Total Visitors</span>
                   <strong className="text-sm text-white font-bold">300</strong>
                 </div>
-                <div className="bg-[#22221E] p-2.5 rounded-xl border border-[#5A5A40]/25">
-                  <span className="block text-sm text-[#A8A89C] uppercase font-mono">AR Usage</span>
-                  <strong className="text-sm text-[#5FC7DE] font-bold">70 Scans</strong>
+                <div className="bg-[var(--color-brand-text)] p-2.5 rounded-xl border border-[var(--color-brand-primary)]/25">
+                  <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono">AR Usage</span>
+                  <strong className="text-sm text-[var(--color-brand-on-accent)] font-bold">70 Scans</strong>
                 </div>
-                <div className="bg-[#22221E] p-2.5 rounded-xl border border-[#5A5A40]/25">
-                  <span className="block text-sm text-[#A8A89C] uppercase font-mono">Peak Visiting Hours</span>
+                <div className="bg-[var(--color-brand-text)] p-2.5 rounded-xl border border-[var(--color-brand-primary)]/25">
+                  <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono">Peak Visiting Hours</span>
                   <strong className="text-sm text-white font-bold font-serif">2:00-4:00 PM</strong>
                 </div>
-                <div className="bg-[#22221E] p-2.5 rounded-xl border border-[#5A5A40]/25">
-                  <span className="block text-sm text-[#A8A89C] uppercase font-mono">Engagement Rate</span>
+                <div className="bg-[var(--color-brand-text)] p-2.5 rounded-xl border border-[var(--color-brand-primary)]/25">
+                  <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono">Engagement Rate</span>
                   <strong className="text-sm text-green-400 font-bold">72.4 %</strong>
                 </div>
               </div>
 
               {/* Figure 9: Most Viewed Sections */}
-              <div className="bg-[#22221E] p-3 rounded-2xl border border-[#5A5A40]/25 space-y-2">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] border-b border-[#5A5A40]/20 pb-1">
+              <div className="bg-[var(--color-brand-text)] p-3 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] border-b border-[var(--color-brand-primary)]/20 pb-1">
                   Most Visited Church Zones
                 </h5>
                 <div className="space-y-1 text-[15px]">
-                  <div className="flex justify-between p-1 bg-[#33332D]/40 rounded">
+                  <div className="flex justify-between p-1 bg-[var(--color-brand-text)]/40 rounded">
                     <span>1. Crucifix Central</span>
-                    <strong className="text-[#5FC7DE]">200 hits</strong>
+                    <strong className="text-[var(--color-brand-on-accent)]">200 hits</strong>
                   </div>
-                  <div className="flex justify-between p-1 bg-[#33332D]/40 rounded">
+                  <div className="flex justify-between p-1 bg-[var(--color-brand-text)]/40 rounded">
                     <span>2. Adoration Chapel</span>
-                    <strong className="text-[#5FC7DE]">120 hits</strong>
+                    <strong className="text-[var(--color-brand-on-accent)]">120 hits</strong>
                   </div>
-                  <div className="flex justify-between p-1 bg-[#33332D]/40 rounded">
+                  <div className="flex justify-between p-1 bg-[var(--color-brand-text)]/40 rounded">
                     <span>3. Altar Table</span>
-                    <strong className="text-[#5FC7DE]">100 hits</strong>
+                    <strong className="text-[var(--color-brand-on-accent)]">100 hits</strong>
                   </div>
-                  <div className="flex justify-between p-1 bg-[#33332D]/40 rounded">
+                  <div className="flex justify-between p-1 bg-[var(--color-brand-text)]/40 rounded">
                     <span>4. Maria Auxiliadora</span>
-                    <strong className="text-[#5FC7DE]">70 hits</strong>
+                    <strong className="text-[var(--color-brand-on-accent)]">70 hits</strong>
                   </div>
                 </div>
               </div>
 
               {/* Dynamic activity log summary */}
-              <div className="bg-[#22221E] p-3 rounded-2xl border border-[#5A5A40]/25 space-y-2">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] border-b border-[#5A5A40]/20 pb-1">
+              <div className="bg-[var(--color-brand-text)] p-3 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] border-b border-[var(--color-brand-primary)]/20 pb-1">
                   Recent Activities ({applications.length})
                 </h5>
                 {applications.length === 0 ? (
-                  <p className="text-sm text-[#A8A89C] italic">No active requests inside current sandbox.</p>
+                  <p className="text-sm text-[var(--color-brand-secondary)] italic">No active requests inside current sandbox.</p>
                 ) : (
                   <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
                     {applications.slice(0, 3).map((app) => (
-                      <div key={app.id} className="p-1.5 bg-[#33332D]/50 rounded text-sm space-y-0.5 border-l-2 border-[#C2A649]">
+                      <div key={app.id} className="p-1.5 bg-[var(--color-brand-text)]/50 rounded text-sm space-y-0.5 border-l-2 border-[var(--color-brand-gold)]">
                         <div className="flex justify-between">
                           <span className="font-bold text-white">{app.type}</span>
-                          <span className="text-sm text-[#A8A89C]">{app.date}</span>
+                          <span className="text-sm text-[var(--color-brand-secondary)]">{app.date}</span>
                         </div>
-                        <p className="text-[#EBEBE0] line-clamp-1">{app.details}</p>
+                        <p className="text-[var(--color-brand-secondary)] line-clamp-1">{app.details}</p>
                       </div>
                     ))}
                   </div>
@@ -381,14 +381,14 @@ Mary Help of Christians Parish`);
           {/* TAB 2: Content Management (Figure 10) */}
           {activeTab === "content" && (
             <div className="space-y-4 text-[15px] font-sans">
-              <div className="flex justify-between items-center border-b border-[#5A5A40]/30 pb-2">
-                <h4 className="font-serif italic text-sm font-bold text-[#5FC7DE]">Content Management</h4>
-                <span className="text-sm font-mono text-[#A8A89C]">Static Content Manager</span>
+              <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/30 pb-2">
+                <h4 className="font-serif italic text-sm font-bold text-[var(--color-brand-on-accent)]">Content Management</h4>
+                <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Static Content Manager</span>
               </div>
 
               {/* Edit Church Info */}
-              <form onSubmit={handleSaveChurchInfo} className="bg-[#22221E] p-3.5 rounded-2xl border border-[#5A5A40]/25 space-y-2.5">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] border-b border-[#5A5A40]/15 pb-1">
+              <form onSubmit={handleSaveChurchInfo} className="bg-[var(--color-brand-text)] p-3.5 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2.5">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] border-b border-[var(--color-brand-primary)]/15 pb-1">
                   Edit Parish Details
                 </h5>
 
@@ -400,36 +400,36 @@ Mary Help of Christians Parish`);
                 )}
 
                 <div className="space-y-1.5">
-                  <span className="text-sm text-[#A8A89C] uppercase tracking-wider font-mono">Church Name</span>
+                  <span className="text-sm text-[var(--color-brand-secondary)] uppercase tracking-wider font-mono">Church Name</span>
                   <input
                     type="text"
                     value={churchName}
                     onChange={(e) => setChurchName(e.target.value)}
-                    className="w-full bg-[#33332D] border border-[#5A5A40]/30 rounded-lg p-2 text-[15px] outline-none text-white font-serif"
+                    className="w-full bg-[var(--color-brand-text)] border border-[var(--color-brand-primary)]/30 rounded-lg p-2 text-[15px] outline-none text-white font-serif"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-sm text-[#A8A89C] uppercase tracking-wider font-mono">Address location</span>
+                  <span className="text-sm text-[var(--color-brand-secondary)] uppercase tracking-wider font-mono">Address location</span>
                   <input
                     type="text"
                     value={churchAddress}
                     onChange={(e) => setChurchNameAddress(e.target.value)}
-                    className="w-full bg-[#33332D] border border-[#5A5A40]/30 rounded-lg p-2 text-[15px] outline-none text-white"
+                    className="w-full bg-[var(--color-brand-text)] border border-[var(--color-brand-primary)]/30 rounded-lg p-2 text-[15px] outline-none text-white"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="py-1.5 px-3 bg-[#5A5A40] text-white text-sm font-bold uppercase rounded-md border border-[#5A5A40]"
+                  className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase rounded-md border border-[var(--color-brand-primary)]"
                 >
                   Save Global Church Info
                 </button>
               </form>
 
               {/* Announcements Editor */}
-              <div className="bg-[#22221E] p-3.5 rounded-2xl border border-[#5A5A40]/25 space-y-2.5">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] border-b border-[#5A5A40]/15 pb-1">
+              <div className="bg-[var(--color-brand-text)] p-3.5 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2.5">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] border-b border-[var(--color-brand-primary)]/15 pb-1">
                   Create Announcement
                 </h5>
 
@@ -439,7 +439,7 @@ Mary Help of Christians Parish`);
                     placeholder="Announcement Title (e.g. Feast Day Mass)"
                     value={annTitle}
                     onChange={(e) => setAnnTitle(e.target.value)}
-                    className="w-full bg-[#33332D] border border-[#5A5A40]/30 rounded-lg p-2 text-[15px] outline-none text-white"
+                    className="w-full bg-[var(--color-brand-text)] border border-[var(--color-brand-primary)]/30 rounded-lg p-2 text-[15px] outline-none text-white"
                   />
 
                   <div className="grid grid-cols-2 gap-2">
@@ -448,35 +448,35 @@ Mary Help of Christians Parish`);
                       placeholder="Date (e.g. May 13, 2026)"
                       value={annDate}
                       onChange={(e) => setAnnDate(e.target.value)}
-                      className="w-full bg-[#33332D] border border-[#5A5A40]/30 rounded-lg p-2 text-[15px] outline-none text-white"
+                      className="w-full bg-[var(--color-brand-text)] border border-[var(--color-brand-primary)]/30 rounded-lg p-2 text-[15px] outline-none text-white"
                     />
                     <input
                       type="text"
                       placeholder="Time (e.g. 3:00 PM)"
                       value={annTime}
                       onChange={(e) => setAnnTime(e.target.value)}
-                      className="w-full bg-[#33332D] border border-[#5A5A40]/30 rounded-lg p-2 text-[15px] outline-none text-white"
+                      className="w-full bg-[var(--color-brand-text)] border border-[var(--color-brand-primary)]/30 rounded-lg p-2 text-[15px] outline-none text-white"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={!annTitle || !annDate}
-                    className="w-full py-2 bg-[#C2A649] hover:bg-[#A88B38] disabled:opacity-50 text-black font-bold uppercase rounded-md text-sm tracking-wide"
+                    className="w-full py-2 bg-[var(--color-brand-gold)] hover:bg-[var(--color-brand-gold-deep)] disabled:opacity-50 text-black font-bold uppercase rounded-md text-sm tracking-wide"
                   >
                     Publish Announcement to App Bulletin
                   </button>
                 </form>
 
                 {/* Published List */}
-                <div className="space-y-1.5 pt-2 border-t border-[#33332D]">
-                  <span className="text-sm text-[#A8A89C] uppercase tracking-wider font-mono">Active Announcements ({announcements.length})</span>
+                <div className="space-y-1.5 pt-2 border-t border-[var(--color-brand-text)]">
+                  <span className="text-sm text-[var(--color-brand-secondary)] uppercase tracking-wider font-mono">Active Announcements ({announcements.length})</span>
                   <div className="space-y-1.5 max-h-[140px] overflow-y-auto">
                     {announcements.map((ann) => (
-                      <div key={ann.id} className="flex justify-between items-center p-2 bg-[#33332D] rounded-lg border border-[#5A5A40]/20">
+                      <div key={ann.id} className="flex justify-between items-center p-2 bg-[var(--color-brand-text)] rounded-lg border border-[var(--color-brand-primary)]/20">
                         <div>
                           <span className="font-serif italic font-bold block">{ann.title}</span>
-                          <span className="text-sm text-[#A8A89C]">{ann.date} at {ann.time}</span>
+                          <span className="text-sm text-[var(--color-brand-secondary)]">{ann.date} at {ann.time}</span>
                         </div>
                         <button
                           onClick={() => onDeleteAnnouncement(ann.id)}
@@ -495,14 +495,14 @@ Mary Help of Christians Parish`);
           {/* TAB 3: Analytics Reporting (Figure 11) */}
           {activeTab === "analytics" && (
             <div className="space-y-4 text-[15px] font-sans">
-              <div className="flex justify-between items-center border-b border-[#5A5A40]/30 pb-2">
-                <h4 className="font-serif italic text-sm font-bold text-[#5FC7DE]">Analytics Reporting</h4>
-                <span className="text-sm font-mono text-[#A8A89C]">Statistical Metrics</span>
+              <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/30 pb-2">
+                <h4 className="font-serif italic text-sm font-bold text-[var(--color-brand-on-accent)]">Analytics Reporting</h4>
+                <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Statistical Metrics</span>
               </div>
 
               {/* Feature Usage Pie chart representation */}
-              <div className="bg-[#22221E] p-4 rounded-3xl border border-[#5A5A40]/25 space-y-3">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] text-center border-b border-[#5A5A40]/15 pb-1.5">
+              <div className="bg-[var(--color-brand-text)] p-4 rounded-3xl border border-[var(--color-brand-primary)]/25 space-y-3">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] text-center border-b border-[var(--color-brand-primary)]/15 pb-1.5">
                   Feature Usage Distribution
                 </h5>
 
@@ -513,7 +513,7 @@ Mary Help of Christians Parish`);
                       <span>Augmented Reality AR Scans</span>
                       <strong className="text-cyan-400">902 usages (59%)</strong>
                     </div>
-                    <div className="w-full h-2 bg-[#33332D] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--color-brand-text)] rounded-full overflow-hidden">
                       <div className="bg-cyan-400 h-full rounded-full" style={{ width: "59%" }}></div>
                     </div>
                   </div>
@@ -523,7 +523,7 @@ Mary Help of Christians Parish`);
                       <span>Santo Rosary Guide</span>
                       <strong className="text-rose-400">366 usages (24%)</strong>
                     </div>
-                    <div className="w-full h-2 bg-[#33332D] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--color-brand-text)] rounded-full overflow-hidden">
                       <div className="bg-rose-400 h-full rounded-full" style={{ width: "24%" }}></div>
                     </div>
                   </div>
@@ -533,7 +533,7 @@ Mary Help of Christians Parish`);
                       <span>History of Church</span>
                       <strong className="text-amber-400">138 usages (9%)</strong>
                     </div>
-                    <div className="w-full h-2 bg-[#33332D] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--color-brand-text)] rounded-full overflow-hidden">
                       <div className="bg-amber-400 h-full rounded-full" style={{ width: "9%" }}></div>
                     </div>
                   </div>
@@ -543,7 +543,7 @@ Mary Help of Christians Parish`);
                       <span>Ministries & Sacraments Form</span>
                       <strong className="text-purple-400">128 usages (8%)</strong>
                     </div>
-                    <div className="w-full h-2 bg-[#33332D] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--color-brand-text)] rounded-full overflow-hidden">
                       <div className="bg-purple-400 h-full rounded-full" style={{ width: "8%" }}></div>
                     </div>
                   </div>
@@ -551,40 +551,40 @@ Mary Help of Christians Parish`);
               </div>
 
               {/* Weekly Visitor Frequency (Figure 11 graph representation) */}
-              <div className="bg-[#22221E] p-4 rounded-3xl border border-[#5A5A40]/25 space-y-3">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] text-center border-b border-[#5A5A40]/15 pb-1.5">
+              <div className="bg-[var(--color-brand-text)] p-4 rounded-3xl border border-[var(--color-brand-primary)]/25 space-y-3">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] text-center border-b border-[var(--color-brand-primary)]/15 pb-1.5">
                   Weekly Visitor Frequency
                 </h5>
                 
                 {/* Simulated vertical bar graph */}
-                <div className="flex items-end justify-between h-28 pt-2 select-none px-2 border-b border-[#5A5A40]/40">
+                <div className="flex items-end justify-between h-28 pt-2 select-none px-2 border-b border-[var(--color-brand-primary)]/40">
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "20px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">M</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "20px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">M</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "45px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">T</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "45px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">T</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "40px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">W</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "40px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">W</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "30px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">Th</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "30px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Th</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "65px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">F</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "65px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">F</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
-                    <div className="bg-[#C2A649] rounded-t w-3" style={{ height: "80px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C]">Sa</span>
+                    <div className="bg-[var(--color-brand-gold)] rounded-t w-3" style={{ height: "80px" }}></div>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Sa</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 w-6">
                     <div className="bg-green-500 rounded-t w-3 animate-pulse" style={{ height: "98px" }}></div>
-                    <span className="text-sm font-mono text-[#A8A89C] font-bold text-green-400">Su</span>
+                    <span className="text-sm font-mono text-[var(--color-brand-secondary)] font-bold text-green-400">Su</span>
                   </div>
                 </div>
               </div>
@@ -594,26 +594,26 @@ Mary Help of Christians Parish`);
           {/* TAB 4: Database Management & Visitor Logs (Figure 12) */}
           {activeTab === "database" && (
             <div className="space-y-4 text-[15px] font-sans">
-              <div className="flex justify-between items-center border-b border-[#5A5A40]/30 pb-2">
-                <h4 className="font-serif italic text-sm font-bold text-[#5FC7DE]">Database Management</h4>
-                <span className="text-sm font-mono text-[#A8A89C]">Live Query Table logs</span>
+              <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/30 pb-2">
+                <h4 className="font-serif italic text-sm font-bold text-[var(--color-brand-on-accent)]">Database Management</h4>
+                <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Live Query Table logs</span>
               </div>
 
               {/* Historical assets table */}
-              <div className="bg-[#22221E] p-3 rounded-2xl border border-[#5A5A40]/25 space-y-2">
-                <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE] border-b border-[#5A5A40]/15 pb-1">
+              <div className="bg-[var(--color-brand-text)] p-3 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2">
+                <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)] border-b border-[var(--color-brand-primary)]/15 pb-1">
                   Historical Church Schemas (Stored Local)
                 </h5>
-                <div className="space-y-1 text-sm font-mono text-[#EBEBE0]">
-                  <div className="p-1 bg-[#33332D] rounded flex justify-between">
+                <div className="space-y-1 text-sm font-mono text-[var(--color-brand-secondary)]">
+                  <div className="p-1 bg-[var(--color-brand-text)] rounded flex justify-between">
                     <span>1. Main Altar Content description (Maypajo)</span>
                     <span className="text-green-400">[ACTIVE]</span>
                   </div>
-                  <div className="p-1 bg-[#33332D] rounded flex justify-between">
+                  <div className="p-1 bg-[var(--color-brand-text)] rounded flex justify-between">
                     <span>2. Maria Auxiliadora 3D coordinates</span>
                     <span className="text-green-400">[ACTIVE]</span>
                   </div>
-                  <div className="p-1 bg-[#33332D] rounded flex justify-between">
+                  <div className="p-1 bg-[var(--color-brand-text)] rounded flex justify-between">
                     <span>3. Cathedral Sanctuary (San Roque) assets</span>
                     <span className="text-green-400">[ACTIVE]</span>
                   </div>
@@ -621,24 +621,24 @@ Mary Help of Christians Parish`);
               </div>
 
               {/* Figure 12 style: Visitor Log storage */}
-              <div className="bg-[#22221E] p-3 rounded-2xl border border-[#5A5A40]/25 space-y-2">
-                <div className="flex justify-between items-center border-b border-[#5A5A40]/15 pb-1">
-                  <h5 className="font-serif italic text-[15px] font-bold text-[#5FC7DE]">
+              <div className="bg-[var(--color-brand-text)] p-3 rounded-2xl border border-[var(--color-brand-primary)]/25 space-y-2">
+                <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/15 pb-1">
+                  <h5 className="font-serif italic text-[15px] font-bold text-[var(--color-brand-on-accent)]">
                     Visitor Logs & Transactions
                   </h5>
-                  <span className="text-sm font-mono bg-[#5A5A40] text-white px-1.5 py-0.5 rounded">
+                  <span className="text-sm font-mono bg-[var(--color-brand-primary)] text-white px-1.5 py-0.5 rounded">
                     {applications.length} Records
                   </span>
                 </div>
 
                 {applications.length === 0 ? (
-                  <p className="text-sm text-[#A8A89C] italic text-center py-4">No data logged. Test forms/scans inside smartphone emulator first!</p>
+                  <p className="text-sm text-[var(--color-brand-secondary)] italic text-center py-4">No data logged. Test forms/scans inside smartphone emulator first!</p>
                 ) : (
                   <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
                     {applications.map((app) => (
-                      <div key={app.id} className="p-2.5 bg-[#33332D] rounded border border-[#5A5A40]/15 text-sm space-y-2">
-                        <div className="flex justify-between items-center border-b border-[#5A5A40]/10 pb-0.5">
-                          <span className="font-bold text-[#5FC7DE] uppercase tracking-wider text-sm">{app.type}</span>
+                      <div key={app.id} className="p-2.5 bg-[var(--color-brand-text)] rounded border border-[var(--color-brand-primary)]/15 text-sm space-y-2">
+                        <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/10 pb-0.5">
+                          <span className="font-bold text-[var(--color-brand-on-accent)] uppercase tracking-wider text-sm">{app.type}</span>
                           <button
                             onClick={() => onDeleteApplication(app.id)}
                             className="text-red-400 hover:text-red-500 font-mono text-sm"
@@ -648,16 +648,16 @@ Mary Help of Christians Parish`);
                         </div>
                         <div>
                           <span className="text-white font-serif italic block">Applicant: {app.applicant}</span>
-                          <p className="text-[#A8A89C] font-mono leading-normal break-all text-sm">{app.details}</p>
+                          <p className="text-[var(--color-brand-secondary)] font-mono leading-normal break-all text-sm">{app.details}</p>
                         </div>
-                        <div className="flex justify-between items-center pt-0.5 text-sm font-mono text-[#A8A89C]">
+                        <div className="flex justify-between items-center pt-0.5 text-sm font-mono text-[var(--color-brand-secondary)]">
                           <span>Logged: {app.date}</span>
-                          <span className="text-green-400 font-bold uppercase tracking-wider bg-[#5A5A40]/25 px-1.5 py-0.5 rounded">{app.status}</span>
+                          <span className="text-green-400 font-bold uppercase tracking-wider bg-[var(--color-brand-primary)]/25 px-1.5 py-0.5 rounded">{app.status}</span>
                         </div>
 
                         {/* Status update/Review panel */}
-                        <div className="pt-1.5 border-t border-[#5A5A40]/10 flex flex-wrap items-center gap-1">
-                          <span className="text-[7.5px] text-[#A8A89C] uppercase tracking-wider block mr-1 font-bold">Review Status:</span>
+                        <div className="pt-1.5 border-t border-[var(--color-brand-primary)]/10 flex flex-wrap items-center gap-1">
+                          <span className="text-[7.5px] text-[var(--color-brand-secondary)] uppercase tracking-wider block mr-1 font-bold">Review Status:</span>
                           <button
                             onClick={() => handleOpenApproveModal(app)}
                             className="bg-green-900/40 hover:bg-green-900/70 text-green-300 font-mono text-[7.5px] px-2 py-0.5 rounded border border-green-700/40 transition-all uppercase font-bold"
@@ -689,12 +689,12 @@ Mary Help of Christians Parish`);
 
       {/* Interactive Email/Scheduling Modal Overlay */}
       {selectedAppForAction && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 text-[#33332D] font-sans">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-[#D6D6C2] animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 text-[var(--color-brand-text)] font-sans">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-[var(--color-brand-border)] animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="bg-[#5A5A40] text-white p-4 flex items-center justify-between border-b border-[#D6D6C2]/30">
+            <div className="bg-[var(--color-brand-primary)] text-white p-4 flex items-center justify-between border-b border-[var(--color-brand-border)]/30">
               <div className="flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-[#5FC7DE]" />
+                <Mail className="w-4 h-4 text-[var(--color-brand-on-accent)]" />
                 <h3 className="text-[15px] font-bold tracking-wider uppercase font-serif italic text-white">
                   {selectedAppForAction.actionType === "approve" && "Draft Approval & Congratulatory Form"}
                   {selectedAppForAction.actionType === "schedule" && "Schedule Appointment & Draft Invitation"}
@@ -704,7 +704,7 @@ Mary Help of Christians Parish`);
               <button
                 disabled={isSendingEmail || emailSentSuccess}
                 onClick={() => setSelectedAppForAction(null)}
-                className="text-[#EBEBE0] hover:text-white transition-colors"
+                className="text-[var(--color-brand-secondary)] hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -728,7 +728,7 @@ Mary Help of Christians Parish`);
                     <p className="text-[9.5px] text-gray-600 max-w-xs mx-auto mt-1 leading-relaxed">
                       {isLastEmailSimulated ? (
                         <>
-                          The database state has successfully transitioned to <span className="font-bold text-[#5A5A40]">Approved / Scheduled</span> in Firestore! 
+                          The database state has successfully transitioned to <span className="font-bold text-[var(--color-brand-secondary)]">Approved / Scheduled</span> in Firestore! 
                           <span className="block mt-1.5 text-[8.5px] bg-amber-50 p-2 rounded-lg border border-amber-200/50 text-amber-800">
                             <strong>Note:</strong> Since <strong>SMTP_USER</strong> and <strong>SMTP_PASS</strong> secrets are not configured in AI Studio, a real physical email could not be delivered to <span className="font-mono">{recipientEmail}</span>. Add your credentials in Secrets to trigger actual emails!
                           </span>
@@ -770,25 +770,25 @@ Mary Help of Christians Parish`);
                   )}
 
                   {/* Recipient Details */}
-                  <div className="bg-[#EBEBE0] p-2.5 rounded-xl border border-[#D6D6C2]/45 space-y-1">
-                    <div className="flex justify-between items-center text-[8.5px] text-[#A8A89C] uppercase font-mono">
+                  <div className="bg-[var(--color-brand-card)] p-2.5 rounded-xl border border-[var(--color-brand-border)]/45 space-y-1">
+                    <div className="flex justify-between items-center text-[8.5px] text-[var(--color-brand-secondary)] uppercase font-mono">
                       <span>Recipient Applicant</span>
                       <span>ID: {selectedAppForAction.app.id}</span>
                     </div>
-                    <strong className="block text-[15px] text-[#4A4A35] font-serif italic">{selectedAppForAction.app.applicant}</strong>
-                    <span className="block text-sm text-[#5A5A40] truncate">{selectedAppForAction.app.type}</span>
+                    <strong className="block text-[15px] text-[var(--color-brand-text)] font-serif italic">{selectedAppForAction.app.applicant}</strong>
+                    <span className="block text-sm text-[var(--color-brand-secondary)] truncate">{selectedAppForAction.app.type}</span>
                   </div>
 
                   {/* Recipient Email Address Input */}
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                    <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                       Destination Email Address
                     </label>
                     <input
                       type="email"
                       value={recipientEmail}
                       onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2 text-[15px] outline-none text-[#33332D] font-mono"
+                      className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
                       placeholder="e.g. applicant@email.com"
                     />
                   </div>
@@ -807,7 +807,7 @@ Mary Help of Christians Parish`);
                             setScheduleDate(e.target.value);
                             updateScheduleEmailBody(e.target.value, scheduleTime);
                           }}
-                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[#33332D] font-mono"
+                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
                         />
                       </div>
                       <div className="space-y-1">
@@ -822,7 +822,7 @@ Mary Help of Christians Parish`);
                             updateScheduleEmailBody(scheduleDate, e.target.value);
                           }}
                           placeholder="e.g. 10:00 AM"
-                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[#33332D] font-mono"
+                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
                         />
                       </div>
                     </div>
@@ -830,27 +830,27 @@ Mary Help of Christians Parish`);
 
                   {/* Subject Line */}
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                    <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                       Email Subject
                     </label>
                     <input
                       type="text"
                       value={emailSubject}
                       onChange={(e) => setEmailSubject(e.target.value)}
-                      className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2 text-[15px] outline-none text-[#33332D] font-sans"
+                      className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2 text-[15px] outline-none text-[var(--color-brand-text)] font-sans"
                     />
                   </div>
 
                   {/* Email Message Composer */}
                   <div className="space-y-1">
-                    <label className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+                    <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                       Email Message Copy
                     </label>
                     <textarea
                       rows={5}
                       value={emailBody}
                       onChange={(e) => setEmailBody(e.target.value)}
-                      className="w-full bg-[#EBEBE0] border border-[#D6D6C2] rounded-xl p-2.5 text-[15px] outline-none text-[#33332D] font-sans resize-none leading-normal"
+                      className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)] font-sans resize-none leading-normal"
                     />
                   </div>
 
@@ -868,7 +868,7 @@ Mary Help of Christians Parish`);
                       type="button"
                       disabled={isSendingEmail || !recipientEmail}
                       onClick={handleSendEmailAction}
-                      className="flex-1 py-2 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white text-sm font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-50 text-white text-sm font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
                       {isSendingEmail ? (
                         <>

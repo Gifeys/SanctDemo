@@ -146,8 +146,8 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     // a way back to either try the camera again or pick a different station.
     if (result && result.source === "manual" && sheetOpen) {
       return (
-        <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
-          <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+        <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+          <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
             <button
               onClick={() => setSheetOpen(false)}
               aria-label="Back"
@@ -156,7 +156,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#5FC7DE] font-sans">
+              <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
                 {result.category}
               </span>
             </div>
@@ -174,15 +174,15 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               </span>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs">
-              <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">{result.summary}</p>
+            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs">
+              <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
               {result.highlights.length > 0 && (
                 <ul className="mt-4 space-y-2">
                   {result.highlights.map((fact) => (
                     <li key={fact} className="flex gap-2.5 items-start">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#147288] mt-2 shrink-0" />
-                      <span className="text-[14px] text-[#33332D] leading-relaxed font-sans">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-accent)] mt-2 shrink-0" />
+                      <span className="text-[14px] text-[var(--color-brand-text)] leading-relaxed font-sans">
                         {fact}
                       </span>
                     </li>
@@ -193,7 +193,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
 
             <button
               onClick={() => setPickerOpen(true)}
-              className="w-full bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+              className="w-full bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
             >
               Choose a different station
             </button>
@@ -207,8 +207,8 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     // app cannot force.
     if (pickerOpen) {
       return (
-        <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
-          <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+        <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+          <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
             <button
               onClick={() => setPickerOpen(false)}
               aria-label="Back"
@@ -216,21 +216,21 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
-            <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+            <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
               <ListChecks className="w-3.5 h-3.5" /> Choose your station
             </div>
             <h2 className="text-2xl font-bold font-serif italic tracking-tight">
               Where are you standing?
             </h2>
-            <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+            <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
               Pick the station in front of you and we&rsquo;ll show what the scan would have.
             </p>
           </div>
 
           <div className="p-4 space-y-2.5">
             {stations.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs text-center">
-                <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
+              <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs text-center">
+                <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">
                   No stations are listed for this parish yet.
                 </p>
               </div>
@@ -239,17 +239,17 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 <button
                   key={station.id}
                   onClick={() => pickStation(station)}
-                  className="w-full flex items-center justify-between gap-3 bg-white rounded-2xl border border-[#D6D6C2] p-4 shadow-xs text-left active:scale-[0.98] transition-transform"
+                  className="w-full flex items-center justify-between gap-3 bg-white rounded-2xl border border-[var(--color-brand-border)] p-4 shadow-xs text-left active:scale-[0.98] transition-transform"
                 >
                   <span className="min-w-0">
-                    <span className="block text-[16px] font-bold text-[#4A4A35] font-serif italic truncate">
+                    <span className="block text-[16px] font-bold text-[var(--color-brand-text)] font-serif italic truncate">
                       {station.name}
                     </span>
-                    <span className="block text-[14px] text-[#33332D]/70 font-sans truncate">
+                    <span className="block text-[14px] text-[var(--color-brand-text)]/70 font-sans truncate">
                       {station.description}
                     </span>
                   </span>
-                  <ChevronRight className="w-4 h-4 text-[#8A8A70] shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                 </button>
               ))
             )}
@@ -259,39 +259,39 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     }
 
     return (
-      <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
-        <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+      <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+        <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
           <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
             <ScanLine className="w-32 h-32 text-white" />
           </div>
-          <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+          <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
             <Sparkles className="w-3.5 h-3.5" /> Augmented Reality
           </div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">AR Tour</h2>
-          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Point your camera at a feature of the church to learn about it.
           </p>
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs space-y-3 text-center">
-            <div className="h-14 w-14 rounded-2xl bg-[#EBEBE0] border border-[#D6D6C2] flex items-center justify-center mx-auto text-[#147288]">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
+            <div className="h-14 w-14 rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] flex items-center justify-center mx-auto text-[var(--color-brand-accent)]">
               {camera.status === "requesting" ? (
                 <Loader2 className="w-7 h-7 animate-spin" />
               ) : statusCopy?.icon === "offline" ? (
-                <WifiOff className="w-7 h-7 text-[#B3543F]" />
+                <WifiOff className="w-7 h-7 text-[var(--color-brand-error)]" />
               ) : camera.error ? (
-                <AlertTriangle className="w-7 h-7 text-[#B3543F]" />
+                <AlertTriangle className="w-7 h-7 text-[var(--color-brand-error)]" />
               ) : (
                 <Camera className="w-7 h-7" />
               )}
             </div>
 
-            <h3 className="text-base font-bold text-[#4A4A35] font-serif italic">
+            <h3 className="text-base font-bold text-[var(--color-brand-text)] font-serif italic">
               {camera.status === "requesting" ? "Opening the camera…" : statusCopy?.title ?? "Start the AR Tour"}
             </h3>
 
-            <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">
+            <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">
               {camera.error ??
                 "The tour uses your camera to recognise altars, statues, and markers around the parish. Nothing is recorded — frames are analysed and discarded."}
             </p>
@@ -299,7 +299,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
             {camera.status !== "requesting" && camera.status !== "insecure" && (
               <button
                 onClick={() => void camera.start()}
-                className="w-full bg-[#5A5A40] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+                className="w-full bg-[var(--color-brand-primary)] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
               >
                 {camera.status === "denied" || camera.status === "in-use" || camera.status === "error"
                   ? "Try again"
@@ -311,15 +311,15 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           {result && !sheetOpen && (
             <button
               onClick={() => setSheetOpen(true)}
-              className="w-full flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
+              className="w-full flex items-center justify-between gap-2 bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
             >
               <span className="min-w-0 text-left">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A70]">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
                   Last result
                 </span>
                 <span className="block text-[15px] font-bold truncate">{result.title}</span>
               </span>
-              <ChevronRight className="w-4 h-4 text-[#8A8A70] shrink-0" />
+              <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
             </button>
           )}
 
@@ -330,7 +330,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           {showManualFallback && (
             <button
               onClick={() => setPickerOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-white border border-[#D6D6C2] text-[#4A4A35] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+              className="w-full flex items-center justify-center gap-2 bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
             >
               <ListChecks className="w-4 h-4" /> Choose your station manually instead
             </button>
@@ -373,16 +373,16 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
             style={{ width: "min(62%, 240px)", aspectRatio: "1", marginTop: "-8%" }}
           >
             <span
-              className={`absolute top-0 left-0 w-7 h-7 rounded-tl-lg border-t-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[#5FC7DE]" : "border-white/85"}`}
+              className={`absolute top-0 left-0 w-7 h-7 rounded-tl-lg border-t-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
             />
             <span
-              className={`absolute top-0 right-0 w-7 h-7 rounded-tr-lg border-t-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[#5FC7DE]" : "border-white/85"}`}
+              className={`absolute top-0 right-0 w-7 h-7 rounded-tr-lg border-t-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
             />
             <span
-              className={`absolute bottom-0 left-0 w-7 h-7 rounded-bl-lg border-b-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[#5FC7DE]" : "border-white/85"}`}
+              className={`absolute bottom-0 left-0 w-7 h-7 rounded-bl-lg border-b-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
             />
             <span
-              className={`absolute bottom-0 right-0 w-7 h-7 rounded-br-lg border-b-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[#5FC7DE]" : "border-white/85"}`}
+              className={`absolute bottom-0 right-0 w-7 h-7 rounded-br-lg border-b-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
             />
           </div>
         </div>
@@ -391,9 +391,9 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
       {/* Status pill */}
       {(busy || error) && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[85%] px-4 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2">
-          {busy && <Loader2 className="w-3.5 h-3.5 text-[#5FC7DE] animate-spin shrink-0" />}
+          {busy && <Loader2 className="w-3.5 h-3.5 text-[var(--color-brand-on-accent)] animate-spin shrink-0" />}
           <span
-            className={`text-[13px] font-sans font-medium ${error ? "text-[#FFB4A2]" : "text-white"}`}
+            className={`text-[13px] font-sans font-medium ${error ? "text-[var(--color-brand-error-soft)]" : "text-white"}`}
           >
             {busy ? "Looking…" : error}
           </span>
@@ -407,7 +407,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           className="absolute left-1/2 -translate-x-1/2 bottom-32 max-w-[80%] flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-black/70 backdrop-blur-md border border-white/15 text-left active:scale-[0.97] transition-transform"
         >
           <span className="flex flex-col min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#5FC7DE] font-sans">
+            <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
               {result.category}
             </span>
             <span className="text-[15px] font-semibold text-white truncate font-sans">
@@ -435,7 +435,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           className="w-[74px] h-[74px] rounded-full border-[3px] border-white/85 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-70"
         >
           <span
-            className={`rounded-full bg-[#5FC7DE] transition-all duration-300 ${busy ? "w-6 h-6" : "w-14 h-14"}`}
+            className={`rounded-full bg-[var(--color-brand-on-accent)] transition-all duration-300 ${busy ? "w-6 h-6" : "w-14 h-14"}`}
           />
         </button>
 
@@ -445,7 +445,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
       {/* Information card */}
       {result && (
         <div
-          className={`absolute inset-x-0 bottom-0 bg-[#F5F5F0] rounded-t-[2rem] border-t border-[#D6D6C2] shadow-2xl transition-transform duration-500 ease-out ${
+          className={`absolute inset-x-0 bottom-0 bg-[var(--color-brand-card)] rounded-t-[2rem] border-t border-[var(--color-brand-border)] shadow-2xl transition-transform duration-500 ease-out ${
             sheetOpen ? "translate-y-0" : "translate-y-full"
           }`}
           style={{ maxHeight: "72%" }}
@@ -453,37 +453,37 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           <div className="flex items-start gap-3 p-5 pb-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#147288] font-sans">
+                <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-accent)] font-sans">
                   {result.category}
                 </span>
                 {result.confidence != null && (
-                  <span className="text-[11px] text-[#33332D]/50 font-sans">
+                  <span className="text-[11px] text-[var(--color-brand-text)]/50 font-sans">
                     {Math.round(result.confidence * 100)}% match
                   </span>
                 )}
               </div>
-              <h3 className="text-xl font-bold text-[#4A4A35] font-serif italic leading-tight">
+              <h3 className="text-xl font-bold text-[var(--color-brand-text)] font-serif italic leading-tight">
                 {result.title}
               </h3>
             </div>
             <button
               onClick={() => setSheetOpen(false)}
               aria-label="Close"
-              className="h-9 w-9 rounded-xl bg-[#EBEBE0] border border-[#D6D6C2] flex items-center justify-center text-[#4A4A35] shrink-0 active:scale-95 transition-transform"
+              className="h-9 w-9 rounded-xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] flex items-center justify-center text-[var(--color-brand-text)] shrink-0 active:scale-95 transition-transform"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           <div className="px-5 pb-6 overflow-y-auto" style={{ maxHeight: "calc(72vh - 90px)" }}>
-            <p className="text-[15px] text-[#33332D] leading-relaxed font-sans">{result.summary}</p>
+            <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
             {result.highlights?.length > 0 && (
               <ul className="mt-4 space-y-2">
                 {result.highlights.map((fact) => (
                   <li key={fact} className="flex gap-2.5 items-start">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#147288] mt-2 shrink-0" />
-                    <span className="text-[14px] text-[#33332D] leading-relaxed font-sans">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-accent)] mt-2 shrink-0" />
+                    <span className="text-[14px] text-[var(--color-brand-text)] leading-relaxed font-sans">
                       {fact}
                     </span>
                   </li>
@@ -502,7 +502,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 </span>
               </div>
             ) : (
-              <p className="mt-5 text-[12px] text-[#33332D]/60 leading-relaxed font-sans bg-[#EBEBE0]/70 border border-[#D6D6C2] rounded-xl p-3">
+              <p className="mt-5 text-[12px] text-[var(--color-brand-text)]/60 leading-relaxed font-sans bg-[var(--color-brand-card)]/70 border border-[var(--color-brand-border)] rounded-xl p-3">
                 Identified by AI from your camera. Details may be incomplete — the parish record
                 is the authority.
               </p>

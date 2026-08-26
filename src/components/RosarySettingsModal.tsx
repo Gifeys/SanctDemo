@@ -83,7 +83,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-[#5FC7DE]/30 bg-[#151B53] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
+        className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-on-accent)]/30 bg-[var(--color-brand-primary)] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -110,7 +110,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                 onClick={() => setLanguage("en")}
                 className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
                   settings.language === "en"
-                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                     : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                 }`}
               >
@@ -120,7 +120,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                 onClick={() => setLanguage("fil")}
                 className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
                   settings.language === "fil"
-                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                     : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                 }`}
               >
@@ -144,7 +144,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                     opt.key === "today" ? "col-span-2" : ""
                   } ${
                     settings.mysterySet === opt.key
-                      ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                      ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                       : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                   }`}
                 >
@@ -165,7 +165,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                 onClick={() => setMusic("on")}
                 className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
                   settings.music === "on"
-                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                     : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                 }`}
               >
@@ -175,7 +175,7 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                 onClick={() => setMusic("off")}
                 className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
                   settings.music === "off"
-                    ? "bg-[#106a7d] border-[#5FC7DE]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
                     : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
                 }`}
               >

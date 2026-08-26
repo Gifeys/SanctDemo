@@ -161,7 +161,7 @@ function resolveColor(expr: string): string {
   document.body.appendChild(probe);
   const resolved = getComputedStyle(probe).color;
   document.body.removeChild(probe);
-  return resolved || "#151B53";
+  return resolved || "var(--color-brand-primary)";
 }
 
 function shortLabel(name: string): string {

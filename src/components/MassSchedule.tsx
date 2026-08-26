@@ -58,20 +58,20 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
   const photo = PARISH_PHOTOS[parish.id];
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       {/* Page Header */}
-      <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Clock className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Liturgical Hours
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Mass & Sacraments
           </h2>
-          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Plan your visitation and sacramental prayers around {parishName}'s daily liturgical schedule.
           </p>
         </div>
@@ -79,9 +79,9 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
 
       <div className="p-4 space-y-4">
         {/* Main Schedule Card */}
-        <div className="bg-white rounded-3xl border border-[#D6D6C2] overflow-hidden shadow-xs p-5 space-y-4">
+        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs p-5 space-y-4">
           {/* Facade photo representation */}
-          <div className="rounded-2xl overflow-hidden h-28 border border-[#D6D6C2]/40 relative">
+          <div className="rounded-2xl overflow-hidden h-28 border border-[var(--color-brand-border)]/40 relative">
             {photo && (
               <img
                 src={photo}
@@ -96,7 +96,7 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
             </div>
           </div>
 
-          <h3 className="text-base font-bold text-center text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/45 pb-1.5">
+          <h3 className="text-base font-bold text-center text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/45 pb-1.5">
             Holy Mass Schedule
           </h3>
 
@@ -113,11 +113,11 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
           )}
 
           {schedule.length === 0 ? (
-            <div className="p-4 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/40 text-center">
-              <p className="text-[15px] text-[#4A4A35] font-bold font-sans">
+            <div className="p-4 bg-[var(--color-brand-card)]/60 rounded-xl border border-[var(--color-brand-border)]/40 text-center">
+              <p className="text-[15px] text-[var(--color-brand-text)] font-bold font-sans">
                 Mass schedule not yet published for this parish.
               </p>
-              <p className="text-sm text-[#8A8A70] font-sans mt-1">
+              <p className="text-sm text-[var(--color-brand-secondary)] font-sans mt-1">
                 Please contact the parish office directly to confirm Mass times before visiting.
               </p>
             </div>
@@ -126,10 +126,10 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
               {weekdayRows.map((row) => (
                 <div
                   key={row.label}
-                  className="flex justify-between items-center p-2.5 bg-[#EBEBE0]/60 rounded-xl border border-[#D6D6C2]/30"
+                  className="flex justify-between items-center p-2.5 bg-[var(--color-brand-card)]/60 rounded-xl border border-[var(--color-brand-border)]/30"
                 >
-                  <span className="text-[15px] font-bold text-[#4A4A35]">{row.label}</span>
-                  <span className="text-[15px] font-mono font-bold text-[#33332D]">
+                  <span className="text-[15px] font-bold text-[var(--color-brand-text)]">{row.label}</span>
+                  <span className="text-[15px] font-mono font-bold text-[var(--color-brand-text)]">
                     {parseTimes(row.time).join(" / ")}
                   </span>
                 </div>
@@ -137,16 +137,16 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
 
               {/* Sunday */}
               {sundayTimes.length > 0 && (
-                <div className="p-2.5 bg-[#EBEBE0]/50 rounded-xl border border-[#D6D6C2]/60 space-y-1.5">
+                <div className="p-2.5 bg-[var(--color-brand-card)]/50 rounded-xl border border-[var(--color-brand-border)]/60 space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[15px] font-bold text-[#5A5A40]">Sunday Masses</span>
-                    <span className="text-sm bg-[#5A5A40] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span className="text-[15px] font-bold text-[var(--color-brand-secondary)]">Sunday Masses</span>
+                    <span className="text-sm bg-[var(--color-brand-primary)] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                       Lord's Day
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-mono font-bold text-[#33332D] pt-1">
+                  <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-mono font-bold text-[var(--color-brand-text)] pt-1">
                     {sundayTimes.map((time) => (
-                      <div key={time} className="p-1.5 bg-white rounded border border-[#D6D6C2]/40">
+                      <div key={time} className="p-1.5 bg-white rounded border border-[var(--color-brand-border)]/40">
                         {time}
                       </div>
                     ))}
@@ -169,13 +169,13 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
         </div>
 
         {/* Parish info card */}
-        <div className="p-4 bg-[#EBEBE0] rounded-3xl border border-[#D6D6C2] space-y-2 text-[15px] text-[#33332D]">
-          <h4 className="font-bold text-[#4A4A35] font-serif italic uppercase tracking-wider text-sm flex items-center gap-1">
+        <div className="p-4 bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] space-y-2 text-[15px] text-[var(--color-brand-text)]">
+          <h4 className="font-bold text-[var(--color-brand-text)] font-serif italic uppercase tracking-wider text-sm flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" /> Contact & Administration
           </h4>
 
           {contact ? (
-            <div className="space-y-1.5 font-sans text-[#5A5A40] font-medium pl-1.5">
+            <div className="space-y-1.5 font-sans text-[var(--color-brand-secondary)] font-medium pl-1.5">
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
                 <span>{contact.address}</span>
@@ -193,13 +193,13 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
                 </div>
               )}
               {(!contact.phone || !contact.email) && (
-                <p className="text-sm text-[#8A8A70] pt-1">
+                <p className="text-sm text-[var(--color-brand-secondary)] pt-1">
                   Phone/email not yet available for this parish office.
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-[15px] text-[#5A5A40] font-medium pl-1.5 font-sans">
+            <p className="text-[15px] text-[var(--color-brand-secondary)] font-medium pl-1.5 font-sans">
               Contact details not yet available for this parish.
             </p>
           )}

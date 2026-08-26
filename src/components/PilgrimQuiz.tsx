@@ -67,20 +67,20 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       {/* Page Header */}
-      <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <HelpCircle className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Interactive Catechesis
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             Pilgrim History Quiz
           </h2>
-          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Test your knowledge of the Diocese of Kalookan history and PWA technology to earn the <strong>Faith Defender Badge</strong>!
           </p>
         </div>
@@ -90,23 +90,23 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
         {!isQuizCompleted ? (
           <div className="space-y-4 flex-1 flex flex-col justify-between">
             {/* Question card */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-4">
-              <div className="flex justify-between items-center text-sm text-[#8A8A70] font-mono border-b border-[#EBEBE0] pb-2 font-bold">
+            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
+              <div className="flex justify-between items-center text-sm text-[var(--color-brand-secondary)] font-mono border-b border-[var(--color-brand-card)] pb-2 font-bold">
                 <span>QUESTION {currentQuestionIndex + 1} OF {PILGRIM_QUIZ.length}</span>
                 <span>SCORE: {score}</span>
               </div>
 
-              <h3 className="text-sm font-bold text-[#4A4A35] font-serif italic leading-relaxed">
+              <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic leading-relaxed">
                 {activeQuestion.question}
               </h3>
 
               {/* Options */}
               <div className="space-y-2 select-none font-sans">
                 {activeQuestion.options.map((option, idx) => {
-                  let optionStyle = "border-[#D6D6C2] bg-[#EBEBE0]/30 hover:bg-[#EBEBE0]/35";
+                  let optionStyle = "border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/30 hover:bg-[var(--color-brand-card)]/35";
                   
                   if (selectedOptionIndex === idx) {
-                    optionStyle = "border-[#5A5A40] bg-[#EBEBE0] font-bold";
+                    optionStyle = "border-[var(--color-brand-primary)] bg-[var(--color-brand-card)] font-bold";
                   }
 
                   if (isSubmitted) {
@@ -142,11 +142,11 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
             {/* Explanation & Action button */}
             <div className="space-y-3">
               {isSubmitted && (
-                <div className="p-4 bg-[#EBEBE0] rounded-2xl border border-[#D6D6C2] text-[15px] leading-relaxed space-y-1">
-                  <span className="text-sm font-bold text-[#5A5A40] uppercase tracking-widest font-serif italic block">
+                <div className="p-4 bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] text-[15px] leading-relaxed space-y-1">
+                  <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic block">
                     Historical Explanation:
                   </span>
-                  <p className="text-[#33332D] font-sans text-justify italic">
+                  <p className="text-[var(--color-brand-text)] font-sans text-justify italic">
                     {activeQuestion.explanation}
                   </p>
                 </div>
@@ -156,14 +156,14 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={selectedOptionIndex === null}
-                  className="w-full py-3 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[#4A4A35] transition-all shadow-xs"
+                  className="w-full py-3 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-50 text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[var(--color-brand-primary-dark)] transition-all shadow-xs"
                 >
                   Confirm Answer Selection
                 </button>
               ) : (
                 <button
                   onClick={handleNextQuestion}
-                  className="w-full py-3 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1 border border-[#4A4A35] transition-all shadow-xs"
+                  className="w-full py-3 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white text-[15px] font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1 border border-[var(--color-brand-primary-dark)] transition-all shadow-xs"
                 >
                   {currentQuestionIndex === PILGRIM_QUIZ.length - 1 ? "Complete Quiz" : "Next Question"} <ArrowRight className="w-4 h-4" />
                 </button>
@@ -172,35 +172,35 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
           </div>
         ) : (
           /* Finished Quiz Screen */
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center space-y-5 shadow-xs flex-1 flex flex-col justify-center">
-            <div className="h-14 w-12 bg-[#EBEBE0] rounded-2xl flex items-center justify-center mx-auto text-[#C2A649]">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs flex-1 flex flex-col justify-center">
+            <div className="h-14 w-12 bg-[var(--color-brand-card)] rounded-2xl flex items-center justify-center mx-auto text-[var(--color-brand-gold)]">
               <Award className="w-8 h-8 fill-current" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-[#4A4A35] font-serif italic">
+              <h3 className="text-lg font-bold text-[var(--color-brand-text)] font-serif italic">
                 Catechism Quiz Finished!
               </h3>
-              <p className="text-[15px] text-[#8A8A70] font-sans">
+              <p className="text-[15px] text-[var(--color-brand-secondary)] font-sans">
                 You scored a total of:
               </p>
-              <div className="text-3xl font-bold text-[#5A5A40] font-serif italic tracking-tight pt-1">
+              <div className="text-3xl font-bold text-[var(--color-brand-secondary)] font-serif italic tracking-tight pt-1">
                 {score} / 5 Correct
               </div>
             </div>
 
-            <div className="p-4 bg-[#EBEBE0]/70 rounded-2xl border border-[#D6D6C2]/45 space-y-1 text-[15px]">
+            <div className="p-4 bg-[var(--color-brand-card)]/70 rounded-2xl border border-[var(--color-brand-border)]/45 space-y-1 text-[15px]">
               {score === 5 ? (
                 <>
                   <p className="font-bold text-green-800 flex items-center justify-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" /> Perfect Score Achievement!
                   </p>
-                  <p className="text-[#33332D] font-sans leading-relaxed text-center">
+                  <p className="text-[var(--color-brand-text)] font-sans leading-relaxed text-center">
                     You have unlocked the prestigious <strong>"Faith Defender"</strong> passport badge, and earned a bonus of +500 points! Excellent defense preparation!
                   </p>
                 </>
               ) : (
-                <p className="text-[#33332D] font-sans leading-relaxed text-center">
+                <p className="text-[var(--color-brand-text)] font-sans leading-relaxed text-center">
                   You earned +{score * 100} points. Get a perfect 5/5 to unlock the rare **Faith Defender** badge on your Pilgrim Stamp Passport!
                 </p>
               )}
@@ -208,7 +208,7 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
 
             <button
               onClick={handleResetQuiz}
-              className="w-full py-3 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[15px] font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1.5 border border-[#4A4A35] transition-all shadow-xs"
+              className="w-full py-3 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white text-[15px] font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-1.5 border border-[var(--color-brand-primary-dark)] transition-all shadow-xs"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Retake Pilgrim Quiz
             </button>

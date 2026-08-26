@@ -93,16 +93,16 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] pb-20 select-none">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] pb-20 select-none">
       {/* Hero Header */}
-      <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm border-b border-[#D6D6C2]">
-        <h3 className="text-[15px] font-bold text-[#C2A649] font-serif italic uppercase tracking-wider flex items-center gap-1.5">
-          <BrainCircuit className="w-3.5 h-3.5 text-[#C2A649]" /> AI Walk Companion
+      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm border-b border-[var(--color-brand-border)]">
+        <h3 className="text-[15px] font-bold text-[var(--color-brand-gold)] font-serif italic uppercase tracking-wider flex items-center gap-1.5">
+          <BrainCircuit className="w-3.5 h-3.5 text-[var(--color-brand-gold)]" /> AI Walk Companion
         </h3>
         <h2 className="text-xl font-bold font-serif italic tracking-tight mt-0.5">
           Custom Pilgrim Route Planner
         </h2>
-        <p className="text-[15px] text-[#EBEBE0] opacity-90 mt-1 max-w-sm font-sans leading-relaxed">
+        <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-90 mt-1 max-w-sm font-sans leading-relaxed">
           Fulfill complex capstone requirements! Leverage server-side Gemini to construct a fully custom heritage walk based on your precise interest.
         </p>
       </div>
@@ -110,53 +110,53 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
       <div className="p-4 space-y-4">
         {loading ? (
           /* High-quality animated loading panel */
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-8 text-center space-y-4 shadow-xs">
-            <Loader2 className="w-8 h-8 text-[#5A5A40] animate-spin mx-auto" />
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-8 text-center space-y-4 shadow-xs">
+            <Loader2 className="w-8 h-8 text-[var(--color-brand-secondary)] animate-spin mx-auto" />
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-[#4A4A35] font-serif italic">Generating Your SanctiWalk...</h4>
-              <p className="text-[15px] text-[#8A8A70] italic animate-pulse">{loadingMessage}</p>
+              <h4 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic">Generating Your SanctiWalk...</h4>
+              <p className="text-[15px] text-[var(--color-brand-secondary)] italic animate-pulse">{loadingMessage}</p>
             </div>
           </div>
         ) : generatedRoute ? (
           /* Generated Custom Route View */
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-4">
-            <div className="bg-[#EBEBE0] text-[#5A5A40] text-sm font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit flex items-center gap-1 border border-[#D6D6C2]">
-              <Sparkles className="w-3.5 h-3.5 text-[#C2A649]" /> Custom Gemini Gen
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-sm space-y-4">
+            <div className="bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] text-sm font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit flex items-center gap-1 border border-[var(--color-brand-border)]">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-gold)]" /> Custom Gemini Gen
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-[#4A4A35] font-serif italic leading-tight">{generatedRoute.name}</h3>
-              <p className="text-[15px] text-[#8A8A70] mt-1 leading-normal font-sans">{generatedRoute.description}</p>
+              <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic leading-tight">{generatedRoute.name}</h3>
+              <p className="text-[15px] text-[var(--color-brand-secondary)] mt-1 leading-normal font-sans">{generatedRoute.description}</p>
             </div>
 
             {/* Custom walk stats */}
-            <div className="grid grid-cols-3 gap-2 border-y border-[#D6D6C2] py-3 text-center">
+            <div className="grid grid-cols-3 gap-2 border-y border-[var(--color-brand-border)] py-3 text-center">
               <div>
-                <span className="block text-sm text-[#8A8A70] uppercase font-mono font-bold">Distance</span>
-                <strong className="text-[15px] text-[#33332D] font-bold">{generatedRoute.distanceKm} km</strong>
+                <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono font-bold">Distance</span>
+                <strong className="text-[15px] text-[var(--color-brand-text)] font-bold">{generatedRoute.distanceKm} km</strong>
               </div>
               <div>
-                <span className="block text-sm text-[#8A8A70] uppercase font-mono font-bold">Time</span>
-                <strong className="text-[15px] text-[#33332D] font-bold">{generatedRoute.durationMins} mins</strong>
+                <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono font-bold">Time</span>
+                <strong className="text-[15px] text-[var(--color-brand-text)] font-bold">{generatedRoute.durationMins} mins</strong>
               </div>
               <div>
-                <span className="block text-sm text-[#8A8A70] uppercase font-mono font-bold">Est. Steps</span>
-                <strong className="text-[15px] text-[#33332D] font-bold">{generatedRoute.estimatedSteps.toLocaleString()}</strong>
+                <span className="block text-sm text-[var(--color-brand-secondary)] uppercase font-mono font-bold">Est. Steps</span>
+                <strong className="text-[15px] text-[var(--color-brand-text)] font-bold">{generatedRoute.estimatedSteps.toLocaleString()}</strong>
               </div>
             </div>
 
             {/* Stations Summary List */}
             <div className="space-y-2.5">
-              <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-serif italic">Stations along Route</h4>
+              <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">Stations along Route</h4>
               <div className="space-y-2">
                 {generatedRoute.stations.map((st, idx) => (
-                  <div key={st.id} className="p-3 bg-[#EBEBE0]/30 rounded-2xl border border-[#D6D6C2] flex gap-2.5 items-start">
-                    <span className="h-5 w-5 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-sm font-bold font-mono shrink-0 border border-[#4A4A35]">
+                  <div key={st.id} className="p-3 bg-[var(--color-brand-card)]/30 rounded-2xl border border-[var(--color-brand-border)] flex gap-2.5 items-start">
+                    <span className="h-5 w-5 rounded-full bg-[var(--color-brand-primary)] text-white flex items-center justify-center text-sm font-bold font-mono shrink-0 border border-[var(--color-brand-primary-dark)]">
                       0{idx + 1}
                     </span>
                     <div className="space-y-0.5">
-                      <h5 className="text-[15px] font-bold text-[#4A4A35] font-serif italic leading-tight">{st.name}</h5>
-                      <p className="text-[15px] text-[#8A8A70] leading-normal line-clamp-1 font-sans">{st.description}</p>
+                      <h5 className="text-[15px] font-bold text-[var(--color-brand-text)] font-serif italic leading-tight">{st.name}</h5>
+                      <p className="text-[15px] text-[var(--color-brand-secondary)] leading-normal line-clamp-1 font-sans">{st.description}</p>
                     </div>
                   </div>
                 ))}
@@ -165,66 +165,66 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
 
             <button
               onClick={() => onLoadCustomRoute(generatedRoute)}
-              className="w-full py-2.5 px-4 bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold text-[15px] rounded-full flex items-center justify-center gap-2 shadow-sm border border-[#4A4A35] uppercase tracking-wider transition-all hover:scale-[1.01]"
+              className="w-full py-2.5 px-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white font-bold text-[15px] rounded-full flex items-center justify-center gap-2 shadow-sm border border-[var(--color-brand-primary-dark)] uppercase tracking-wider transition-all hover:scale-[1.01]"
             >
               <Play className="w-4 h-4 fill-current ml-0.5 text-white" /> Start AI Guide Now
             </button>
           </div>
         ) : (
           /* Setup / Customizer Form */
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-xs space-y-4">
-            <p className="text-[15px] text-[#8A8A70] leading-relaxed font-sans">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
+            <p className="text-[15px] text-[var(--color-brand-secondary)] leading-relaxed font-sans">
               Define your surroundings and preferences below. The Gemini AI engine will synthesize architectural history, custom routes, and wellness meditations dynamically.
             </p>
 
             {/* Location Input */}
             <div className="space-y-1">
-              <label htmlFor="input-location" className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+              <label htmlFor="input-location" className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                 Where are you walking?
               </label>
-              <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-2.5 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-2.5 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                 <input
                   id="input-location"
                   type="text"
                   placeholder="e.g. Antipolo Rizal / Quiapo Manila / Cebu City"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-transparent text-[15px] text-[#33332D] outline-none placeholder-[#8A8A70] font-sans"
+                  className="w-full bg-transparent text-[15px] text-[var(--color-brand-text)] outline-none placeholder-[var(--color-brand-secondary)] font-sans"
                 />
               </div>
             </div>
 
             {/* Interest Input */}
             <div className="space-y-1">
-              <label htmlFor="input-interest" className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+              <label htmlFor="input-interest" className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                 What is your walk interest/focus?
               </label>
-              <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-2.5 flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-2.5 flex items-center gap-2">
+                <Compass className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                 <input
                   id="input-interest"
                   type="text"
                   placeholder="e.g. Baroque Carvings / Mental Peace / Local folklore"
                   value={interest}
                   onChange={(e) => setInterest(e.target.value)}
-                  className="w-full bg-transparent text-[15px] text-[#33332D] outline-none placeholder-[#8A8A70] font-sans"
+                  className="w-full bg-transparent text-[15px] text-[var(--color-brand-text)] outline-none placeholder-[var(--color-brand-secondary)] font-sans"
                 />
               </div>
             </div>
 
             {/* Duration Selector */}
             <div className="space-y-1">
-              <label htmlFor="select-duration" className="text-sm font-bold text-[#5A5A40] uppercase tracking-wider font-serif italic">
+              <label htmlFor="select-duration" className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
                 Target Walking Time (Minutes)
               </label>
-              <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-2.5 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-2.5 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                 <select
                   id="select-duration"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full bg-transparent text-[15px] text-[#33332D] outline-none font-bold cursor-pointer font-serif italic"
+                  className="w-full bg-transparent text-[15px] text-[var(--color-brand-text)] outline-none font-bold cursor-pointer font-serif italic"
                 >
                   <option value="20" className="font-serif">20 Minutes Walk</option>
                   <option value="30" className="font-serif">30 Minutes Walk</option>
@@ -236,9 +236,9 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
 
             <button
               onClick={handleGenerate}
-              className="w-full py-2.5 px-4 bg-[#5A5A40] hover:bg-[#4A4A35] text-white font-bold text-[15px] rounded-full flex items-center justify-center gap-2 shadow-sm border border-[#4A4A35] uppercase tracking-wider transition-all hover:scale-[1.01]"
+              className="w-full py-2.5 px-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white font-bold text-[15px] rounded-full flex items-center justify-center gap-2 shadow-sm border border-[var(--color-brand-primary-dark)] uppercase tracking-wider transition-all hover:scale-[1.01]"
             >
-              <Sparkles className="w-4 h-4 text-[#C2A649]" /> Generate Custom AI Walk
+              <Sparkles className="w-4 h-4 text-[var(--color-brand-gold)]" /> Generate Custom AI Walk
             </button>
           </div>
         )}

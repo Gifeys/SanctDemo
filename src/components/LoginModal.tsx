@@ -123,16 +123,16 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       {/* Sleek Apple-Style Page Header */}
       <div className="px-6 pt-8 pb-4 shrink-0 text-left">
-        <span className="text-sm font-bold text-[#EBEBE0] uppercase tracking-widest block font-sans">
+        <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest block font-sans">
           Pilgrim Profile
         </span>
         <h2 className="text-3xl font-black text-white tracking-tight mt-0.5 uppercase font-sans">
           {isLoggedIn ? "My Session" : activeMode === "signin" ? "Sign In" : "Register"}
         </h2>
-        <p className="text-[15px] text-[#EBEBE0] mt-1.5 leading-relaxed font-sans max-w-xs">
+        <p className="text-[15px] text-[var(--color-brand-secondary)] mt-1.5 leading-relaxed font-sans max-w-xs">
           {isLoggedIn
             ? "Manage your active SanctiWalk identity and sync your pilgrimage points securely."
             : "Connect your SanctiWalk profile to log steps, complete catechesis, and collect historical stamp badges."
@@ -142,27 +142,27 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
 
       <div className="p-4 flex-1 flex flex-col justify-start">
         {isLoggedIn ? (
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center space-y-5 shadow-xs">
-            <div className="h-16 w-16 bg-[#5A5A40]/10 rounded-full flex items-center justify-center mx-auto text-[#5A5A40]">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs">
+            <div className="h-16 w-16 bg-[var(--color-brand-primary)]/10 rounded-full flex items-center justify-center mx-auto text-[var(--color-brand-secondary)]">
               <ShieldCheck className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[#4A4A35] font-sans uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-sans uppercase tracking-wider">
                 Active Pilgrim Session
               </h3>
-              <p className="text-[15px] text-[#8A8A70] font-sans">
+              <p className="text-[15px] text-[var(--color-brand-secondary)] font-sans">
                 You are currently signed in as:
               </p>
-              <span className="inline-block text-[15px] font-mono font-bold text-[#33332D] bg-[#EBEBE0] px-4 py-1.5 rounded-full border border-[#D6D6C2] mt-2">
+              <span className="inline-block text-[15px] font-mono font-bold text-[var(--color-brand-text)] bg-[var(--color-brand-card)] px-4 py-1.5 rounded-full border border-[var(--color-brand-border)] mt-2">
                 {userEmail}
               </span>
             </div>
 
             {isAdmin && (
-              <div className="p-4 bg-[#EBEBE0]/30 border border-[#D6D6C2] text-[#4A4A35] rounded-2xl text-[15px] leading-relaxed font-sans text-left space-y-1.5">
-                <span className="font-bold text-[#4A4A35] block uppercase tracking-wider text-sm">Admin Privilege Unlocked</span>
-                <p className="text-[15px] text-[#8A8A70]">You now have authorization to edit parish history details, add/remove parish bulletin announcements, and moderate pilgrim logs in the <strong>Admin Portal</strong>.</p>
+              <div className="p-4 bg-[var(--color-brand-card)]/30 border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl text-[15px] leading-relaxed font-sans text-left space-y-1.5">
+                <span className="font-bold text-[var(--color-brand-text)] block uppercase tracking-wider text-sm">Admin Privilege Unlocked</span>
+                <p className="text-[15px] text-[var(--color-brand-secondary)]">You now have authorization to edit parish history details, add/remove parish bulletin announcements, and moderate pilgrim logs in the <strong>Admin Portal</strong>.</p>
               </div>
             )}
 
@@ -176,13 +176,13 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
         ) : (
           <div className="space-y-4">
             {/* Sliding Tab Control */}
-            <div className="bg-[#EBEBE0] p-1 rounded-2xl flex items-center">
+            <div className="bg-[var(--color-brand-card)] p-1 rounded-2xl flex items-center">
               <button
                 onClick={() => { setActiveMode("signin"); setErrorMsg(""); setSuccessMsg(""); }}
                 className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
                   activeMode === "signin" 
-                    ? "bg-white text-[#4A4A35] shadow-xs" 
-                    : "text-[#8A8A70] hover:text-[#4A4A35]"
+                    ? "bg-white text-[var(--color-brand-text)] shadow-xs" 
+                    : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
                 }`}
               >
                 Sign In
@@ -191,16 +191,16 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                 onClick={() => { setActiveMode("signup"); setErrorMsg(""); setSuccessMsg(""); }}
                 className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
                   activeMode === "signup" 
-                    ? "bg-white text-[#4A4A35] shadow-xs" 
-                    : "text-[#8A8A70] hover:text-[#4A4A35]"
+                    ? "bg-white text-[var(--color-brand-text)] shadow-xs" 
+                    : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
                 }`}
               >
                 Create Account
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 shadow-xs space-y-4">
-              <h3 className="text-[15px] font-bold text-[#8A8A70] uppercase tracking-widest pl-1 font-sans">
+            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-4">
+              <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest pl-1 font-sans">
                 {activeMode === "signin" ? "Access Devotee Account" : "Register Devotee Passport"}
               </h3>
 
@@ -222,17 +222,17 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                 {/* Full Name for registration */}
                 {activeMode === "signup" && (
                   <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider pl-1">
+                    <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1">
                       Full Name / Devotee Handle
                     </label>
-                    <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[#5A5A40]">
-                      <User className="w-4 h-4 text-[#8A8A70] shrink-0" />
+                    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
+                      <User className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                       <input
                         type="text"
                         placeholder="Juana dela Cruz"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full bg-transparent outline-none text-[15px] text-[#33332D]"
+                        className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
                         required
                       />
                     </div>
@@ -241,17 +241,17 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
 
                 {/* Email Address */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider pl-1 font-sans">
+                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1 font-sans">
                     Email Address
                   </label>
-                  <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[#5A5A40]">
-                    <Mail className="w-4 h-4 text-[#8A8A70] shrink-0" />
+                  <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
+                    <Mail className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                     <input
                       type="email"
                       placeholder="pilgrim@sti.edu"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-transparent outline-none text-[15px] text-[#33332D]"
+                      className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
                       required
                     />
                   </div>
@@ -259,17 +259,17 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
 
                 {/* Password PIN */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider pl-1 font-sans">
+                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1 font-sans">
                     Password
                   </label>
-                  <div className="bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[#5A5A40]">
-                    <KeyRound className="w-4 h-4 text-[#8A8A70] shrink-0" />
+                  <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
+                    <KeyRound className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                     <input
                       type="password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-[15px] text-[#33332D]"
+                      className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
                       required
                     />
                   </div>
@@ -279,7 +279,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 bg-[#5A5A40] hover:bg-[#4A4A35] disabled:opacity-50 text-white active:scale-95 transition-all text-[15px] font-bold uppercase tracking-widest rounded-full shadow-sm flex items-center justify-center gap-1.5"
+                  className="w-full py-3.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-50 text-white active:scale-95 transition-all text-[15px] font-bold uppercase tracking-widest rounded-full shadow-sm flex items-center justify-center gap-1.5"
                 >
                   {isLoading ? (
                     <span>Processing Authorization...</span>
@@ -294,8 +294,8 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
             </div>
 
             {/* iOS Style Info Card */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2 text-[15px] text-[#8A8A70] shadow-xs">
-              <strong className="block text-[#4A4A35] font-bold uppercase tracking-wider text-sm font-sans">Registration Info:</strong>
+            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 space-y-2 text-[15px] text-[var(--color-brand-secondary)] shadow-xs">
+              <strong className="block text-[var(--color-brand-text)] font-bold uppercase tracking-wider text-sm font-sans">Registration Info:</strong>
               <div className="space-y-1.5 font-sans leading-relaxed">
                 <p>Register with any standard email to create a pilgrim profile. Administrative access to the parish office portal is granted individually by parish staff and cannot be self-assigned.</p>
                 <p>All authenticated credentials map directly to securely sandboxed Firestore sessions.</p>

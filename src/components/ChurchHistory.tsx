@@ -58,20 +58,20 @@ export default function ChurchHistory({ parish }: ChurchHistoryProps) {
   const content = PARISH_HISTORY[parish.id];
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       {/* Page Header */}
-      <div className="bg-[#5A5A40] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[#D6D6C2]">
+      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <History className="w-32 h-32 text-white" />
         </div>
-        <div className="flex items-center gap-1.5 text-[#5FC7DE] font-bold text-[15px] tracking-wider uppercase font-serif italic">
+        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
           <Sparkles className="w-3.5 h-3.5" /> Historical Archive
         </div>
         <div>
           <h2 className="text-2xl font-bold font-serif italic tracking-tight">
             {parishName} History
           </h2>
-          <p className="text-[15px] text-[#EBEBE0] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
+          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
             Explore the spiritual roots, milestones, and architectural legacy of this parish.
           </p>
         </div>
@@ -79,9 +79,9 @@ export default function ChurchHistory({ parish }: ChurchHistoryProps) {
 
       <div className="p-4 space-y-4">
         {content ? (
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] overflow-hidden shadow-xs">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs">
             {/* Image representing parish */}
-            <div className="h-44 bg-[#EBEBE0] relative flex items-center justify-center overflow-hidden border-b border-[#D6D6C2]">
+            <div className="h-44 bg-[var(--color-brand-card)] relative flex items-center justify-center overflow-hidden border-b border-[var(--color-brand-border)]">
               <img
                 src={content.photo}
                 alt={content.photoAlt}
@@ -91,39 +91,39 @@ export default function ChurchHistory({ parish }: ChurchHistoryProps) {
               <span className="absolute bottom-3 left-3 text-white text-[15px] font-bold font-serif italic bg-black/70 px-2 py-0.5 rounded-lg">
                 {parishName}
               </span>
-              <span className="absolute bottom-3 right-3 text-sm bg-[#C2A649] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+              <span className="absolute bottom-3 right-3 text-sm bg-[var(--color-brand-gold)] text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                 {content.badge}
               </span>
             </div>
 
             <div className="p-4 space-y-3">
-              <h3 className="text-base font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/40 pb-1.5 flex items-center gap-1.5">
-                <BookOpen className="w-4.5 h-4.5 text-[#C2A649]" /> {content.historyHeading}
+              <h3 className="text-base font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/40 pb-1.5 flex items-center gap-1.5">
+                <BookOpen className="w-4.5 h-4.5 text-[var(--color-brand-gold)]" /> {content.historyHeading}
               </h3>
 
               {content.historyParagraphs.map((p, idx) => (
-                <p key={idx} className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
+                <p key={idx} className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans text-justify">
                   {p}
                 </p>
               ))}
 
-              <h3 className="text-base font-bold text-[#4A4A35] font-serif italic border-b border-[#D6D6C2]/40 pt-1 pb-1.5 flex items-center gap-1.5">
-                <Compass className="w-4.5 h-4.5 text-[#C2A649]" /> {content.patronHeading}
+              <h3 className="text-base font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/40 pt-1 pb-1.5 flex items-center gap-1.5">
+                <Compass className="w-4.5 h-4.5 text-[var(--color-brand-gold)]" /> {content.patronHeading}
               </h3>
 
               {content.patronParagraphs.map((p, idx) => (
-                <p key={idx} className="text-[15px] text-[#33332D] leading-relaxed font-sans text-justify">
+                <p key={idx} className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans text-justify">
                   {p}
                 </p>
               ))}
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-5 text-center space-y-1.5">
-            <p className="text-[15px] text-[#4A4A35] font-bold font-sans">
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 text-center space-y-1.5">
+            <p className="text-[15px] text-[var(--color-brand-text)] font-bold font-sans">
               History not yet documented for {parishName}.
             </p>
-            <p className="text-sm text-[#8A8A70] font-sans">
+            <p className="text-sm text-[var(--color-brand-secondary)] font-sans">
               Check back soon, or ask the parish office directly.
             </p>
           </div>

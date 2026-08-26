@@ -40,7 +40,7 @@ export default function MeTab({
   onOpenRosarySettings,
 }: MeTabProps) {
   return (
-    <div className="flex-1 flex flex-col bg-[#F5F5F0] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
       <LoginModal
         onLoginSuccess={onLoginSuccess}
         onLogout={onLogout}
@@ -52,29 +52,29 @@ export default function MeTab({
       <div className="px-4 pb-4 space-y-4 font-sans">
         {/* Prayer / visit progress — always shown, signed in or not, since
             steps/points accrue locally regardless of account state. */}
-        <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
-          <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-[#5A5A40]" /> Your Pilgrimage
+        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
+          <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans flex items-center gap-1.5">
+            <Award className="w-4 h-4 text-[var(--color-brand-secondary)]" /> Your Pilgrimage
           </h4>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-[#EBEBE0]/60 rounded-2xl p-3 space-y-1">
-              <Footprints className="w-4 h-4 text-[#5A5A40] mx-auto" />
-              <p className="text-lg font-black text-[#4A4A35]">{userProgress.steps.toLocaleString()}</p>
-              <p className="text-sm text-[#8A8A70] font-bold uppercase">Steps</p>
+            <div className="bg-[var(--color-brand-card)]/60 rounded-2xl p-3 space-y-1">
+              <Footprints className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
+              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.steps.toLocaleString()}</p>
+              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">Steps</p>
             </div>
-            <div className="bg-[#EBEBE0]/60 rounded-2xl p-3 space-y-1">
-              <Ruler className="w-4 h-4 text-[#5A5A40] mx-auto" />
-              <p className="text-lg font-black text-[#4A4A35]">{userProgress.distanceKm.toFixed(2)}</p>
-              <p className="text-sm text-[#8A8A70] font-bold uppercase">KM Walked</p>
+            <div className="bg-[var(--color-brand-card)]/60 rounded-2xl p-3 space-y-1">
+              <Ruler className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
+              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.distanceKm.toFixed(2)}</p>
+              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">KM Walked</p>
             </div>
-            <div className="bg-[#EBEBE0]/60 rounded-2xl p-3 space-y-1">
-              <Star className="w-4 h-4 text-[#5A5A40] mx-auto" />
-              <p className="text-lg font-black text-[#4A4A35]">{userProgress.points}</p>
-              <p className="text-sm text-[#8A8A70] font-bold uppercase">Points</p>
+            <div className="bg-[var(--color-brand-card)]/60 rounded-2xl p-3 space-y-1">
+              <Star className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
+              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.points}</p>
+              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">Points</p>
             </div>
           </div>
           {userProgress.badges.length > 0 && (
-            <p className="text-[15px] text-[#33332D]">
+            <p className="text-[15px] text-[var(--color-brand-text)]">
               {userProgress.badges.length} badge{userProgress.badges.length === 1 ? "" : "s"} earned
             </p>
           )}
@@ -85,24 +85,24 @@ export default function MeTab({
             this list to the signed-in uid (or everything, for an admin), so
             it renders as-is. */}
         {isLoggedIn && (
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4.5 shadow-xs space-y-3">
-            <h4 className="text-sm font-bold text-[#8A8A70] uppercase tracking-wider font-sans flex items-center gap-1.5">
-              <ClipboardList className="w-4 h-4 text-[#5A5A40]" /> My Applications
+          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
+            <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans flex items-center gap-1.5">
+              <ClipboardList className="w-4 h-4 text-[var(--color-brand-secondary)]" /> My Applications
             </h4>
             {applications.length === 0 ? (
-              <p className="text-[15px] text-[#8A8A70]">No applications submitted yet.</p>
+              <p className="text-[15px] text-[var(--color-brand-secondary)]">No applications submitted yet.</p>
             ) : (
               <div className="space-y-2.5">
                 {applications.map((app) => (
-                  <div key={app.id} className="border-b border-[#EBEBE0]/60 pb-2 last:border-0 last:pb-0">
+                  <div key={app.id} className="border-b border-[var(--color-brand-card)]/60 pb-2 last:border-0 last:pb-0">
                     <div className="flex justify-between items-start gap-2">
-                      <h5 className="font-bold text-[#4A4A35] text-[15px]">{app.type}</h5>
-                      <span className="text-sm font-bold text-[#5A5A40] bg-[#EBEBE0] px-2 py-0.5 rounded-full shrink-0">
+                      <h5 className="font-bold text-[var(--color-brand-text)] text-[15px]">{app.type}</h5>
+                      <span className="text-sm font-bold text-[var(--color-brand-secondary)] bg-[var(--color-brand-card)] px-2 py-0.5 rounded-full shrink-0">
                         {app.status}
                       </span>
                     </div>
-                    <p className="text-[15px] text-[#33332D] mt-0.5">{app.details}</p>
-                    <p className="text-sm text-[#8A8A70] mt-0.5">{app.date}</p>
+                    <p className="text-[15px] text-[var(--color-brand-text)] mt-0.5">{app.details}</p>
+                    <p className="text-sm text-[var(--color-brand-secondary)] mt-0.5">{app.date}</p>
                   </div>
                 ))}
               </div>
@@ -114,16 +114,16 @@ export default function MeTab({
         <div className="space-y-2">
           <button
             onClick={onOpenChangeParish}
-            className="w-full bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors text-base font-bold text-[#4A4A35]"
+            className="w-full bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors text-base font-bold text-[var(--color-brand-text)]"
           >
-            <Church className="w-4 h-4 text-[#5A5A40] shrink-0" />
+            <Church className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
             <span>Change Parish</span>
           </button>
           <button
             onClick={onOpenRosarySettings}
-            className="w-full bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center gap-2.5 shadow-xs hover:border-[#5A5A40] text-left transition-colors text-base font-bold text-[#4A4A35]"
+            className="w-full bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors text-base font-bold text-[var(--color-brand-text)]"
           >
-            <SettingsIcon className="w-4 h-4 text-[#5A5A40] shrink-0" />
+            <SettingsIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
             <span>Rosary Settings</span>
           </button>
         </div>
