@@ -35,6 +35,7 @@ import { ROUTES, BADGES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import parishData from "./data/diocese-parishes.json";
+import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
@@ -61,10 +62,14 @@ function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void
   return null;
 }
 
-// No home parish stored yet (first run, or storage was cleared) falls back
-// to this rather than asking — the client does not want a welcome screen
-// standing between install and the dashboard. The choice is still changeable
-// afterward from the sidebar's "Change Home Parish" entry.
+// The fallback parish used wherever a home parish is needed but none has
+// been chosen — the map's own default, and the tour behind a home parish
+// that has no tour of its own.
+//
+// This used to be the answer to first run as well: the app picked a parish
+// silently rather than asking, because the client did not want a welcome
+// screen between install and the dashboard. That decision was reversed when
+// the redesign's onboarding screen was adopted — see `needsOnboarding`.
 function firstLiveParishId(): string | null {
   return ROUTES.find(r => r.status !== "coming_soon")?.id ?? ROUTES[0]?.id ?? null;
 }
@@ -77,16 +82,23 @@ function firstLiveParishId(): string | null {
 const DIOCESE_PARISH_IDS = (parishData as { parishes: { id: string }[] }).parishes.map(p => p.id);
 const VALID_HOME_IDS = [...ROUTES.map(r => r.id), ...DIOCESE_PARISH_IDS];
 
-const HOME_PARISH_TO_ROUTE: Record<string, string> = {
-  "mary-help-of-christians-parish": "route-mhcp",
-  "san-roque-cathedral": "route-src",
-};
-
 /** The tour to open for a chosen home parish, falling back to a live one. */
 function routeForHomeParish(homeId: string | null): string | null {
   if (!homeId) return firstLiveParishId();
   if (ROUTES.some(r => r.id === homeId)) return homeId;
-  return HOME_PARISH_TO_ROUTE[homeId] ?? firstLiveParishId();
+  return routeIdForParish(homeId) ?? firstLiveParishId();
+}
+
+// Checked once at startup. The bug this guards is a silence, not a crash: a
+// stale id makes a documented parish render as though nothing had been
+// collected about it, and every screen dutifully says "not collected yet".
+//
+// Reported rather than thrown — a white screen during a defense demo would
+// be a worse failure than the one being guarded against.
+try {
+  assertKnownParishIds();
+} catch (error) {
+  console.error("[SanctiWalk]", error instanceof Error ? error.message : error);
 }
 
 export default function App() {
@@ -97,6 +109,14 @@ export default function App() {
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // First run: nothing stored yet, so the pilgrim is asked which parish is
+  // theirs before the app opens. Read from storage rather than from
+  // homeParishId, which is seeded with a fallback and so is never null —
+  // testing that instead would mean onboarding could never appear.
+  const [needsOnboarding, setNeedsOnboarding] = useState(
+    () => loadHomeParishId(VALID_HOME_IDS) === null
+  );
 
   // Navigation & Frame settings. Seeded from the home parish so the app opens
   // on that parish's dashboard rather than asking which church to pick — the
@@ -583,6 +603,7 @@ export default function App() {
     setSelectedChurchId(routeForHomeParish(parishId));
     setActiveTab("home");
     setIsChangeParishOpen(false);
+    setNeedsOnboarding(false);
   };
 
   return (
@@ -594,17 +615,24 @@ export default function App() {
           screen should stand between install and the dashboard. The screen is
           built and complete; making it first-run is a one-line change if that
           decision has changed. */}
-      {isChangeParishOpen && (
+      {/* The redesign's onboarding, shown on first run and again whenever the
+          pilgrim asks to change parish. It renders inside PresenceProvider
+          because it orders the list by distance and so needs the position.
+          On first run there is no Cancel: the app has nothing sensible to
+          fall back to until a parish is chosen, and choosing is one tap. */}
+      {(needsOnboarding || isChangeParishOpen) && (
         <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
-          <div className="flex justify-end p-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsChangeParishOpen(false)}
-              className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
-            >
-              Cancel
-            </button>
-          </div>
+          {isChangeParishOpen && (
+            <div className="flex justify-end p-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsChangeParishOpen(false)}
+                className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <Onboarding onChoose={handleChooseHomeParish} />
         </div>
       )}
@@ -615,7 +643,7 @@ export default function App() {
             onClose={() => setIsSearchOpen(false)}
             onSelectParish={parishId => {
               setIsSearchOpen(false);
-              const route = HOME_PARISH_TO_ROUTE[parishId];
+              const route = routeIdForParish(parishId);
               // Only the two live parishes have a page to open. Selecting any
               // other is still useful — it centres the map on it — so this
               // routes there instead of doing nothing.

@@ -7,6 +7,7 @@ import { nextMass } from "../lib/schedule";
 import { type Coordinates } from "../lib/geo";
 import ParishListRow from "./ParishListRow";
 import parishData from "../data/diocese-parishes.json";
+import { routeIdForParish } from "../lib/parishIds";
 
 interface DioceseParish {
   id: string;
@@ -17,11 +18,6 @@ interface DioceseParish {
 }
 
 const PARISHES = (parishData as { parishes: DioceseParish[] }).parishes;
-
-const LIVE_ROUTE_ID: Record<string, string> = {
-  "mary-help-of-christians-parish": "route-mhcp",
-  "san-roque-cathedral": "route-src",
-};
 
 const RECENT_KEY = "sanctiwalk.recentSearches";
 const MAX_RECENT = 4;
@@ -101,7 +97,7 @@ export default function SearchScreen({ onSelectParish, onClose }: SearchScreenPr
     // "Mass soon" can only mean something for the parishes whose schedule has
     // actually been collected — two of thirty-one today.
     return hits.filter(h => {
-      const routeId = LIVE_ROUTE_ID[h.parish.id];
+      const routeId = routeIdForParish(h.parish.id);
       const schedule = routeId ? MASS_SCHEDULES[routeId] : undefined;
       if (!schedule?.schedule) return false;
       const upcoming = nextMass(schedule.schedule, now);

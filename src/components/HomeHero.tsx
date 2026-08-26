@@ -6,6 +6,7 @@ import { fetchWalkingRoute, formatDistance, formatWalkingMinutes } from "../lib/
 import { MASS_SCHEDULES } from "../data";
 import { nextMass } from "../lib/schedule";
 import parishData from "../data/diocese-parishes.json";
+import { routeIdForParish } from "../lib/parishIds";
 
 interface DioceseParish {
   id: string;
@@ -16,14 +17,6 @@ interface DioceseParish {
 }
 
 const PARISHES = (parishData as { parishes: DioceseParish[] }).parishes;
-
-// The two parishes with a tour and a schedule behind them. Everything else in
-// the diocese is a real place with real coordinates but no collected content
-// yet, which is exactly what this card has to be honest about.
-const LIVE_ROUTE_ID: Record<string, string> = {
-  "mary-help-of-christians-parish": "route-mhcp",
-  "san-roque-cathedral": "route-src",
-};
 
 interface HomeHeroProps {
   /** Opens the Map tab and draws the walking route to this parish. */
@@ -88,7 +81,7 @@ export default function HomeHero({ onWalkThere, onOpenParish }: HomeHeroProps) {
   }
 
   const { parish, metres } = nearest;
-  const routeId = LIVE_ROUTE_ID[parish.id];
+  const routeId = routeIdForParish(parish.id);
   const schedule = routeId ? MASS_SCHEDULES[routeId] : undefined;
   const upcoming = schedule?.schedule ? nextMass(schedule.schedule, new Date()) : null;
 

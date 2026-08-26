@@ -7,6 +7,7 @@ import { usePresence } from "../context/PresenceContext";
 import { haversineMeters, type Coordinates } from "../lib/geo";
 import { fetchWalkingRoute, formatDistance, formatWalkingMinutes } from "../lib/routing";
 import parishData from "../data/diocese-parishes.json";
+import { parishIdForRoute } from "../lib/parishIds";
 
 interface DioceseParish {
   id: string;
@@ -18,11 +19,6 @@ interface DioceseParish {
 }
 
 const PARISHES = (parishData as { parishes: DioceseParish[] }).parishes;
-
-const ROUTE_TO_PARISH: Record<string, string> = {
-  "route-mhcp": "mary-help-of-christians-parish",
-  "route-src": "san-roque-cathedral",
-};
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -49,7 +45,7 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
   const [route, setRoute] = useState<{ kind: string; distanceMeters: number; durationMinutes: number } | null>(null);
   const [now, setNow] = useState(() => new Date());
 
-  const dioceseId = ROUTE_TO_PARISH[parish.id];
+  const dioceseId = parishIdForRoute(parish.id);
   const record = PARISHES.find(p => p.id === dioceseId);
   const coordinates = parish.coordinates ?? record?.coordinates;
   const patron = PARISH_PATRON_SAINTS[parish.id];
