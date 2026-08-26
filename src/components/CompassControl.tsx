@@ -1,4 +1,4 @@
-import { COMPASS_POINTS_8, classifyHeading, formatHeading } from "../lib/heading";
+import { COMPASS_POINTS_4, COMPASS_POINTS_8, classifyHeading, formatHeading } from "../lib/heading";
 import type { HeadingStatus } from "../lib/useDeviceHeading";
 
 export type MapOrientationMode = "north-up" | "heading-up";
@@ -16,7 +16,15 @@ interface CompassControlProps {
 // The rose is drawn once, upright, and the whole dial is counter-rotated by
 // the current heading. That is what makes the letters behave like a real
 // compass: turning the phone east swings the dial so E climbs to the top.
-const ROSE_RADIUS = 21;
+//
+// Four cardinals, not eight. The type floor is 14px and the dial is 56px
+// across, which leaves about 119px of circumference — enough for four labels
+// with air around them, and not nearly enough for eight, which collided into
+// an unreadable smear. The eight-point rose still drives the readout below
+// ("Facing Northeast"), so no direction is lost; only the dial is simplified.
+// The client's spec asks for N/E/S/W with the ordinals explicitly optional.
+const ROSE_RADIUS = 19;
+const DIAL_POINTS = COMPASS_POINTS_4;
 
 function rosePosition(centre: number) {
   // -90 because SVG angles start at 3 o'clock and bearings start at 12.
@@ -80,9 +88,10 @@ export default function CompassControl({
           <circle className="dmap-compass__face" cx="0" cy="0" r="25" />
 
           <g style={{ transform: `rotate(${dialRotation}deg)` }} className="dmap-compass__dial">
-            {COMPASS_POINTS_8.map(point => {
+            {DIAL_POINTS.map(point => {
               const { x, y } = rosePosition(point.centre);
               const cardinal = point.abbreviation.length === 1;
+              const isNorth = point.centre === 0;
               return (
                 <text
                   key={point.abbreviation}
@@ -92,7 +101,9 @@ export default function CompassControl({
                   // the text stays upright while its position orbits — a
                   // rotating "S" that ends up upside-down is unreadable.
                   transform={`rotate(${-dialRotation} ${x} ${y})`}
-                  className={cardinal ? "dmap-compass__cardinal" : "dmap-compass__ordinal"}
+                  className={
+                    isNorth ? "dmap-compass__north" : cardinal ? "dmap-compass__cardinal" : "dmap-compass__ordinal"
+                  }
                   textAnchor="middle"
                   dominantBaseline="central"
                 >
@@ -109,13 +120,16 @@ export default function CompassControl({
         </svg>
       </button>
 
+      {/* The readout only appears when there is something to read. The
+          unavailable states keep the dial — greyed and disabled — and put
+          their explanation in the tooltip and aria-label rather than
+          painting a permanent two-line message across the map. */}
       {hasHeading && direction && (
         <p className="dmap-compass__readout">
           Facing {direction.name}
           <span className="dmap-compass__degrees">{Math.round(heading)}°</span>
         </p>
       )}
-      {!hasHeading && <p className="dmap-compass__readout">{unavailableLabel(status)}</p>}
     </div>
   );
 }

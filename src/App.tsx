@@ -963,7 +963,12 @@ export default function App() {
                             they were the pilgrim's own, which was not a walk
                             at all. Station-by-station progress returns when
                             it is driven by real QR scans at each station. */}
-                        <div className="p-4 pb-16 space-y-4">
+                        {/* Full-bleed map with the parish rail floating over
+                            it, per the redesign. The map is the screen rather
+                            than a card on it: the header and the rail sit on
+                            top as overlays, so nothing steals height from the
+                            thing people came to this tab to look at. */}
+                        <div className="map-screen">
                           <header className="map-screen__header">
                             <h1 className="map-screen__title">Diocese of Kalookan</h1>
                             <p className="map-screen__count">
@@ -971,16 +976,20 @@ export default function App() {
                             </p>
                           </header>
 
-                          <CustomDioceseMap
-                            mapHeight={374}
-                            onSelectParish={handleSelectParish}
-                            walkToParishId={walkToParishId}
-                            onWalkToConsumed={() => setWalkToParishId(null)}
-                          />
+                          <div className="map-screen__canvas">
+                            <CustomDioceseMap
+                              onSelectParish={handleSelectParish}
+                              walkToParishId={walkToParishId}
+                              onWalkToConsumed={() => setWalkToParishId(null)}
+                            />
+                          </div>
 
-                          <div className="space-y-3">
+                          {/* Horizontal, the way Maps does it. Each card is a
+                              real button so the rail stays reachable by
+                              keyboard and screen reader, not just by swipe. */}
+                          <div className="map-screen__rail" role="list" aria-label="Live parishes">
                             {liveParishes.map((parish) => (
-                              <div key={parish.id}>
+                              <div className="map-screen__rail-item" role="listitem" key={parish.id}>
                                 <ParishCard parish={parish} onSelect={handleSelectParish} />
                               </div>
                             ))}

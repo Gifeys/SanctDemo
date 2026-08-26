@@ -109,27 +109,31 @@
    larger text still fits the frame.
    ───────────────────────────────────────────────────────────── */
 .dmap { display: block; width: 100%; height: 100%; }
-/* This is a DARK map. Land is a navy one step lighter than the page, not the
-   cream card colour — filling land with --color-brand-card put beige blobs on
-   a navy page, which is what made this look wrong. Water sits darker than
-   land, the way it does on any night map, so the two read apart without a
-   border. */
-.dmap__land { fill: color-mix(in srgb, var(--color-brand-bg) 84%, white); }
-.dmap__water { fill: color-mix(in srgb, var(--color-brand-bg) 88%, black); }
-.dmap__river { stroke: color-mix(in srgb, var(--color-brand-accent) 60%, var(--color-brand-bg)); fill: none; }
-.dmap__road { stroke: color-mix(in srgb, white 14%, transparent); fill: none; }
+/* This used to be a DARK map, drawn in whites over navy. The redesign turned
+   the ground to paper, which left roads at 14% white and white pin labels
+   invisible — on the one map that only ever appears when MapLibre cannot
+   start, i.e. offline, i.e. exactly when it has to work. It is a light map
+   now: land a shade off the page so the coastline reads without a border,
+   water cooler and darker than land, and every line and label in ink. */
+.dmap__land { fill: color-mix(in srgb, var(--color-brand-card) 88%, var(--color-brand-border)); }
+.dmap__water { fill: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-brand-bg)); }
+.dmap__river { stroke: color-mix(in srgb, var(--color-brand-primary) 35%, transparent); fill: none; }
+.dmap__road { stroke: color-mix(in srgb, var(--color-brand-text) 16%, transparent); fill: none; }
 .dmap__area-label {
-  fill: color-mix(in srgb, white 62%, transparent);
+  fill: color-mix(in srgb, var(--color-brand-text) 55%, transparent);
   font-size: 21px;
   font-weight: 600;
   letter-spacing: 1px;
   text-anchor: middle;
 }
-/* Live parishes are the only bright thing on the map — everything else is
+/* Live parishes are the only saturated thing on the map — everything else is
    context, they are the destinations. */
-.dmap__pin--live { fill: var(--color-brand-accent); stroke: white; }
-.dmap__pin--soon { fill: color-mix(in srgb, white 28%, transparent); stroke: color-mix(in srgb, white 45%, transparent); }
-.dmap__pin-label { fill: white; font-size: 21px; font-weight: 700; text-anchor: middle; }
+.dmap__pin--live { fill: var(--color-brand-accent); stroke: var(--color-brand-card); }
+.dmap__pin--soon {
+  fill: color-mix(in srgb, var(--color-brand-text) 30%, transparent);
+  stroke: color-mix(in srgb, var(--color-brand-text) 45%, transparent);
+}
+.dmap__pin-label { fill: var(--color-brand-text); font-size: 21px; font-weight: 700; text-anchor: middle; }
 .dmap__you { fill: var(--color-brand-success); stroke: var(--color-brand-card); }
 .dmap__you-ring {
   fill: none;
@@ -443,29 +447,81 @@
    already darkened for AA (5.29:1) — same fix pattern already
    applied to --color-brand-accent above.
    ───────────────────────────────────────────────────────────── */
+/* The map tab is the map: a header strip, then the canvas taking every
+   remaining pixel, with the parish rail floating over its lower edge.
+   The header stays a real strip rather than an overlay because the map
+   already floats a search bar at its top-left and zoom controls at its
+   top-right — a third floating element there would collide with both. */
+.map-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  background: var(--color-brand-card);
+}
 .map-screen__header {
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0.75rem 0.5rem 0.5rem;
+  flex: none;
 }
 .map-screen__title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: white;
+  color: var(--color-brand-text);
 }
 .map-screen__count {
   font-size: 15px;
-  color: color-mix(in srgb, white 70%, transparent);
+  color: var(--color-brand-secondary);
   margin-top: 2px;
+}
+.map-screen__canvas {
+  flex: 1;
+  min-height: 0;
+  padding: 0 0.5rem;
+}
+
+/* The rail overlays the map's lower edge and scrolls horizontally, snapping
+   card to card. */
+.map-screen__rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 6;
+  display: flex;
+  gap: 10px;
+  padding: 0 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.map-screen__rail::-webkit-scrollbar { display: none; }
+.map-screen__rail-item {
+  flex: 0 0 78%;
+  scroll-snap-align: center;
+}
+.map-screen__rail .parish-card {
+  box-shadow: 0 8px 24px rgb(20 23 31 / 0.18);
+}
+
+/* The rail sits exactly where the map puts its own distance panel, and the
+   cards already carry each parish's distance. Rather than let the two
+   overlap, the panel is suppressed on this screen only — it still shows on
+   the dashboard's mini map, where there is no rail. */
+.map-screen .dmap-live__panel {
+  display: none;
 }
 
 .parish-card {
   display: block;
   text-decoration: none;
   background: var(--color-brand-card-sunk);
+  border: 1px solid var(--color-brand-border);
   border-radius: 20px;
   padding: 1rem 1.125rem;
   cursor: pointer;
-  border: none;
   width: 100%;
   text-align: left;
 }
@@ -478,22 +534,22 @@
 .parish-card__name {
   font-size: 18px;
   font-weight: 700;
-  color: white;
+  color: var(--color-brand-text);
   line-height: 1.25;
 }
 .parish-card__patron {
   font-size: 15px;
-  color: color-mix(in srgb, white 70%, transparent);
+  color: var(--color-brand-secondary);
   margin-top: 4px;
 }
 .parish-card__rule {
   border: none;
-  border-top: 1px solid color-mix(in srgb, white 18%, transparent);
+  border-top: 1px solid var(--color-brand-border);
   margin: 0.75rem 0;
 }
 .parish-card__meta {
   font-size: 15px;
-  color: color-mix(in srgb, white 70%, transparent);
+  color: var(--color-brand-secondary);
 }
 
 .chip--live {
@@ -506,7 +562,7 @@
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--color-brand-success);
-  color: white;
+  color: var(--color-brand-on-accent);
   white-space: nowrap;
 }
 
@@ -780,4 +836,56 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .maplibregl-ctrl-attrib-inner,
 .maplibregl-ctrl-attrib a {
   font-size: 14px;
+}
+
+/* Distance on a parish card. Straight-line, and it says so — the routed
+   figure only appears once someone asks for directions. */
+.parish-card__distance {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brand-primary);
+}
+.parish-card__walk {
+  font-weight: 500;
+  color: var(--color-brand-secondary);
+}
+
+/* On the full-bleed map screen the legend and the Google Maps link were
+   taking 145px below the canvas, which both shrank the map and left the
+   floating rail hanging past its lower edge. The legend becomes a compact
+   overlay pinned under the header — it still explains the shaded study area,
+   which is the client's own data and must stay explained — and the external
+   link moves out of the stack, since the pin popups already offer directions
+   and this screen is the map. */
+/* The legend sits above the map, in normal flow, rather than floating over
+   it. As an overlay it collided with the search bar the map already floats at
+   its top-left, and anchoring it to the screen put it over the header
+   instead. In flow it costs one line and never overlaps anything, while the
+   frame below takes every remaining pixel. */
+.map-screen .dmap-live__legend {
+  order: -1;
+  margin: 0;
+  padding: 0 8px 4px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-brand-secondary);
+}
+/* The pin popups already offer directions, and this screen is the map, so
+   the "open in Google Maps" link is not worth the height here. */
+.map-screen .dmap-live__open-link {
+  display: none;
+}
+.map-screen .dmap-live {
+  flex: 1;
+  min-height: 0;
+}
+
+/* North is the one letter you look for, so it carries the needle's colour
+   rather than sitting equal with the other three. */
+.dmap-compass__north {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--color-brand-error);
 }

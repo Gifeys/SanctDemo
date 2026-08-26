@@ -878,7 +878,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           }
           aria-label="Recentre map on my location"
         >
-          Recentre on me
+          Recentre
         </button>
 
         {Object.keys(routes).length > 0 && (

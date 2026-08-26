@@ -1,6 +1,9 @@
 import { Route } from "../types";
 import { MASS_SCHEDULES, PARISH_PATRON_SAINTS } from "../data";
 import { nextMass } from "../lib/schedule";
+import { usePresence } from "../context/PresenceContext";
+import { haversineMeters } from "../lib/geo";
+import { formatDistance, formatWalkingMinutes, WALK_SPEED_MPS } from "../lib/routing";
 
 interface ParishCardProps {
   parish: Route;
@@ -27,6 +30,15 @@ function nextMassLine(parishId: string): string {
 
 export default function ParishCard({ parish, onSelect }: ParishCardProps) {
   const patron = PARISH_PATRON_SAINTS[parish.id] ?? "Patron saint not yet listed";
+  const { position } = usePresence();
+
+  // Straight-line, and labelled "direct" so it is never mistaken for a
+  // walking distance — the card is a summary, and firing an OSRM request per
+  // card just to fill a caption is what used to draw unasked-for routes
+  // across the map. "Get directions" on the pin is where the real route
+  // lives. Absent entirely when there is no fix, rather than showing a dash.
+  const straightLine =
+    position && parish.coordinates ? haversineMeters(position, parish.coordinates) : null;
 
   return (
     <button type="button" className="parish-card" onClick={() => onSelect(parish.id)}>
@@ -34,6 +46,14 @@ export default function ParishCard({ parish, onSelect }: ParishCardProps) {
         <h3 className="parish-card__name">{parishDisplayName(parish)}</h3>
         <span className="chip--live">Live</span>
       </div>
+      {straightLine !== null && (
+        <p className="parish-card__distance">
+          {formatDistance(straightLine)} direct
+          <span className="parish-card__walk">
+            · about {formatWalkingMinutes(straightLine / WALK_SPEED_MPS / 60)} on foot
+          </span>
+        </p>
+      )}
       <p className="parish-card__patron">{patron}</p>
       <hr className="parish-card__rule" />
       <p className="parish-card__meta">{nextMassLine(parish.id)}</p>
