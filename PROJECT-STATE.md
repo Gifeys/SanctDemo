@@ -30,6 +30,8 @@ npm test --prefix D:/SanctDemo             # 81 tests
 | Area | Files |
 |---|---|
 | Location awareness | `src/lib/{geo,presence,project,schedule}.ts`, `src/context/PresenceContext.tsx` |
+| Compass / heading | `src/lib/heading.ts` (pure maths) · `src/lib/useDeviceHeading.ts` (sensors) · `src/components/CompassControl.tsx` |
+| Search | `src/lib/mapSearch.ts` — scored and ranked, not a substring filter |
 | Maps | `DioceseMapLive.tsx` (real, MapLibre, light `positron` basemap — the client's earlier prototype's design) falling back to `DioceseMap.tsx` (drawn SVG, stays dark) |
 | Parish content | `MassSchedule` · `ChurchHistory` · `MinistriesTab` · `SacramentsTab` — all take a parish prop |
 | Rosary | `public/rosary/index.html` — the client's own app, mounted in an iframe by `DailyRosary.tsx` |
@@ -73,6 +75,7 @@ These were arrived at through real bugs. Breaking them reintroduces those bugs.
 | `docs/ar-and-pilgrim-tour-decisions.md` | Why browser AR and not Unity; how presence is confirmed; the visit-session quiz design |
 | `docs/plans/2026-08-18-port-location-awareness.md` | The nine-task port, complete |
 | `docs/data-collection/` | What the field team collects — Word guide, fillable form, CSV template |
+| `docs/testing-on-android.md` | How to verify GPS, compass, rotation, search and directions on a real phone |
 | `docs/reports/` | Per-task verification records with measurements |
 
 ## Data facts worth not re-deriving
