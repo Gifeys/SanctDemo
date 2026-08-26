@@ -82,6 +82,26 @@ app.use(express.json());
  * right trade for a capstone demo, and it is stated rather than pretended
  * otherwise.
  */
+/**
+ * The vision model used for camera recognition.
+ *
+ * Measured on the same 24KB frame, all returning the same correct
+ * identification with the full summary and highlights:
+ *
+ *   gemini-3.5-flash      + LOW thinking      20.7s
+ *   gemini-3.5-flash      + MINIMAL thinking  13.7s
+ *   gemini-3.5-flash-lite + MINIMAL thinking   1.5-1.9s
+ *
+ * A scanner that takes twenty seconds is not a scanner, so flash-lite is the
+ * default. It is a smaller model, so if a particular statue or retablo is
+ * being misidentified, GEMINI_VISION_MODEL=gemini-3.5-flash in .env switches
+ * back and trades the speed for the larger model's judgement.
+ *
+ * The two models also hold separate free-tier quotas, which is worth knowing
+ * when recognition starts refusing: exhausting one does not exhaust the other.
+ */
+const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-3.5-flash-lite";
+
 const DAILY_SCAN_LIMIT = 20;
 let scanDay = "";
 let scansUsed = 0;
@@ -296,7 +316,7 @@ app.post("/api/identify", async (req, res) => {
 
     const ai = getAi();
     const askModel = (prompt: string) => ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: VISION_MODEL,
       contents: [
         {
           role: "user",
@@ -307,9 +327,12 @@ app.post("/api/identify", async (req, res) => {
         },
       ],
       config: {
-        // Recognition is perception, not deliberation. Left on, thinking accounts
-        // for most of the latency and most of the tokens.
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        // Recognition is perception, not deliberation. MINIMAL, not LOW:
+        // measured on the same frame, LOW spent 275 thinking tokens and 7
+        // extra seconds to reach the identical answer. Note that omitting
+        // thinkingConfig entirely does NOT disable thinking — it re-enables
+        // it at the model's own default, which measured worse than MINIMAL.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -339,7 +362,11 @@ app.post("/api/identify", async (req, res) => {
     });
 
     scansUsed++;
+    const startedAt = Date.now();
     const response = await askModel(instruction);
+    // Logged so "the scanner feels slow" can be answered with a number
+    // instead of a guess — which is how the 20s-to-1.5s fix was found.
+    console.log(`[/api/identify] ${VISION_MODEL} ${Date.now() - startedAt}ms`);
     const text = response.text;
     if (!text) {
       return res.status(502).json({ error: "The vision model returned no content." });

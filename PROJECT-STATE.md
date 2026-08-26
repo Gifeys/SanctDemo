@@ -38,7 +38,7 @@ npm test --prefix D:/SanctDemo             # 81 tests
 | Maps | `DioceseMapLive.tsx` (real, MapLibre, light `positron` basemap — the client's earlier prototype's design) falling back to `DioceseMap.tsx` (drawn SVG, stays dark) |
 | Parish content | `MassSchedule` · `ChurchHistory` · `MinistriesTab` · `SacramentsTab` — all take a parish prop |
 | Rosary | `public/rosary/index.html` — the client's own app, mounted in an iframe by `DailyRosary.tsx` |
-| AR | `ArTour.tsx` + `src/lib/useCamera.ts` + `/api/identify` in `server.ts` |
+| AR | `ArTour.tsx` + `src/lib/useCamera.ts` + `/api/identify` in `server.ts` (model: `GEMINI_VISION_MODEL`, default `gemini-3.5-flash-lite`) |
 | Data | `src/data.ts` (routes, schedules, ministries, sacraments) · `src/data/diocese-parishes.json` (all 31 parishes) |
 
 **Navigation:** bottom bar is **Home · Map · Scan · Pray · Me**, with Scan raised in the centre. Everything else lives in the sidebar, with developer controls fenced off under a "Demo Tools" heading.
