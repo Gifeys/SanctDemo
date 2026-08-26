@@ -1,4 +1,5 @@
 import { haversineMeters, type Coordinates } from './geo'
+import type { RouteStep } from './navigation'
 
 // OSRM's public demo server — free, keyless, no billing account (the same
 // requirement that ruled out Google/Mapbox for the base map itself). It
@@ -28,6 +29,49 @@ export interface WalkingRoute {
   path: Coordinates[]
   distanceMeters: number
   durationMinutes: number
+  /**
+   * Turn-by-turn manoeuvres, when they were asked for and OSRM supplied them.
+   * Always empty for a 'direct' route: a straight line across the map has no
+   * turns, and inventing "head north, then arrive" for one would be worse
+   * than saying nothing.
+   */
+  steps: RouteStep[]
+}
+
+/**
+ * Narrows OSRM's steps to the fields this app uses.
+ *
+ * Defensive about shape rather than trusting the response: this is a public
+ * demo server, the legs/steps nesting is easy to get wrong, and a malformed
+ * step would otherwise crash navigation mid-walk. Anything unparseable is
+ * dropped, and an empty list simply means no turn-by-turn — which the UI
+ * already has to handle for direct routes.
+ */
+function parseSteps(route: any): RouteStep[] {
+  const legs = Array.isArray(route?.legs) ? route.legs : []
+  const steps: RouteStep[] = []
+
+  for (const leg of legs) {
+    for (const raw of Array.isArray(leg?.steps) ? leg.steps : []) {
+      const location = raw?.maneuver?.location
+      if (!Array.isArray(location) || location.length < 2) continue
+      if (typeof raw?.maneuver?.type !== 'string') continue
+
+      steps.push({
+        name: typeof raw.name === 'string' ? raw.name : '',
+        distanceMeters: typeof raw.distance === 'number' ? raw.distance : 0,
+        maneuver: {
+          type: raw.maneuver.type,
+          modifier: typeof raw.maneuver.modifier === 'string' ? raw.maneuver.modifier : undefined,
+          location: [location[0], location[1]],
+          bearingAfter:
+            typeof raw.maneuver.bearing_after === 'number' ? raw.maneuver.bearing_after : undefined,
+        },
+      })
+    }
+  }
+
+  return steps
 }
 
 function walkingMinutes(distanceMeters: number): number {
@@ -41,12 +85,19 @@ function directRoute(from: Coordinates, to: Coordinates): WalkingRoute {
     path: [from, to],
     distanceMeters,
     durationMinutes: walkingMinutes(distanceMeters),
+    steps: [],
   }
 }
 
 interface FetchWalkingRouteOptions {
   fetchImpl?: typeof fetch
   timeoutMs?: number
+  /**
+   * Ask OSRM for turn-by-turn steps. Off by default: the map's own route
+   * line and the distance readouts do not need them, and the response is
+   * substantially larger with them.
+   */
+  withSteps?: boolean
 }
 
 export async function fetchWalkingRoute(
@@ -54,13 +105,15 @@ export async function fetchWalkingRoute(
   to: Coordinates,
   options: FetchWalkingRouteOptions = {},
 ): Promise<WalkingRoute> {
-  const { fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = options
+  const { fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS, withSteps = false } = options
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const url = `${OSRM_BASE}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`
+    const url =
+      `${OSRM_BASE}/${from.lng},${from.lat};${to.lng},${to.lat}` +
+      `?overview=full&geometries=geojson${withSteps ? '&steps=true' : ''}`
     const res = await fetchImpl(url, { signal: controller.signal })
     if (!res.ok) return directRoute(from, to)
 
@@ -77,6 +130,7 @@ export async function fetchWalkingRoute(
       path,
       distanceMeters,
       durationMinutes: walkingMinutes(distanceMeters),
+      steps: withSteps ? parseSteps(data.routes[0]) : [],
     }
   } catch {
     // Network failure, non-JSON body, or the abort() above firing on

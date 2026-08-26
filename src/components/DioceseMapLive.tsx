@@ -10,6 +10,7 @@ import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import CompassControl, { type MapOrientationMode } from "./CompassControl";
+import NavigationOverlay from "./NavigationOverlay";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
 
@@ -293,6 +294,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // North-up by default, matching Google Maps: the map only starts turning
   // with the pilgrim once they ask it to.
   const [orientationMode, setOrientationMode] = useState<MapOrientationMode>("north-up");
+  // The parish currently being navigated to, if any. Separate from a drawn
+  // route: a route is a line on the map, navigation is a live session that
+  // follows the pilgrim and reroutes.
+  const [navigatingTo, setNavigatingTo] = useState<{ id: string; name: string; coordinates: Coordinates } | null>(null);
   const { heading, status: headingStatus, requestPermission: requestHeadingPermission } = useDeviceHeading();
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
@@ -492,7 +497,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       const displayName = shortLabel(parish.name);
 
       const el = buildChurchPinElement({ name: displayName, isLive });
-      const { el: card, action, directionsAction, directionsStatus } = buildPopupContent({
+      const { el: card, action, directionsAction, directionsStatus, navigateAction } = buildPopupContent({
         name: displayName,
         location: vicariateLabel(parish.vicariate),
         isLive,
@@ -513,6 +518,12 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
 
       if (action && routeId) {
         action.addEventListener("click", () => onSelectParishRef.current(routeId));
+      }
+
+      if (navigateAction) {
+        navigateAction.addEventListener("click", () => {
+          setNavigatingTo({ id: parish.id, name: displayName, coordinates: parish.coordinates });
+        });
       }
       if (directionsAction && directionsStatus && routeId) {
         directionsAction.addEventListener("click", () =>
@@ -907,6 +918,31 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           </div>
         )}
         {distancePanel}
+
+        {navigatingTo && (
+          <NavigationOverlay
+            destination={navigatingTo.coordinates}
+            destinationName={navigatingTo.name}
+            onStop={() => {
+              const map = mapRef.current;
+              if (map) removeRouteLayer(map, navigatingTo.id);
+              setRoutes(prev => {
+                const next = { ...prev };
+                delete next[navigatingTo.id];
+                return next;
+              });
+              setNavigatingTo(null);
+            }}
+            onRoute={route => {
+              // Redraw on every reroute, so the line on the map is always the
+              // route currently being followed rather than the original one.
+              const map = mapRef.current;
+              if (!map) return;
+              upsertRouteLayer(map, navigatingTo.id, route, resolveColor("var(--color-brand-accent)"));
+              setRoutes(prev => ({ ...prev, [navigatingTo.id]: route }));
+            }}
+          />
+        )}
       </div>
       {scopeLegend}
     </div>

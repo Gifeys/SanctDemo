@@ -351,6 +351,20 @@
 }
 .dmap-card__action--secondary:hover { background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-brand-card)); }
 .dmap-card__action--secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* "Start walking" — the live turn-by-turn session, as opposed to "Get
+   directions", which only draws a line. Filled rather than outlined because
+   it is the more consequential of the two: it takes over the bottom of the
+   map and follows the pilgrim until they stop it. */
+.dmap-card__action--navigate {
+  margin-top: 6px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  border: 1px solid var(--color-brand-primary);
+}
+.dmap-card__action--navigate:hover {
+  background: var(--color-brand-primary-dark);
+}
 /* Filled in after "Get directions" is tapped: distance/time once routed,
    a straight-line figure clearly labelled "direct" when OSRM couldn't be
    reached, or why it can't route yet (no known position). Empty (no text

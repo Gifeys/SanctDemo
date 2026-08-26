@@ -44,6 +44,12 @@ export interface PopupBuild {
   // and hidden via :empty in CSS, so a parish nobody has asked directions
   // for yet shows no stray blank line.
   directionsAction: HTMLButtonElement | null
+  /**
+   * "Start walking" — begins a live turn-by-turn session. Distinct from
+   * `directionsAction`, which draws a route and leaves it: navigation follows
+   * the pilgrim, advances the instruction, and reroutes when they leave it.
+   */
+  navigateAction: HTMLButtonElement | null
   directionsStatus: HTMLParagraphElement | null
 }
 
@@ -71,6 +77,7 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
   let action: HTMLButtonElement | null = null
   let directionsAction: HTMLButtonElement | null = null
   let directionsStatus: HTMLParagraphElement | null = null
+  let navigateAction: HTMLButtonElement | null = null
   if (parish.isLive) {
     action = document.createElement('button')
     action.type = 'button'
@@ -84,6 +91,16 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
     directionsAction.textContent = 'Get directions'
     el.append(directionsAction)
 
+    // "Get directions" draws the route and leaves it there. "Start walking"
+    // begins a live turn-by-turn session that follows the pilgrim and
+    // reroutes — a different thing, so it gets its own button rather than
+    // overloading the first.
+    navigateAction = document.createElement('button')
+    navigateAction.type = 'button'
+    navigateAction.className = 'dmap-card__action dmap-card__action--navigate'
+    navigateAction.textContent = 'Start walking'
+    el.append(navigateAction)
+
     directionsStatus = document.createElement('p')
     directionsStatus.className = 'dmap-card__directions-status'
     el.append(directionsStatus)
@@ -94,5 +111,5 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
     el.append(soon)
   }
 
-  return { el, action, directionsAction, directionsStatus }
+  return { el, action, directionsAction, directionsStatus, navigateAction }
 }
