@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Camera,
   ScanLine,
@@ -49,6 +49,17 @@ interface Recognition {
    *  tell. Mirrors the coordinatesVerified / scheduleVerified pattern in
    *  data.ts: unverified data is shown, but never labelled as confirmed. */
   source: "ai" | "manual";
+  /** False when the subject was recognised but is not one of this parish's
+   *  own stations — the camera still says what it is, it just isn't part of
+   *  the tour. Undefined for manual picks and for open recognition. */
+  matchedStation?: boolean;
+}
+
+/** The server's shared daily recognition allowance — see /api/identify. */
+interface ScanBudget {
+  limit: number;
+  used: number;
+  remaining: number;
 }
 
 type Phase = "idle" | "scanning" | "done";
@@ -85,10 +96,34 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [budget, setBudget] = useState<ScanBudget | null>(null);
+
+  // Fetched once so the remaining count is visible before anyone spends one.
+  // Failure is silent: the counter just doesn't appear, rather than blocking
+  // a scan over a number that is only informational.
+  useEffect(() => {
+    let live = true;
+    void fetch("/api/identify/budget")
+      .then(r => (r.ok ? r.json() : null))
+      .then(b => {
+        if (live && b) setBudget(b);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const scan = useCallback(async () => {
     const frame = camera.captureFrame();
-    if (!frame) return;
+    if (!frame) {
+      // captureFrame returns null while the video still has no dimensions —
+      // the stream is live but the first frame has not painted yet. This used
+      // to `return` silently, so tapping Scan did nothing at all: no error, no
+      // spinner, nothing. Indistinguishable from a dead button.
+      setError("The camera is still warming up. Give it a second and tap again.");
+      return;
+    }
 
     setPhase("scanning");
     setError(null);
@@ -105,6 +140,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
       });
 
       const data = await response.json();
+      if (data?.budget) setBudget(data.budget);
 
       if (!response.ok) {
         setError(data?.error ?? "Recognition failed. Please try again.");
@@ -156,7 +192,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
+              <span className="text-[14px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
                 {result.category}
               </span>
             </div>
@@ -314,7 +350,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               className="w-full flex items-center justify-between gap-2 bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
             >
               <span className="min-w-0 text-left">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
+                <span className="block text-[14px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
                   Last result
                 </span>
                 <span className="block text-[15px] font-bold truncate">{result.title}</span>
@@ -393,7 +429,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[85%] px-4 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2">
           {busy && <Loader2 className="w-3.5 h-3.5 text-[var(--color-brand-on-accent)] animate-spin shrink-0" />}
           <span
-            className={`text-[13px] font-sans font-medium ${error ? "text-[var(--color-brand-error-soft)]" : "text-white"}`}
+            className={`text-[15px] font-sans font-medium ${error ? "text-[var(--color-brand-error-soft)]" : "text-white"}`}
           >
             {busy ? "Looking…" : error}
           </span>
@@ -407,7 +443,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           className="absolute left-1/2 -translate-x-1/2 bottom-32 max-w-[80%] flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-black/70 backdrop-blur-md border border-white/15 text-left active:scale-[0.97] transition-transform"
         >
           <span className="flex flex-col min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
+            <span className="text-[14px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
               {result.category}
             </span>
             <span className="text-[15px] font-semibold text-white truncate font-sans">
@@ -442,6 +478,25 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         <div className="w-14" aria-hidden />
       </div>
 
+      {/* Recognitions left today. The allowance sits on the server's single
+          API key and is shared by every device, so this is the real number,
+          not a per-phone guess. It only appears once the count is known. */}
+      {budget && (
+        <div className="absolute bottom-[104px] left-0 right-0 flex justify-center pointer-events-none">
+          <span
+            className={`text-[14px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-md border ${
+              budget.remaining === 0
+                ? "bg-[var(--color-brand-error)]/85 border-white/20 text-white"
+                : "bg-black/45 border-white/15 text-white/90"
+            }`}
+          >
+            {budget.remaining === 0
+              ? `No scans left today · resets tomorrow`
+              : `${budget.remaining} of ${budget.limit} scans left today`}
+          </span>
+        </div>
+      )}
+
       {/* Information card */}
       {result && (
         <div
@@ -452,12 +507,12 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         >
           <div className="flex items-start gap-3 p-5 pb-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-accent)] font-sans">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-[14px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-accent)] font-sans">
                   {result.category}
                 </span>
                 {result.confidence != null && (
-                  <span className="text-[11px] text-[var(--color-brand-text)]/50 font-sans">
+                  <span className="text-[14px] text-[var(--color-brand-secondary)] font-sans">
                     {Math.round(result.confidence * 100)}% match
                   </span>
                 )}
@@ -465,6 +520,14 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               <h3 className="text-xl font-bold text-[var(--color-brand-text)] font-serif italic leading-tight">
                 {result.title}
               </h3>
+              {/* Recognised, but not one of this parish's stations. Saying so
+                  keeps the tour's own list meaningful while still answering
+                  the question the pilgrim actually asked. */}
+              {result.matchedStation === false && (
+                <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
+                  Not one of this parish's tour stations — identified from the camera.
+                </p>
+              )}
             </div>
             <button
               onClick={() => setSheetOpen(false)}
@@ -502,7 +565,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 </span>
               </div>
             ) : (
-              <p className="mt-5 text-[12px] text-[var(--color-brand-text)]/60 leading-relaxed font-sans bg-[var(--color-brand-card)]/70 border border-[var(--color-brand-border)] rounded-xl p-3">
+              <p className="mt-5 text-[15px] text-[var(--color-brand-secondary)] leading-relaxed font-sans bg-[var(--color-brand-card)]/70 border border-[var(--color-brand-border)] rounded-xl p-3">
                 Identified by AI from your camera. Details may be incomplete — the parish record
                 is the authority.
               </p>

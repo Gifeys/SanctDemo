@@ -70,6 +70,44 @@ function getLanIps(): string[] {
 app.use(express.json());
 
 // Lazy-initialize Gemini API
+/**
+ * Recognition is capped per day.
+ *
+ * Counted here rather than in the browser because what is actually scarce is
+ * the free-tier allowance on the single API key this server holds — shared by
+ * every device using the app. A per-device counter in localStorage would both
+ * over- and under-report, and anyone could clear it.
+ *
+ * In memory, deliberately: a server restart resets the count. That is the
+ * right trade for a capstone demo, and it is stated rather than pretended
+ * otherwise.
+ */
+const DAILY_SCAN_LIMIT = 20;
+let scanDay = "";
+let scansUsed = 0;
+
+function scanBudget(): { limit: number; used: number; remaining: number } {
+  const today = new Date().toISOString().slice(0, 10);
+  if (scanDay !== today) {
+    scanDay = today;
+    scansUsed = 0;
+  }
+  return { limit: DAILY_SCAN_LIMIT, used: scansUsed, remaining: Math.max(0, DAILY_SCAN_LIMIT - scansUsed) };
+}
+
+/** Open-ended recognition, used when there is no station shortlist. */
+const OPEN_INSTRUCTION = [
+  "Identify the main subject of this camera frame.",
+  "",
+  "Name it as specifically as you can — a particular statue, altar, window,",
+  "artwork, or building rather than a generic category. Ignore hands and the",
+  "person holding the camera. If the frame is too blurry, too dark, or shows",
+  "nothing identifiable, set recognized to false.",
+  "",
+  "Do not invent parish-specific history, dates, donors, or names. If you do",
+  "not know, describe what is visible instead.",
+].join("\n");
+
 let aiClient: GoogleGenAI | null = null;
 function getAi(): GoogleGenAI {
   if (!aiClient) {
@@ -221,6 +259,15 @@ app.post("/api/identify", async (req, res) => {
       return res.status(400).json({ error: "Missing imageBase64." });
     }
 
+    const budget = scanBudget();
+    if (budget.remaining <= 0) {
+      return res.status(429).json({
+        error: `All ${budget.limit} recognitions for today have been used. The counter resets tomorrow.`,
+        code: "daily_limit",
+        budget,
+      });
+    }
+
     const shortlist: string[] = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
 
     const instruction = shortlist.length
@@ -230,34 +277,32 @@ app.post("/api/identify", async (req, res) => {
           "The pilgrim is at a station that is one of the following:",
           ...shortlist.map((name: string) => `- ${name}`),
           "",
-          "Choose the one the photo shows. If the photo clearly shows none of them,",
-          "set recognized to false rather than forcing a match.",
+          "If the photo shows one of them, name that station and set",
+          "matchedStation to true.",
+          "",
+          "If it shows none of them, DO NOT set recognized to false. Identify the",
+          "subject anyway — as specifically as you can — and set matchedStation to",
+          "false. A pilgrim pointing a camera at something outside the tour still",
+          "deserves an answer.",
+          "",
+          "Set recognized to false only when the frame is too blurry or dark, or",
+          "shows nothing identifiable at all.",
           "",
           "Only state facts you can see in the image or that are common knowledge",
           "about the subject. Do not invent parish-specific history, dates, donors,",
           "or names — if you do not know, say what is visible instead.",
         ].join("\n")
-      : [
-          "Identify the main subject of this camera frame.",
-          "",
-          "Name it as specifically as you can — a particular statue, altar, window,",
-          "artwork, or building rather than a generic category. Ignore hands and the",
-          "person holding the camera. If the frame is too blurry, too dark, or shows",
-          "nothing identifiable, set recognized to false.",
-          "",
-          "Do not invent parish-specific history, dates, donors, or names. If you do",
-          "not know, describe what is visible instead.",
-        ].join("\n");
+      : OPEN_INSTRUCTION;
 
     const ai = getAi();
-    const response = await ai.models.generateContent({
+    const askModel = (prompt: string) => ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: [
         {
           role: "user",
           parts: [
             { inlineData: { mimeType: mimeType || "image/jpeg", data: imageBase64 } },
-            { text: instruction },
+            { text: prompt },
           ],
         },
       ],
@@ -282,18 +327,40 @@ app.post("/api/identify", async (req, res) => {
               items: { type: Type.STRING },
               description: "Three short standalone facts.",
             },
+            matchedStation: {
+              type: Type.BOOLEAN,
+              description:
+                "True when the subject is one of the listed stations. False when it was identified but is not on the list. Ignored when no list was given.",
+            },
           },
           required: ["recognized", "title", "category", "confidence", "summary", "highlights"],
         },
       },
     });
 
+    scansUsed++;
+    const response = await askModel(instruction);
     const text = response.text;
     if (!text) {
       return res.status(502).json({ error: "The vision model returned no content." });
     }
 
-    return res.json(JSON.parse(text));
+    const result = JSON.parse(text);
+
+    // The station shortlist used to instruct the model to answer "none of
+    // these" for anything that was not one of the parish's own stations —
+    // which is most of what a pilgrim will point a camera at. The identical
+    // frame that returned a confident "Our Lady of Grace" with no shortlist
+    // returned recognized:false with one, so the scanner looked broken the
+    // moment you were standing at a parish.
+    //
+    // The prompt now asks for both jobs in one pass: match a station if the
+    // photo shows one, otherwise identify the subject anyway and say it isn't
+    // on the list. A two-call fallback would also have worked, but it spent
+    // two of the day's twenty recognitions on every miss.
+    if (!shortlist.length) delete result.matchedStation;
+
+    return res.json({ ...result, budget: scanBudget() });
   } catch (error: any) {
     const message = String(error?.message ?? error);
 
@@ -303,6 +370,7 @@ app.post("/api/identify", async (req, res) => {
       return res.status(429).json({
         error: "Daily recognition limit reached. Please try again tomorrow.",
         code: "quota_exhausted",
+        budget: scanBudget(),
       });
     }
 
@@ -310,6 +378,9 @@ app.post("/api/identify", async (req, res) => {
     return res.status(500).json({ error: "Recognition failed. Please try again." });
   }
 });
+
+// Lets the scanner show what is left before anyone spends one.
+app.get("/api/identify/budget", (_req, res) => res.json(scanBudget()));
 
 // Check if SMTP is configured for real email sending
 app.get("/api/smtp-status", (req, res) => {
