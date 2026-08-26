@@ -110,7 +110,7 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
               return (
                 <div
                   key={sac.id}
-                  className="bg-white rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
+                  className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
                 >
                   <button
                     onClick={() => toggleExpand(sac.id)}
@@ -176,7 +176,7 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
         </div>
 
         {/* Booking Form Section */}
-        <div id="booking-form" className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
+        <div id="booking-form" className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
           <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/45 pb-1.5">
             Pre-Schedule Sacrament
           </h3>

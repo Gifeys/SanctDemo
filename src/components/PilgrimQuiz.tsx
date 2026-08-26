@@ -90,7 +90,7 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
         {!isQuizCompleted ? (
           <div className="space-y-4 flex-1 flex flex-col justify-between">
             {/* Question card */}
-            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
+            <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5 space-y-4">
               <div className="flex justify-between items-center text-sm text-[var(--color-brand-secondary)] font-mono border-b border-[var(--color-brand-card)] pb-2 font-bold">
                 <span>QUESTION {currentQuestionIndex + 1} OF {PILGRIM_QUIZ.length}</span>
                 <span>SCORE: {score}</span>
@@ -172,7 +172,7 @@ export default function PilgrimQuiz({ onEarnBadge, onAddPoints, onAddApplication
           </div>
         ) : (
           /* Finished Quiz Screen */
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs flex-1 flex flex-col justify-center">
+          <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-6 text-center space-y-5 flex-1 flex flex-col justify-center">
             <div className="h-14 w-12 bg-[var(--color-brand-card)] rounded-2xl flex items-center justify-center mx-auto text-[var(--color-brand-gold)]">
               <Award className="w-8 h-8 fill-current" />
             </div>

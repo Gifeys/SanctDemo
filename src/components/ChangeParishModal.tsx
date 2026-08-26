@@ -22,7 +22,7 @@ export default function ChangeParishModal({ isOpen, onClose, parishes, currentPa
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-border)] bg-white text-[var(--color-brand-text)] shadow-2xl transition-all duration-300 ease-out font-sans"
+        className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text)] shadow-2xl transition-all duration-300 ease-out font-sans"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--color-brand-border)]">
@@ -55,7 +55,7 @@ export default function ChangeParishModal({ isOpen, onClose, parishes, currentPa
                 className={`w-full rounded-2xl border p-3.5 flex items-center gap-3 text-left transition-all ${
                   isCurrent
                     ? "bg-[var(--color-brand-card)] border-[var(--color-brand-primary)]"
-                    : "bg-white border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)]"
+                    : "bg-[var(--color-brand-card)] border-[var(--color-brand-border)] hover:border-[var(--color-brand-primary)]"
                 }`}
               >
                 <div className="h-10 w-10 rounded-xl bg-[var(--color-brand-card)] text-[var(--color-brand-primary)] flex items-center justify-center shrink-0">

@@ -65,7 +65,7 @@ export default function PresenceSheet({ onOpenTour, onOpenAR }: PresenceSheetPro
 
   return (
     <div className="absolute bottom-16 inset-x-0 z-40 px-3 pb-2">
-      <div className="rounded-3xl shadow-lg transition-all duration-300 ease-out bg-white border border-[var(--color-brand-border)] p-4 space-y-3">
+      <div className="rounded-3xl shadow-lg transition-all duration-300 ease-out bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div>
             <span className="text-sm font-bold uppercase tracking-widest text-[var(--color-brand-secondary)] font-sans">
@@ -96,7 +96,7 @@ export default function PresenceSheet({ onOpenTour, onOpenAR }: PresenceSheetPro
           </button>
           <button
             onClick={() => onOpenAR(parish.id)}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[16px] font-bold text-[var(--color-brand-primary)] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] hover:bg-white transition-colors font-sans"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-[16px] font-bold text-[var(--color-brand-primary)] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)] transition-colors font-sans"
           >
             <ScanLine className="w-4 h-4" /> AR Tour
           </button>

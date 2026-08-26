@@ -79,7 +79,7 @@ export default function ChurchHistory({ parish }: ChurchHistoryProps) {
 
       <div className="p-4 space-y-4">
         {content ? (
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs">
             {/* Image representing parish */}
             <div className="h-44 bg-[var(--color-brand-card)] relative flex items-center justify-center overflow-hidden border-b border-[var(--color-brand-border)]">
               <img
@@ -119,7 +119,7 @@ export default function ChurchHistory({ parish }: ChurchHistoryProps) {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 text-center space-y-1.5">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 text-center space-y-1.5">
             <p className="text-[15px] text-[var(--color-brand-text)] font-bold font-sans">
               History not yet documented for {parishName}.
             </p>

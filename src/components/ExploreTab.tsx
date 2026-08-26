@@ -45,7 +45,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
 
       <div className="px-4 -mt-5">
         {/* Search Bar Input */}
-        <div className="bg-white rounded-xl shadow-xs border border-[var(--color-brand-border)] p-2 flex items-center gap-2">
+        <div className="bg-[var(--color-brand-card)] rounded-xl shadow-xs border border-[var(--color-brand-border)] p-2 flex items-center gap-2">
           <Search className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 ml-1" />
           <input
             id="search-routes"
@@ -90,7 +90,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
             <div
               key={route.id}
               onClick={() => onSelectRoute(route.id)}
-              className="bg-white rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs hover:shadow-sm hover:border-[var(--color-brand-primary)] transition-all cursor-pointer group flex flex-col"
+              className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs hover:shadow-sm hover:border-[var(--color-brand-primary)] transition-all cursor-pointer group flex flex-col"
             >
               {/* Image banner */}
               <div className="relative h-32 bg-[var(--color-brand-card)] overflow-hidden">
@@ -146,7 +146,7 @@ export default function ExploreTab({ onSelectRoute }: ExploreTabProps) {
             </div>
           ))
         ) : (
-          <div className="p-8 text-center bg-white rounded-xl border border-[var(--color-brand-border)] shadow-xs">
+          <div className="p-8 text-center bg-[var(--color-brand-card)] rounded-xl border border-[var(--color-brand-border)] shadow-xs">
             <p className="text-[15px] text-[var(--color-brand-secondary)]">No walking routes found for your filters.</p>
           </div>
         )}

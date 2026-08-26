@@ -78,7 +78,7 @@ export default function PhoneContainer({
               className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-[15px] font-bold uppercase tracking-wider transition-all border ${
                 isMobileOnly
                   ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)] shadow-xs"
-                  : "bg-white text-[var(--color-brand-secondary)] border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)]"
+                  : "bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)]"
               }`}
             >
               <Smartphone className="w-4 h-4" /> Smartphone Frame
@@ -89,7 +89,7 @@ export default function PhoneContainer({
               className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-full text-[15px] font-bold uppercase tracking-wider transition-all border ${
                 !isMobileOnly
                   ? "bg-[var(--color-brand-primary)] text-white border-[var(--color-brand-primary)] shadow-xs"
-                  : "bg-white text-[var(--color-brand-secondary)] border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)]"
+                  : "bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] border-[var(--color-brand-border)] hover:bg-[var(--color-brand-card)]"
               }`}
             >
               <Monitor className="w-4 h-4" /> Full Responsive

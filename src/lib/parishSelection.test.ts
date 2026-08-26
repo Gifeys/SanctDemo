@@ -9,8 +9,8 @@ import { describe, it, expect } from 'vitest'
 import { tabForParishSelection } from './parishSelection'
 
 describe('tabForParishSelection', () => {
-  it('opens the parish’s own profile ("home") for a pin/card/search selection', () => {
-    expect(tabForParishSelection('pin')).toBe('home')
+  it('opens the parish’s own profile ("church") for a pin/card/search selection', () => {
+    expect(tabForParishSelection('pin')).toBe('church')
   })
 
   it('never routes a pin/card selection to "navigator" — the map tab it may already be on', () => {

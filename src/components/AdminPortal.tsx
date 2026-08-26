@@ -690,7 +690,7 @@ Mary Help of Christians Parish`);
       {/* Interactive Email/Scheduling Modal Overlay */}
       {selectedAppForAction && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 text-[var(--color-brand-text)] font-sans">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-[var(--color-brand-border)] animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-[var(--color-brand-border)] animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="bg-[var(--color-brand-primary)] text-white p-4 flex items-center justify-between border-b border-[var(--color-brand-border)]/30">
               <div className="flex items-center gap-1.5">
@@ -807,7 +807,7 @@ Mary Help of Christians Parish`);
                             setScheduleDate(e.target.value);
                             updateScheduleEmailBody(e.target.value, scheduleTime);
                           }}
-                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
+                          className="w-full bg-[var(--color-brand-card)] border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
                         />
                       </div>
                       <div className="space-y-1">
@@ -822,7 +822,7 @@ Mary Help of Christians Parish`);
                             updateScheduleEmailBody(scheduleDate, e.target.value);
                           }}
                           placeholder="e.g. 10:00 AM"
-                          className="w-full bg-white border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
+                          className="w-full bg-[var(--color-brand-card)] border border-blue-300 rounded-lg p-1.5 text-[15px] outline-none text-[var(--color-brand-text)] font-mono"
                         />
                       </div>
                     </div>

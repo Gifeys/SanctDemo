@@ -9,6 +9,7 @@ import { nextMass } from "../lib/schedule";
 import CustomDioceseMap from "./CustomDioceseMap";
 import HomeHero from "./HomeHero";
 import { liturgicalDay } from "../lib/liturgical";
+import { MYSTERY_BY_WEEKDAY } from "../lib/mysteries";
 
 type Announcement = {
   id: string;
@@ -30,19 +31,6 @@ interface DashboardProps {
   /** Opens the full-screen parish search. */
   onOpenSearch: () => void;
 }
-
-// Standard Catholic weekday cycle for which set of Mysteries is prayed —
-// diocese-wide, not tied to any parish. Sunday and Wednesday both carry the
-// Glorious Mysteries in the usual cycle.
-const MYSTERY_BY_WEEKDAY: Record<number, "Joyful" | "Sorrowful" | "Glorious" | "Luminous"> = {
-  0: "Glorious", // Sunday
-  1: "Joyful", // Monday
-  2: "Sorrowful", // Tuesday
-  3: "Glorious", // Wednesday
-  4: "Luminous", // Thursday
-  5: "Sorrowful", // Friday
-  6: "Joyful", // Saturday
-};
 
 function parishDisplayName(parish: Route): string {
   return parish.name.replace(" Guide", "").replace(" Tour", "");
@@ -104,7 +92,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
         </div>
         <button
           onClick={() => onNavigate("me")}
-          className="h-9 w-9 rounded-full bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[var(--color-brand-card)]"
+          className="h-9 w-9 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[var(--color-brand-card)]"
           aria-label="Me"
         >
           <User className="w-4 h-4" />
@@ -154,7 +142,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
           <button
             onClick={() => onNavigate("mass")}
-            className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1.5"
+            className="w-full bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1.5"
           >
             <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
               <Clock className="w-4 h-4 text-[var(--color-brand-secondary)]" />
@@ -181,7 +169,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
           <button
             onClick={() => onNavigate("rosary")}
-            className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1"
+            className="w-full bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 text-left transition-colors hover:border-[var(--color-brand-primary)] space-y-1"
           >
             <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
               <BookOpen className="w-4 h-4 text-[var(--color-brand-secondary)]" />
@@ -194,7 +182,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           </button>
 
           {todaysEvent && (
-            <div className="w-full bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 space-y-1">
+            <div className="w-full bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-4 space-y-1">
               <div className="flex items-center gap-2 text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
                 <Bookmark className="w-4 h-4 text-[var(--color-brand-secondary)]" />
                 <span>Happening Today</span>
@@ -218,7 +206,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
         {/* Diocese map card — tapping a live pin opens that parish's tour,
             same handler the Map tab uses. */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] shadow-xs p-3 h-64">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] shadow-xs p-3 h-64">
           <CustomDioceseMap onSelectParish={onSelectParish} />
         </div>
 
@@ -228,7 +216,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           <div className="grid grid-cols-2 gap-2 text-base font-bold text-[var(--color-brand-text)]">
             <button
               onClick={() => onNavigate("mass")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <Clock className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Mass</span>
@@ -236,7 +224,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
             <button
               onClick={() => onNavigate("history")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <Bookmark className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>History</span>
@@ -244,7 +232,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
             <button
               onClick={() => onNavigate("ministries")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <MinistryIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Ministries</span>
@@ -252,7 +240,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
             <button
               onClick={() => onNavigate("sacraments")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <Heart className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>Sacraments</span>
@@ -260,7 +248,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
             <button
               onClick={() => onNavigate("ar")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <ArIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 animate-pulse" />
               <span>AR Tour</span>
@@ -268,7 +256,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
             <button
               onClick={() => onNavigate("navigator")}
-              className="bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
+              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
             >
               <Map className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
               <span>The Walk</span>
@@ -277,7 +265,7 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
         </div>
 
         {/* Dynamic Announcements Bulletin board — parish events */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
           <div className="flex justify-between items-center border-b border-[var(--color-brand-card)] pb-1.5">
             <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
               Upcoming Parish Events
@@ -313,14 +301,14 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
 
         <button
           onClick={() => onNavigate("rosary")}
-          className="w-full bg-white p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors text-base font-bold text-[var(--color-brand-text)]"
+          className="w-full bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors text-base font-bold text-[var(--color-brand-text)]"
         >
           <BookOpen className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
           <span>Daily Rosary</span>
         </button>
 
         {/* Verse of the day — diocese-wide, not tied to any parish */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-2">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-2">
           <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
             Verse of the Day
           </h4>

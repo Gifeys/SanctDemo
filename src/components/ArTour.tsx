@@ -210,7 +210,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               </span>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs">
+            <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs">
               <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
               {result.highlights.length > 0 && (
@@ -229,7 +229,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
 
             <button
               onClick={() => setPickerOpen(true)}
-              className="w-full bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+              className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
             >
               Choose a different station
             </button>
@@ -265,7 +265,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
 
           <div className="p-4 space-y-2.5">
             {stations.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs text-center">
+              <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs text-center">
                 <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">
                   No stations are listed for this parish yet.
                 </p>
@@ -275,7 +275,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 <button
                   key={station.id}
                   onClick={() => pickStation(station)}
-                  className="w-full flex items-center justify-between gap-3 bg-white rounded-2xl border border-[var(--color-brand-border)] p-4 shadow-xs text-left active:scale-[0.98] transition-transform"
+                  className="w-full flex items-center justify-between gap-3 bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] p-4 shadow-xs text-left active:scale-[0.98] transition-transform"
                 >
                   <span className="min-w-0">
                     <span className="block text-[16px] font-bold text-[var(--color-brand-text)] font-serif italic truncate">
@@ -310,7 +310,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         </div>
 
         <div className="p-4 space-y-3">
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
             <div className="h-14 w-14 rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] flex items-center justify-center mx-auto text-[var(--color-brand-accent)]">
               {camera.status === "requesting" ? (
                 <Loader2 className="w-7 h-7 animate-spin" />
@@ -347,7 +347,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           {result && !sheetOpen && (
             <button
               onClick={() => setSheetOpen(true)}
-              className="w-full flex items-center justify-between gap-2 bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
+              className="w-full flex items-center justify-between gap-2 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
             >
               <span className="min-w-0 text-left">
                 <span className="block text-[14px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
@@ -366,7 +366,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           {showManualFallback && (
             <button
               onClick={() => setPickerOpen(true)}
-              className="w-full flex items-center justify-center gap-2 bg-white border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+              className="w-full flex items-center justify-center gap-2 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
             >
               <ListChecks className="w-4 h-4" /> Choose your station manually instead
             </button>

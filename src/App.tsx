@@ -3,12 +3,13 @@ import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
 import Onboarding from "./components/Onboarding";
 import SearchScreen from "./components/SearchScreen";
+import ChurchDetail from "./components/ChurchDetail";
+import PrayScreen from "./components/PrayScreen";
 import PwaBanner from "./components/PwaBanner";
 
 // New Components
 import Dashboard from "./components/Dashboard";
 import MeTab from "./components/MeTab";
-import DailyRosary from "./components/DailyRosary";
 import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
 import MinistriesTab from "./components/MinistriesTab";
@@ -104,7 +105,7 @@ export default function App() {
     routeForHomeParish(loadHomeParishId(VALID_HOME_IDS))
   );
   const [activeTab, setActiveTab] = useState<
-    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "me" | "admin" | "pwa-devkit"
+    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "church" | "me" | "admin" | "pwa-devkit"
   >("home");
   
   const [isOffline, setIsOffline] = useState(false);
@@ -709,7 +710,7 @@ export default function App() {
                       pin opens that parish's profile, same as the "Start
                       Sanctuary Walk" card button below does for the same
                       selection action. */}
-                  <div className="bg-white rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-3 h-72">
+                  <div className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-xs p-3 h-72">
                     <CustomDioceseMap onSelectParish={handleSelectParish} />
                   </div>
 
@@ -718,7 +719,7 @@ export default function App() {
                     {ROUTES.map((route) => (
                       <div
                         key={route.id}
-                        className="bg-white rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs hover:border-[var(--color-brand-primary)] transition-all flex flex-col"
+                        className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs hover:border-[var(--color-brand-primary)] transition-all flex flex-col"
                       >
                         {/* Facade image placeholder */}
                         <div className="relative h-28">
@@ -1061,9 +1062,19 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* The parish's own page — the redesign's screen 05. */}
+                  {activeTab === "church" && (
+                    <ChurchDetail
+                      parish={activeChurchRoute}
+                      onBack={() => setActiveTab("home")}
+                      onWalkThere={handleWalkThere}
+                      onNavigate={tab => setActiveTab(tab)}
+                    />
+                  )}
+
                   {/* TAB 3: Daily Rosary guide */}
                   {activeTab === "rosary" && (
-                    <DailyRosary />
+                    <PrayScreen onOpenSettings={() => setIsRosarySettingsOpen(true)} />
                   )}
 
                   {/* TAB 4: Mass schedule table — follows the active parish,
@@ -1118,6 +1129,7 @@ export default function App() {
                       onLogout={handleLogout}
                       onOpenChangeParish={() => setIsChangeParishOpen(true)}
                       onOpenRosarySettings={() => setIsRosarySettingsOpen(true)}
+                      parishName={activeChurchRoute?.name.replace(" Guide", "").replace(" Tour", "")}
                     />
                   )}
 

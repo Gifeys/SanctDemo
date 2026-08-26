@@ -142,7 +142,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
 
       <div className="p-4 flex-1 flex flex-col justify-start">
         {isLoggedIn ? (
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs">
             <div className="h-16 w-16 bg-[var(--color-brand-primary)]/10 rounded-full flex items-center justify-center mx-auto text-[var(--color-brand-secondary)]">
               <ShieldCheck className="w-8 h-8" />
             </div>
@@ -181,7 +181,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                 onClick={() => { setActiveMode("signin"); setErrorMsg(""); setSuccessMsg(""); }}
                 className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
                   activeMode === "signin" 
-                    ? "bg-white text-[var(--color-brand-text)] shadow-xs" 
+                    ? "bg-[var(--color-brand-card)] text-[var(--color-brand-text)] shadow-xs" 
                     : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
                 }`}
               >
@@ -191,7 +191,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
                 onClick={() => { setActiveMode("signup"); setErrorMsg(""); setSuccessMsg(""); }}
                 className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
                   activeMode === "signup" 
-                    ? "bg-white text-[var(--color-brand-text)] shadow-xs" 
+                    ? "bg-[var(--color-brand-card)] text-[var(--color-brand-text)] shadow-xs" 
                     : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
                 }`}
               >
@@ -199,7 +199,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-4">
+            <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-4">
               <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest pl-1 font-sans">
                 {activeMode === "signin" ? "Access Devotee Account" : "Register Devotee Passport"}
               </h3>
@@ -294,7 +294,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
             </div>
 
             {/* iOS Style Info Card */}
-            <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 space-y-2 text-[15px] text-[var(--color-brand-secondary)] shadow-xs">
+            <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 space-y-2 text-[15px] text-[var(--color-brand-secondary)] shadow-xs">
               <strong className="block text-[var(--color-brand-text)] font-bold uppercase tracking-wider text-sm font-sans">Registration Info:</strong>
               <div className="space-y-1.5 font-sans leading-relaxed">
                 <p>Register with any standard email to create a pilgrim profile. Administrative access to the parish office portal is granted individually by parish staff and cannot be self-assigned.</p>

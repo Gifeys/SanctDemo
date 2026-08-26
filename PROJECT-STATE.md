@@ -30,6 +30,8 @@ npm test --prefix D:/SanctDemo             # 81 tests
 | Area | Files |
 |---|---|
 | Location awareness | `src/lib/{geo,presence,project,schedule}.ts`, `src/context/PresenceContext.tsx` |
+| Redesign screens | `Onboarding` · `SearchScreen` · `ChurchDetail` · `PrayScreen` · `HomeHero` · restyled `MeTab`/`PilgrimQuiz`/`ArTour` |
+| Liturgical calendar | `src/lib/liturgical.ts` — computed from Easter, not stored |
 | Compass / heading | `src/lib/heading.ts` (pure maths) · `src/lib/useDeviceHeading.ts` (sensors) · `src/components/CompassControl.tsx` |
 | Search | `src/lib/mapSearch.ts` — scored and ranked, not a substring filter |
 | Maps | `DioceseMapLive.tsx` (real, MapLibre, light `positron` basemap — the client's earlier prototype's design) falling back to `DioceseMap.tsx` (drawn SVG, stays dark) |

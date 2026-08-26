@@ -98,7 +98,7 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
               return (
                 <div
                   key={min.id}
-                  className="bg-white rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
+                  className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
                 >
                   <button
                     onClick={() => toggleExpand(min.id)}
@@ -159,7 +159,7 @@ export default function MinistriesTab({ parish, onAddApplication }: MinistriesTa
         </div>
 
         {/* Application Form Section */}
-        <div id="application-form" className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
+        <div id="application-form" className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
           <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/45 pb-1.5">
             Submit Ministry Application
           </h3>

@@ -174,7 +174,7 @@ export default function MapTab({
 
       {/* Interactive Map Section */}
       <div className="p-4 shrink-0">
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-3.5 shadow-xs relative overflow-hidden">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-3.5 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
               Sancti Trail Visualizer
@@ -322,7 +322,7 @@ export default function MapTab({
 
       {/* Active Station Detail Drawer */}
       <div className="px-4 flex-1 overflow-y-auto space-y-4">
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
           <div className="flex gap-3">
             <img
               src={activeStation.imageUrl}
@@ -388,7 +388,7 @@ export default function MapTab({
             {/* Local Notes/Reflections Diary input */}
             <div className="space-y-2 pt-2 border-t border-[var(--color-brand-border)]/45">
               {savedNotes[activeStation.id] ? (
-                <div className="p-2.5 bg-white rounded-xl border border-[var(--color-brand-border)] text-[15px] text-gray-700 space-y-1">
+                <div className="p-2.5 bg-[var(--color-brand-card)] rounded-xl border border-[var(--color-brand-border)] text-[15px] text-gray-700 space-y-1">
                   <span className="text-sm text-[var(--color-brand-secondary)] font-mono block font-bold uppercase">Your Saved Note:</span>
                   <p className="italic font-medium text-[var(--color-brand-text)]">"{savedNotes[activeStation.id]}"</p>
                 </div>
@@ -400,7 +400,7 @@ export default function MapTab({
                     placeholder="Write down your thoughts here..."
                     value={diaryNote}
                     onChange={(e) => setDiaryNote(e.target.value)}
-                    className="flex-1 bg-white border border-[var(--color-brand-border)] text-[15px] px-2.5 py-1.5 rounded-xl outline-none placeholder-[var(--color-brand-secondary)] text-[var(--color-brand-text)]"
+                    className="flex-1 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[15px] px-2.5 py-1.5 rounded-xl outline-none placeholder-[var(--color-brand-secondary)] text-[var(--color-brand-text)]"
                   />
                   <button
                     onClick={handleSaveDiary}

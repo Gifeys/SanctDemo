@@ -79,7 +79,7 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
 
       <div className="p-4 space-y-4">
         {/* Main Schedule Card */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs p-5 space-y-4">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs p-5 space-y-4">
           {/* Facade photo representation */}
           <div className="rounded-2xl overflow-hidden h-28 border border-[var(--color-brand-border)]/40 relative">
             {photo && (
@@ -146,7 +146,7 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-center text-[15px] font-mono font-bold text-[var(--color-brand-text)] pt-1">
                     {sundayTimes.map((time) => (
-                      <div key={time} className="p-1.5 bg-white rounded border border-[var(--color-brand-border)]/40">
+                      <div key={time} className="p-1.5 bg-[var(--color-brand-card)] rounded border border-[var(--color-brand-border)]/40">
                         {time}
                       </div>
                     ))}

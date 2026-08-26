@@ -24,7 +24,7 @@ export default function ArPlaceholder() {
 
       <div className="p-4 space-y-4">
         {/* Status card */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
           <div className="h-14 w-14 rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] flex items-center justify-center mx-auto text-[var(--color-brand-accent)]">
             <Hourglass className="w-7 h-7" />
           </div>
@@ -39,7 +39,7 @@ export default function ArPlaceholder() {
         </div>
 
         {/* What it will do */}
-        <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
+        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
           <h4 className="text-sm font-bold text-[var(--color-brand-text)] uppercase tracking-wider font-sans border-b border-[var(--color-brand-border)]/45 pb-1.5">
             What the AR Tour will do
           </h4>

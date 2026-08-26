@@ -110,7 +110,7 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
       <div className="p-4 space-y-4">
         {loading ? (
           /* High-quality animated loading panel */
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-8 text-center space-y-4 shadow-xs">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-8 text-center space-y-4 shadow-xs">
             <Loader2 className="w-8 h-8 text-[var(--color-brand-secondary)] animate-spin mx-auto" />
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic">Generating Your SanctiWalk...</h4>
@@ -119,7 +119,7 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
           </div>
         ) : generatedRoute ? (
           /* Generated Custom Route View */
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-sm space-y-4">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-sm space-y-4">
             <div className="bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] text-sm font-bold px-2.5 py-1 rounded-full uppercase tracking-wider w-fit flex items-center gap-1 border border-[var(--color-brand-border)]">
               <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-gold)]" /> Custom Gemini Gen
             </div>
@@ -172,7 +172,7 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
           </div>
         ) : (
           /* Setup / Customizer Form */
-          <div className="bg-white rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
+          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-4">
             <p className="text-[15px] text-[var(--color-brand-secondary)] leading-relaxed font-sans">
               Define your surroundings and preferences below. The Gemini AI engine will synthesize architectural history, custom routes, and wellness meditations dynamically.
             </p>
