@@ -25,7 +25,28 @@ export type CameraStatus =
 export interface CapturedFrame {
   base64: string;
   mimeType: string;
+  width: number;
+  height: number;
+  /** Encoded size in bytes, before base64 inflation. */
+  bytes: number;
+  /** Mean luminance 0-255, used to catch a frame taken in the dark. */
+  brightness: number;
 }
+
+/**
+ * Why a capture failed. `captureFrame` used to return plain null, which the
+ * caller could only translate into a single vague message — or, as it did,
+ * into nothing at all.
+ */
+export type CaptureFailure =
+  | "no-video"       // the <video> element is not mounted
+  | "not-ready"      // stream is live but no frame has painted yet
+  | "no-canvas"      // 2D context unavailable
+  | "encode-failed"; // toDataURL produced nothing usable
+
+export type CaptureResult =
+  | { ok: true; frame: CapturedFrame }
+  | { ok: false; reason: CaptureFailure };
 
 /**
  * True when getUserMedia can even be attempted here. False on a bare LAN IP
@@ -76,6 +97,7 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
         return;
       }
 
+      console.log(`[Scanner] Camera initialized: requesting ${mode} camera`);
       setStatus("requesting");
       setError(null);
 
@@ -106,6 +128,7 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
         // silently, and the user would get a live camera behind a black
         // rectangle with no error to explain it. The attach happens in the
         // effect below, once React has actually mounted the element.
+        console.log("[Scanner] Camera permission: granted");
         setStatus("ready");
 
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -113,6 +136,7 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
       } catch (err) {
         if (token !== startTokenRef.current) return;
         const e = err as DOMException;
+        console.error(`[Scanner] Scanner error: getUserMedia failed — ${e.name}: ${e.message}`);
         if (e.name === "NotAllowedError" || e.name === "SecurityError") {
           setStatus("denied");
           setError(
@@ -161,33 +185,95 @@ export function useCamera({ autoStart = false }: { autoStart?: boolean } = {}) {
       video.srcObject = stream;
     }
 
+    const track = stream.getVideoTracks()[0];
+    const settings = track?.getSettings?.();
+    console.log(
+      `[Scanner] Camera is ready: ${settings?.width ?? "?"}x${settings?.height ?? "?"} ` +
+        `facing ${settings?.facingMode ?? "?"}`,
+    );
+
     // play() can reject if the browser wants a fresher gesture; the stream is
     // still live and the element will usually paint anyway, so this must never
     // throw into the UI.
     void video.play().catch(() => {});
   }, [status]);
 
-  /** Current frame as base64 JPEG, or null when the video isn't ready. */
-  const captureFrame = useCallback((): CapturedFrame | null => {
+  /**
+   * The current frame as a base64 JPEG, with the checks that make a failure
+   * explainable instead of silent.
+   *
+   * Capture width is 960, not the sensor's. A larger frame is not a better
+   * answer: measured against the same photograph of a crowned Marian statue,
+   * 640px produced "Statue of Our Lady with the Child Jesus" and 1280px
+   * produced "Our Lady of the Rosary" — more specific, and wrong. Resolution
+   * is not what limits recognition here, so 960 is chosen as headroom for a
+   * genuinely distant subject rather than as an accuracy fix.
+   */
+  const captureFrame = useCallback((): CaptureResult => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) return null;
+    if (!video) {
+      console.warn("[Scanner] Capturing image: no <video> element mounted");
+      return { ok: false, reason: "no-video" };
+    }
+
+    // readyState < 2 means metadata may exist but no frame has been decoded,
+    // so drawImage would paint a blank rectangle rather than the scene.
+    if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+      console.warn(
+        `[Scanner] Capturing image: video not ready (${video.videoWidth}x${video.videoHeight}, readyState ${video.readyState})`,
+      );
+      return { ok: false, reason: "not-ready" };
+    }
 
     const canvas =
       canvasRef.current ?? (canvasRef.current = document.createElement("canvas"));
 
-    // Downscale — the model doesn't need sensor resolution, and a smaller frame
-    // is most of the difference in perceived speed on a phone.
-    const maxWidth = 640;
+    const maxWidth = 960;
     const scale = Math.min(1, maxWidth / video.videoWidth);
     canvas.width = Math.round(video.videoWidth * scale);
     canvas.height = Math.round(video.videoHeight * scale);
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      console.error("[Scanner] Capturing image: no 2D context");
+      return { ok: false, reason: "no-canvas" };
+    }
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    console.log(`[Scanner] Image dimensions: ${canvas.width}x${canvas.height} (source ${video.videoWidth}x${video.videoHeight})`);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
-    return { base64: dataUrl.split(",")[1] ?? "", mimeType: "image/jpeg" };
+    // Mean luminance over a sparse grid. Cheap, and it distinguishes "the
+    // lens cap is on / the church is dark" from "the model could not tell",
+    // which are the same message to a pilgrim otherwise.
+    let brightness = 0;
+    try {
+      const sample = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let total = 0;
+      let count = 0;
+      for (let i = 0; i < sample.length; i += 4 * 97) {
+        total += 0.2126 * sample[i] + 0.7152 * sample[i + 1] + 0.0722 * sample[i + 2];
+        count++;
+      }
+      brightness = count ? total / count : 0;
+    } catch {
+      // A tainted canvas cannot be read. Not fatal — brightness is advice,
+      // not a gate.
+      brightness = -1;
+    }
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    const base64 = dataUrl.split(",")[1] ?? "";
+    if (base64.length < 512) {
+      console.error(`[Scanner] Image encoding: produced only ${base64.length} chars — treating as failed`);
+      return { ok: false, reason: "encode-failed" };
+    }
+
+    const bytes = Math.round(base64.length * 0.75);
+    console.log(`[Scanner] Encoded image size: ${(bytes / 1024).toFixed(0)} KB, brightness ${brightness.toFixed(0)}/255`);
+
+    return {
+      ok: true,
+      frame: { base64, mimeType: "image/jpeg", width: canvas.width, height: canvas.height, bytes, brightness },
+    };
   }, []);
 
   // Always release the camera when the tab unmounts — a live green dot after

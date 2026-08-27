@@ -115,19 +115,43 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
   }, []);
 
   const scan = useCallback(async () => {
-    const frame = camera.captureFrame();
-    if (!frame) {
-      // captureFrame returns null while the video still has no dimensions —
-      // the stream is live but the first frame has not painted yet. This used
-      // to `return` silently, so tapping Scan did nothing at all: no error, no
-      // spinner, nothing. Indistinguishable from a dead button.
-      setError("The camera is still warming up. Give it a second and tap again.");
+    const capture = camera.captureFrame();
+
+    if (!capture.ok) {
+      // Each reason gets its own words. "It didn't work" is the same message
+      // for a camera that has not painted a frame yet and for one that never
+      // will, and those need different actions from the pilgrim.
+      const message: Record<typeof capture.reason, string> = {
+        "no-video": "The camera view is not open. Close and reopen the scanner.",
+        "not-ready": "The camera is still warming up. Give it a second and tap again.",
+        "no-canvas": "This browser could not prepare the image. Try reloading the app.",
+        "encode-failed": "The captured frame was empty. Try again, and make sure the camera is not covered.",
+      };
+      console.error(`[Scanner] Scanner error: capture failed — ${capture.reason}`);
+      setError(message[capture.reason]);
+      return;
+    }
+
+    const frame = capture.frame;
+
+    // A frame this dark carries nothing for the model to work from, and
+    // spending one of the day's twenty recognitions to be told so is worse
+    // than saying it here. -1 means brightness could not be measured, which
+    // is not a reason to block.
+    if (frame.brightness >= 0 && frame.brightness < 18) {
+      console.warn(`[Scanner] Scanner error: frame too dark (brightness ${frame.brightness.toFixed(0)}/255)`);
+      setError("Too dark to read. Move closer, turn on more light, and keep the object inside the frame.");
       return;
     }
 
     setPhase("scanning");
     setError(null);
+    console.log(
+      `[Scanner] Sending image to AI: ${frame.width}x${frame.height}, ` +
+        `${(frame.bytes / 1024).toFixed(0)} KB, ${stationNames.length} station candidates`,
+    );
 
+    const startedAt = Date.now();
     try {
       const response = await fetch("/api/identify", {
         method: "POST",
@@ -139,27 +163,59 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         }),
       });
 
+      console.log(`[Scanner] API response: ${response.status} in ${Date.now() - startedAt}ms`);
+
+      // A 413 used to arrive as the dev server's HTML error page, which threw
+      // on .json() and surfaced as "Could not reach the server" — a size
+      // limit reported as a network fault. Read the content type first.
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        console.error(
+          `[Scanner] Scanner error: expected JSON, got "${contentType}" (status ${response.status})`,
+        );
+        setError(
+          response.status === 413
+            ? "That photo was too large to send. Try again from a little further back."
+            : `The server replied unexpectedly (status ${response.status}). Please try again.`,
+        );
+        setPhase("idle");
+        return;
+      }
+
       const data = await response.json();
       if (data?.budget) setBudget(data.budget);
 
       if (!response.ok) {
+        console.error(`[Scanner] Scanner error: ${response.status} — ${data?.error ?? "no message"}`);
         setError(data?.error ?? "Recognition failed. Please try again.");
         setPhase("idle");
         return;
       }
 
       if (!data.recognized) {
-        // Not an error — say so plainly instead of inventing an answer.
-        setError("Nothing recognisable in view. Move closer, or steady the camera.");
+        console.log("[Scanner] AI result: nothing identifiable in frame");
+        setError(
+          data?.advice ??
+            "Nothing recognisable in view. Move closer, improve the lighting, and keep the object inside the frame.",
+        );
         setPhase("idle");
         return;
       }
 
+      console.log(
+        `[Scanner] AI result: "${data.title}" (${Math.round((data.confidence ?? 0) * 100)}% confidence` +
+          `${data.matchedStation === false ? ", not a listed station" : ""})`,
+      );
       setResult({ ...(data as Omit<Recognition, "source">), source: "ai" });
       setSheetOpen(true);
       setPhase("done");
-    } catch {
-      setError("Could not reach the server. Check your connection.");
+    } catch (err) {
+      console.error("[Scanner] Scanner error:", err);
+      setError(
+        err instanceof TypeError
+          ? "Could not reach the server. Check your connection and try again."
+          : "Something went wrong reading the result. Please try again.",
+      );
       setPhase("idle");
     }
   }, [camera, stationNames]);

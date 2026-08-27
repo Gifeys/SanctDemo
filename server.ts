@@ -67,7 +67,17 @@ function getLanIps(): string[] {
   return ips;
 }
 
-app.use(express.json());
+// 12mb, not the 100kb express.json() defaults to.
+//
+// The camera posts a base64 JPEG, and base64 inflates a payload by about a
+// third. At the old default a 640px frame of a plain subject squeaked
+// through at 65kb, while the same 640px frame of a *detailed* scene — a
+// flower-covered carroza, stained glass, a crowded nave — compressed worse,
+// crossed 100kb, and was rejected with a 413 that the dev server answered
+// with an HTML error page. The client then failed to parse it as JSON and
+// reported "Could not reach the server", so a size limit surfaced as a
+// network fault, intermittently, depending on what the camera was pointed at.
+app.use(express.json({ limit: "12mb" }));
 
 // Lazy-initialize Gemini API
 /**
@@ -275,9 +285,20 @@ app.post("/api/identify", async (req, res) => {
   try {
     const { imageBase64, mimeType, candidates } = req.body ?? {};
 
-    if (!imageBase64) {
-      return res.status(400).json({ error: "Missing imageBase64." });
+    if (typeof imageBase64 !== "string" || imageBase64.length < 512) {
+      console.error(
+        `[Scanner] Scanner error: rejected payload — imageBase64 was ${
+          typeof imageBase64 === "string" ? `${imageBase64.length} chars` : typeof imageBase64
+        }`,
+      );
+      return res.status(400).json({
+        error: "The captured image did not arrive properly. Please try scanning again.",
+      });
     }
+
+    // Base64 is 4 chars per 3 bytes, so this is the decoded size.
+    const imageBytes = Math.round(imageBase64.length * 0.75);
+    console.log(`[Scanner] API request: ${(imageBytes / 1024).toFixed(0)} KB image, model ${VISION_MODEL}`);
 
     const budget = scanBudget();
     if (budget.remaining <= 0) {
@@ -297,8 +318,12 @@ app.post("/api/identify", async (req, res) => {
           "The pilgrim is at a station that is one of the following:",
           ...shortlist.map((name: string) => `- ${name}`),
           "",
+          "Look carefully at the whole frame before answering.",
+          "",
           "If the photo shows one of them, name that station and set",
-          "matchedStation to true.",
+          "matchedStation to true. The list is the strongest evidence you",
+          "have about what this object is, so prefer a listed station over a",
+          "guess when the image is consistent with it.",
           "",
           "If it shows none of them, DO NOT set recognized to false. Identify the",
           "subject anyway — as specifically as you can — and set matchedStation to",
@@ -307,6 +332,11 @@ app.post("/api/identify", async (req, res) => {
           "",
           "Set recognized to false only when the frame is too blurry or dark, or",
           "shows nothing identifiable at all.",
+          "",
+          "In `summary`, say what you actually saw that led to the answer, so",
+          "the pilgrim can check it against what is in front of them. Set",
+          "`confidence` honestly, and when the frame is unusable put a short",
+          "practical instruction in `advice`.",
           "",
           "Only state facts you can see in the image or that are common knowledge",
           "about the subject. Do not invent parish-specific history, dates, donors,",
@@ -341,14 +371,35 @@ app.post("/api/identify", async (req, res) => {
               type: Type.BOOLEAN,
               description: "False when the frame shows nothing identifiable.",
             },
-            title: { type: Type.STRING, description: "The subject's specific name. Empty when not recognized." },
+            title: {
+              type: Type.STRING,
+              // This field's own description used to read "the subject's
+              // specific name", which pulled against the instruction above
+              // and kept producing confident wrong devotions — a schema
+              // description is an instruction to the model too.
+              description:
+                "What the subject is. Use a specific saint or devotion ONLY when the image shows attributes that distinguish it (an inscription, name plate, or unique emblem). Otherwise use an accurate general description such as 'Crowned Marian image with the Child Jesus'. Empty when not recognized.",
+            },
             category: { type: Type.STRING, description: "Short type label: Statue, Altar, Window, Painting, Relic, Architecture." },
-            confidence: { type: Type.NUMBER, description: "0 to 1. Be honest; a low number is more useful than a confident guess." },
-            summary: { type: Type.STRING, description: "2-4 sentences for someone standing in front of it." },
+            confidence: {
+              type: Type.NUMBER,
+              description:
+                "0 to 1. Be honest. Use 0.9+ only when an inscription or unique emblem confirms the identification; use 0.4-0.6 for a general category recognised without distinguishing marks.",
+            },
+            summary: {
+              type: Type.STRING,
+              description:
+                "2-4 sentences for someone standing in front of it. Begin by naming the visual evidence you used — the crown, vestment colour, emblem, inscription — then what it is. Say plainly if you are unsure.",
+            },
             highlights: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
               description: "Three short standalone facts.",
+            },
+            advice: {
+              type: Type.STRING,
+              description:
+                "When recognized is false: one short, practical instruction for the pilgrim, e.g. move closer or improve the lighting. Empty otherwise.",
             },
             matchedStation: {
               type: Type.BOOLEAN,
@@ -366,7 +417,7 @@ app.post("/api/identify", async (req, res) => {
     const response = await askModel(instruction);
     // Logged so "the scanner feels slow" can be answered with a number
     // instead of a guess — which is how the 20s-to-1.5s fix was found.
-    console.log(`[/api/identify] ${VISION_MODEL} ${Date.now() - startedAt}ms`);
+    console.log(`[Scanner] API response: ${VISION_MODEL} answered in ${Date.now() - startedAt}ms`);
     const text = response.text;
     if (!text) {
       return res.status(502).json({ error: "The vision model returned no content." });
@@ -401,7 +452,23 @@ app.post("/api/identify", async (req, res) => {
       });
     }
 
-    console.error("[/api/identify]", message);
+    // The real error goes to the console; the pilgrim gets something they can
+    // act on. An API key problem in particular is a configuration fault, not
+    // something a pilgrim can fix by trying again, so it says so.
+    console.error("[Scanner] Scanner error:", message);
+
+    if (/API key|API_KEY|PERMISSION_DENIED|UNAUTHENTICATED/i.test(message)) {
+      return res.status(500).json({
+        error: "Recognition is not configured on the server. Check GEMINI_API_KEY.",
+        code: "auth",
+      });
+    }
+    if (/deadline|timeout|ETIMEDOUT|ECONNRESET|fetch failed|ENOTFOUND/i.test(message)) {
+      return res.status(504).json({
+        error: "Recognition timed out. Check your connection and try again.",
+        code: "timeout",
+      });
+    }
     return res.status(500).json({ error: "Recognition failed. Please try again." });
   }
 });
