@@ -817,7 +817,7 @@ export default function App() {
 
 
                 {/* PRIMARY VIEW CONTENT WORKSPACE */}
-                <div className="flex-1 flex flex-col overflow-y-auto pb-4">
+                <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
                   
                   {/* TAB 1: Parish Dashboard / Home Tab — TODAY first, then
                       the parish grid, then diocese-wide content. Extracted
@@ -983,7 +983,23 @@ export default function App() {
                 {/* BOTTOM STICKY PHONE SIM NAVIGATION BAR — five tabs, Scan
                     centred and visually raised as the app's signature
                     feature, every tab keeping a visible text label. */}
-                <nav className="absolute bottom-0 inset-x-0 h-16 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] flex items-center justify-around px-1 z-40 shadow-md">
+                {/* A flex child, not an overlay.
+                
+                    As `absolute bottom-0` it floated ON TOP of the content:
+                    every screen then had to reserve 64px for it by hand, the
+                    outer wrapper reserved only 16px, and screens with their
+                    own inner scroller (Me, Pray) reserved none at all — so
+                    their last rows sat under the bar and could never be
+                    scrolled clear. Taking part in the layout means the
+                    content area sizes itself around the bar automatically,
+                    on every screen, including ones not written yet.
+                
+                    The safe-area inset keeps the labels clear of the iPhone
+                    home indicator. */}
+                <nav
+                  className="shrink-0 h-16 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] flex items-center justify-around px-1 z-40 shadow-md"
+                  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                >
                   <button
                     onClick={() => setActiveTab("home")}
                     className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${

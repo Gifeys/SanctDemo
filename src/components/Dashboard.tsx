@@ -190,32 +190,6 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           </div>
         </div>
 
-        {/* Dynamic Announcements Bulletin board — parish events */}
-        <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4.5 shadow-xs space-y-3">
-          <div className="flex justify-between items-center border-b border-[var(--color-brand-card)] pb-1.5">
-            <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
-              Upcoming Parish Events
-            </h4>
-            <span className="text-sm font-mono text-[var(--color-brand-secondary)] bg-[var(--color-brand-card)] px-2 py-0.5 rounded">
-              {parishName} Bulletin
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {announcements.map((ann) => (
-              <div key={ann.id} className="flex gap-3 items-start text-[15px] border-b border-[var(--color-brand-card)]/60 pb-2 last:border-0 last:pb-0">
-                <div className="p-2 bg-[var(--color-brand-card)] text-[var(--color-brand-secondary)] font-bold rounded-lg text-center font-mono w-14 shrink-0 text-sm">
-                  {ann.type}
-                </div>
-                <div>
-                  <h5 className="font-bold text-[var(--color-brand-text)] font-sans text-[15px]">{ann.title}</h5>
-                  <p className="text-sm text-[var(--color-brand-secondary)] font-sans mt-0.5">{ann.date} at {ann.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Diocese-wide, and the only thing left here now that the map has
             its own tab, the Rosary lives on Pray, and Mass times moved to
             Pray with it. */}

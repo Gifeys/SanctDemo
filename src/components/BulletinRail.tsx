@@ -39,17 +39,27 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
         <h2 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
           Parish bulletin
         </h2>
-        {upcoming.length > 0 && (
-          <span className="text-[15px] text-[var(--color-brand-secondary)]">
-            {upcoming.length} coming up
-          </span>
-        )}
+        <span className="text-[15px] text-[var(--color-brand-secondary)]">
+          {upcoming.length > 0 ? `${upcoming.length} coming up` : "Nothing posted yet"}
+        </span>
       </div>
 
       <div
         className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="list"
       >
+        {/* Said plainly rather than left looking empty. Past announcements
+            are filtered out, so a bulletin whose events have all been and
+            gone shows this instead of three stale dates. */}
+        {upcoming.length === 0 && (
+          <p
+            role="listitem"
+            className="snap-center shrink-0 w-[78%] rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
+          >
+            No upcoming events posted for this parish yet. New announcements appear here first.
+          </p>
+        )}
+
         {upcoming.map(item => (
           <article
             role="listitem"
