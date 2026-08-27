@@ -1,5 +1,5 @@
 import React from "react";
-import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList } from "lucide-react";
+import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { UserProgress } from "../types";
 import { BADGES } from "../data";
@@ -23,6 +23,8 @@ interface MeTabProps {
   onLogout: () => void;
   onOpenChangeParish: () => void;
   onOpenRosarySettings: () => void;
+  onOpenAdmin: () => void;
+  onOpenSimulator: () => void;
   /** The pilgrim's home parish, shown under their name in the header. */
   parishName?: string;
 }
@@ -41,6 +43,8 @@ export default function MeTab({
   onLogout,
   onOpenChangeParish,
   onOpenRosarySettings,
+  onOpenAdmin,
+  onOpenSimulator,
   parishName,
 }: MeTabProps) {
   // The design shows a name and initials. Signed out there is no name to
@@ -159,6 +163,28 @@ export default function MeTab({
             <SettingsIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
             <span>Rosary Settings</span>
           </button>
+
+          {/* Moved here from the removed sidebar. The simulator is a demo
+              tool and says so, rather than sitting unlabelled among the
+              pilgrim's own settings. */}
+          <button
+            onClick={onOpenSimulator}
+            className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
+          >
+            <FlaskConical className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+            <span className="flex-1">Location Simulator</span>
+            <span className="text-[14px] font-normal text-[var(--color-brand-secondary)]">Demo tool</span>
+          </button>
+
+          {isAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
+            >
+              <ShieldCheck className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+              <span>Admin Panel</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

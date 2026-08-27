@@ -129,7 +129,7 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
         <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest block font-sans">
           Pilgrim Profile
         </span>
-        <h2 className="text-3xl font-black text-white tracking-tight mt-0.5 uppercase font-sans">
+        <h2 className="text-3xl font-black text-[var(--color-brand-text)] tracking-tight mt-0.5 uppercase font-sans">
           {isLoggedIn ? "My Session" : activeMode === "signin" ? "Sign In" : "Register"}
         </h2>
         <p className="text-[15px] text-[var(--color-brand-secondary)] mt-1.5 leading-relaxed font-sans max-w-xs">
