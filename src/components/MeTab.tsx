@@ -1,6 +1,5 @@
 import React from "react";
-import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck } from "lucide-react";
-import LoginModal from "./LoginModal";
+import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User } from "lucide-react";
 import { UserProgress } from "../types";
 import { BADGES } from "../data";
 
@@ -25,6 +24,8 @@ interface MeTabProps {
   onOpenRosarySettings: () => void;
   onOpenAdmin: () => void;
   onOpenSimulator: () => void;
+  /** Opens the sign-in screen. */
+  onOpenSignIn: () => void;
   /** The pilgrim's home parish, shown under their name in the header. */
   parishName?: string;
 }
@@ -45,6 +46,7 @@ export default function MeTab({
   onOpenRosarySettings,
   onOpenAdmin,
   onOpenSimulator,
+  onOpenSignIn,
   parishName,
 }: MeTabProps) {
   // The design shows a name and initials. Signed out there is no name to
@@ -60,13 +62,6 @@ export default function MeTab({
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-      <LoginModal
-        onLoginSuccess={onLoginSuccess}
-        onLogout={onLogout}
-        isLoggedIn={isLoggedIn}
-        userEmail={userEmail}
-        isAdmin={isAdmin}
-      />
 
       <div className="px-5 pt-6 pb-4 flex items-center gap-4">
         <div className="flex-1 min-w-0">
@@ -149,6 +144,23 @@ export default function MeTab({
 
         {/* Quick links */}
         <div className="space-y-2">
+          {/* Sign-in is a row here rather than a whole screen embedded at
+              the top of Me. Inline, LoginModal brought its own "Pilgrim
+              Profile" header, so Me showed two competing profile headers
+              stacked on each other. */}
+          <button
+            onClick={isLoggedIn ? onLogout : onOpenSignIn}
+            className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
+          >
+            <User className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+            <span className="flex-1 truncate">{isLoggedIn ? "Sign out" : "Sign in"}</span>
+            {isLoggedIn && (
+              <span className="text-[14px] font-normal text-[var(--color-brand-secondary)] truncate max-w-[45%]">
+                {userEmail}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={onOpenChangeParish}
             className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"

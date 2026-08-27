@@ -109,6 +109,7 @@ export default function App() {
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
 
   // First run: nothing stored yet, so the pilgrim is asked which parish is
   // theirs before the app opens. Read from storage rather than from
@@ -636,6 +637,32 @@ export default function App() {
         </div>
       )}
 
+      {/* Sign-in as its own screen rather than embedded at the top of Me,
+          where it stacked a second "Pilgrim Profile" header under the first. */}
+      {isSignInOpen && (
+        <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
+          <div className="flex justify-end p-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsSignInOpen(false)}
+              className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
+            >
+              Close
+            </button>
+          </div>
+          <LoginModal
+            isLoggedIn={isLoggedIn}
+            userEmail={userEmail}
+            isAdmin={isAdmin}
+            onLoginSuccess={(email, adminFlag) => {
+              handleLoginSuccess(email, adminFlag);
+              setIsSignInOpen(false);
+            }}
+            onLogout={handleLogout}
+          />
+        </div>
+      )}
+
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
           <SearchScreen
@@ -855,13 +882,10 @@ export default function App() {
                             top as overlays, so nothing steals height from the
                             thing people came to this tab to look at. */}
                         <div className="map-screen">
-                          <header className="map-screen__header">
-                            <h1 className="map-screen__title">Diocese of Kalookan</h1>
-                            <p className="map-screen__count">
-                              {liveParishes.length} {liveParishes.length === 1 ? "parish is" : "parishes are"} live on SanctiWalk
-                            </p>
-                          </header>
-
+                          {/* The heading block is gone at the client's
+                              request — the Map tab is self-evidently the map,
+                              and the two title lines plus the legend cost
+                              about a fifth of the screen. */}
                           <div className="map-screen__canvas">
                             <CustomDioceseMap
                               onSelectParish={handleSelectParish}
@@ -897,11 +921,7 @@ export default function App() {
 
                   {/* TAB 3: Daily Rosary guide */}
                   {activeTab === "rosary" && (
-                    <PrayScreen
-                      onOpenSettings={() => setIsRosarySettingsOpen(true)}
-                      parishId={activeChurchRoute.id}
-                      parishName={activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
-                    />
+                    <PrayScreen onOpenSettings={() => setIsRosarySettingsOpen(true)} />
                   )}
 
                   {/* TAB 4: Mass schedule table — follows the active parish,
@@ -959,6 +979,7 @@ export default function App() {
                       parishName={activeChurchRoute?.name.replace(" Guide", "").replace(" Tour", "")}
                       onOpenAdmin={() => setActiveTab("admin")}
                       onOpenSimulator={() => setIsSimulatorOpen(true)}
+                      onOpenSignIn={() => setIsSignInOpen(true)}
                     />
                   )}
 

@@ -108,20 +108,6 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
       </div>
 
       <div className="p-4 space-y-4 font-sans">
-        <button
-          type="button"
-          onClick={onOpenSearch}
-          className="w-full flex items-center gap-2.5 px-4 py-3 rounded-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-left"
-        >
-          <Search className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-          <span className="text-[16px] text-[var(--color-brand-secondary)]">Search parish or place</span>
-        </button>
-
-        {/* The redesign's hero. It features the parish you are actually
-            closest to, which is usually one of the 29 with no content
-            collected yet — see HomeHero for what it does about that. */}
-        <HomeHero onWalkThere={onWalkThere} onOpenParish={onSelectParish} />
-
         {/* The parish bulletin — live announcements, swiping. */}
         <BulletinRail announcements={announcements} onNavigate={onNavigate} />
 
@@ -136,8 +122,10 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           </h3>
         </div>
 
-        {/* Quick Navigation grid — everything here belongs to the active
-            parish and follows it when it changes. */}
+        {/* Two buttons, not six. Ministries and Sacraments are in the
+            bulletin rail above; AR Tour is the Scan tab and The Walk is the
+            Map tab, both already in the bottom bar. What is left is the pair
+            that has nowhere else to live. */}
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2 text-base font-bold text-[var(--color-brand-text)]">
             <button
@@ -156,37 +144,6 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
               <span>History</span>
             </button>
 
-            <button
-              onClick={() => onNavigate("ministries")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <MinistryIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-              <span>Ministries</span>
-            </button>
-
-            <button
-              onClick={() => onNavigate("sacraments")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <Heart className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-              <span>Sacraments</span>
-            </button>
-
-            <button
-              onClick={() => onNavigate("ar")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <ArIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 animate-pulse" />
-              <span>AR Tour</span>
-            </button>
-
-            <button
-              onClick={() => onNavigate("navigator")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <Map className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-              <span>The Walk</span>
-            </button>
           </div>
         </div>
 

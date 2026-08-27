@@ -3,14 +3,10 @@ import { ArrowLeft, Settings } from "lucide-react";
 import DailyRosary from "./DailyRosary";
 import { liturgicalDay } from "../lib/liturgical";
 import { daysForMystery, mysteryForDate } from "../lib/mysteries";
-import { MASS_SCHEDULES, ROSARY_MYSTERIES } from "../data";
-import { nextMass, parseTimes } from "../lib/schedule";
+import { ROSARY_MYSTERIES } from "../data";
 
 interface PrayScreenProps {
   onOpenSettings: () => void;
-  /** The active parish, whose Mass times this screen now carries. */
-  parishId: string;
-  parishName: string;
 }
 
 /**
@@ -21,27 +17,22 @@ interface PrayScreenProps {
  * own design, music and slideshow untouched. Only the screen around it is
  * restyled.
  *
+ * Mass times briefly lived here too. They were moved back out: a screen that
+ * mixes a schedule with a prayer reads as two half-screens rather than one,
+ * and the parish page already answers "when is Mass" under "Today at this
+ * church". Pray is the Rosary.
+ *
  * That boundary is also why there is no "2 of 5 decades today" progress line
  * here as the mockup has: decade progress lives inside the iframe's own
  * state, which this side cannot read. Showing a number this screen cannot
  * know would be inventing it.
  */
-export default function PrayScreen({ onOpenSettings, parishId, parishName }: PrayScreenProps) {
+export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
   const [praying, setPraying] = useState(false);
   const now = new Date();
   const today = liturgicalDay(now);
   const set = mysteryForDate(now);
   const mystery = ROSARY_MYSTERIES.find(m => m.category === set);
-
-  // Mass times moved here from Home. Pray is now everything you would do at
-  // church today, and Mass leads because it is the time-critical half — a
-  // Rosary can be prayed at any hour, a 6:00 AM Mass cannot.
-  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const schedule = MASS_SCHEDULES[parishId];
-  const todayTimes = schedule?.schedule
-    ? parseTimes(schedule.schedule.find(d => d.day === DAYS[now.getDay()])?.time ?? "")
-    : [];
-  const upcoming = schedule?.schedule ? nextMass(schedule.schedule, now) : null;
 
   if (praying) {
     return (
@@ -79,43 +70,6 @@ export default function PrayScreen({ onOpenSettings, parishId, parishName }: Pra
           {today.name}
         </p>
 
-        {/* Today's Masses at the active parish. */}
-        <section className="mt-4 rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[16px] font-semibold text-[var(--color-brand-text)]">Mass today</h2>
-            <span className="text-[15px] text-[var(--color-brand-secondary)] truncate">{parishName}</span>
-          </div>
-
-          {todayTimes.length > 0 ? (
-            <ul className="mt-3 space-y-2">
-              {todayTimes.map(time => (
-                <li key={time} className="flex items-baseline gap-3">
-                  <span className="text-[16px] font-bold tabular-nums text-[var(--color-brand-primary)] w-[76px] shrink-0">
-                    {time}
-                  </span>
-                  <span className="text-[16px] text-[var(--color-brand-text)]">Mass</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-brand-secondary)]">
-              {schedule
-                ? `No Mass listed for ${DAYS[now.getDay()]}.`
-                : "This parish's Mass times have not been collected yet."}
-            </p>
-          )}
-
-          {upcoming && (
-            <p className="mt-3 pt-3 border-t border-[var(--color-brand-border)] text-[15px] text-[var(--color-brand-secondary)]">
-              Next: {upcoming.day} {upcoming.time}
-            </p>
-          )}
-          {schedule && !schedule.scheduleVerified && (
-            <p className="mt-2 text-[15px] leading-snug text-[var(--color-brand-error)]">
-              These times are unconfirmed — check with the parish before travelling.
-            </p>
-          )}
-        </section>
         <h1 className="mt-3 text-[30px] font-bold leading-[1.12] tracking-tight text-[var(--color-brand-text)]">
           The {set}
           <br />

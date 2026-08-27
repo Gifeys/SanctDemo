@@ -878,13 +878,11 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    its top-left, and anchoring it to the screen put it over the header
    instead. In flow it costs one line and never overlaps anything, while the
    frame below takes every remaining pixel. */
+/* Hidden on the map screen at the client's request, along with the heading
+   block above it. The shaded study area is still drawn — it is simply no
+   longer captioned here. */
 .map-screen .dmap-live__legend {
-  order: -1;
-  margin: 0;
-  padding: 0 8px 4px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--color-brand-secondary);
+  display: none;
 }
 /* The pin popups already offer directions, and this screen is the map, so
    the "open in Google Maps" link is not worth the height here. */
