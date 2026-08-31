@@ -8,6 +8,7 @@ import { haversineMeters, type Coordinates } from "../lib/geo";
 import { fetchWalkingRoute, formatDistance, formatWalkingMinutes } from "../lib/routing";
 import parishData from "../data/diocese-parishes.json";
 import { parishIdForRoute } from "../lib/parishIds";
+import MassNowBadge from "./MassNowBadge";
 
 interface DioceseParish {
   id: string;
@@ -142,6 +143,7 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
+          <MassNowBadge routeId={parish.id} />
           {stationCount > 0 && (
             <span className="text-[14px] font-semibold px-3 py-1.5 rounded-full bg-white/12">
               {stationCount} scannable {stationCount === 1 ? "station" : "stations"}

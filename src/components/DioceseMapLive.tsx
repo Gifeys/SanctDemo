@@ -7,6 +7,8 @@ import { haversineMeters, type Coordinates } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishesScored, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
+import { MASS_SCHEDULES } from "../data";
+import { massStatus as massStatus_ } from "../lib/schedule";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import CompassControl, { type MapOrientationMode } from "./CompassControl";
@@ -497,7 +499,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       const displayName = shortLabel(parish.name);
 
       const el = buildChurchPinElement({ name: displayName, isLive });
-      const { el: card, action, directionsAction, directionsStatus, navigateAction } = buildPopupContent({
+      const { el: card, action, directionsAction, directionsStatus, navigateAction, massStatus } = buildPopupContent({
         name: displayName,
         location: vicariateLabel(parish.vicariate),
         isLive,
@@ -537,6 +539,23 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       // card clipped. Easing the pin below centre on open reserves room
       // above it.
       popup.on("open", () => {
+        // Recomputed on every open rather than at marker-build time: whether a
+        // Mass is under way depends on the clock, and these markers are built
+        // once for the whole session.
+        if (massStatus && routeId) {
+          const schedule = MASS_SCHEDULES[routeId]?.schedule;
+          const status = schedule ? massStatus_(schedule, new Date()) : null;
+          if (status && status.state !== "none") {
+            massStatus.textContent =
+              status.state === "in-progress"
+                ? `Mass now · ${status.time}`
+                : `Mass in ${status.minutes} min · ${status.time}`;
+            massStatus.dataset.state = status.state;
+          } else {
+            massStatus.textContent = "";
+            delete massStatus.dataset.state;
+          }
+        }
         mapRef.current?.easeTo({ center: lngLat, offset: [0, 70], duration: 300 });
       });
 

@@ -50,6 +50,12 @@ export interface PopupBuild {
    * the pilgrim, advances the instruction, and reroutes when they leave it.
    */
   navigateAction: HTMLButtonElement | null
+  /**
+   * A live "Mass now" line, updated by the caller each time the popup opens.
+   * Live parishes only — the other 29 have no collected schedule, and an
+   * empty line there would state as fact something nobody has checked.
+   */
+  massStatus: HTMLParagraphElement | null
   directionsStatus: HTMLParagraphElement | null
 }
 
@@ -62,10 +68,22 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
   const el = document.createElement('div')
   el.className = 'dmap-card'
 
+  let massStatus: HTMLParagraphElement | null = null
+
   const name = document.createElement('h3')
   name.className = 'dmap-card__name'
   name.textContent = parish.name
   el.append(name)
+
+  // Directly under the name, because "can I still walk in" outranks every
+  // other line on this card. Filled by the caller each time the popup opens,
+  // since a popup built once at marker creation would freeze whatever was
+  // true at that moment.
+  if (parish.isLive) {
+    massStatus = document.createElement('p')
+    massStatus.className = 'dmap-card__mass'
+    el.append(massStatus)
+  }
 
   if (parish.location) {
     const where = document.createElement('p')
@@ -111,5 +129,5 @@ export function buildPopupContent(parish: MarkerParish): PopupBuild {
     el.append(soon)
   }
 
-  return { el, action, directionsAction, directionsStatus, navigateAction }
+  return { el, action, directionsAction, directionsStatus, navigateAction, massStatus }
 }

@@ -901,3 +901,23 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   font-weight: 700;
   fill: var(--color-brand-error);
 }
+
+/* "Mass now" on a map popup. Empty by default and collapsed via :empty, so a
+   parish with no Mass under way shows no stray blank line — the same pattern
+   the directions status uses. Red for in-progress, green for starting soon:
+   the first is a door you can still walk through, the second is a reason to
+   hurry. */
+.dmap-card__mass:empty { display: none; }
+.dmap-card__mass {
+  margin: 4px 0 0;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: var(--color-brand-on-accent);
+  background: var(--color-brand-success);
+}
+.dmap-card__mass[data-state="in-progress"] {
+  background: var(--color-brand-error);
+}

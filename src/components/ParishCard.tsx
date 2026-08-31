@@ -2,6 +2,7 @@ import { Route } from "../types";
 import { MASS_SCHEDULES, PARISH_PATRON_SAINTS } from "../data";
 import { nextMass } from "../lib/schedule";
 import { usePresence } from "../context/PresenceContext";
+import MassNowBadge from "./MassNowBadge";
 import { haversineMeters } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, WALK_SPEED_MPS } from "../lib/routing";
 
@@ -46,6 +47,7 @@ export default function ParishCard({ parish, onSelect }: ParishCardProps) {
         <h3 className="parish-card__name">{parishDisplayName(parish)}</h3>
         <span className="chip--live">Live</span>
       </div>
+      <MassNowBadge routeId={parish.id} className="mt-1.5" />
       {straightLine !== null && (
         <p className="parish-card__distance">
           {formatDistance(straightLine)} direct
