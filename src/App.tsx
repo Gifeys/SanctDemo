@@ -36,6 +36,7 @@ import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
+import { useDragSafeClicks } from "./lib/useDragSafeClicks";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
@@ -110,6 +111,8 @@ export default function App() {
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  // Swiping the map's parish rail must not open the card the finger started on.
+  const railDragSafe = useDragSafeClicks();
 
   // First run: nothing stored yet, so the pilgrim is asked which parish is
   // theirs before the app opens. Read from storage rather than from
@@ -897,7 +900,12 @@ export default function App() {
                           {/* Horizontal, the way Maps does it. Each card is a
                               real button so the rail stays reachable by
                               keyboard and screen reader, not just by swipe. */}
-                          <div className="map-screen__rail" role="list" aria-label="Live parishes">
+                          <div
+                            className="map-screen__rail"
+                            role="list"
+                            aria-label="Live parishes"
+                            {...railDragSafe}
+                          >
                             {liveParishes.map((parish) => (
                               <div className="map-screen__rail-item" role="listitem" key={parish.id}>
                                 <ParishCard parish={parish} onSelect={handleSelectParish} />

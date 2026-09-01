@@ -521,6 +521,7 @@
 .map-screen__rail-item {
   flex: 0 0 72%;
   scroll-snap-align: start;
+  touch-action: pan-x;
 }
 .map-screen__rail .parish-card {
   box-shadow: 0 8px 24px rgb(20 23 31 / 0.18);
@@ -968,6 +969,10 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .card-rail > * {
   scroll-snap-align: start;
   flex: 0 0 auto;
+  /* The cards are buttons, and a button's default touch-action overrides the
+     rail's. Without this a drag that begins on a card is treated as a tap on
+     that card rather than a pan of the rail. */
+  touch-action: pan-x;
 }
 
 /* Narrow enough that the next card always shows an edge. A peeking card is

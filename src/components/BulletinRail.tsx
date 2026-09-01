@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useDragSafeClicks } from "../lib/useDragSafeClicks";
 import { CalendarDays, ChevronRight, Users, Sparkles } from "lucide-react";
 
 export interface Announcement {
@@ -27,6 +28,8 @@ interface BulletinRailProps {
  * bulletin still showing last month's fiesta is worse than a short one.
  */
 export default function BulletinRail({ announcements, onNavigate }: BulletinRailProps) {
+  // Without this, swiping the rail opens whichever card the finger started on.
+  const dragSafe = useDragSafeClicks();
   const now = new Date();
   const upcoming = announcements
     .map(a => ({ ...a, when: new Date(a.date) }))
@@ -47,6 +50,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
       <div
         className="card-rail"
         role="list"
+        {...dragSafe}
       >
         {/* Said plainly rather than left looking empty. Past announcements
             are filtered out, so a bulletin whose events have all been and
