@@ -507,14 +507,20 @@
   gap: 10px;
   padding: 0 12px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  overflow-y: hidden;
+  /* Same reason as .card-rail: without this the map underneath claims the
+     drag and the cards will not move. */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 12px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .map-screen__rail::-webkit-scrollbar { display: none; }
 .map-screen__rail-item {
-  flex: 0 0 78%;
-  scroll-snap-align: center;
+  flex: 0 0 72%;
+  scroll-snap-align: start;
 }
 .map-screen__rail .parish-card {
   box-shadow: 0 8px 24px rgb(20 23 31 / 0.18);
@@ -921,3 +927,51 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .dmap-card__mass[data-state="in-progress"] {
   background: var(--color-brand-error);
 }
+
+/* ── Horizontal card rail (parish bulletin, map parish cards) ─────────────
+   Written as a class rather than a pile of arbitrary Tailwind values because
+   what makes a rail swipeable on a phone is four properties that only work
+   together, and each one is easy to drop by accident.
+
+   touch-action: pan-x is the important one. Left at `auto`, the browser is
+   free to give a mostly-horizontal drag to the vertically-scrolling screen
+   above the rail — so the rail simply does not move, which is what "I can't
+   swipe it" actually was. Declaring pan-x claims horizontal gestures for the
+   rail and lets vertical ones pass through to the page, which is what a
+   reader expects from both.
+
+   overflow-y: hidden stops the rail being a vertical scroll container of its
+   own. Setting overflow-x alone computes overflow-y to auto, so the rail was
+   competing with the page for the same drag.
+
+   Snapping is `proximity`, not `mandatory`. With cards this wide, mandatory
+   forces every swipe to complete a full card or spring back — a short flick
+   just bounced. Proximity lets a small movement settle where it lands. */
+.card-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px 4px;
+  margin: 0 -16px;
+}
+.card-rail::-webkit-scrollbar { display: none; }
+
+/* Snap to the start, not the centre: a rail reads left-to-right, and centre
+   snapping leaves the first card half off the screen on arrival. */
+.card-rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+/* Narrow enough that the next card always shows an edge. A peeking card is
+   what tells someone there is more to swipe — without it the rail looks like
+   a single card and nobody tries. */
+.card-rail__card { width: 66%; }
+.card-rail__link { width: 54%; }

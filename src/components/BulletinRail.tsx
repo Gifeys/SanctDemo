@@ -45,7 +45,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
       </div>
 
       <div
-        className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="card-rail"
         role="list"
       >
         {/* Said plainly rather than left looking empty. Past announcements
@@ -54,7 +54,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
         {upcoming.length === 0 && (
           <p
             role="listitem"
-            className="snap-center shrink-0 w-[78%] rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
+            className="card-rail__card rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
           >
             No upcoming events posted for this parish yet. New announcements appear here first.
           </p>
@@ -64,7 +64,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
           <article
             role="listitem"
             key={item.id}
-            className="snap-center shrink-0 w-[78%] rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4"
+            className="card-rail__card rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4"
           >
             <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold px-2.5 py-1 rounded-md bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)]">
               <CalendarDays className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ function RailLink({
     <button
       type="button"
       onClick={onClick}
-      className="snap-center shrink-0 w-[62%] rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-4 text-left"
+      className="card-rail__link rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] p-4 text-left"
     >
       <span className="text-[var(--color-brand-primary)]">{icon}</span>
       <span className="mt-2.5 flex items-center gap-1 text-[16px] font-semibold text-[var(--color-brand-text)]">
