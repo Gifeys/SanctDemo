@@ -36,6 +36,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Admin-managed parish content: patron photo, description, Mass times,
+    // brand colour. Public to read, because a pilgrim browsing the diocese is
+    // not signed in and the home screen must still fill in. Parish-only to
+    // write — Mass times in particular are the one thing in this app someone
+    // could change to send a congregation to a locked church.
+    match /parishContent/{parishId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // The admin roster is readable by signed-in users so the client can tell
     // whether to show the portal, but is never writable from the client.
     match /admins/{userId} {

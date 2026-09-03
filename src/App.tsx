@@ -37,6 +37,8 @@ import { tabForParishSelection } from "./lib/parishSelection";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 import { useDragSafeClicks } from "./lib/useDragSafeClicks";
+import { useParishContent } from "./lib/useParishContent";
+import { checkParishColour, readableTextOn, parseHex } from "./lib/contrast";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
@@ -51,6 +53,49 @@ import {
 // tiny child can. Only `present` switches the dashboard — `approaching` is
 // still just passing by, and switching then would yank the screen around
 // while someone walks down the street.
+/**
+ * Applies the active parish's admin-chosen colour to the app's tokens.
+ *
+ * The text colour placed ON that background is derived, never chosen: an
+ * admin picks one value and the pairing is computed, so no combination of
+ * choices can produce unreadable text. The colour is re-validated here as
+ * well as in the editor, because a document written before the validator
+ * existed — or edited straight in the Firebase console — would otherwise
+ * bypass it entirely.
+ */
+function ParishTheme({ parishId }: { parishId: string | null }) {
+  const managed = useParishContent(parishId);
+  const colour = managed?.themeColor;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const clear = () => {
+      root.style.removeProperty("--color-brand-primary");
+      root.style.removeProperty("--color-brand-accent");
+      root.style.removeProperty("--color-brand-on-accent");
+    };
+
+    if (!colour) {
+      clear();
+      return;
+    }
+    const verdict = checkParishColour(colour);
+    const rgb = parseHex(colour);
+    if (!verdict.ok || !rgb) {
+      console.warn(`[SanctiWalk] Ignoring parish colour ${colour}: ${verdict.problem}`);
+      clear();
+      return;
+    }
+
+    root.style.setProperty("--color-brand-primary", colour);
+    root.style.setProperty("--color-brand-accent", colour);
+    root.style.setProperty("--color-brand-on-accent", readableTextOn(rgb).hex);
+    return clear;
+  }, [colour]);
+
+  return null;
+}
+
 function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void }) {
   const { presence } = usePresence();
 
@@ -612,6 +657,7 @@ export default function App() {
   return (
     <PresenceProvider>
       <PresenceParishSync onArrive={setSelectedChurchId} />
+      <ParishTheme parishId={selectedChurchId} />
       {/* The redesign's onboarding screen. It is reached from "Change Home
           Parish" rather than shown on first run, because the client's earlier
           decision — recorded above firstLiveParishId — was that no welcome
@@ -994,6 +1040,7 @@ export default function App() {
                   {/* TAB 11: Admin Control Panel */}
                   {activeTab === "admin" && (
                     <AdminPortal
+                      userEmail={userEmail}
                       applications={applications}
                       onDeleteApplication={handleDeleteApplication}
                       onUpdateApplicationStatus={handleUpdateApplicationStatus}

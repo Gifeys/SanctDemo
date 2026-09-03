@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// Firebase Storage rules for SanctiWalk.
+//
+// Only parish photographs live here. They are public to read — a pilgrim
+// browsing the diocese is not signed in, and the patron image on Home must
+// load for them — and writable only by an administrator.
+//
+// Deploy with:  npx firebase deploy --only storage
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Administrators are listed in the Firestore `admins` collection, one
+    // document per uid, granted from the Firebase console and never from the
+    // client. Same rule the Firestore rules use, so there is one definition
+    // of "admin" across the project rather than two that can drift.
+    function isAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    match /parish-photos/{fileName} {
+      allow read: if true;
+
+      // Size and type are enforced here as well as in the client, because a
+      // client-side check is a courtesy to the user, not a security control —
+      // anyone can post directly to the bucket.
+      allow write: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Nothing else is writable. An open default here would make the bucket a
+    // free file host for anyone who found the project id.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

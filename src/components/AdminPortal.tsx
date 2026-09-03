@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ParishContentEditor from "./ParishContentEditor";
 import { ShieldCheck, Sparkles, BarChart2, Database, FileText, Settings, Trash2, Edit, Plus, Check, Mail, CalendarRange, X, Send, Clock, Loader2 } from "lucide-react";
 
 interface AdminPortalProps {
@@ -8,6 +9,8 @@ interface AdminPortalProps {
   announcements: Array<{ id: string; title: string; date: string; time: string; type: string }>;
   onAddAnnouncement: (announcement: { id: string; title: string; date: string; time: string; type: string }) => void;
   onDeleteAnnouncement: (id: string) => void;
+  /** The signed-in admin, recorded against each parish-content change. */
+  userEmail: string;
 }
 
 export default function AdminPortal({
@@ -16,7 +19,8 @@ export default function AdminPortal({
   onUpdateApplicationStatus,
   announcements,
   onAddAnnouncement,
-  onDeleteAnnouncement
+  onDeleteAnnouncement,
+  userEmail
 }: AdminPortalProps) {
   const [activeTab, setActiveTab] = useState<"dashboard" | "content" | "analytics" | "database">("dashboard");
 
@@ -384,6 +388,13 @@ Mary Help of Christians Parish`);
               <div className="flex justify-between items-center border-b border-[var(--color-brand-primary)]/30 pb-2">
                 <h4 className="font-serif italic text-sm font-bold text-[var(--color-brand-on-accent)]">Content Management</h4>
                 <span className="text-sm font-mono text-[var(--color-brand-secondary)]">Static Content Manager</span>
+              </div>
+
+              {/* Parish content the office maintains itself — photograph,
+                  description, Mass times, colour. Above the older static
+                  editor because this is the one backed by live data. */}
+              <div className="bg-[var(--color-brand-card)] p-4 rounded-2xl border border-[var(--color-brand-border)]">
+                <ParishContentEditor editorEmail={userEmail} />
               </div>
 
               {/* Edit Church Info */}

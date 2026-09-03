@@ -9,6 +9,7 @@ import { nextMass } from "../lib/schedule";
 import HomeHero from "./HomeHero";
 import BulletinRail from "./BulletinRail";
 import ParishHero from "./ParishHero";
+import { useParishContent } from "../lib/useParishContent";
 import { liturgicalDay } from "../lib/liturgical";
 import { verseForDate } from "../lib/verses";
 import { MYSTERY_BY_WEEKDAY } from "../lib/mysteries";
@@ -70,6 +71,9 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
   const parishSchedule = MASS_SCHEDULES[parish.id];
   const upcomingMass = nextMass(parishSchedule?.schedule ?? [], now);
 
+  // Admin-managed overlay: photo, description, Mass times, colour. Null for
+  // every parish nobody has edited, which is all of them until someone does.
+  const managed = useParishContent(parish.id);
   const today = liturgicalDay(now);
   const verse = verseForDate(now);
   const todaysMysteryCategory = MYSTERY_BY_WEEKDAY[now.getDay()];
@@ -103,8 +107,16 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
             parishName={parishName}
             location={parish.location}
             patron={PARISH_PATRON_SAINTS[parish.id]}
-            imageUrl={PARISH_PATRON_IMAGES[parish.id]}
+            // An admin-uploaded photo wins; the compiled map is the fallback,
+            // and with neither the hero renders the name block alone.
+            imageUrl={managed?.photoUrl ?? PARISH_PATRON_IMAGES[parish.id]}
           />
+
+          {managed?.description && (
+            <p className="mt-2.5 text-[16px] leading-relaxed text-[var(--color-brand-text)]">
+              {managed.description}
+            </p>
+          )}
 
           <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
             {today.name}
