@@ -4,10 +4,11 @@ import {
   ScanLine as ArIcon, Users as MinistryIcon, Map, Search,
 } from "lucide-react";
 import { Route } from "../types";
-import { MASS_SCHEDULES, ROSARY_MYSTERIES } from "../data";
+import { MASS_SCHEDULES, ROSARY_MYSTERIES, PARISH_PATRON_SAINTS, PARISH_PATRON_IMAGES } from "../data";
 import { nextMass } from "../lib/schedule";
 import HomeHero from "./HomeHero";
 import BulletinRail from "./BulletinRail";
+import ParishHero from "./ParishHero";
 import { liturgicalDay } from "../lib/liturgical";
 import { verseForDate } from "../lib/verses";
 import { MYSTERY_BY_WEEKDAY } from "../lib/mysteries";
@@ -87,14 +88,25 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           parish name, so the whole "what day is it" answer is in one place
           instead of repeated in a card below. */}
       <div className="px-5 pt-6 pb-2 shrink-0 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)] block">
+        <div className="min-w-0 flex-1">
+          <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)] block mb-3">
             {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
           </span>
-          <h2 className="text-[24px] font-bold text-[var(--color-brand-text)] tracking-tight leading-tight mt-0.5">
-            {parishName}
-          </h2>
-          <p className="mt-1 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
+
+          {/* The patron photograph collapses as the page scrolls; the parish
+              name and location beneath it never do. patronImage is undefined
+              for every parish today — no parish photography has been
+              collected — so this currently renders as the name block alone,
+              which is exactly the collapsed state. Nothing stands in for a
+              photograph that does not exist. */}
+          <ParishHero
+            parishName={parishName}
+            location={parish.location}
+            patron={PARISH_PATRON_SAINTS[parish.id]}
+            imageUrl={PARISH_PATRON_IMAGES[parish.id]}
+          />
+
+          <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
             {today.name}
           </p>
         </div>

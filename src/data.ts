@@ -311,6 +311,25 @@ export const PARISH_CONTACTS: Record<string, ParishContact> = {
 // own station content above rather than invented: MHCP's "mhcp-patron"
 // station names Maria Auxiliadora, and SRC's "src-statue" station names
 // San Roque.
+/**
+ * A photograph of each parish's patron image, for the collapsing header on
+ * Home.
+ *
+ * Deliberately empty. No parish photography has been collected yet — the
+ * field team's sheet asks for it — and the header renders the name alone
+ * when a parish is missing from here, which is the same thing it looks like
+ * once scrolled. That is the honest empty state.
+ *
+ * Do NOT fill this with stock imagery. This is the largest element on the
+ * home screen, and a generic church photograph presented as *this* parish's
+ * patron is the most visible possible version of the mistake the rest of
+ * this file avoids (see coordinatesVerified / scheduleVerified). Add an
+ * entry only when someone has photographed that parish's own image:
+ *
+ *   "route-mhcp": "/parish/mary-help-patron.jpg",
+ */
+export const PARISH_PATRON_IMAGES: Record<string, string | undefined> = {}
+
 export const PARISH_PATRON_SAINTS: Record<string, string> = {
   "route-mhcp": "Maria Auxiliadora (Mary Help of Christians)",
   "route-src": "San Roque",
