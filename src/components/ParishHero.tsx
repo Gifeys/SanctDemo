@@ -98,12 +98,30 @@ export default function ParishHero({ parishName, location, patron, imageUrl }: P
             src={imageUrl}
             alt={patron ? `${patron}, ${parishName}` : parishName}
             className="w-full h-full object-cover"
+            // Devotional photographs are almost always shot upright with the
+            // figure in the upper half — a crowned statue in its niche, a
+            // retablo, a facade. Cropping to the vertical centre of a portrait
+            // photo in a landscape frame therefore lands on vestments rather
+            // than the face. Biasing the focus upward frames the subject.
+            style={{ objectPosition: "center 32%" }}
             loading="eager"
           />
           {patron && (
-            <span className="absolute left-3 bottom-3 right-3 text-[15px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">
-              {patron}
-            </span>
+            <>
+              {/* A gradient scrim rather than a drop-shadow alone. These are
+                  photographs of gilded statues under warm light, so the
+                  brightness under the caption is unpredictable — a shadow
+                  holds up over dark vestments and disappears over gold. The
+                  scrim guarantees the contrast whatever the photo does, and
+                  reads as a caption band rather than text dropped on a face. */}
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 via-black/35 to-transparent"
+              />
+              <span className="absolute left-4 bottom-3 right-4 text-[15px] font-semibold text-white leading-snug">
+                {patron}
+              </span>
+            </>
           )}
         </div>
       )}

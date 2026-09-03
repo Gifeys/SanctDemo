@@ -328,7 +328,12 @@ export const PARISH_CONTACTS: Record<string, ParishContact> = {
  *
  *   "route-mhcp": "/parish/mary-help-patron.jpg",
  */
-export const PARISH_PATRON_IMAGES: Record<string, string | undefined> = {}
+export const PARISH_PATRON_IMAGES: Record<string, string | undefined> = {
+  // The parish's own image of Maria Auxiliadora in its niche, photographed by
+  // the client. Converted from the original iPhone HEIC — which no browser
+  // outside Safari can display — and resized from 3024x4032 to 1200px wide.
+  "route-mhcp": "/parish/mary-help-patron.jpg",
+}
 
 export const PARISH_PATRON_SAINTS: Record<string, string> = {
   "route-mhcp": "Maria Auxiliadora (Mary Help of Christians)",
