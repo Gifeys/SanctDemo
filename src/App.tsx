@@ -23,7 +23,6 @@ import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
 import CustomDioceseMap from "./components/CustomDioceseMap";
-import ParishCard from "./components/ParishCard";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
@@ -36,14 +35,13 @@ import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
-import { useDragSafeClicks } from "./lib/useDragSafeClicks";
 import { useParishContent } from "./lib/useParishContent";
 import { checkParishColour, readableTextOn, parseHex } from "./lib/contrast";
 
 import {
   Compass, Map, Cpu, Sparkles, BookOpen, Clock, Heart,
   Menu, X, Home, Lock, HelpCircle, User, ShieldCheck, HelpCircle as QuizIcon,
-  ScanLine as ArIcon, Users as MinistryIcon, MapPin, ChevronRight, Bookmark, ArrowLeft,
+  ScanLine as ArIcon, Users as MinistryIcon, MapPin, ChevronRight, Bookmark,
   Settings as SettingsIcon,
   Church, Smartphone, Monitor, Wifi, WifiOff, FlaskConical
 } from "lucide-react";
@@ -112,16 +110,15 @@ function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void
 // been chosen — the map's own default, and the tour behind a home parish
 // that has no tour of its own.
 //
-// This used to be the answer to first run as well: the app picked a parish
-// silently rather than asking, because the client did not want a welcome
-// screen between install and the dashboard. That decision was reversed when
-// the redesign's onboarding screen was adopted — see `needsOnboarding`.
+// This is also the answer on first run: the app picks a parish rather than
+// asking, because the client does not want a welcome screen standing between
+// install and the dashboard.
 function firstLiveParishId(): string | null {
   return ROUTES.find(r => r.status !== "coming_soon")?.id ?? ROUTES[0]?.id ?? null;
 }
 
 // A home parish may be any of the 31 in the diocese, not just the two with a
-// tour behind them — the redesign's onboarding lists them all, and a pilgrim's
+// tour behind them — the parish picker lists them all, and a pilgrim's
 // own parish is very likely one of the 29 still being documented. The active
 // *tour* must still be one of the live routes, so the two are mapped rather
 // than conflated.
@@ -156,16 +153,12 @@ export default function App() {
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
-  // Swiping the map's parish rail must not open the card the finger started on.
-  const railDragSafe = useDragSafeClicks();
 
-  // First run: nothing stored yet, so the pilgrim is asked which parish is
-  // theirs before the app opens. Read from storage rather than from
-  // homeParishId, which is seeded with a fallback and so is never null —
-  // testing that instead would mean onboarding could never appear.
-  const [needsOnboarding, setNeedsOnboarding] = useState(
-    () => loadHomeParishId(VALID_HOME_IDS) === null
-  );
+  // There is deliberately no first-run parish picker. On a fresh install
+  // homeParishId is seeded with firstLiveParishId(), so the app already knows
+  // a sensible parish to open on and asking would be a question it can answer
+  // itself. The picker below still exists, reached from "Change Home Parish"
+  // in Me, for the pilgrim who wants a different one.
 
   // Navigation & Frame settings. Seeded from the home parish so the app opens
   // on that parish's dashboard rather than asking which church to pick — the
@@ -407,7 +400,7 @@ export default function App() {
     setActiveTab(tabForParishSelection("presence-open-tour"));
   };
 
-  // "Walk there" on the Home hero: switch to the map and hand it the parish
+  // "Get directions" on the Home hero: switch to the map and hand it the parish
   // to route to, rather than routing from Home and hoping the map picks it up.
   // Cleared once the map has consumed it so returning to the tab later does
   // not silently redraw a route the pilgrim did not ask for again.
@@ -651,37 +644,27 @@ export default function App() {
     setSelectedChurchId(routeForHomeParish(parishId));
     setActiveTab("home");
     setIsChangeParishOpen(false);
-    setNeedsOnboarding(false);
   };
 
   return (
     <PresenceProvider>
       <PresenceParishSync onArrive={setSelectedChurchId} />
       <ParishTheme parishId={selectedChurchId} />
-      {/* The redesign's onboarding screen. It is reached from "Change Home
-          Parish" rather than shown on first run, because the client's earlier
-          decision — recorded above firstLiveParishId — was that no welcome
-          screen should stand between install and the dashboard. The screen is
-          built and complete; making it first-run is a one-line change if that
-          decision has changed. */}
-      {/* The redesign's onboarding, shown on first run and again whenever the
-          pilgrim asks to change parish. It renders inside PresenceProvider
-          because it orders the list by distance and so needs the position.
-          On first run there is no Cancel: the app has nothing sensible to
-          fall back to until a parish is chosen, and choosing is one tap. */}
-      {(needsOnboarding || isChangeParishOpen) && (
+      {/* The parish picker, reached only from "Change Home Parish". It is
+          not shown on first run: the app opens straight on the dashboard.
+          It renders inside PresenceProvider because it orders the list by
+          distance and so needs the position. */}
+      {isChangeParishOpen && (
         <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
-          {isChangeParishOpen && (
-            <div className="flex justify-end p-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsChangeParishOpen(false)}
-                className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+          <div className="flex justify-end p-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsChangeParishOpen(false)}
+              className="text-[16px] font-semibold text-[var(--color-brand-primary)] px-2"
+            >
+              Cancel
+            </button>
+          </div>
           <Onboarding onChoose={handleChooseHomeParish} />
         </div>
       )}
@@ -733,40 +716,12 @@ export default function App() {
         </div>
       )}
     <div className="min-h-screen bg-[var(--color-brand-card)] text-[var(--color-brand-text)] flex flex-col justify-between font-sans">
-      {/* Top Desktop Workspace Header Bar */}
-      <header className="bg-[var(--color-brand-card)] border-b border-[var(--color-brand-border)] py-4 px-6 select-none shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="h-8 w-8 rounded-lg bg-[var(--color-brand-primary)] text-white flex items-center justify-center font-serif font-bold italic text-lg shadow-xs border border-[var(--color-brand-gold)]">
-              S
-            </span>
-            <div>
-              <h2 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic leading-tight">
-                SanctiWalk Core Workspace
-              </h2>
-              <p className="text-sm text-[var(--color-brand-secondary)] font-bold tracking-wider uppercase font-sans">
-                Progressive Web App Prepared for STI College Capstone Defense
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <span className="hidden md:inline-block text-[15px] text-[var(--color-brand-secondary)] font-mono">
-              STATUS: <strong className="text-[var(--color-brand-secondary)] uppercase">Ready (Maypajo Parishes v2.0)</strong>
-            </span>
-            <button
-              onClick={() => {
-                setSelectedChurchId(null);
-                setActiveTab("home");
-              }}
-              className="bg-[var(--color-brand-primary)] text-white hover:bg-[var(--color-brand-primary-dark)] text-[15px] font-bold uppercase tracking-wider py-1.5 px-4 rounded-full flex items-center gap-1.5 shadow-sm transition-all border border-[var(--color-brand-gold)]"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Return to Church Selection
-            </button>
-          </div>
-        </div>
-      </header>
-
+      {/* There is deliberately no desktop workspace header. It carried a
+          "SanctiWalk Core Workspace / Prepared for STI College Capstone
+          Defense" title and a "Return to Church Selection" button, which is
+          why the app read as a project website on a laptop rather than as the
+          app. The button also returned to a selection step the app no longer
+          has. */}
       {/* Main Container Workspace */}
       <main className="flex-1 flex items-center justify-center py-6 select-none relative">
         <PhoneContainer
@@ -943,21 +898,6 @@ export default function App() {
                             />
                           </div>
 
-                          {/* Horizontal, the way Maps does it. Each card is a
-                              real button so the rail stays reachable by
-                              keyboard and screen reader, not just by swipe. */}
-                          <div
-                            className="map-screen__rail"
-                            role="list"
-                            aria-label="Live parishes"
-                            {...railDragSafe}
-                          >
-                            {liveParishes.map((parish) => (
-                              <div className="map-screen__rail-item" role="listitem" key={parish.id}>
-                                <ParishCard parish={parish} onSelect={handleSelectParish} />
-                              </div>
-                            ))}
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -1164,9 +1104,6 @@ export default function App() {
       </main>
 
       {/* Footer credits bar */}
-      <footer className="bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] py-3.5 px-6 text-center text-sm text-[var(--color-brand-secondary)] font-mono select-none shrink-0 leading-normal">
-        <p>Prepared for STI College Kalookan Capstone 2 Defense (March 2026). SanctiWalk is optimized for offline-first rendering across Windows, iOS, and Android platforms.</p>
-      </footer>
     </div>
     </PresenceProvider>
   );

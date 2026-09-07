@@ -24,8 +24,19 @@ export default defineConfig(() => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+      // Do not modify - file watching is disabled to prevent flickering during agent edits.
+      //
+      // The HMR websocket needs its own port, and Vite's default (24678) is
+      // fixed, so a second dev server on this machine collides with the
+      // first and loses hot reload even after autoPort has moved its HTTP
+      // port out of the way. Deriving it from PORT keeps concurrent
+      // sessions independent.
+      hmr:
+        process.env.DISABLE_HMR === 'true'
+          ? false
+          : process.env.PORT
+            ? {port: Number(process.env.PORT) + 1}
+            : true,
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

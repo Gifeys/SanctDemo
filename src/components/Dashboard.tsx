@@ -91,37 +91,14 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
           thing that actually changes. The liturgical day sits under the
           parish name, so the whole "what day is it" answer is in one place
           instead of repeated in a card below. */}
-      <div className="px-5 pt-6 pb-2 shrink-0 flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)] block mb-3">
-            {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
-          </span>
-
-          {/* The patron photograph collapses as the page scrolls; the parish
-              name and location beneath it never do. patronImage is undefined
-              for every parish today — no parish photography has been
-              collected — so this currently renders as the name block alone,
-              which is exactly the collapsed state. Nothing stands in for a
-              photograph that does not exist. */}
-          <ParishHero
-            parishName={parishName}
-            location={parish.location}
-            patron={PARISH_PATRON_SAINTS[parish.id]}
-            // An admin-uploaded photo wins; the compiled map is the fallback,
-            // and with neither the hero renders the name block alone.
-            imageUrl={managed?.photoUrl ?? PARISH_PATRON_IMAGES[parish.id]}
-          />
-
-          {managed?.description && (
-            <p className="mt-2.5 text-[16px] leading-relaxed text-[var(--color-brand-text)]">
-              {managed.description}
-            </p>
-          )}
-
-          <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
-            {today.name}
-          </p>
-        </div>
+      {/* The date and the avatar share one row. The photograph sits below at
+          full content width — it used to be a flex sibling of the avatar, so
+          its width was the row minus the button, which is the empty strip
+          that was showing down the right-hand side. */}
+      <div className="px-5 pt-6 pb-3 shrink-0 flex items-center justify-between gap-3">
+        <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
+          {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
+        </span>
         <button
           onClick={() => onNavigate("me")}
           className="h-9 w-9 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[var(--color-brand-card)]"
@@ -129,6 +106,31 @@ export default function Dashboard({ parish, announcements, onNavigate, onSelectP
         >
           <User className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Rendered here rather than nested in the header block, and the nesting
+          is the whole point: a sticky element can only stay pinned within its
+          parent's box, so inside that block the parish name unstuck and
+          scrolled away the moment the block ended. As a direct child of this
+          root — which spans the entire scrollable page — it stays put. */}
+      <ParishHero
+        parishName={parishName}
+        location={parish.location}
+        patron={PARISH_PATRON_SAINTS[parish.id]}
+        // An admin-uploaded photo wins; the compiled map is the fallback,
+        // and with neither the hero renders the name block alone.
+        imageUrl={managed?.photoUrl ?? PARISH_PATRON_IMAGES[parish.id]}
+      />
+
+      <div className="px-5 pt-1.5">
+        {managed?.description && (
+          <p className="text-[16px] leading-relaxed text-[var(--color-brand-text)]">
+            {managed.description}
+          </p>
+        )}
+        <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
+          {today.name}
+        </p>
       </div>
 
       <div className="p-4 space-y-4 font-sans">
