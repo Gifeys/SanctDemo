@@ -7,6 +7,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { ATTEMPT_TIMEOUT_MS, askWithRetry, isModelBusy, isTimeout, retryPlan } from "./src/lib/modelRetry";
 
 dotenv.config();
 
@@ -111,6 +112,16 @@ app.use(express.json({ limit: "12mb" }));
  * when recognition starts refusing: exhausting one does not exhaust the other.
  */
 const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-3.5-flash-lite";
+
+/**
+ * Where recognition goes when the primary model is congested.
+ *
+ * Deliberately NOT another "-lite": a 503 means that model's serving pool is
+ * saturated, so retrying inside the same pool is the one thing guaranteed not
+ * to help. The two models also hold separate free-tier quotas (see above), so
+ * falling back neither borrows nor exhausts the primary's allowance.
+ */
+const VISION_MODEL_FALLBACK = process.env.GEMINI_VISION_MODEL_FALLBACK || "gemini-3.5-flash";
 
 const DAILY_SCAN_LIMIT = 20;
 let scanDay = "";
@@ -345,8 +356,8 @@ app.post("/api/identify", async (req, res) => {
       : OPEN_INSTRUCTION;
 
     const ai = getAi();
-    const askModel = (prompt: string) => ai.models.generateContent({
-      model: VISION_MODEL,
+    const askModel = (prompt: string, model: string = VISION_MODEL, timeoutMs: number = ATTEMPT_TIMEOUT_MS) => ai.models.generateContent({
+      model,
       contents: [
         {
           role: "user",
@@ -357,6 +368,10 @@ app.post("/api/identify", async (req, res) => {
         },
       ],
       config: {
+        // Bounds a single attempt. Without it a call that is accepted and
+        // then never answered — observed running past two minutes against
+        // this very endpoint — holds the request open indefinitely.
+        abortSignal: AbortSignal.timeout(timeoutMs),
         // Recognition is perception, not deliberation. MINIMAL, not LOW:
         // measured on the same frame, LOW spent 275 thinking tokens and 7
         // extra seconds to reach the identical answer. Note that omitting
@@ -414,10 +429,22 @@ app.post("/api/identify", async (req, res) => {
 
     scansUsed++;
     const startedAt = Date.now();
-    const response = await askModel(instruction);
+    // Retry sequencing lives in src/lib/modelRetry.ts, where it is unit
+    // tested — the behaviour that matters (three tries, then a different
+    // model, and NO retry for a bad key or a spent quota) is not something
+    // to verify by re-reading.
+    const { value: response, model: answeringModel, attempt } = await askWithRetry(
+      retryPlan(VISION_MODEL, VISION_MODEL_FALLBACK),
+      (model, timeoutMs) => askModel(instruction, model, timeoutMs),
+      {
+        onBusy: (model, n) => console.warn(`[Scanner] ${model} did not answer (attempt ${n}) — retrying`),
+      },
+    );
+    if (attempt > 1) console.log(`[Scanner] Recovered on attempt ${attempt} using ${answeringModel}`);
+
     // Logged so "the scanner feels slow" can be answered with a number
     // instead of a guess — which is how the 20s-to-1.5s fix was found.
-    console.log(`[Scanner] API response: ${VISION_MODEL} answered in ${Date.now() - startedAt}ms`);
+    console.log(`[Scanner] API response: ${answeringModel} answered in ${Date.now() - startedAt}ms`);
     const text = response.text;
     if (!text) {
       return res.status(502).json({ error: "The vision model returned no content." });
@@ -469,6 +496,18 @@ app.post("/api/identify", async (req, res) => {
         code: "timeout",
       });
     }
+    // Congestion, after every retry and the fallback model have been tried.
+    // It gets its own code and its own words because the remedy — wait a
+    // moment, tap again — is completely different from "your photo was bad",
+    // which is what the generic message below implies.
+    if (isModelBusy(message) || isTimeout(message)) {
+      return res.status(503).json({
+        error:
+          "The recognition service is busy right now. This is on their side, not yours — wait a few seconds and tap scan again.",
+        code: "model_busy",
+      });
+    }
+
     return res.status(500).json({ error: "Recognition failed. Please try again." });
   }
 });
