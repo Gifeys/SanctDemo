@@ -210,13 +210,18 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
         </p>
       </div>
 
+      {/* "Get directions", not "Walk there". The button always drew a route
+          and handed it to the pilgrim — it never started a walk — and not
+          everyone coming to a parish is on foot, so the old label promised
+          both more and less than it did. The walking time stays in the label
+          because that is what the route is measured for. */}
       <div className="sticky bottom-0 shrink-0 px-4 py-3 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)]">
         <button
           type="button"
           onClick={() => onWalkThere(dioceseId ?? parish.id)}
           className="w-full py-3.5 rounded-full text-[16px] font-semibold bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)]"
         >
-          Walk there
+          Get directions
           {metres !== null && minutes !== null && (
             <span className="font-normal opacity-85">
               {" "}

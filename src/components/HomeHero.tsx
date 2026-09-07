@@ -154,7 +154,7 @@ export default function HomeHero({ onWalkThere, onOpenParish }: HomeHeroProps) {
           onClick={() => onWalkThere(parish.id)}
           className="flex-1 py-3.5 text-[16px] font-semibold bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)]"
         >
-          Walk there
+          Get directions
         </button>
         {routeId && (
           <button

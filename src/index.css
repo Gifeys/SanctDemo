@@ -730,13 +730,17 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .dmap-live__cone::before {
   content: "";
   position: absolute;
-  left: -13px;
-  bottom: 6px;
-  width: 26px;
-  height: 22px;
+  left: -26px;
+  bottom: 5px;
+  width: 52px;
+  height: 46px;
+  /* Brightest at the dot and fading out along the beam, like a torch:
+     the pilgrim is certain where they are and progressively less certain
+     the further ahead the beam reaches. */
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--color-brand-accent) 55%, transparent),
+    color-mix(in srgb, var(--color-brand-accent) 72%, transparent),
+    color-mix(in srgb, var(--color-brand-accent) 18%, transparent) 72%,
     transparent
   );
   /* A cone rather than an arrowhead: the widening beam reads as "facing
@@ -815,6 +819,22 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   line-height: 1.25;
   color: var(--color-brand-text);
   text-shadow: 0 1px 4px rgb(0 0 0 / 0.55);
+}
+/* The "why it is off" state carries real sentences, not a two-word
+   heading, so it gets a readable card instead of shadowed text floating on
+   the map. Wider than the dial, because the remedy (a Settings path) is
+   useless if it is truncated. */
+.dmap-compass__readout[data-state="off"] {
+  max-width: 168px;
+  margin-top: 2px;
+  padding: 6px 9px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--color-brand-card) 94%, transparent);
+  border: 1px solid var(--color-brand-border);
+  color: var(--color-brand-secondary);
+  text-shadow: none;
 }
 .dmap-compass__degrees {
   display: block;
@@ -980,3 +1000,156 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    a single card and nobody tries. */
 .card-rail__card { width: 66%; }
 .card-rail__link { width: 54%; }
+
+/* The place card that opens when a map pin is tapped. A bottom sheet rather
+   than a pin-anchored popup: the map frame is only ~600px tall, so a card
+   with a photograph in it cannot open upward from a pin without covering the
+   thing it describes or being clipped by the canvas. */
+.map-sheet {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 20;
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+  overflow: hidden;
+  animation: map-sheet-in 180ms ease-out;
+}
+@keyframes map-sheet-in {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-sheet { animation: none; }
+}
+
+.map-sheet__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-card) 88%, transparent);
+  border: 1px solid var(--color-brand-border);
+  color: var(--color-brand-secondary);
+}
+.map-sheet__photo {
+  display: block;
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
+.map-sheet__body { padding: 12px 14px 14px; }
+.map-sheet__name {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-brand-text);
+  /* Room for the close button. */
+  padding-right: 34px;
+}
+.map-sheet__meta,
+.map-sheet__distance,
+.map-sheet__patron {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--color-brand-secondary);
+  margin-top: 3px;
+}
+.map-sheet__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.map-sheet__action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 12px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  border: 1px solid var(--color-brand-primary);
+}
+.map-sheet__action:disabled { opacity: 0.55; }
+.map-sheet__action--ghost {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--color-brand-primary);
+}
+.map-sheet__status {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--color-brand-secondary);
+}
+.map-sheet__link {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.map-sheet__soon {
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--color-brand-secondary);
+}
+
+/* Google's travel-mode row: an icon and an estimated time per mode.
+   Walk, motorcycle and car — the three ways people actually reach a parish
+   in Caloocan. No transit tab: no free routing service carries jeepney data
+   (see travelModes.ts), and an invented time would be worse than none. */
+.map-sheet__modes {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--color-brand-border);
+}
+.map-sheet__mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 9px;
+  color: var(--color-brand-secondary);
+  background: none;
+  border: 0;
+  /* The selected tab is marked by a rule directly under it, so the row keeps
+     working for anyone who cannot separate the two colours. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.map-sheet__mode[data-selected="true"] {
+  color: var(--color-brand-primary);
+  border-bottom-color: var(--color-brand-primary);
+}
+.map-sheet__mode-time {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.map-sheet__estimate {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-brand-secondary);
+}

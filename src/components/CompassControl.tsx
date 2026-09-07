@@ -1,5 +1,5 @@
 import { COMPASS_POINTS_4, COMPASS_POINTS_8, classifyHeading, formatHeading } from "../lib/heading";
-import type { HeadingStatus } from "../lib/useDeviceHeading";
+import { headingNeedsPermission, type HeadingStatus } from "../lib/useDeviceHeading";
 
 export type MapOrientationMode = "north-up" | "heading-up";
 
@@ -120,16 +120,23 @@ export default function CompassControl({
         </svg>
       </button>
 
-      {/* The readout only appears when there is something to read. The
-          unavailable states keep the dial — greyed and disabled — and put
-          their explanation in the tooltip and aria-label rather than
-          painting a permanent two-line message across the map. */}
-      {hasHeading && direction && (
-        <p className="dmap-compass__readout">
-          Facing {direction.name}
-          <span className="dmap-compass__degrees">{Math.round(heading)}°</span>
-        </p>
-      )}
+      {/* The readout is shown in EVERY state, not only when a heading
+          exists. It used to put the "why" in a tooltip and aria-label —
+          neither of which a phone can display — so on the device the
+          compass simply sat there inert with no way to tell whether the
+          permission was refused, the sensor was missing, or it was still
+          warming up. On a phone the explanation has to be on the glass. */}
+      <p className="dmap-compass__readout" data-state={hasHeading ? "ok" : "off"}>
+        {hasHeading && direction ? (
+          <>
+            Facing {direction.name}
+            <span className="dmap-compass__degrees">{Math.round(heading)}°</span>
+          </>
+        ) : (
+          unavailableLabel(status)
+        )}
+      </p>
+
     </div>
   );
 }
@@ -144,8 +151,19 @@ function unavailableLabel(status: HeadingStatus): string {
     case "denied":
       return "Compass permission was denied";
     case "unsupported":
-    case "unavailable":
       return "No compass on this device";
+    case "unavailable":
+      // Distinct from "unsupported": the events were listened for and
+      // nothing absolute arrived within three seconds.
+      //
+      // The remedy is platform-specific, so the message has to be too.
+      // Only a device that gates the sensor behind a permission call is an
+      // iOS device, and only there is the Settings path the actual fix —
+      // handing that instruction to someone on a laptop with no
+      // magnetometer sends them hunting for a switch that isn't there.
+      return headingNeedsPermission()
+        ? "No compass reading — turn on Settings › Safari › Motion & Orientation Access"
+        : "No compass on this device";
     default:
       return "Finding north…";
   }

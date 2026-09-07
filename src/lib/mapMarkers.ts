@@ -3,8 +3,8 @@
 // popups live outside React's tree (they're detached DOM nodes handed to
 // MapLibre, not JSX), and this environment's headless browser can't paint
 // the MapLibre WebGL canvas at all (see docs/reports/
-// map-prototype-design-swap.md), so this is the only way the pin/popup
-// markup and its live-vs-coming-soon branching can be verified — by
+// map-prototype-design-swap.md), so this is the only way the pin markup
+// and its live-vs-coming-soon branching can be verified — by
 // building the DOM directly in a unit test rather than by screenshot.
 //
 // The glyph itself (a body, a roof and a cross) is the client's own earlier
@@ -31,103 +31,4 @@ export function buildChurchPinElement(parish: MarkerParish): HTMLButtonElement {
     '<line x1="-2.5" y1="-12" x2="2.5" y2="-12" stroke-width="1.5" />' +
     '</svg>'
   return el
-}
-
-export interface PopupBuild {
-  el: HTMLDivElement
-  action: HTMLButtonElement | null
-  // "Get directions" — live parishes only, alongside "View parish". Built
-  // here (not added later) so it exists in the DOM from the start and the
-  // caller can wire a click handler without re-querying/rebuilding the
-  // popup. `directionsStatus` is the paragraph the caller updates in place
-  // (distance/time once known, or why it can't route yet) — starts empty
-  // and hidden via :empty in CSS, so a parish nobody has asked directions
-  // for yet shows no stray blank line.
-  directionsAction: HTMLButtonElement | null
-  /**
-   * "Start walking" — begins a live turn-by-turn session. Distinct from
-   * `directionsAction`, which draws a route and leaves it: navigation follows
-   * the pilgrim, advances the instruction, and reroutes when they leave it.
-   */
-  navigateAction: HTMLButtonElement | null
-  /**
-   * A live "Mass now" line, updated by the caller each time the popup opens.
-   * Live parishes only — the other 29 have no collected schedule, and an
-   * empty line there would state as fact something nobody has checked.
-   */
-  massStatus: HTMLParagraphElement | null
-  directionsStatus: HTMLParagraphElement | null
-}
-
-// Popup body. Built as DOM rather than JSX for the same reason as the pin,
-// and returned with its action button so the caller can wire up routing
-// without re-querying the DOM. Anchored `bottom` by the caller (MapLibre
-// Popup), so this card opens upward over the map rather than clipping past
-// its edge.
-export function buildPopupContent(parish: MarkerParish): PopupBuild {
-  const el = document.createElement('div')
-  el.className = 'dmap-card'
-
-  let massStatus: HTMLParagraphElement | null = null
-
-  const name = document.createElement('h3')
-  name.className = 'dmap-card__name'
-  name.textContent = parish.name
-  el.append(name)
-
-  // Directly under the name, because "can I still walk in" outranks every
-  // other line on this card. Filled by the caller each time the popup opens,
-  // since a popup built once at marker creation would freeze whatever was
-  // true at that moment.
-  if (parish.isLive) {
-    massStatus = document.createElement('p')
-    massStatus.className = 'dmap-card__mass'
-    el.append(massStatus)
-  }
-
-  if (parish.location) {
-    const where = document.createElement('p')
-    where.className = 'dmap-card__where'
-    where.textContent = parish.location
-    el.append(where)
-  }
-
-  let action: HTMLButtonElement | null = null
-  let directionsAction: HTMLButtonElement | null = null
-  let directionsStatus: HTMLParagraphElement | null = null
-  let navigateAction: HTMLButtonElement | null = null
-  if (parish.isLive) {
-    action = document.createElement('button')
-    action.type = 'button'
-    action.className = 'dmap-card__action'
-    action.textContent = 'View parish'
-    el.append(action)
-
-    directionsAction = document.createElement('button')
-    directionsAction.type = 'button'
-    directionsAction.className = 'dmap-card__action dmap-card__action--secondary'
-    directionsAction.textContent = 'Get directions'
-    el.append(directionsAction)
-
-    // "Get directions" draws the route and leaves it there. "Start walking"
-    // begins a live turn-by-turn session that follows the pilgrim and
-    // reroutes — a different thing, so it gets its own button rather than
-    // overloading the first.
-    navigateAction = document.createElement('button')
-    navigateAction.type = 'button'
-    navigateAction.className = 'dmap-card__action dmap-card__action--navigate'
-    navigateAction.textContent = 'Start walking'
-    el.append(navigateAction)
-
-    directionsStatus = document.createElement('p')
-    directionsStatus.className = 'dmap-card__directions-status'
-    el.append(directionsStatus)
-  } else {
-    const soon = document.createElement('p')
-    soon.className = 'dmap-card__soon'
-    soon.textContent = 'Coming soon to SanctiWalk'
-    el.append(soon)
-  }
-
-  return { el, action, directionsAction, directionsStatus, navigateAction, massStatus }
 }

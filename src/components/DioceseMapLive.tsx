@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker as MapLibreMarker, Popup, NavigationControl, LngLatBounds, type GeoJSONSource } from "maplibre-gl";
+import { Map as MapLibreMap, Marker as MapLibreMarker, NavigationControl, LngLatBounds, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
 import { haversineMeters, type Coordinates } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishesScored, type SearchableParish } from "../lib/mapSearch";
-import { buildChurchPinElement, buildPopupContent } from "../lib/mapMarkers";
-import { MASS_SCHEDULES } from "../data";
-import { massStatus as massStatus_ } from "../lib/schedule";
+import { buildChurchPinElement } from "../lib/mapMarkers";
+import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import CompassControl, { type MapOrientationMode } from "./CompassControl";
@@ -33,7 +32,7 @@ const MAP_BEARING_EPSILON = 1;
 interface DioceseMapLiveProps {
   onSelectParish: (parishId: string) => void;
   /**
-   * A diocese parish id handed over by Home's "Walk there". The map draws the
+   * A diocese parish id handed over by Home's "Get directions". The map draws the
    * walking route to it as soon as it is ready, then calls onWalkToConsumed
    * so returning to this tab later does not silently redraw a route nobody
    * asked for a second time.
@@ -300,6 +299,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // route: a route is a line on the map, navigation is a live session that
   // follows the pilgrim and reroutes.
   const [navigatingTo, setNavigatingTo] = useState<{ id: string; name: string; coordinates: Coordinates } | null>(null);
+  // The tapped pin, shown as a place sheet over the map. Held as an id
+  // rather than the parish object so a re-render always reads current data.
+  const [selectedParishId, setSelectedParishId] = useState<string | null>(null);
+  const [directionsState, setDirectionsState] = useState<{ parishId: string; status: string; busy: boolean } | null>(null);
+  const selectedParish = selectedParishId ? PARISHES.find(p => p.id === selectedParishId) : null;
   const { heading, status: headingStatus, requestPermission: requestHeadingPermission } = useDeviceHeading();
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
@@ -322,29 +326,26 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // Fetches and draws the walking route to one live parish, for the popup's
   // "Get directions" button. This is the only path that ever draws a route
   // line — nothing is drawn merely because a position became known.
-  function getDirectionsFor(
-    routeId: string,
-    coords: Coordinates,
-    statusEl: HTMLParagraphElement,
-    buttonEl: HTMLButtonElement,
-  ) {
+  function getDirectionsFor(parishId: string, routeId: string, coords: Coordinates) {
     const from = positionRef.current;
     const requestId = ++directionsRequestRef.current;
-    buttonEl.disabled = true;
-    statusEl.textContent = from
-      ? "Finding a route…"
-      : "Your position is unknown — enable GPS or the location simulator to get directions.";
+
     if (!from) {
-      buttonEl.disabled = false;
+      setDirectionsState({
+        parishId,
+        busy: false,
+        status: "Your position is unknown — enable GPS or the location simulator to get directions.",
+      });
       return;
     }
 
+    setDirectionsState({ parishId, busy: true, status: "" });
+
     getWalkingDirections(from, coords).then(result => {
-      // A newer "Get directions" click (this parish or another) landed
-      // first — this response is stale and must not clobber it.
+      // A newer Directions tap (this parish or another) landed first — this
+      // response is stale and must not clobber it.
       if (directionsRequestRef.current !== requestId) return;
-      buttonEl.disabled = false;
-      if (result.status === "no-position") return; // from was truthy above; unreachable, kept for type narrowing
+      if (result.status === "no-position") return; // from was truthy above; kept for narrowing
 
       const { route, label } = result;
       const map = mapRef.current;
@@ -357,9 +358,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           (b, p) => b.extend([p.lng, p.lat]),
           new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]),
         );
-        map.fitBounds(bounds, { padding: 64, duration: 500 });
+        // Bottom padding keeps the route clear of the place sheet, which
+        // covers the lower third of the frame.
+        map.fitBounds(bounds, { padding: { top: 64, left: 64, right: 64, bottom: 260 }, duration: 500 });
       }
-      statusEl.textContent = label;
+      setDirectionsState({ parishId, busy: false, status: label });
     });
   }
 
@@ -408,6 +411,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     mapRef.current = map;
 
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+
+    // Tapping the map itself dismisses the place sheet. Pin taps stop
+    // propagation, so this only ever fires on empty map.
+    map.on("click", () => setSelectedParishId(null));
 
     // MapLibre's error event fires for style/sprite/glyph/tile fetch
     // failures alike — this is the primary offline-detection path, since a
@@ -499,69 +506,21 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       const displayName = shortLabel(parish.name);
 
       const el = buildChurchPinElement({ name: displayName, isLive });
-      const { el: card, action, directionsAction, directionsStatus, navigateAction, massStatus } = buildPopupContent({
-        name: displayName,
-        location: vicariateLabel(parish.vicariate),
-        isLive,
-      });
-
-      // MapLibre popups render *inside* the map container, which is
-      // clipped by the canvas wrapper's overflow:hidden. Anchoring to
-      // 'bottom' opens the card upward over the map instead of downward
-      // past its edge.
-      const popup = new Popup({
-        anchor: "bottom",
-        offset: isLive ? 20 : 14,
-        closeButton: false,
-        focusAfterOpen: false,
-        maxWidth: "220px",
-        className: "dmap-popup",
-      }).setDOMContent(card);
-
-      if (action && routeId) {
-        action.addEventListener("click", () => onSelectParishRef.current(routeId));
-      }
-
-      if (navigateAction) {
-        navigateAction.addEventListener("click", () => {
-          setNavigatingTo({ id: parish.id, name: displayName, coordinates: parish.coordinates });
-        });
-      }
-      if (directionsAction && directionsStatus && routeId) {
-        directionsAction.addEventListener("click", () =>
-          getDirectionsRef.current(routeId, parish.coordinates, directionsStatus, directionsAction),
-        );
-      }
-
       const lngLat: [number, number] = [parish.coordinates.lng, parish.coordinates.lat];
 
-      // The map frame is short, so a pin near the top edge would have its
-      // card clipped. Easing the pin below centre on open reserves room
-      // above it.
-      popup.on("open", () => {
-        // Recomputed on every open rather than at marker-build time: whether a
-        // Mass is under way depends on the clock, and these markers are built
-        // once for the whole session.
-        if (massStatus && routeId) {
-          const schedule = MASS_SCHEDULES[routeId]?.schedule;
-          const status = schedule ? massStatus_(schedule, new Date()) : null;
-          if (status && status.state !== "none") {
-            massStatus.textContent =
-              status.state === "in-progress"
-                ? `Mass now · ${status.time}`
-                : `Mass in ${status.minutes} min · ${status.time}`;
-            massStatus.dataset.state = status.state;
-          } else {
-            massStatus.textContent = "";
-            delete massStatus.dataset.state;
-          }
-        }
-        mapRef.current?.easeTo({ center: lngLat, offset: [0, 70], duration: 300 });
+      // Tapping a pin opens the React place sheet rather than a MapLibre
+      // popup. The popup was capped at 220px and anchored to the pin, which
+      // is why it could only ever be a name and a stack of buttons — the
+      // client asked for the parish's details on tap, and details need room.
+      el.addEventListener("click", event => {
+        event.stopPropagation();
+        setSelectedParishId(parish.id);
+        // Nudge the pin above the sheet, which covers the lower third.
+        mapRef.current?.easeTo({ center: lngLat, offset: [0, -90], duration: 300 });
       });
 
       const marker = new MapLibreMarker({ element: el, anchor: "center" })
         .setLngLat(lngLat)
-        .setPopup(popup)
         .addTo(map);
       markersRef.current.set(parish.id, marker);
     }
@@ -713,7 +672,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     setRoutes({});
   }
 
-  // Honours Home's "Walk there". Waits for `mode === "live"` because a route
+  // Honours Home's "Get directions". Waits for `mode === "live"` because a route
   // layer cannot be added to a map that has not finished loading, and for a
   // position because a route needs somewhere to start.
   useEffect(() => {
@@ -771,10 +730,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     map.flyTo({
       center: marker.getLngLat(),
       zoom: 16,
-      offset: [0, 70],
+      offset: [0, -90],
       duration: 800,
     });
-    if (!marker.getPopup()?.isOpen()) marker.togglePopup();
+    setSelectedParishId(parish.id);
   }
 
   // Straight-line distance only, and labelled "direct" so it is never
@@ -882,6 +841,44 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               </li>
             ))}
           </ul>
+        )}
+
+        {selectedParish && (
+          <MapPlaceSheet
+            name={shortLabel(selectedParish.name)}
+            location={vicariateLabel(selectedParish.vicariate)}
+            routeId={LIVE_PARISH_TO_ROUTE_ID[selectedParish.id] ?? null}
+            straightLineMetres={position ? haversineMeters(position, selectedParish.coordinates) : null}
+            directionsStatus={
+              directionsState?.parishId === selectedParish.id ? directionsState.status : ""
+            }
+            directionsBusy={
+              directionsState?.parishId === selectedParish.id && directionsState.busy
+            }
+            routeMetres={
+              routes[LIVE_PARISH_TO_ROUTE_ID[selectedParish.id]]?.distanceMeters ?? null
+            }
+            hasRoute={Boolean(
+              LIVE_PARISH_TO_ROUTE_ID[selectedParish.id] &&
+                routes[LIVE_PARISH_TO_ROUTE_ID[selectedParish.id]],
+            )}
+            onDirections={() => {
+              const routeId = LIVE_PARISH_TO_ROUTE_ID[selectedParish.id];
+              if (routeId) getDirectionsFor(selectedParish.id, routeId, selectedParish.coordinates);
+            }}
+            onStartWalking={() =>
+              setNavigatingTo({
+                id: selectedParish.id,
+                name: shortLabel(selectedParish.name),
+                coordinates: selectedParish.coordinates,
+              })
+            }
+            onOpenParish={() => {
+              const routeId = LIVE_PARISH_TO_ROUTE_ID[selectedParish.id];
+              if (routeId) onSelectParishRef.current(routeId);
+            }}
+            onClose={() => setSelectedParishId(null)}
+          />
         )}
 
         <CompassControl
