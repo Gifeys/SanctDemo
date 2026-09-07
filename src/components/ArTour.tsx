@@ -11,8 +11,11 @@ import {
   ChevronRight,
   ChevronLeft,
   WifiOff,
+  QrCode,
 } from "lucide-react";
 import { useCamera, type CameraStatus } from "../lib/useCamera";
+import { useQrScanner } from "../lib/useQrScanner";
+import type { QrScanResult } from "../lib/qr";
 import type { Station } from "../types";
 
 /**
@@ -44,16 +47,32 @@ interface Recognition {
   confidence?: number;
   summary: string;
   highlights: string[];
-  /** "ai" = the camera actually recognised this. "manual" = the pilgrim
+  /** "ai" = the vision model recognised this. "qr" = the pilgrim scanned the
+   *  parish's own printed code, which is the most certain of the three: the
+   *  code names exactly one station and nothing was inferred. "manual" = they
    *  picked it from the list because the camera couldn't open or couldn't
    *  tell. Mirrors the coordinatesVerified / scheduleVerified pattern in
    *  data.ts: unverified data is shown, but never labelled as confirmed. */
-  source: "ai" | "manual";
+  source: "ai" | "manual" | "qr";
   /** False when the subject was recognised but is not one of this parish's
    *  own stations — the camera still says what it is, it just isn't part of
    *  the tour. Undefined for manual picks and for open recognition. */
   matchedStation?: boolean;
 }
+
+/**
+ * How long to wait for a recognition before giving up.
+ *
+ * Must stay ABOVE the server's own ceiling (OVERALL_DEADLINE_MS, 40s) or the
+ * retrying is wasted: aborting first replaces the honest "the service is busy"
+ * with a bare timeout, and the pilgrim loses the one piece of information that
+ * tells them trying again will work.
+ *
+ * Long, and deliberately so. Measured: a congested primary model refuses in
+ * ~3s and the fallback then answers in 7-18s, so the common recovery is
+ * 10-20s. This is the outer bound for the bad case, not the expected wait.
+ */
+const SCAN_TIMEOUT_MS = 45000;
 
 /** The server's shared daily recognition allowance — see /api/identify. */
 interface ScanBudget {
@@ -72,7 +91,7 @@ const STATUS_COPY: Partial<Record<CameraStatus, { title: string; icon: "warning"
   error: { title: "Camera unavailable", icon: "warning" },
 };
 
-function stationToRecognition(station: Station): Recognition {
+function stationToRecognition(station: Station, source: Recognition["source"] = "manual"): Recognition {
   const highlights = [
     station.history && `History: ${station.history}`,
     station.reflection && `Reflection: ${station.reflection}`,
@@ -84,7 +103,7 @@ function stationToRecognition(station: Station): Recognition {
     category: "Station",
     summary: station.description,
     highlights,
-    source: "manual",
+    source,
   };
 }
 
@@ -152,10 +171,19 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     );
 
     const startedAt = Date.now();
+
+    // A hard ceiling on the wait. The server now retries a congested model
+    // three times before falling back to a second one, so a slow answer is
+    // expected — but without an abort a genuinely hung request left the
+    // scanner spinning on "scanning" with no error and no way back.
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
+
     try {
       const response = await fetch("/api/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           imageBase64: frame.base64,
           mimeType: frame.mimeType,
@@ -211,12 +239,20 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
       setPhase("done");
     } catch (err) {
       console.error("[Scanner] Scanner error:", err);
+      // An abort is our own timeout firing, not a network fault, and saying
+      // "check your connection" for it sends the pilgrim after the wrong
+      // problem — their connection was fine, the answer just never came.
+      const timedOut = err instanceof DOMException && err.name === "AbortError";
       setError(
-        err instanceof TypeError
-          ? "Could not reach the server. Check your connection and try again."
-          : "Something went wrong reading the result. Please try again.",
+        timedOut
+          ? `The recognition service did not answer within ${Math.round(SCAN_TIMEOUT_MS / 1000)} seconds. Tap scan to try again.`
+          : err instanceof TypeError
+            ? "Could not reach the server. Check your connection and try again."
+            : "Something went wrong reading the result. Please try again.",
       );
       setPhase("idle");
+    } finally {
+      window.clearTimeout(timeout);
     }
   }, [camera, stationNames]);
 
@@ -226,6 +262,50 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     setPhase("done");
     setPickerOpen(false);
   }, []);
+
+  /* ------------------------------------------------------------------- QR */
+
+  /**
+   * The parish's printed codes, read continuously while the camera is idle.
+   *
+   * No mode to choose and no button to press, deliberately: a pilgrim
+   * standing in front of a poster should not first have to work out that the
+   * app has a separate QR mode. It costs nothing to look — decoding runs on a
+   * downscaled frame a few times a second — and every code found names
+   * exactly one station, so unlike the vision model there is nothing to get
+   * wrong.
+   *
+   * Paused while a result card is open or a recognition is in flight, so a
+   * code still in frame cannot yank the screen out from under a reader.
+   */
+  const onQrResult = useCallback(
+    (scan: QrScanResult) => {
+      if (scan.kind === "station") {
+        const { station, route } = scan.match;
+        console.log(`[Scanner] QR matched station "${station.name}" in ${route.id}`);
+        setError(null);
+        setResult(stationToRecognition(station, "qr"));
+        setSheetOpen(true);
+        setPhase("done");
+        return;
+      }
+
+      // Both misses get words that place the blame accurately. A pilgrim who
+      // scanned the parish's own poster and is told "that is not a SanctiWalk
+      // code" will reasonably conclude the app is broken.
+      setError(
+        scan.kind === "unknown-station"
+          ? `Code ${scan.code} is a SanctiWalk code, but this parish's content has not been added yet.`
+          : "That code is not a SanctiWalk station code. Point the camera at a station instead, or use the scan button.",
+      );
+    },
+    [],
+  );
+
+  useQrScanner(camera.videoRef, {
+    active: camera.isReady && !sheetOpen && phase !== "scanning",
+    onResult: onQrResult,
+  });
 
   /* ------------------------------------------------------------ permission */
 
@@ -480,6 +560,18 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
         </div>
       )}
 
+      {/* Tells the pilgrim the code reader is already running, so they do not
+          go looking for a separate QR mode that does not exist. Hidden the
+          moment there is anything more urgent to say. */}
+      {!sheetOpen && !busy && !error && !result && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 max-w-[85%] px-3.5 py-2 rounded-full bg-black/55 backdrop-blur-md border border-white/15 flex items-center gap-2 pointer-events-none">
+          <QrCode className="w-3.5 h-3.5 text-white/80 shrink-0" />
+          <span className="text-[14px] font-sans text-white/90 text-center leading-snug">
+            Point at the parish code, or tap to identify what you see
+          </span>
+        </div>
+      )}
+
       {/* Status pill */}
       {(busy || error) && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[85%] px-4 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2">
@@ -610,14 +702,25 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               </ul>
             )}
 
-            {/* Recognition is AI-generated (or, on the fallback path, a
-                manual pick). Say which — a pilgrim should know which text is
-                parish-verified and which is not. */}
+            {/* Three ways to arrive at this card, three different degrees of
+                certainty, said plainly. A pilgrim should know which text is
+                parish-verified and which is not — the same principle as
+                coordinatesVerified and scheduleVerified in data.ts. */}
             {result.source === "manual" ? (
               <div className="mt-5 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-300 rounded-xl">
                 <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
                 <span className="text-sm font-bold text-amber-900 leading-snug font-sans">
                   Selected manually — not confirmed by a camera scan.
+                </span>
+              </div>
+            ) : result.source === "qr" ? (
+              // The most certain of the three, and it should read that way.
+              // The parish printed this code beside this station; nothing was
+              // inferred and there is nothing here for a model to get wrong.
+              <div className="mt-5 flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl">
+                <QrCode className="w-4 h-4 text-emerald-800 shrink-0" />
+                <span className="text-sm font-bold text-emerald-900 leading-snug font-sans">
+                  Confirmed by the parish's own code — this is the station in front of you.
                 </span>
               </div>
             ) : (

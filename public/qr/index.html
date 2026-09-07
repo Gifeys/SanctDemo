@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SanctiWalk station posters</title>
+<style>
+  @page { size: A5; margin: 0; }
+  body { margin: 0; font-family: Helvetica, Arial, sans-serif; }
+  img { display: block; width: 100%; page-break-after: always; }
+  .note { padding: 24px; color: #5b5b52; font-size: 14px; line-height: 1.5; }
+  @media print { .note { display: none; } }
+</style>
+<div class="note">
+  <strong>5 station posters.</strong> Print at A5 or larger — bigger is easier to
+  scan from a distance. Codes point at <code>https://sanctiwalk.app</code>; regenerate with
+  <code>SANCTIWALK_BASE_URL=... node scripts/generate-qr-posters.mjs</code> if that changes.
+</div>
+<img src="MHCP-ALTAR.svg" alt="Main Altar &amp; Tabernacle">
+<img src="MHCP-PATRON.svg" alt="Maria Auxiliadora Patroness Statue">
+<img src="MHCP-BAPT.svg" alt="Baptismal Sanctuary Font">
+<img src="SRC-ALTAR.svg" alt="Cathedral Central Sanctuary">
+<img src="SRC-ROQUE.svg" alt="Miraculous Statue of San Roque">
