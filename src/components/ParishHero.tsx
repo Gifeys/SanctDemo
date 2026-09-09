@@ -107,19 +107,25 @@ export default function ParishHero({ parishName, location, patron, imageUrl }: P
       // 2px hairline sitting where the photo was. Dropped once collapsed.
       frame.style.borderWidth = height === 0 ? "0" : "1px";
 
-      // Hand the scroller back exactly the height the photograph just gave
-      // up, and this is what makes the collapse finish at all.
+      // Pad the scroller only by however much is needed to stop the finger
+      // outrunning the page — usually nothing.
       //
-      // Shrinking the header shortens the page. Near the bottom that pushes
-      // the maximum scroll position DOWN past where the finger already is,
-      // the browser clamps scrollTop to the new maximum, the progress falls,
-      // and the photograph grows back — which lengthens the page again. The
-      // two settled against each other with the photo stuck part-open and
-      // the scroll range collapsed from 386px to 220px. Padding the bottom
-      // by the reclaimed amount keeps the scrollable height constant, so
-      // there is nothing to clamp and the loop cannot start.
-      const reclaimed = HERO_HEIGHT_PX - height + (HERO_MARGIN_PX - marginBottom);
-      view.style.paddingBottom = `${basePaddingBottom + reclaimed}px`;
+      // Shrinking the header shortens the page. On a SHORT page that pushes
+      // the maximum scroll position below where the finger already is, the
+      // browser clamps scrollTop, the progress falls, and the photograph
+      // grows back — which lengthens the page again. The two settle against
+      // each other with the photo stuck part-open.
+      //
+      // The first fix padded by the full reclaimed height unconditionally.
+      // That works, but on a long page — which Home became once the Mass and
+      // History cards arrived — the loop cannot happen at all, and the
+      // padding was simply 234px of dead space under the last card. So the
+      // shortfall is measured instead: how far past the natural end of the
+      // page the current position would fall. On a long page that is zero.
+      const currentPad = parseFloat(view.style.paddingBottom) || 0;
+      const naturalRange = view.scrollHeight - currentPad - view.clientHeight;
+      const shortfall = Math.max(0, view.scrollTop - naturalRange);
+      view.style.paddingBottom = shortfall > 0 ? `${basePaddingBottom + shortfall}px` : "";
     };
 
     const onScroll = () => {
@@ -197,7 +203,7 @@ export default function ParishHero({ parishName, location, patron, imageUrl }: P
           text and while scrolling it reads as a bar. */}
       <div
         ref={stickyRef}
-        className="sticky top-0 z-10 bg-[var(--color-brand-card)] pt-1.5 pb-2.5 px-5 transition-[border-color] duration-200 border-b border-transparent data-[stuck=true]:border-[var(--color-brand-border)]"
+        className="sticky top-0 z-10 bg-[var(--color-brand-bg)] pt-1.5 pb-2.5 px-5 transition-[border-color] duration-200 border-b border-transparent data-[stuck=true]:border-[var(--color-brand-border)]"
       >
         <h1 className="text-[24px] font-bold leading-tight tracking-tight text-[var(--color-brand-text)]">
           {parishName}

@@ -38,10 +38,11 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
 
   return (
     <section>
-      <div className="flex items-baseline justify-between px-1 mb-2.5">
-        <h2 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-          Parish bulletin
-        </h2>
+      {/* The section TITLE belongs to the caller, not to this component.
+          Home now heads it with a large display heading, and a second
+          "Parish bulletin" directly beneath read as a stutter. What stays is
+          the count, which is the part that actually changes. */}
+      <div className="flex items-baseline justify-end px-1 mb-2.5">
         <span className="text-[15px] text-[var(--color-brand-secondary)]">
           {upcoming.length > 0 ? `${upcoming.length} coming up` : "Nothing posted yet"}
         </span>

@@ -21,6 +21,32 @@ export interface ParishContent {
   massSchedule?: MassScheduleEntry[];
   /** Brand colour. Validated for contrast before it is ever saved. */
   themeColor?: string;
+
+  /**
+   * The Church History card on Home.
+   *
+   * Every parish's history is its own, so this has to be editable or 29 of
+   * the 31 show an empty card. The title falls back to the patron's name when
+   * an admin leaves it blank.
+   */
+  historyTitle?: string;
+  historyBody?: string;
+  historyPhotoUrl?: string;
+
+  /**
+   * What the day commemorates, shown with the Mass card.
+   *
+   * An OVERRIDE, not the only source. The app already derives the liturgical
+   * day from the calendar (lib/liturgical.ts), so a parish with nobody
+   * editing still shows something true; this replaces that text when a parish
+   * wants to say something more specific — a titular feast, a parish
+   * anniversary, a bishop's visit.
+   */
+  commemoratesText?: string;
+
+  /** The photograph behind the Mass schedule panel on Home. */
+  massImageUrl?: string;
+
   /** Who last changed this and when — a parish office needs an audit trail. */
   updatedBy?: string;
   updatedAt?: string;
@@ -75,7 +101,15 @@ export interface PhotoUploadResult {
 }
 
 /**
- * Uploads a patron photograph and returns its public URL.
+ * Which of a parish's photographs is being replaced.
+ *
+ * Each gets its own path, so uploading a history photo cannot silently
+ * overwrite the patron image the home header depends on.
+ */
+export type ParishPhotoKind = "patron" | "history" | "mass";
+
+/**
+ * Uploads one of a parish's photographs and returns its public URL.
  *
  * Validated before the network is touched: a phone camera photo is routinely
  * 8-12MB, and letting one upload for a minute on parish wifi before failing
@@ -84,6 +118,7 @@ export interface PhotoUploadResult {
 export async function uploadParishPhoto(
   parishId: string,
   file: File,
+  kind: ParishPhotoKind = "patron",
 ): Promise<PhotoUploadResult> {
   if (!file.type.startsWith("image/")) {
     return { error: "That file is not an image. Choose a JPG or PNG photo." };
@@ -96,10 +131,15 @@ export async function uploadParishPhoto(
 
   try {
     const storage = getStorage(app);
-    // One fixed path per parish, so re-uploading replaces rather than
-    // accumulating orphaned files nobody will ever clean up.
+    // One fixed path per parish PER KIND, so re-uploading replaces rather
+    // than accumulating orphaned files nobody will ever clean up — and so a
+    // history photo cannot overwrite the patron image.
+    //
+    // "patron" keeps the original unsuffixed path so any file already
+    // uploaded under it stays reachable.
     const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const target = ref(storage, `parish-photos/${parishId}.${extension}`);
+    const name = kind === "patron" ? parishId : `${parishId}-${kind}`;
+    const target = ref(storage, `parish-photos/${name}.${extension}`);
     await uploadBytes(target, file, { contentType: file.type });
     return { url: await getDownloadURL(target) };
   } catch (error) {

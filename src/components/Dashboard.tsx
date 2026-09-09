@@ -1,18 +1,14 @@
-import React, { useEffect, useState } from "react";
-import {
-  Clock, Heart, BookOpen, User, MapPin, Bookmark,
-  ScanLine as ArIcon, Users as MinistryIcon, Map, Search,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { User } from "lucide-react";
 import { Route } from "../types";
-import { MASS_SCHEDULES, ROSARY_MYSTERIES, PARISH_PATRON_SAINTS, PARISH_PATRON_IMAGES } from "../data";
-import { nextMass } from "../lib/schedule";
-import HomeHero from "./HomeHero";
+import { PARISH_PATRON_SAINTS, PARISH_PATRON_IMAGES } from "../data";
 import BulletinRail from "./BulletinRail";
 import ParishHero from "./ParishHero";
+import MassScheduleCard from "./MassScheduleCard";
+import ChurchHistoryCard from "./ChurchHistoryCard";
 import { useParishContent } from "../lib/useParishContent";
 import { liturgicalDay } from "../lib/liturgical";
 import { verseForDate } from "../lib/verses";
-import { MYSTERY_BY_WEEKDAY } from "../lib/mysteries";
 
 type Announcement = {
   id: string;
@@ -58,128 +54,122 @@ export function formatCountdown(target: Date, now: Date): string {
   return `in ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function Dashboard({ parish, announcements, onNavigate, onSelectParish, onWalkThere, onOpenSearch }: DashboardProps) {
+export default function Dashboard({ parish, announcements, onNavigate }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
 
-  // Keeps the countdown fresh without needing the pilgrim to reopen the tab.
+  // Keeps the date and the Mass card fresh without needing the pilgrim to
+  // reopen the tab.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(id);
   }, []);
 
-  const parishSchedule = MASS_SCHEDULES[parish.id];
-  const upcomingMass = nextMass(parishSchedule?.schedule ?? [], now);
-
-  // Admin-managed overlay: photo, description, Mass times, colour. Null for
-  // every parish nobody has edited, which is all of them until someone does.
+  // Admin-managed overlay: photo, description, Mass times, history, colour.
+  // Null for every parish nobody has edited, which is all of them until
+  // someone does — and the compiled data in data.ts carries those.
   const managed = useParishContent(parish.id);
   const today = liturgicalDay(now);
   const verse = verseForDate(now);
-  const todaysMysteryCategory = MYSTERY_BY_WEEKDAY[now.getDay()];
-  const todaysMystery = ROSARY_MYSTERIES.find((m) => m.category === todaysMysteryCategory);
 
-  const todaysEvent = announcements.find((ann) => {
-    const d = new Date(ann.date);
-    return !Number.isNaN(d.getTime()) && d.toDateString() === now.toDateString();
-  });
+  // The parish's own words win; the calendar's named feast is the fallback.
+  // Both may be absent — most days of the year are not a feast — and that is
+  // a reason to show nothing, not to invent something.
+  const commemorates = managed?.commemoratesText?.trim() || today.feast;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] text-left">
-      {/* Header. The date leads, where the app's own name used to sit — the
-          name is on the tab bar and the icon already, and the date is the
-          thing that actually changes. The liturgical day sits under the
-          parish name, so the whole "what day is it" answer is in one place
-          instead of repeated in a card below. */}
-      {/* The date and the avatar share one row. The photograph sits below at
-          full content width — it used to be a flex sibling of the avatar, so
-          its width was the row minus the button, which is the empty strip
-          that was showing down the right-hand side. */}
+    <div className="home-bright home-bright__ground flex-1 flex flex-col text-left">
+      {/* The bright theme is scoped to THIS element, not to :root. Every
+          component below — including shared ones like BulletinRail — picks up
+          the new palette through the same role tokens, while Map, Pray, Me
+          and Scan stay warm paper. Rolling the theme app-wide later means
+          moving the block in index.css to :root, not editing components. */}
+
+      {/* The date and the avatar share one row; the photograph below spans
+          the full content width. */}
       <div className="px-5 pt-6 pb-3 shrink-0 flex items-center justify-between gap-3">
         <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
           {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
         </span>
         <button
           onClick={() => onNavigate("me")}
-          className="h-9 w-9 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-[var(--color-brand-card)]"
+          className="h-9 w-9 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all"
           aria-label="Me"
         >
           <User className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Rendered here rather than nested in the header block, and the nesting
-          is the whole point: a sticky element can only stay pinned within its
-          parent's box, so inside that block the parish name unstuck and
-          scrolled away the moment the block ended. As a direct child of this
-          root — which spans the entire scrollable page — it stays put. */}
+      {/* Rendered here rather than nested in the header block: a sticky
+          element can only stay pinned within its parent's box, so inside that
+          block the parish name unstuck the moment the block ended. */}
       <ParishHero
         parishName={parishName}
         location={parish.location}
         patron={PARISH_PATRON_SAINTS[parish.id]}
-        // An admin-uploaded photo wins; the compiled map is the fallback,
-        // and with neither the hero renders the name block alone.
         imageUrl={managed?.photoUrl ?? PARISH_PATRON_IMAGES[parish.id]}
       />
 
-      <div className="px-5 pt-1.5">
-        {managed?.description && (
+      {managed?.description && (
+        <div className="px-5 pt-1.5">
           <p className="text-[16px] leading-relaxed text-[var(--color-brand-text)]">
             {managed.description}
           </p>
-        )}
-        <p className="mt-1.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
-          {today.name}
-        </p>
-      </div>
+        </div>
+      )}
 
-      <div className="p-4 space-y-4 font-sans">
-        {/* The parish bulletin — live announcements, swiping. */}
+      <div className="px-4 pb-4">
+        <h2 className="home-section-title">
+          Parish
+          <br />
+          Bulletin
+        </h2>
         <BulletinRail announcements={announcements} onNavigate={onNavigate} />
 
-        {/* SECTION 1: content tied to the active parish. Its heading names
-            that parish explicitly so switching parish (Location Simulator)
-            makes the change obvious without needing an explanation —
-            everything under this heading is specific to {parishName}, and
-            only this section should change when the active parish changes. */}
-        <div className="pt-2">
-          <h3 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic">
-            At {parishName}
-          </h3>
-        </div>
+        <h2 className="home-section-title">
+          Mass
+          <br />
+          Schedule
+        </h2>
+        <MassScheduleCard
+          routeId={parish.id}
+          now={now}
+          onOpenFullSchedule={() => onNavigate("mass")}
+        />
 
-        {/* Two buttons, not six. Ministries and Sacraments are in the
-            bulletin rail above; AR Tour is the Scan tab and The Walk is the
-            Map tab, both already in the bottom bar. What is left is the pair
-            that has nowhere else to live. */}
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-base font-bold text-[var(--color-brand-text)]">
-            <button
-              onClick={() => onNavigate("mass")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <Clock className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-              <span>Mass</span>
-            </button>
+        {/* What the day commemorates — the parish's own words if they have
+            written any, otherwise the named solemnity or feast the calendar
+            supplies.
 
-            <button
-              onClick={() => onNavigate("history")}
-              className="bg-[var(--color-brand-card)] p-3.5 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-2.5 shadow-xs hover:border-[var(--color-brand-primary)] text-left transition-colors"
-            >
-              <Bookmark className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-              <span>History</span>
-            </button>
-
+            Shown only when there is something to say. Falling back to the
+            liturgical day NAME printed the Mass card's own title a second
+            time, word for word, which is noise rather than information; on an
+            ordinary Wednesday with no feast the card simply is not there. */}
+        {commemorates && (
+          <div className="mt-3 rounded-[22px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5">
+            <h4 className="text-[19px] font-bold italic text-[var(--color-brand-text)]">
+              Commemorates
+            </h4>
+            <p className="mt-1.5 text-[16px] leading-relaxed text-[var(--color-brand-secondary)]">
+              {commemorates}
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Diocese-wide, and the only thing left here now that the map has
-            its own tab, the Rosary lives on Pray, and Mass times moved to
-            Pray with it. */}
+        <h2 className="home-section-title">
+          Church
+          <br />
+          History
+        </h2>
+        <ChurchHistoryCard
+          routeId={parish.id}
+          parishName={parishName}
+          onOpenHistory={() => onNavigate("history")}
+        />
+
         {/* Verse of the Day — chosen for the liturgical season and rotating
-            by date, so it is actually "of the day". Was one hardcoded verse
-            that never changed. */}
-        <div className="rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5 space-y-2.5">
+            by date, so it is actually "of the day". */}
+        <div className="mt-6 rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5 space-y-2.5">
           <div className="flex items-baseline justify-between gap-3">
             <h4 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
               Verse of the Day
