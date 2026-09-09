@@ -970,6 +970,10 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    just bounced. Proximity lets a small movement settle where it lands. */
 .card-rail {
   display: flex;
+  /* Cards take their natural height. Stretching them to match made the
+     one-sentence "nothing posted yet" notice as tall as a card carrying a
+     photograph — a lot of empty box for one sentence. */
+  align-items: flex-start;
   gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -997,9 +1001,23 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 /* Narrow enough that the next card always shows an edge. A peeking card is
    what tells someone there is more to swipe — without it the rail looks like
-   a single card and nobody tries. */
-.card-rail__card { width: 66%; }
-.card-rail__link { width: 54%; }
+   a single card and nobody tries.
+
+   The section cards are wide because they now carry a photograph AND a
+   description; at the old 54% the description broke to two or three words a
+   line. The empty-bulletin notice is narrower — it is one sentence, and at
+   card width it pushed the ministry card, the useful one, off the screen. */
+.card-rail__card { width: 78%; }
+.card-rail__note { width: 62%; }
+
+/* The section cards match each other's height whatever their copy runs to —
+   two photo cards of visibly different heights side by side reads as a
+   mistake. They stretch; the notice above does not, which is the whole
+   reason the rail aligns to flex-start rather than stretching everything. */
+.card-rail__link {
+  width: 78%;
+  align-self: stretch;
+}
 
 /* The place card that opens when a map pin is tapped. A bottom sheet rather
    than a pin-anchored popup: the map frame is only ~600px tall, so a card

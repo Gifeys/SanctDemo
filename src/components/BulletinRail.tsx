@@ -1,7 +1,17 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useDragSafeClicks } from "../lib/useDragSafeClicks";
-import { CalendarDays, ChevronRight, ChevronDown, Users, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronRight, Users, Sparkles } from "lucide-react";
 import { MINISTRIES, SACRAMENTS } from "../data";
+
+/**
+ * Stands in until the parish supplies photographs.
+ *
+ * An illustration, not a stock photo: a picture of some other church's
+ * altar servers in Mary Help of Christians' card would read as a picture of
+ * THIS parish. Same principle as scheduleVerified in data.ts - show the
+ * placeholder, never the plausible-looking wrong thing.
+ */
+const PLACEHOLDER_PHOTO = "/parish/placeholder-ministry.svg";
 
 export interface Announcement {
   id: string;
@@ -28,13 +38,9 @@ interface BulletinRailProps {
  * Announcements are sorted soonest-first and past ones are dropped: a
  * bulletin still showing last month's fiesta is worse than a short one.
  */
-/** Which section card is open, if any. */
-type OpenSection = "ministries" | "sacraments" | null;
-
 export default function BulletinRail({ announcements, onNavigate }: BulletinRailProps) {
   // Without this, swiping the rail opens whichever card the finger started on.
   const dragSafe = useDragSafeClicks();
-  const [open, setOpen] = useState<OpenSection>(null);
   const now = new Date();
   const upcoming = announcements
     .map(a => ({ ...a, when: new Date(a.date) }))
@@ -64,7 +70,9 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
         {upcoming.length === 0 && (
           <p
             role="listitem"
-            className="card-rail__card rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
+            // Narrower than a real card: it is one sentence, and at full card
+            // width it pushed the ministry card - the useful one - off screen.
+            className="card-rail__note rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
           >
             No upcoming events posted for this parish yet. New announcements appear here first.
           </p>
@@ -93,130 +101,84 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
         <RailLink
           icon={<Users className="w-5 h-5" />}
           label="Ministries"
-          hint="Join a group at this parish"
-          expanded={open === "ministries"}
-          onClick={() => setOpen(v => (v === "ministries" ? null : "ministries"))}
+          hint="Join a group ministry in this parish."
+          caption={MINISTRIES[0]?.name}
+          imageUrl={PLACEHOLDER_PHOTO}
+          onClick={() => onNavigate("ministries")}
         />
         <RailLink
           icon={<Sparkles className="w-5 h-5" />}
           label="Sacraments"
-          hint="Baptism, marriage, confession"
-          expanded={open === "sacraments"}
-          onClick={() => setOpen(v => (v === "sacraments" ? null : "sacraments"))}
+          hint="Baptism, marriage and confession, arranged with the parish office."
+          caption={SACRAMENTS[0]?.name}
+          imageUrl={PLACEHOLDER_PHOTO}
+          onClick={() => onNavigate("sacraments")}
         />
       </div>
-
-      {/* The detail opens BELOW the rail, not inside the card.
-          The rail is a horizontal scroller with overflow-y: hidden — a card
-          that grew downward would simply be clipped — and its cards are a
-          fixed width, so a card that grew sideways would break the swipe.
-          Opening underneath keeps both, and keeps the pilgrim's place: they
-          see what a ministry actually is without being thrown onto another
-          tab and having to find their way back. */}
-      {open && (
-        <SectionDetail
-          section={open}
-          onClose={() => setOpen(null)}
-          onOpenTab={() => onNavigate(open)}
-        />
-      )}
     </section>
   );
 }
 
 /**
- * The expanded panel under the rail: what this parish actually offers.
+ * One section card in the rail: a photograph, then the label and what it is.
  *
- * Names and descriptions come from the compiled lists, so it is the real
- * thing rather than a teaser — a pilgrim deciding whether to join a ministry
- * needs to know which ministries exist, and that is a short list, not a
- * separate screen's worth of reading.
+ * The description lives INSIDE the card rather than in a panel underneath.
+ * An earlier version opened the detail below the rail, and the client was
+ * right to reject it: on a phone that panel sits below the fold, so the thing
+ * the tap revealed is the one thing you cannot see.
  */
-function SectionDetail({
-  section,
-  onClose,
-  onOpenTab,
-}: {
-  section: "ministries" | "sacraments";
-  onClose: () => void;
-  onOpenTab: () => void;
-}) {
-  const items =
-    section === "ministries"
-      ? MINISTRIES.map(m => ({ id: m.id, name: m.name, description: m.description }))
-      : SACRAMENTS.map(s => ({ id: s.id, name: s.name, description: s.description }));
-
-  const heading = section === "ministries" ? "Ministries at this parish" : "Sacraments offered";
-
-  return (
-    <div className="mt-3 rounded-[22px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 pt-4">
-        <h3 className="text-[17px] font-bold text-[var(--color-brand-text)]">{heading}</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 text-[14px] font-semibold uppercase tracking-[0.1em] text-[var(--color-brand-secondary)]"
-        >
-          Close
-        </button>
-      </div>
-
-      <ul className="mt-2 divide-y divide-[var(--color-brand-border)]">
-        {items.map(item => (
-          <li key={item.id} className="px-4 py-3">
-            <p className="text-[16px] font-semibold text-[var(--color-brand-text)]">{item.name}</p>
-            <p className="mt-0.5 text-[15px] leading-snug text-[var(--color-brand-secondary)]">
-              {item.description}
-            </p>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        type="button"
-        onClick={onOpenTab}
-        className="w-full flex items-center justify-center gap-1.5 border-t border-[var(--color-brand-border)] py-3.5 text-[16px] font-semibold text-[var(--color-brand-primary)]"
-      >
-        {section === "ministries" ? "Apply to a ministry" : "Request a sacrament"}
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
 function RailLink({
   icon,
   label,
   hint,
-  expanded,
+  caption,
+  imageUrl,
   onClick,
 }: {
   icon: ReactNode;
   label: string;
   hint: string;
-  expanded: boolean;
+  /** Named over the photograph — an example of what is inside. */
+  caption?: string;
+  imageUrl?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      // Announced as a disclosure rather than a link, because that is now what
-      // it is — it opens a panel on this screen instead of navigating away.
-      aria-expanded={expanded}
-      data-expanded={expanded}
-      className="card-rail__link rounded-[22px] bg-[var(--color-brand-card)] border p-4 text-left transition-colors border-[var(--color-brand-border)] data-[expanded=true]:border-[var(--color-brand-primary)]"
+      className="card-rail__link overflow-hidden rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-left transition-colors hover:border-[var(--color-brand-primary)]"
     >
-      <span className="text-[var(--color-brand-primary)]">{icon}</span>
-      <span className="mt-2.5 flex items-center gap-1 text-[16px] font-semibold text-[var(--color-brand-text)]">
-        {label}
-        {/* The chevron turns to point at the panel it opened, so the card
-            shows its own state rather than looking unchanged after a tap. */}
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-180" : "-rotate-90"}`}
-        />
+      {imageUrl && (
+        <span className="relative block">
+          <img src={imageUrl} alt="" className="w-full h-[116px] object-cover" loading="lazy" />
+          {caption && (
+            <>
+              {/* A scrim, not a shadow: what sits behind the caption is a
+                  photograph nobody has chosen yet, so its brightness cannot
+                  be assumed. */}
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent"
+              />
+              <span className="absolute left-3 right-3 bottom-2 block text-[14px] font-semibold leading-snug text-white">
+                {caption}
+              </span>
+            </>
+          )}
+        </span>
+      )}
+
+      <span className="block p-4">
+        <span className="flex items-center gap-2 text-[16px] font-semibold text-[var(--color-brand-text)]">
+          <span className="text-[var(--color-brand-primary)]">{icon}</span>
+          {label}
+          <ChevronRight className="w-4 h-4 ml-auto text-[var(--color-brand-secondary)]" />
+        </span>
+        <span className="mt-1 block text-[15px] leading-snug text-[var(--color-brand-secondary)]">
+          {hint}
+        </span>
       </span>
-      <span className="mt-0.5 block text-[15px] leading-snug text-[var(--color-brand-secondary)]">{hint}</span>
     </button>
   );
 }

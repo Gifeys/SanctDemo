@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="Photograph pending">
+  <!--
+    A stand-in for a parish photograph that has not been supplied yet.
+
+    Deliberately an ILLUSTRATION, not a stock photo. A stock photo of some
+    other church's altar servers dropped into Mary Help of Christians' card
+    would read as a picture of this parish, which it is not — the same reason
+    data.ts marks unverified Mass times rather than showing them plainly. This
+    reads at a glance as "a photo belongs here", and the layout can be judged
+    without anyone mistaking it for the real thing.
+  -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#DCE6F7"/>
+      <stop offset="100%" stop-color="#EEF3FC"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="640" height="360" fill="url(#sky)"/>
+
+  <g fill="none" stroke="#9FB4D8" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <!-- nave -->
+    <path d="M170 250 h300 v70 h-300 z"/>
+    <path d="M170 250 l150 -86 l150 86"/>
+    <!-- door -->
+    <path d="M296 320 v-52 a24 24 0 0 1 48 0 v52"/>
+    <!-- tower and cross -->
+    <path d="M320 164 v-40 M300 138 h40"/>
+    <!-- windows -->
+    <path d="M226 320 v-34 a14 14 0 0 1 28 0 v34"/>
+    <path d="M386 320 v-34 a14 14 0 0 1 28 0 v34"/>
+  </g>
+
+  <text x="320" y="52" text-anchor="middle"
+        font-family="Helvetica, Arial, sans-serif" font-size="19" font-weight="700"
+        letter-spacing="2.5" fill="#7C93BC">PHOTOGRAPH PENDING</text>
+</svg>
