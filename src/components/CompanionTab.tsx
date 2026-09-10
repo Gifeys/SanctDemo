@@ -76,10 +76,7 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
           coordinates: { 
             lat: 14.5 + (Math.random() - 0.5) * 0.1, 
             lng: 121.0 + (Math.random() - 0.5) * 0.1 
-          },
-          audioDuration: s.audioDuration || "2:00",
-          imageUrl: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=800&q=80",
-          qrCode: `SW-AI-QR-${idx}`
+          },          qrCode: `SW-AI-QR-${idx}`
         }))
       };
 

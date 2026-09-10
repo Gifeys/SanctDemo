@@ -5,8 +5,24 @@ export interface Station {
   history: string;
   reflection: string;
   coordinates: { lat: number; lng: number };
-  audioDuration: string;
-  imageUrl: string;
+  /**
+   * A recorded narration for this station, once one exists.
+   *
+   * This replaces `audioDuration`, which was a string like "1:30" on every
+   * station while no audio file had ever been recorded — the app was
+   * advertising narration that did not exist. A duration is a property OF a
+   * recording, so it is read from the file at playback rather than typed by
+   * hand, and with no file there is nothing to claim.
+   */
+  audioUrl?: string;
+  /**
+   * A photograph OF THIS STATION. Optional, and absent is the honest state
+   * for most: four of the five stations carried Unsplash stock photographs of
+   * unrelated churches, which presented another parish's baptismal font as
+   * this one's. Same principle as `scheduleVerified` in data.ts — show the
+   * placeholder, never the plausible-looking wrong thing.
+   */
+  imageUrl?: string;
   qrCode: string;
 }
 

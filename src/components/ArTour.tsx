@@ -58,6 +58,10 @@ interface Recognition {
    *  own stations — the camera still says what it is, it just isn't part of
    *  the tour. Undefined for manual picks and for open recognition. */
   matchedStation?: boolean;
+  /** Which station this is, when it is one. Lets the card show that
+   *  station's photograph and offer the next stop on the tour — the AI path
+   *  has no station behind it, so it carries no id. */
+  stationId?: string;
 }
 
 /**
@@ -104,6 +108,7 @@ function stationToRecognition(station: Station, source: Recognition["source"] = 
     summary: station.description,
     highlights,
     source,
+    stationId: station.id,
   };
 }
 
@@ -263,6 +268,21 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     setPickerOpen(false);
   }, []);
 
+  // The station currently on the card, when the card is showing one. The AI
+  // path recognises things that are not stations at all, so this is often
+  // null and every use of it has to allow for that.
+  const currentStation = result?.stationId
+    ? stations.find(s => s.id === result.stationId) ?? null
+    : null;
+
+  // The next stop on the tour, so a pilgrim can walk the church in order
+  // without going back to the picker between every station. Wraps at the end
+  // rather than dead-ending on the last one.
+  const nextStation =
+    currentStation && stations.length > 1
+      ? stations[(stations.findIndex(s => s.id === currentStation.id) + 1) % stations.length]
+      : null;
+
   /* ------------------------------------------------------------------- QR */
 
   /**
@@ -347,6 +367,18 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
             </div>
 
             <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs">
+              {/* The station's own photograph, when one exists — nothing when
+                  it does not. Most stations have none, and an empty space is
+                  more honest than another church's altar. */}
+              {currentStation?.imageUrl && (
+                <img
+                  src={currentStation.imageUrl}
+                  alt={currentStation.name}
+                  className="mb-4 w-full h-40 object-cover rounded-2xl border border-[var(--color-brand-border)]"
+                  loading="lazy"
+                />
+              )}
+
               <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
               {result.highlights.length > 0 && (
@@ -362,6 +394,27 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 </ul>
               )}
             </div>
+
+            {/* Walks the church in order, naming the next stop rather than
+                saying "Next" — knowing you are being sent to the Baptismal
+                Font is what makes it worth following. */}
+            {nextStation && (
+              <button
+                type="button"
+                onClick={() => pickStation(nextStation)}
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 text-left active:scale-[0.99] transition-transform"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-bold uppercase tracking-[0.1em] text-[var(--color-brand-secondary)]">
+                    Next location
+                  </span>
+                  <span className="mt-0.5 block text-[16px] font-semibold text-[var(--color-brand-text)] leading-snug">
+                    {nextStation.name}
+                  </span>
+                </span>
+                <ChevronRight className="w-5 h-5 shrink-0 text-[var(--color-brand-primary)]" />
+              </button>
+            )}
 
             <button
               onClick={() => setPickerOpen(true)}
@@ -687,6 +740,19 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
           </div>
 
           <div className="px-5 pb-6 overflow-y-auto" style={{ maxHeight: "calc(72vh - 90px)" }}>
+            {/* The station's own photograph, when one exists. Deliberately
+                nothing when it does not: four of these carried stock images
+                of unrelated churches until this pass, and an empty space is
+                more honest than another parish's altar. */}
+            {currentStation?.imageUrl && (
+              <img
+                src={currentStation.imageUrl}
+                alt={currentStation.name}
+                className="mb-4 w-full h-40 object-cover rounded-2xl border border-[var(--color-brand-border)]"
+                loading="lazy"
+              />
+            )}
+
             <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
             {result.highlights?.length > 0 && (
@@ -728,6 +794,28 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
                 Identified by AI from your camera. Details may be incomplete — the parish record
                 is the authority.
               </p>
+            )}
+
+            {/* Walks the church in order, so a pilgrim does not have to go
+                back to the picker between every station. It names the next
+                stop rather than saying "Next" — knowing you are being sent to
+                the Baptismal Font is what makes it worth following. */}
+            {nextStation && (
+              <button
+                type="button"
+                onClick={() => pickStation(nextStation)}
+                className="mt-5 w-full flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] p-4 text-left active:scale-[0.99] transition-transform"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-bold uppercase tracking-[0.1em] text-[var(--color-brand-secondary)]">
+                    Next location
+                  </span>
+                  <span className="mt-0.5 block text-[16px] font-semibold text-[var(--color-brand-text)] leading-snug">
+                    {nextStation.name}
+                  </span>
+                </span>
+                <ChevronRight className="w-5 h-5 shrink-0 text-[var(--color-brand-primary)]" />
+              </button>
             )}
           </div>
         </div>

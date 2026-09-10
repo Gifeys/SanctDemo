@@ -1,6 +1,7 @@
 import React from "react";
 import { BookOpen, Sparkles, Compass, History } from "lucide-react";
 import { Route } from "../types";
+import { PLACEHOLDER_PHOTO } from "../lib/parishPhotos";
 
 interface ParishHistoryContent {
   photo: string;
@@ -33,8 +34,13 @@ const PARISH_HISTORY: Record<string, ParishHistoryContent> = {
     ],
   },
   "route-src": {
-    photo: "https://images.unsplash.com/photo-1590076241314-e2c7c724490d?auto=format&fit=crop&w=800&q=80",
-    photoAlt: "San Roque Cathedral Caloocan",
+    // No photograph of San Roque Cathedral has been collected. This used to
+    // carry a stock image of an unrelated church captioned "San Roque
+    // Cathedral Caloocan" — a caption that made the claim explicit, and made
+    // it false. The placeholder depicts no particular church, so its alt is
+    // empty rather than naming one to a screen reader.
+    photo: PLACEHOLDER_PHOTO,
+    photoAlt: "",
     badge: "Diocese of Kalookan",
     historyHeading: "Historical Milestones",
     historyParagraphs: [

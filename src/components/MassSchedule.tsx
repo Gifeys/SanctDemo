@@ -1,4 +1,5 @@
 import React from "react";
+import { parishPhoto, parishPhotoAlt } from "../lib/parishPhotos";
 import { Clock, Phone, Mail, MapPin, Calendar, Sparkles, AlertTriangle } from "lucide-react";
 import { MASS_SCHEDULES, PARISH_CONTACTS } from "../data";
 import { Route } from "../types";
@@ -6,13 +7,10 @@ import { parseTimes } from "../lib/schedule";
 
 const WEEKDAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// Parish facade photos, keyed by route id — same images used elsewhere
-// (ChurchHistory, the church-selector cards) so a parish looks like the
-// same place everywhere it appears in the app.
-const PARISH_PHOTOS: Record<string, string> = {
-  "route-mhcp": "https://dioceseofkalookan.ph/wp-content/uploads/2020/12/maryhelpPic1-1-1024x680.jpg",
-  "route-src": "https://images.unsplash.com/photo-1590076241314-e2c7c724490d?auto=format&fit=crop&w=800&q=80",
-};
+// Facade photographs now come from lib/parishPhotos.ts. This file used to
+// keep its own copy of the roster, which is how San Roque ended up
+// illustrated by a stock photograph of an unrelated church in three separate
+// screens — each with its own list, each pasted from the last.
 
 // Groups consecutive weekdays that share the exact same Mass time string into
 // a single display row (e.g. "Monday & Tuesday", "Wednesday - Saturday"),
@@ -55,7 +53,8 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
   const sundayEntry = schedule.find((s) => s.day === "Sunday");
   const sundayTimes = sundayEntry ? parseTimes(sundayEntry.time) : [];
   const contact = PARISH_CONTACTS[parish.id];
-  const photo = PARISH_PHOTOS[parish.id];
+  const photo = parishPhoto(parish.id);
+  const photoAlt = parishPhotoAlt(parish.id, parishName);
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
@@ -85,7 +84,7 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
             {photo && (
               <img
                 src={photo}
-                alt={parishName}
+                alt={photoAlt}
                 className="w-full h-full object-cover"
               />
             )}

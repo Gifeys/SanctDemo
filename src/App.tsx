@@ -33,6 +33,7 @@ import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
+import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 import { useParishContent } from "./lib/useParishContent";
@@ -782,11 +783,8 @@ export default function App() {
                         {/* Facade image placeholder */}
                         <div className="relative h-28">
                           <img
-                            src={route.id === "route-mhcp" 
-                              ? "https://dioceseofkalookan.ph/wp-content/uploads/2020/12/maryhelpPic1-1-1024x680.jpg"
-                              : "https://images.unsplash.com/photo-1590076241314-e2c7c724490d?auto=format&fit=crop&w=600&q=80"
-                            }
-                            alt={route.name}
+                            src={parishPhoto(route.id)}
+                            alt={parishPhotoAlt(route.id, route.name)}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/70 flex items-end p-2.5">
