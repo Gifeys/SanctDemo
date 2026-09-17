@@ -8,7 +8,6 @@ import MassScheduleCard from "./MassScheduleCard";
 import ChurchHistoryCard from "./ChurchHistoryCard";
 import { useParishContent } from "../lib/useParishContent";
 import { liturgicalDay } from "../lib/liturgical";
-import { verseForDate } from "../lib/verses";
 
 type Announcement = {
   id: string;
@@ -70,7 +69,6 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
   // someone does — and the compiled data in data.ts carries those.
   const managed = useParishContent(parish.id);
   const today = liturgicalDay(now);
-  const verse = verseForDate(now);
 
   // The parish's own words win; the calendar's named feast is the fallback.
   // Both may be absent — most days of the year are not a feast — and that is
@@ -167,22 +165,12 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
           onOpenHistory={() => onNavigate("history")}
         />
 
-        {/* Verse of the Day — chosen for the liturgical season and rotating
-            by date, so it is actually "of the day". */}
-        <div className="mt-6 rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5 space-y-2.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h4 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-              Verse of the Day
-            </h4>
-            <span className="text-[14px] text-[var(--color-brand-secondary)]">{verse.season}</span>
-          </div>
-          <blockquote className="text-[16px] text-[var(--color-brand-text)] leading-relaxed">
-            &ldquo;{verse.text}&rdquo;
-          </blockquote>
-          <cite className="text-[15px] font-semibold text-[var(--color-brand-primary)] block not-italic">
-            {verse.reference}
-          </cite>
-        </div>
+        {/* The Verse of the Day card now lives on Pray, at the client's
+            request. It was the last thing on a long Home scroll, where it
+            sat under the church history and was rarely reached; on Pray it
+            is beside the day's mysteries, which is the screen a pilgrim
+            opens to read something. verses.ts is unchanged and is now
+            imported by PrayScreen instead. */}
       </div>
     </div>
   );
