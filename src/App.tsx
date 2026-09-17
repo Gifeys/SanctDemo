@@ -152,6 +152,9 @@ export default function App() {
     loadHomeParishId(VALID_HOME_IDS) ?? firstLiveParishId()
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
+  // True while the map is running turn-by-turn, so global chrome can stand
+  // aside. Reported upward by DioceseMapLive.
+  const [isNavigating, setIsNavigating] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
 
@@ -893,6 +896,7 @@ export default function App() {
                               onSelectParish={handleSelectParish}
                               walkToParishId={walkToParishId}
                               onWalkToConsumed={() => setWalkToParishId(null)}
+                              onNavigatingChange={setIsNavigating}
                             />
                           </div>
 
@@ -1094,7 +1098,11 @@ export default function App() {
                 so it rises over whatever screen the pilgrim is on, and
                 bounded by this same relative container so it never escapes
                 the phone frame. */}
-            <PresenceBanner />
+            {/* Hidden during turn-by-turn. It occupies the same top strip as
+                the turn instruction, and while you are being guided TO a
+                parish, "you are approaching" that parish is something you
+                already know — it was covering the instruction. */}
+            {!isNavigating && <PresenceBanner />}
             <PresenceSheet onOpenTour={handleOpenTourFromPresence} onOpenAR={handleOpenARFromPresence} />
 
           </div>

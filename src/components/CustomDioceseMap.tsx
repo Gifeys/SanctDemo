@@ -23,9 +23,11 @@ interface CustomDioceseMapProps {
   // squeezed inside it. Omitted by the two callers that still live inside a
   // fixed-height card (Dashboard's mini map, the church selector).
   mapHeight?: number;
+  /** Passed through: true while turn-by-turn navigation is running. */
+  onNavigatingChange?: (navigating: boolean) => void;
 }
 
-export default function CustomDioceseMap({ onSelectParish, mapHeight, walkToParishId, onWalkToConsumed }: CustomDioceseMapProps) {
+export default function CustomDioceseMap({ onSelectParish, mapHeight, walkToParishId, onWalkToConsumed, onNavigatingChange }: CustomDioceseMapProps) {
   const wrapClassName = mapHeight != null ? "flex flex-col gap-2" : "flex flex-col gap-2 h-full min-h-0";
   const mapSlotClassName = mapHeight != null ? "" : "flex-1 min-h-0";
 
@@ -37,6 +39,7 @@ export default function CustomDioceseMap({ onSelectParish, mapHeight, walkToPari
           heightPx={mapHeight}
           walkToParishId={walkToParishId}
           onWalkToConsumed={onWalkToConsumed}
+          onNavigatingChange={onNavigatingChange}
         />
       </div>
 

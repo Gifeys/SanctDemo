@@ -113,11 +113,17 @@ export default function NavigationOverlay({
   const upcoming = route && progress ? route.steps[progress.stepIndex + 1] : null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 p-3">
-      <div className="rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl overflow-hidden">
-        {/* The instruction band. Navy, because in this palette navy marks
-            position, route and action — and this is all three. */}
-        <div className="bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 py-4">
+    <>
+      {/* The instruction goes at the TOP and the summary at the bottom, the
+          way every turn-by-turn app does it, and for the same reason: the
+          next turn is what you glance at while walking, and a glance goes to
+          the top of the screen. Both used to sit in one card at the bottom,
+          which also put them on top of the place sheet. z-30 keeps them
+          above that sheet whatever else is open. */}
+      <div className="absolute inset-x-0 top-0 z-30 p-3">
+        {/* Navy, because in this palette navy marks position, route and
+            action — and this is all three. */}
+        <div className="rounded-[22px] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 py-4 shadow-2xl">
           {phase === "routing" && <BandMessage icon={<RotateCw className="w-5 h-5 animate-spin" />} text="Finding a walking route…" />}
 
           {phase === "rerouting" && (
@@ -151,8 +157,12 @@ export default function NavigationOverlay({
             </div>
           )}
         </div>
+      </div>
 
-        <div className="flex items-center justify-between gap-3 px-5 py-3">
+      {/* Distance, time and the way out — the things you check occasionally
+          rather than continuously, so they sit at the bottom under the thumb. */}
+      <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+        <div className="flex items-center justify-between gap-3 rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] shadow-2xl px-5 py-3">
           <div className="min-w-0">
             {progress && phase !== "no-route" ? (
               <p className="text-[16px] font-semibold text-[var(--color-brand-text)] tabular-nums">
@@ -178,7 +188,7 @@ export default function NavigationOverlay({
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

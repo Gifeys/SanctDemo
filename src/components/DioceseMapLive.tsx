@@ -45,6 +45,13 @@ interface DioceseMapLiveProps {
   // the dashboard and church selector). Used by the dedicated map screen so
   // the map keeps ~374px regardless of how tall the legend/link end up.
   heightPx?: number;
+  /**
+   * Reports whether turn-by-turn is running, so the screen around the map can
+   * get out of its way. The presence banner in App.tsx sits in the same top
+   * strip as the turn instruction and is redundant while navigating — it
+   * announces the parish you are already being guided to.
+   */
+  onNavigatingChange?: (navigating: boolean) => void;
 }
 
 // The client's own Google My Map ("SanctDemoMap") — a fully public link that
@@ -271,7 +278,7 @@ function isTileHostError(error: unknown): boolean {
   return message.includes(TILE_HOST) || /Failed to fetch|NetworkError|ERR_/.test(message);
 }
 
-export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
+export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed, onNavigatingChange }: DioceseMapLiveProps) {
   const { position, accuracyMeters, simulation } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -299,6 +306,34 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // route: a route is a line on the map, navigation is a live session that
   // follows the pilgrim and reroutes.
   const [navigatingTo, setNavigatingTo] = useState<{ id: string; name: string; coordinates: Coordinates } | null>(null);
+  // True once the camera has closed in for the current navigation session, so
+  // a reroute mid-walk does not yank it back.
+  const didZoomForNavRef = useRef(false);
+
+  // Held in a ref so a caller passing a fresh arrow function every render
+  // cannot re-fire this effect and flap the banner.
+  const onNavigatingChangeRef = useRef(onNavigatingChange);
+  onNavigatingChangeRef.current = onNavigatingChange;
+  useEffect(() => {
+    onNavigatingChangeRef.current?.(Boolean(navigatingTo));
+  }, [navigatingTo]);
+
+  // The study-area polygon is hidden while navigating.
+  //
+  // It is an orange fill at 30% covering the client's whole scope area, which
+  // is legible at diocese zoom and completely dominant at the street zoom
+  // navigation uses — the entire map turned salmon and the route line had to
+  // compete with it. It is an annotation about the CAPSTONE's scope, not
+  // about the walk, so it has no business on screen mid-route.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mode !== "live" || !map) return;
+
+    const visibility = navigatingTo ? "none" : "visible";
+    for (const layerId of [SCOPE_FILL_LAYER_ID, SCOPE_LINE_LAYER_ID]) {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  }, [navigatingTo, mode]);
   // The tapped pin, shown as a place sheet over the map. Held as an id
   // rather than the parish object so a re-render always reads current data.
   const [selectedParishId, setSelectedParishId] = useState<string | null>(null);
@@ -323,10 +358,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // lands first, so a slow response can never overwrite a fresher route.
   const directionsRequestRef = useRef(0);
 
-  // Fetches and draws the walking route to one live parish, for the popup's
-  // "Get directions" button. This is the only path that ever draws a route
-  // line — nothing is drawn merely because a position became known.
-  function getDirectionsFor(parishId: string, routeId: string, coords: Coordinates) {
+  // Fetches and draws the walking route to ANY parish in the diocese, for the
+  // place sheet's Directions button. This is the only path that ever draws a
+  // route line — nothing is drawn merely because a position became known.
+  //
+  // Keyed by parish id, which every one of the 31 has. It used to take a tour
+  // route id as well, which only two parishes have, and that is what made the
+  // other 29 unreachable.
+  function getDirectionsFor(parishId: string, coords: Coordinates) {
     const from = positionRef.current;
     const requestId = ++directionsRequestRef.current;
 
@@ -351,8 +390,8 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       const map = mapRef.current;
       if (map) {
         const accent = resolveColor("var(--color-brand-accent)");
-        upsertRouteLayer(map, routeId, route, accent);
-        setRoutes(prev => ({ ...prev, [routeId]: route }));
+        upsertRouteLayer(map, parishId, route, accent);
+        setRoutes(prev => ({ ...prev, [parishId]: route }));
         const [first, ...rest] = route.path;
         const bounds = rest.reduce(
           (b, p) => b.extend([p.lng, p.lat]),
@@ -843,7 +882,12 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           </ul>
         )}
 
-        {selectedParish && (
+        {/* Hidden while navigating. The place sheet answers "what is this
+            place and how far"; once you are walking, the turn is the only
+            question, and the two sat on top of each other at the bottom of
+            the screen — the travel-mode row showing through behind the
+            navigation card. */}
+        {selectedParish && !navigatingTo && (
           <MapPlaceSheet
             name={shortLabel(selectedParish.name)}
             location={vicariateLabel(selectedParish.vicariate)}
@@ -855,17 +899,15 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             directionsBusy={
               directionsState?.parishId === selectedParish.id && directionsState.busy
             }
-            routeMetres={
-              routes[LIVE_PARISH_TO_ROUTE_ID[selectedParish.id]]?.distanceMeters ?? null
+            // Routes are keyed by the PARISH id, not the tour route id. Only
+            // two parishes have a tour, but all 31 have verified coordinates —
+            // keying the drawn route off the tour is what made the other 29
+            // impossible to route to.
+            routeMetres={routes[selectedParish.id]?.distanceMeters ?? null}
+            hasRoute={Boolean(routes[selectedParish.id])}
+            onDirections={() =>
+              getDirectionsFor(selectedParish.id, selectedParish.coordinates)
             }
-            hasRoute={Boolean(
-              LIVE_PARISH_TO_ROUTE_ID[selectedParish.id] &&
-                routes[LIVE_PARISH_TO_ROUTE_ID[selectedParish.id]],
-            )}
-            onDirections={() => {
-              const routeId = LIVE_PARISH_TO_ROUTE_ID[selectedParish.id];
-              if (routeId) getDirectionsFor(selectedParish.id, routeId, selectedParish.coordinates);
-            }}
             onStartWalking={() =>
               setNavigatingTo({
                 id: selectedParish.id,
@@ -908,7 +950,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           Recentre
         </button>
 
-        {Object.keys(routes).length > 0 && (
+        {/* Not while navigating: it sits in the top strip under the turn
+            instruction, and Stop already clears the route. Two ways to undo
+            the same thing, one of them half-hidden. */}
+        {Object.keys(routes).length > 0 && !navigatingTo && (
           <button
             type="button"
             className="dmap-live__clear-route"
@@ -925,7 +970,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             asserting a precise dot — wifi-based geolocation on a desktop is
             routinely only accurate to within a few hundred metres, and this
             says so instead of pretending otherwise. */}
-        {position && (
+        {/* Hidden while navigating: it sits in the top strip, which is now
+            where the turn instruction lives, and accuracy is a thing you
+            check before setting off rather than at every corner. */}
+        {position && !navigatingTo && (
           <div
             className={simulation !== "off" ? "dmap-live__position-badge dmap-live__position-badge--sim" : "dmap-live__position-badge"}
             data-testid="position-accuracy-badge"
@@ -956,6 +1004,27 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               if (!map) return;
               upsertRouteLayer(map, navigatingTo.id, route, resolveColor("var(--color-brand-accent)"));
               setRoutes(prev => ({ ...prev, [navigatingTo.id]: route }));
+
+              // Close in on the walker when navigation starts.
+              //
+              // The map was still showing the whole route fitted to the
+              // screen, which is the right view for CHOOSING a route and the
+              // wrong one for walking it — at that zoom a street corner is a
+              // few pixels wide. Only on the first route, so a reroute
+              // mid-walk does not yank the camera back.
+              if (!didZoomForNavRef.current) {
+                didZoomForNavRef.current = true;
+                const from = positionRef.current ?? route.path[0];
+                if (from) {
+                  map.easeTo({
+                    center: [from.lng, from.lat],
+                    zoom: 17.5,
+                    // Leaves room for the instruction card at the top.
+                    offset: [0, 60],
+                    duration: 900,
+                  });
+                }
+              }
             }}
           />
         )}

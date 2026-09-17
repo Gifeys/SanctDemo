@@ -104,7 +104,11 @@ export default function MapPlaceSheet({
             routing service serves a single road profile and ignores the mode
             asked of it (see travelModes.ts) — so the row says so underneath
             instead of implying three separate routings. */}
-        {routeId && metres !== null && (
+        {/* Travel times for EVERY parish, not only the two with a tour.
+            Distance and routing need coordinates, and all 31 have verified
+            ones — the tour route was never what made this work, it was just
+            what the code happened to key off. */}
+        {metres !== null && (
           <>
             <div className="map-sheet__modes" role="tablist" aria-label="How you are travelling">
               {TRAVEL_MODES.map(mode => {
@@ -135,14 +139,18 @@ export default function MapPlaceSheet({
           </>
         )}
 
-        {routeId ? (
-          <>
-            {/* One button, and which one depends on where the errand has
-                got to. Before a route exists the only useful thing is
-                Directions; once it is drawn, asking for the same directions
-                again is the redundancy the client spotted — the button
-                becomes Start, exactly as Google Maps does it. */}
-            <div className="map-sheet__actions">
+        {/* Directions for every parish in the diocese.
+            A pilgrim looking for their OWN parish is served by this long
+            before anyone writes its history — and 29 of the 31 are somebody's
+            own parish. Gating it on having a tour route made the other 29 a
+            dead end that said "coming soon" and offered nothing. */}
+        <>
+          {/* One button, and which one depends on where the errand has
+              got to. Before a route exists the only useful thing is
+              Directions; once it is drawn, asking for the same directions
+              again is the redundancy the client spotted — the button
+              becomes Start, exactly as Google Maps does it. */}
+          <div className="map-sheet__actions">
               {hasRoute ? (
                 <button type="button" className="map-sheet__action" onClick={onStartWalking}>
                   <Navigation className="w-4 h-4" />
@@ -165,20 +173,24 @@ export default function MapPlaceSheet({
                 above already carries the distance and the time for the mode
                 actually selected, and this line always said "walk" — so with
                 Car chosen the sheet contradicted itself. */}
-            {!hasRoute && directionsStatus && (
-              <p className="map-sheet__status">{directionsStatus}</p>
-            )}
+          {!hasRoute && directionsStatus && (
+            <p className="map-sheet__status">{directionsStatus}</p>
+          )}
 
-            {/* A quiet link rather than a fourth button: the sheet already
-                answers "what is this place", and this is for the pilgrim who
-                wants the Mass schedule, history and ministries behind it. */}
+          {/* The parish page stays gated, because only these two HAVE one.
+              Sending someone to an empty screen would be worse than not
+              offering it. The note below says so rather than leaving the
+              absence unexplained. */}
+          {routeId ? (
             <button type="button" className="map-sheet__link" onClick={onOpenParish}>
               Parish page <ChevronRight className="w-4 h-4" />
             </button>
-          </>
-        ) : (
-          <p className="map-sheet__soon">Coming soon to SanctiWalk</p>
-        )}
+          ) : (
+            <p className="map-sheet__soon">
+              Mass times, history and the guided tour are still being collected for this parish.
+            </p>
+          )}
+        </>
       </div>
     </div>
   );
