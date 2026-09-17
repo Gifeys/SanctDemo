@@ -33,6 +33,16 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
   const now = new Date();
   const today = liturgicalDay(now);
   const verse = verseForDate(now);
+
+  // The season label used to sit in the Verse of the Day card; the client
+  // moved it up to the day line at the top. That line already spells the
+  // season out on most days — "Friday of the 24th Week in Ordinary Time" —
+  // so it is appended only on the days that do not name it: Easter Sunday,
+  // Pentecost, Christmas Day, Ash Wednesday and the days just after it.
+  // Otherwise the line would read "…in Ordinary Time · Ordinary Time".
+  const dayLine = today.name.includes(today.season)
+    ? today.name
+    : `${today.name} · ${today.season}`;
   const set = mysteryForDate(now);
   const mystery = ROSARY_MYSTERIES.find(m => m.category === set);
 
@@ -69,7 +79,7 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
 
       <div className="px-5 pb-6">
         <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-          {today.name}
+          {dayLine}
         </p>
 
         <h1 className="mt-3 text-[30px] font-bold leading-[1.12] tracking-tight text-[var(--color-brand-text)]">
@@ -96,12 +106,12 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
             the invitation to pray and the decades themselves: something to
             read whether or not the pilgrim starts the Rosary now. */}
         <div className="mt-6 rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5 space-y-2.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h4 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-              Verse of the Day
-            </h4>
-            <span className="text-[14px] text-[var(--color-brand-secondary)]">{verse.season}</span>
-          </div>
+          {/* The season no longer sits here. It said the same thing as the
+              day line at the top of this screen, and squeezed into the
+              card's right-hand corner it wrapped to two lines. */}
+          <h4 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
+            Verse of the Day
+          </h4>
           <blockquote className="text-[16px] text-[var(--color-brand-text)] leading-relaxed">
             &ldquo;{verse.text}&rdquo;
           </blockquote>
