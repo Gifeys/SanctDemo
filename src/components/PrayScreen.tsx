@@ -3,6 +3,7 @@ import { ArrowLeft, Settings } from "lucide-react";
 import DailyRosary from "./DailyRosary";
 import { liturgicalDay } from "../lib/liturgical";
 import { verseForDate } from "../lib/verses";
+import { seasonAccent } from "../lib/liturgicalColours";
 import { daysForMystery, mysteryForDate } from "../lib/mysteries";
 import { ROSARY_MYSTERIES } from "../data";
 
@@ -33,6 +34,7 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
   const now = new Date();
   const today = liturgicalDay(now);
   const verse = verseForDate(now);
+  const accent = seasonAccent(today.colour);
   const set = mysteryForDate(now);
   const mystery = ROSARY_MYSTERIES.find(m => m.category === set);
 
@@ -68,7 +70,47 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
       </div>
 
       <div className="px-5 pb-6">
-        <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
+        {/* Verse of the Day, at the top of Pray at the client's request.
+            It was the last card on Home and then sat below "Begin the
+            Rosary"; here it is the first thing on the screen a pilgrim opens
+            to read something, and it needs no scrolling to reach.
+
+            The card is painted in the liturgical colour of the day — the
+            same green, violet, white/gold, red or rose the priest is
+            vested in — so the season is legible at a glance instead of
+            being spelled out in words. seasonAccent supplies a wash, a
+            border and an ink whose contrast is unit-tested, because a
+            seasonal tint is exactly how a card becomes unreadable. */}
+        <div
+          className="rounded-[22px] border p-5 space-y-2.5"
+          style={{ backgroundColor: accent.tint, borderColor: accent.border }}
+        >
+          {/* The title takes the line to itself and the season moved down
+              beside the reference. Sharing one row, the two of them needed
+              274px and had 273: "VERSE OF THE DAY" wrapped to two lines on
+              the narrower phones, which is what the redesign had been living
+              with. Below, it reads the way a missal is laid out — the words,
+              then where they are from and when they are read. */}
+          <h4
+            className="text-[14px] font-mono uppercase tracking-[0.14em] whitespace-nowrap"
+            style={{ color: accent.ink }}
+          >
+            Verse of the Day
+          </h4>
+          <blockquote className="text-[16px] text-[var(--color-brand-text)] leading-relaxed">
+            &ldquo;{verse.text}&rdquo;
+          </blockquote>
+          <div className="flex items-baseline justify-between gap-3">
+            <cite className="text-[15px] font-semibold not-italic" style={{ color: accent.ink }}>
+              {verse.reference}
+            </cite>
+            <span className="text-[14px] shrink-0 text-[var(--color-brand-secondary)]">
+              {verse.season}
+            </span>
+          </div>
+        </div>
+
+        <p className="mt-5 text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
           {today.name}
         </p>
 
@@ -89,26 +131,6 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
         >
           Begin the Rosary
         </button>
-
-        {/* Verse of the Day — moved here from Home, where it was the last
-            card on a long scroll. It is chosen for the liturgical season and
-            rotates by date, so it really is "of the day", and it sits between
-            the invitation to pray and the decades themselves: something to
-            read whether or not the pilgrim starts the Rosary now. */}
-        <div className="mt-6 rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-5 space-y-2.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h4 className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-              Verse of the Day
-            </h4>
-            <span className="text-[14px] text-[var(--color-brand-secondary)]">{verse.season}</span>
-          </div>
-          <blockquote className="text-[16px] text-[var(--color-brand-text)] leading-relaxed">
-            &ldquo;{verse.text}&rdquo;
-          </blockquote>
-          <cite className="text-[15px] font-semibold text-[var(--color-brand-primary)] block not-italic">
-            {verse.reference}
-          </cite>
-        </div>
 
         {mystery && (
           <ol className="mt-7 space-y-3">
