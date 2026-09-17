@@ -84,34 +84,23 @@ export default function MeTab({
       </div>
 
       <div className="px-4 pb-4 space-y-4 font-sans">
-        {/* Prayer / visit progress — always shown, signed in or not, since
-            steps/points accrue locally regardless of account state. */}
-        <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5 space-y-3">
-          <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-[var(--color-brand-secondary)]" /> Your Pilgrimage
-          </h4>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-[var(--color-brand-card)] rounded-2xl p-3 space-y-1 border border-[var(--color-brand-border)]">
-              <Footprints className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
-              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.steps.toLocaleString()}</p>
-              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">Steps</p>
-            </div>
-            <div className="bg-[var(--color-brand-card)] rounded-2xl p-3 space-y-1 border border-[var(--color-brand-border)]">
-              <Ruler className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
-              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.distanceKm.toFixed(2)}</p>
-              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">KM Walked</p>
-            </div>
-            <div className="bg-[var(--color-brand-card)] rounded-2xl p-3 space-y-1 border border-[var(--color-brand-border)]">
-              <Star className="w-4 h-4 text-[var(--color-brand-secondary)] mx-auto" />
-              <p className="text-lg font-black text-[var(--color-brand-text)]">{userProgress.points}</p>
-              <p className="text-sm text-[var(--color-brand-secondary)] font-bold uppercase">Points</p>
-            </div>
-          </div>
-          <p className="text-[15px] text-[var(--color-brand-secondary)]">
-            Stamp badges · {userProgress.badges.length} of {BADGES.length}
-          </p>
-        </div>
+        {/* The "Your Pilgrimage" card — steps, km walked, points and stamp
+            badges — is gone at the client's request.
 
+            Worth recording why it is no loss. "640 steps · 0.42 km" were the
+            literal seed values in App.tsx, and nothing could ever change
+            them: the only code that adds steps is handleStationVisited, whose
+            sole caller is MapTab — a component no longer rendered anywhere in
+            the app. So every pilgrim on every device saw exactly 640 steps
+            and 0.42 km, for ever, however far they walked.
+
+            A progress card that cannot track progress is worse than no card,
+            and this one was stating two measurements of a walk that never
+            happened. If step tracking is built later, it returns with real
+            numbers behind it.
+
+            userProgress is untouched — badges and points are still awarded by
+            the quiz and still stored. */}
         {/* Applications — the pilgrim's own submissions (sacrament bookings,
             ministry sign-ups, station stamps). Firestore rules already scope
             this list to the signed-in uid (or everything, for an admin), so
