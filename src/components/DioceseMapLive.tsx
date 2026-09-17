@@ -61,59 +61,14 @@ interface DioceseMapLiveProps {
 const MY_MAP_ID = "1gNkblHn4JSJoWLb6zP4D_h6E6WIZomg";
 export const OPEN_IN_GOOGLE_MAPS_URL = `https://www.google.com/maps/d/viewer?mid=${MY_MAP_ID}`;
 
-// The client's study-area polygon, reproduced exactly from their exported
-// KML — 7 points in [lng, lat] order, the last repeating the first to close
-// the ring (GeoJSON requires a closed LinearRing). This is the client's
-// stated scope of their capstone study, not a decorative shape, hence the
-// caption drawn under the map explaining what it is.
-export const SCOPE_POLYGON_RING: [number, number][] = [
-  [120.972677, 14.651797],
-  [120.971767, 14.643635],
-  [120.971149, 14.637125],
-  [120.976676, 14.638188],
-  [120.976539, 14.639782],
-  [120.975187, 14.652067],
-  [120.972677, 14.651797],
-];
-
-const SCOPE_SOURCE_ID = "scope-polygon-src";
-const SCOPE_FILL_LAYER_ID = "scope-polygon-fill";
-const SCOPE_LINE_LAYER_ID = "scope-polygon-line";
-
-function scopePolygonFeature(): GeoJSON.Feature<GeoJSON.Polygon> {
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: { type: "Polygon", coordinates: [SCOPE_POLYGON_RING] },
-  };
-}
-
-// Added once, right after the map is created and before any marker or route
-// layer exists — so the fill/outline always sits below everything else
-// MapLibre draws, and (since parish/you-are-here pins are HTML markers
-// layered on top of the whole canvas by the browser, not MapLibre paint
-// layers) it is never able to hide a pin regardless of add order.
-function addScopePolygon(map: MapLibreMap, fillColor: string, lineColor: string) {
-  if (map.getSource(SCOPE_SOURCE_ID)) return;
-  map.addSource(SCOPE_SOURCE_ID, { type: "geojson", data: scopePolygonFeature() });
-  map.addLayer({
-    id: SCOPE_FILL_LAYER_ID,
-    type: "fill",
-    source: SCOPE_SOURCE_ID,
-    // Positron's ground is light, unlike the old dark basemap this polygon
-    // used to sit on — fill-opacity raised from 0.22 so the client's scope
-    // shape stays legible against it rather than washing out (see the
-    // contrast note on --color-brand-scope in index.css).
-    paint: { "fill-color": fillColor, "fill-opacity": 0.3 },
-  });
-  map.addLayer({
-    id: SCOPE_LINE_LAYER_ID,
-    type: "line",
-    source: SCOPE_SOURCE_ID,
-    layout: { "line-join": "round" },
-    paint: { "line-color": lineColor, "line-width": 2 },
-  });
-}
+// The study-area polygon is gone at the client's request.
+//
+// It was their own KML scope shape, drawn as a shaded overlay with a caption.
+// Removed rather than recoloured: it annotated the CAPSTONE's coverage area,
+// which is a fact about the project and not about any parish, and on the map
+// it read as though the shaded strip meant something to a pilgrim. Its fill
+// also dominated the view at street zoom. The scope belongs in the write-up,
+// not on the map a congregation uses.
 
 interface ParishRecord {
   id: string;
@@ -318,22 +273,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     onNavigatingChangeRef.current?.(Boolean(navigatingTo));
   }, [navigatingTo]);
 
-  // The study-area polygon is hidden while navigating.
-  //
-  // It is an orange fill at 30% covering the client's whole scope area, which
-  // is legible at diocese zoom and completely dominant at the street zoom
-  // navigation uses — the entire map turned salmon and the route line had to
-  // compete with it. It is an annotation about the CAPSTONE's scope, not
-  // about the walk, so it has no business on screen mid-route.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (mode !== "live" || !map) return;
-
-    const visibility = navigatingTo ? "none" : "visible";
-    for (const layerId of [SCOPE_FILL_LAYER_ID, SCOPE_LINE_LAYER_ID]) {
-      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", visibility);
-    }
-  }, [navigatingTo, mode]);
   // The tapped pin, shown as a place sheet over the map. Held as an id
   // rather than the parish object so a re-render always reads current data.
   const [selectedParishId, setSelectedParishId] = useState<string | null>(null);
@@ -504,7 +443,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     map.on("load", () => {
       window.clearTimeout(loadTimeout);
       if (cancelled) return;
-      addScopePolygon(map, resolveColor("var(--color-brand-scope)"), resolveColor("var(--color-brand-scope)"));
       map.fitBounds(
         [
           [DIOCESE_BOUNDS.lngMin, DIOCESE_BOUNDS.latMin],
@@ -802,17 +740,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     </div>
   );
 
-  // The scope-polygon caption only applies to the live MapLibre map (the
-  // fallback is a separate hand-drawn illustration that never draws the
-  // polygon), so it renders alongside the canvas, not in the fallback
-  // branch below.
-  const scopeLegend = (
-    <p className="dmap-live__legend">
-      <span className="dmap-live__legend-swatch" aria-hidden="true" />
-      Shaded area marks the study/coverage area for this capstone.
-    </p>
-  );
-
   // With heightPx set, the map surface gets that fixed height directly and
   // the wrapper stops relying on flex-1/h-full against an ancestor's fixed
   // height — so the legend/link below it get their own natural height
@@ -1029,7 +956,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           />
         )}
       </div>
-      {scopeLegend}
     </div>
   );
 }

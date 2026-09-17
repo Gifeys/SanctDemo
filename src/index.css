@@ -185,12 +185,19 @@
    reads clearly as a pin silhouette. */
 .dmap__pin--live { fill: var(--color-brand-accent); stroke: var(--color-brand-primary); }
 .dmap__pin--live:focus-visible { outline: 2px solid var(--color-brand-accent); outline-offset: 2px; }
-/* Not yet destinations, so they read as context: smaller and dimmer, but
-   still a real focusable button — still tappable, per the rule above. */
-.dmap__pin--soon svg { width: 22px; height: 22px; }
+/* Every parish is a real destination now, so every pin is the app's navy.
+   These used to be grey and 22px — "not yet destinations, read as context" —
+   which was true when only two could be routed to. Now all 31 can be, and a
+   pilgrim looking for their own parish should not have to work out why it is
+   the faint one.
+
+   Slightly smaller than a live pin, and hollow rather than filled, so the two
+   with the full programme still lead the eye. That distinction is carried
+   properly by the card, which says what is still being collected. */
+.dmap__pin--soon svg { width: 27px; height: 27px; }
 .dmap__pin--soon {
-  fill: color-mix(in srgb, var(--color-brand-secondary) 55%, transparent);
-  stroke: var(--color-brand-secondary);
+  fill: color-mix(in srgb, var(--color-brand-accent) 45%, transparent);
+  stroke: var(--color-brand-primary);
 }
 
 .dmap-live__marker--you {
