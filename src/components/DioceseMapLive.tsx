@@ -835,7 +835,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
 
   return (
     <div className={wrapClassName}>
-      <div className={frameClassName} style={frameStyle} data-map-mode={mode}>
+      <div className={frameClassName} style={frameStyle} data-map-mode={mode} data-navigating={navigatingTo ? "true" : undefined}>
         <div ref={containerRef} className="dmap-live__canvas" role="img" aria-label="Map of the Diocese of Kalookan" />
 
         {/* Floating pill-shaped search bar, top-left, inset so it never

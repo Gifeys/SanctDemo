@@ -41,8 +41,14 @@
   --color-brand-success-soft: #7F9E8B; /* The same green on dark surfaces */
   --color-brand-error: #B3543F;        /* Camera/permission failures */
   --color-brand-error-soft: #FFB4A2;   /* Error text on a dark overlay */
-  --color-brand-scope: #E65100;        /* The client's own study-area polygon — unchanged,
-                                          it is their data and their colour */
+  /* The study-area polygon.
+     Was the client's original orange (#E65100), kept for a long time because
+     it was their data and their colour. They have now asked for it in the
+     app's blue: the orange read as a warning — the only hot colour on an
+     otherwise cool map — for a shape that marks nothing urgent, and at
+     street zoom its fill washed the whole view. Navy makes it part of the
+     app rather than an alarm sitting on top of it. */
+  --color-brand-scope: #1C2C56;
 
   --color-brand-ink-surface: #12141A;  /* Dark surfaces that survive the inversion:
                                           the AR viewfinder, the phone status bar */
@@ -232,6 +238,19 @@
    right-hand margin the search bar is inset to avoid. Disabled (with an
    explanatory title/aria-label set inline) whenever position is null,
    since flying to an unknown position would be meaningless. */
+/* While turn-by-turn is running, the instruction card occupies the whole top
+   strip of the map — roughly 170px, more when the street name wraps to three
+   lines. The search field, the compass and the Recentre button all live in
+   that strip and were being covered by it.
+
+   Search is hidden outright: mid-route is not when you look for a different
+   parish. The compass and Recentre move below the card, because both stay
+   useful while walking — Recentre especially, since the whole point is
+   getting back to your own position after panning. */
+.dmap-live[data-navigating="true"] .dmap-search { display: none; }
+.dmap-live[data-navigating="true"] .dmap-compass-wrap,
+.dmap-live[data-navigating="true"] .dmap-live__recentre { top: 196px; }
+
 .dmap-live__recentre {
   position: absolute;
   top: 92px;

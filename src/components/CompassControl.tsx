@@ -52,10 +52,20 @@ export default function CompassControl({
   onRequestPermission,
 }: CompassControlProps) {
   if (status === "prompt") {
+    // Inside the wrap, like every other state.
+    //
+    // This branch used to return the bare button, and ALL of the positioning
+    // lives on .dmap-compass-wrap (absolute, top 92px, left 8px). Without it
+    // the "Enable compass" pill had no position at all and fell to the bottom
+    // of the map — nowhere near the Recentre control it belongs beside, and
+    // on iOS this is the only state most users ever see, because iOS always
+    // starts at "prompt".
     return (
-      <button type="button" className="dmap-compass dmap-compass--prompt" onClick={onRequestPermission}>
-        Enable compass
-      </button>
+      <div className="dmap-compass-wrap">
+        <button type="button" className="dmap-compass dmap-compass--prompt" onClick={onRequestPermission}>
+          Enable compass
+        </button>
+      </div>
     );
   }
 
