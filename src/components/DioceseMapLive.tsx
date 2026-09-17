@@ -276,8 +276,63 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // The tapped pin, shown as a place sheet over the map. Held as an id
   // rather than the parish object so a re-render always reads current data.
   const [selectedParishId, setSelectedParishId] = useState<string | null>(null);
+
+  /**
+   * Routes we have MEASURED but not drawn, keyed by parish id.
+   *
+   * This exists to stop the travel times changing under the pilgrim's finger.
+   * The card used to show times from the straight-line distance until a route
+   * was drawn, then switch to the road distance — and a road is always longer
+   * than a straight line, so tapping Directions always made the journey
+   * jump. Measured on the same parish: "8 min · 699 m direct" became
+   * "10 min · 874 m" the instant you tapped, for a walk that had not changed.
+   *
+   * So the route is fetched when the card OPENS and the times come from the
+   * road distance immediately. Nothing is drawn until Directions is tapped,
+   * which is the rule the client set after unasked-for blue lines kept
+   * appearing across the map — measuring and drawing are now separate acts.
+   *
+   * Directions then draws this already-measured route rather than asking
+   * again, so the number cannot change and the line appears instantly.
+   */
+  const [measuredRoutes, setMeasuredRoutes] = useState<Record<string, WalkingRoute>>({});
+
+  // The parish whose route is being measured right now, if any. The card
+  // shows "Measuring…" rather than a straight-line number that is about to be
+  // replaced — closing the last window in which the times could still visibly
+  // change under the pilgrim.
+  const [measuringParishId, setMeasuringParishId] = useState<string | null>(null);
   const [directionsState, setDirectionsState] = useState<{ parishId: string; status: string; busy: boolean } | null>(null);
   const selectedParish = selectedParishId ? PARISHES.find(p => p.id === selectedParishId) : null;
+
+  // Measure the road route as soon as a card opens, so its times are the real
+  // ones from the first render. Never draws; see measuredRoutes above.
+  useEffect(() => {
+    const parish = selectedParish;
+    const from = positionRef.current;
+    if (!parish || !from || measuredRoutes[parish.id]) return;
+
+    let live = true;
+    setMeasuringParishId(parish.id);
+
+    void getWalkingDirections(from, parish.coordinates).then(result => {
+      if (!live) return;
+      setMeasuringParishId(null);
+      if (result.status === "no-position") return;
+      // A 'direct' result means OSRM could not be reached and the distance is
+      // a straight line. Storing it would replace one honest label with a
+      // silently wrong one, so it is left out and the card falls back to
+      // showing its straight-line figure, labelled "direct".
+      if (result.route.kind !== "routed") return;
+      setMeasuredRoutes(prev => ({ ...prev, [parish.id]: result.route }));
+    });
+
+    return () => {
+      live = false;
+      setMeasuringParishId(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedParishId]);
   const { heading, status: headingStatus, requestPermission: requestHeadingPermission } = useDeviceHeading();
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
@@ -304,7 +359,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // Keyed by parish id, which every one of the 31 has. It used to take a tour
   // route id as well, which only two parishes have, and that is what made the
   // other 29 unreachable.
-  function getDirectionsFor(parishId: string, coords: Coordinates) {
+  function getDirectionsFor(parishId: string, coords: Coordinates, alreadyMeasured?: WalkingRoute) {
     const from = positionRef.current;
     const requestId = ++directionsRequestRef.current;
 
@@ -317,6 +372,16 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       return;
     }
 
+    // The card already measured this route when it opened. Draw that one
+    // rather than asking again: the line appears with no wait, and — the
+    // point of all this — the distance on screen cannot change, because it
+    // is the same route the times were computed from.
+    if (alreadyMeasured) {
+      drawRoute(parishId, alreadyMeasured);
+      setDirectionsState({ parishId, busy: false, status: describeRoute(alreadyMeasured) });
+      return;
+    }
+
     setDirectionsState({ parishId, busy: true, status: "" });
 
     getWalkingDirections(from, coords).then(result => {
@@ -326,22 +391,33 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       if (result.status === "no-position") return; // from was truthy above; kept for narrowing
 
       const { route, label } = result;
-      const map = mapRef.current;
-      if (map) {
-        const accent = resolveColor("var(--color-brand-accent)");
-        upsertRouteLayer(map, parishId, route, accent);
-        setRoutes(prev => ({ ...prev, [parishId]: route }));
-        const [first, ...rest] = route.path;
-        const bounds = rest.reduce(
-          (b, p) => b.extend([p.lng, p.lat]),
-          new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]),
-        );
-        // Bottom padding keeps the route clear of the place sheet, which
-        // covers the lower third of the frame.
-        map.fitBounds(bounds, { padding: { top: 64, left: 64, right: 64, bottom: 260 }, duration: 500 });
-      }
+      drawRoute(parishId, route);
       setDirectionsState({ parishId, busy: false, status: label });
     });
+  }
+
+  /** Paints a route on the map and frames it. Shared by both paths above. */
+  function drawRoute(parishId: string, route: WalkingRoute) {
+    const map = mapRef.current;
+    if (!map) return;
+
+    upsertRouteLayer(map, parishId, route, resolveColor("var(--color-brand-accent)"));
+    setRoutes(prev => ({ ...prev, [parishId]: route }));
+
+    const [first, ...rest] = route.path;
+    if (!first) return;
+    const bounds = rest.reduce(
+      (b, p) => b.extend([p.lng, p.lat]),
+      new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]),
+    );
+    // Bottom padding keeps the route clear of the place sheet, which covers
+    // the lower third of the frame.
+    map.fitBounds(bounds, { padding: { top: 64, left: 64, right: 64, bottom: 260 }, duration: 500 });
+  }
+
+  /** The one-line summary the card shows under a drawn route. */
+  function describeRoute(route: WalkingRoute): string {
+    return `${formatDistance(route.distanceMeters)} walk · ${formatWalkingMinutes(route.durationMinutes)}`;
   }
 
   const getDirectionsRef = useRef(getDirectionsFor);
@@ -830,10 +906,24 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             // two parishes have a tour, but all 31 have verified coordinates —
             // keying the drawn route off the tour is what made the other 29
             // impossible to route to.
-            routeMetres={routes[selectedParish.id]?.distanceMeters ?? null}
+            //
+            // The MEASURED route feeds the distance, so the times are the road
+            // ones from the moment the card opens and cannot change when
+            // Directions is tapped. Only a DRAWN route flips the button to
+            // Start, which is why the two are kept apart.
+            routeMetres={
+              measuredRoutes[selectedParish.id]?.distanceMeters ??
+              routes[selectedParish.id]?.distanceMeters ??
+              null
+            }
             hasRoute={Boolean(routes[selectedParish.id])}
+            measuring={measuringParishId === selectedParish.id}
             onDirections={() =>
-              getDirectionsFor(selectedParish.id, selectedParish.coordinates)
+              getDirectionsFor(
+                selectedParish.id,
+                selectedParish.coordinates,
+                measuredRoutes[selectedParish.id],
+              )
             }
             onStartWalking={() =>
               setNavigatingTo({

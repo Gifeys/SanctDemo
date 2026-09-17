@@ -27,6 +27,15 @@ interface MapPlaceSheetProps {
   directionsBusy: boolean;
   /** True once a route to this parish is drawn, which turns Directions into Start. */
   hasRoute: boolean;
+  /**
+   * True while the road route is being measured.
+   *
+   * The card says "Measuring…" rather than showing a straight-line figure
+   * about to be replaced by a longer road one. The client saw exactly that
+   * swap — 8 min becoming 10 min for a walk that had not changed — and
+   * reported it as the same journey giving two different answers.
+   */
+  measuring?: boolean;
   onDirections: () => void;
   onStartWalking: () => void;
   onOpenParish: () => void;
@@ -61,6 +70,7 @@ export default function MapPlaceSheet({
   routeMetres,
   directionsBusy,
   hasRoute,
+  measuring = false,
   onDirections,
   onStartWalking,
   onOpenParish,
@@ -108,7 +118,16 @@ export default function MapPlaceSheet({
             Distance and routing need coordinates, and all 31 have verified
             ones — the tour route was never what made this work, it was just
             what the code happened to key off. */}
-        {metres !== null && (
+        {/* While the road route is being measured, nothing numeric is shown.
+            A straight-line figure here would be replaced by a longer road one
+            a second later, which is the swap the client reported: 8 min
+            becoming 10 min for a walk that had not changed. Better to wait a
+            moment and show one number that stays put. */}
+        {measuring && metres !== null && (
+          <p className="map-sheet__estimate mt-3">Measuring the walking route…</p>
+        )}
+
+        {!measuring && metres !== null && (
           <>
             <div className="map-sheet__modes" role="tablist" aria-label="How you are travelling">
               {TRAVEL_MODES.map(mode => {
