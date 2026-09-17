@@ -45,13 +45,6 @@ interface DioceseMapLiveProps {
   // the dashboard and church selector). Used by the dedicated map screen so
   // the map keeps ~374px regardless of how tall the legend/link end up.
   heightPx?: number;
-  /**
-   * Reports whether turn-by-turn is running, so the screen around the map can
-   * get out of its way. The presence banner in App.tsx sits in the same top
-   * strip as the turn instruction and is redundant while navigating — it
-   * announces the parish you are already being guided to.
-   */
-  onNavigatingChange?: (navigating: boolean) => void;
 }
 
 // The client's own Google My Map ("SanctDemoMap") — a fully public link that
@@ -233,7 +226,7 @@ function isTileHostError(error: unknown): boolean {
   return message.includes(TILE_HOST) || /Failed to fetch|NetworkError|ERR_/.test(message);
 }
 
-export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed, onNavigatingChange }: DioceseMapLiveProps) {
+export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
   const { position, accuracyMeters, simulation } = usePresence();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -265,13 +258,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // a reroute mid-walk does not yank it back.
   const didZoomForNavRef = useRef(false);
 
-  // Held in a ref so a caller passing a fresh arrow function every render
-  // cannot re-fire this effect and flap the banner.
-  const onNavigatingChangeRef = useRef(onNavigatingChange);
-  onNavigatingChangeRef.current = onNavigatingChange;
-  useEffect(() => {
-    onNavigatingChangeRef.current?.(Boolean(navigatingTo));
-  }, [navigatingTo]);
 
   // The tapped pin, shown as a place sheet over the map. Held as an id
   // rather than the parish object so a re-render always reads current data.

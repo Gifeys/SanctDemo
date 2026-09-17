@@ -19,7 +19,6 @@ import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
 import AdminPortal from "./components/AdminPortal";
 import RosarySettingsModal from "./components/RosarySettingsModal";
-import PresenceBanner from "./components/PresenceBanner";
 import PresenceSheet from "./components/PresenceSheet";
 import SimulatorPanel from "./components/SimulatorPanel";
 import CustomDioceseMap from "./components/CustomDioceseMap";
@@ -152,9 +151,6 @@ export default function App() {
     loadHomeParishId(VALID_HOME_IDS) ?? firstLiveParishId()
   );
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
-  // True while the map is running turn-by-turn, so global chrome can stand
-  // aside. Reported upward by DioceseMapLive.
-  const [isNavigating, setIsNavigating] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
 
@@ -896,7 +892,6 @@ export default function App() {
                               onSelectParish={handleSelectParish}
                               walkToParishId={walkToParishId}
                               onWalkToConsumed={() => setWalkToParishId(null)}
-                              onNavigatingChange={setIsNavigating}
                             />
                           </div>
 
@@ -1094,15 +1089,18 @@ export default function App() {
               onClose={() => setIsSimulatorOpen(false)}
             />
 
-            {/* Presence is global, not a property of one tab — rendered here
-                so it rises over whatever screen the pilgrim is on, and
-                bounded by this same relative container so it never escapes
-                the phone frame. */}
-            {/* Hidden during turn-by-turn. It occupies the same top strip as
-                the turn instruction, and while you are being guided TO a
-                parish, "you are approaching" that parish is something you
-                already know — it was covering the instruction. */}
-            {!isNavigating && <PresenceBanner />}
+            {/* The "You are approaching …" banner is gone at the client's
+                request, and its own design was the reason.
+
+                It was a floating overlay pinned near the top of whatever
+                screen you happened to be on, so it covered content it knew
+                nothing about: the turn instruction while navigating, and the
+                pilgrim's own name and avatar on Me. Being global was the
+                point of it and also its whole problem.
+
+                PresenceSheet stays: it carries the same information plus the
+                actions worth taking on arrival, it collapses, and it does not
+                sit on top of another screen's heading. */}
             <PresenceSheet onOpenTour={handleOpenTourFromPresence} onOpenAR={handleOpenARFromPresence} />
 
           </div>
