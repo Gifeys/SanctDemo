@@ -70,6 +70,15 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
       </div>
 
       <div className="px-5 pb-6">
+        {/* The day's name leads the screen, with the verse card under it.
+            It reads as the date stamp for everything below rather than as
+            the mysteries' eyebrow — which is why the heading further down
+            now stands on its own, with "Prayed on Fridays and Tuesdays"
+            carrying it instead. */}
+        <p className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
+          {today.name}
+        </p>
+
         {/* Verse of the Day, at the top of Pray at the client's request.
             It was the last card on Home and then sat below "Begin the
             Rosary"; here it is the first thing on the screen a pilgrim opens
@@ -82,7 +91,7 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
             border and an ink whose contrast is unit-tested, because a
             seasonal tint is exactly how a card becomes unreadable. */}
         <div
-          className="rounded-[22px] border p-5 space-y-2.5"
+          className="mt-3 rounded-[22px] border p-5 space-y-2.5"
           style={{ backgroundColor: accent.tint, borderColor: accent.border }}
         >
           {/* The title takes the line to itself and the season moved down
@@ -110,11 +119,7 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
           </div>
         </div>
 
-        <p className="mt-5 text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-          {today.name}
-        </p>
-
-        <h1 className="mt-3 text-[30px] font-bold leading-[1.12] tracking-tight text-[var(--color-brand-text)]">
+        <h1 className="mt-6 text-[30px] font-bold leading-[1.12] tracking-tight text-[var(--color-brand-text)]">
           The {set}
           <br />
           Mysteries
