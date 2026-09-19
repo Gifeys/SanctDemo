@@ -1,0 +1,5 @@
+{
+  "//": "No composite indexes yet. The app's queries are single-field, which Firestore indexes automatically. This file exists because firebase.json references it; add entries here if a query ever needs one, and Firestore's error message will tell you exactly what to put.",
+  "indexes": [],
+  "fieldOverrides": []
+}

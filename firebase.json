@@ -1,0 +1,28 @@
+{
+  "//": [
+    "Deployment config for the SanctiWalk Firebase project.",
+    "",
+    "firestore.rules and storage.rules were written long ago and have never",
+    "been deployable, because `firebase deploy` needs this file and .firebaserc",
+    "and neither existed. That is why parishContent reads fail with 'Missing or",
+    "insufficient permissions' while the rules file plainly says",
+    "`allow read: if true` - the file was never in force.",
+    "",
+    "THE IMPORTANT BIT: `database` below is a NAMED database, not (default).",
+    "The Firebase CLI deploys Firestore rules to (default) unless told",
+    "otherwise, so deploying without this line would write the rules to an",
+    "empty database nobody uses and change nothing about the real one - while",
+    "reporting success. The name comes from firestoreDatabaseId in",
+    "firebase-applet-config.json, which is what src/lib/firebase.ts connects to."
+  ],
+
+  "firestore": {
+    "database": "ai-studio-sanctiwalk-e85dfc3b-8350-408d-ba3f-45fea094f812",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
