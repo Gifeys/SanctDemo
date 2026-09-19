@@ -11,7 +11,10 @@ import { MINISTRIES, SACRAMENTS } from "../data";
  * THIS parish. Same principle as scheduleVerified in data.ts - show the
  * placeholder, never the plausible-looking wrong thing.
  */
-const PLACEHOLDER_PHOTO = "/parish/placeholder-ministry.svg";
+// placeholder-ministry.svg has never existed; only placeholder-photo.svg
+// does. The bulletin has been showing a broken-image icon, which the dev
+// server hid as readily as the build did.
+const PLACEHOLDER_PHOTO = "/parish/placeholder-photo.svg";
 
 export interface Announcement {
   id: string;
