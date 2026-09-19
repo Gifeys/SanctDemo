@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import ParishContentEditor from "./ParishContentEditor";
 import { ShieldCheck, Sparkles, BarChart2, Database, FileText, Settings, Trash2, Edit, Plus, Check, Mail, CalendarRange, X, Send, Clock, Loader2 } from "lucide-react";
+import { apiUrl } from "../lib/apiBase";
+import { withAppKey } from "../lib/appKey";
 
 interface AdminPortalProps {
   applications: Array<{ id: string; type: string; applicant: string; details: string; date: string; status: string }>;
@@ -42,7 +44,7 @@ export default function AdminPortal({
   const [smtpConfig, setSmtpConfig] = useState<{ isConfigured: boolean; user: string | null; senderName: string } | null>(null);
 
   React.useEffect(() => {
-    fetch("/api/smtp-status")
+    fetch(apiUrl("/api/smtp-status"))
       .then((res) => res.json())
       .then((data) => setSmtpConfig(data))
       .catch((err) => console.error("Error fetching SMTP status:", err));
@@ -161,11 +163,11 @@ Mary Help of Christians Parish`);
     }
 
     try {
-      const response = await fetch("/api/send-email", {
+      const response = await fetch(apiUrl("/api/send-email"), {
         method: "POST",
-        headers: {
+        headers: withAppKey({
           "Content-Type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           to: recipientEmail,
           subject: emailSubject,

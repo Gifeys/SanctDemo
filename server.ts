@@ -123,17 +123,72 @@ const VISION_MODEL = process.env.GEMINI_VISION_MODEL || "gemini-3.5-flash-lite";
  */
 const VISION_MODEL_FALLBACK = process.env.GEMINI_VISION_MODEL_FALLBACK || "gemini-3.5-flash";
 
-const DAILY_SCAN_LIMIT = 20;
-let scanDay = "";
-let scansUsed = 0;
+/**
+ * Shared key the app sends on every /api call.
+ *
+ * Enforced ONLY when APP_KEY is set in this server's environment, so local
+ * development needs no configuration and nothing that works today breaks.
+ * Set it on the deployed host, where the URL is public and /api/identify
+ * spends a real Gemini quota.
+ *
+ * This is a speed bump, not authentication: the key ships inside the app and
+ * can be extracted from the APK. It stops bots and passers-by, which is the
+ * realistic threat. The per-IP cap below bounds what one determined person
+ * can spend.
+ */
+const APP_KEY = process.env.APP_KEY || "";
+const APP_KEY_HEADER = "x-sanctiwalk-key";
 
-function scanBudget(): { limit: number; used: number; remaining: number } {
+function requireAppKey(req: express.Request, res: express.Response): boolean {
+  if (!APP_KEY) return true;
+
+  const provided = req.get(APP_KEY_HEADER);
+  if (provided === APP_KEY) return true;
+
+  console.warn(`[Auth] rejected ${req.method} ${req.path} from ${clientIp(req)} - bad or missing key`);
+  res.status(401).json({ error: "This build is not authorised to use the SanctiWalk service." });
+  return false;
+}
+
+/**
+ * Per-IP daily cap.
+ *
+ * This was one global counter in memory: 20 scans per day for the entire
+ * world, which meant a single user - or one bot finding the public URL -
+ * could exhaust everybody's allowance, including during a live defence. It
+ * also reset on every restart, and free hosts restart constantly.
+ *
+ * Still in memory, so a restart still forgives everyone. That is a deliberate
+ * trade: a database for rate limiting is disproportionate here, and the
+ * failure mode is generous rather than dangerous.
+ */
+const DAILY_SCAN_LIMIT = Number(process.env.DAILY_SCAN_LIMIT) || 20;
+let scanDay = "";
+const scansByIp = new Map<string, number>();
+
+function clientIp(req: express.Request): string {
+  // Render and similar put the real address in x-forwarded-for; req.ip would
+  // otherwise be the load balancer, making the cap global again by accident.
+  const forwarded = req.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.ip || "unknown";
+}
+
+function scanBudget(req?: express.Request): { limit: number; used: number; remaining: number } {
   const today = new Date().toISOString().slice(0, 10);
   if (scanDay !== today) {
     scanDay = today;
-    scansUsed = 0;
+    scansByIp.clear();
   }
-  return { limit: DAILY_SCAN_LIMIT, used: scansUsed, remaining: Math.max(0, DAILY_SCAN_LIMIT - scansUsed) };
+
+  const ip = req ? clientIp(req) : "unknown";
+  const used = scansByIp.get(ip) ?? 0;
+  return { limit: DAILY_SCAN_LIMIT, used, remaining: Math.max(0, DAILY_SCAN_LIMIT - used) };
+}
+
+function recordScan(req: express.Request): void {
+  const ip = clientIp(req);
+  scansByIp.set(ip, (scansByIp.get(ip) ?? 0) + 1);
 }
 
 /** Open-ended recognition, used when there is no station shortlist. */
@@ -170,6 +225,8 @@ function getAi(): GoogleGenAI {
 
 // Full-stack API Endpoint: Generate Custom Walk Guide with Gemini
 app.post("/api/generate-walk", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
   try {
     const { interest, location, durationMinutes } = req.body;
     
@@ -293,6 +350,8 @@ app.post("/api/generate-walk", async (req, res) => {
 // is this". When the app knows which parish the pilgrim is in, it should send
 // that parish's station names and turn recognition into a multiple choice.
 app.post("/api/identify", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
   try {
     const { imageBase64, mimeType, candidates } = req.body ?? {};
 
@@ -311,7 +370,7 @@ app.post("/api/identify", async (req, res) => {
     const imageBytes = Math.round(imageBase64.length * 0.75);
     console.log(`[Scanner] API request: ${(imageBytes / 1024).toFixed(0)} KB image, model ${VISION_MODEL}`);
 
-    const budget = scanBudget();
+    const budget = scanBudget(req);
     if (budget.remaining <= 0) {
       return res.status(429).json({
         error: `All ${budget.limit} recognitions for today have been used. The counter resets tomorrow.`,
@@ -427,7 +486,7 @@ app.post("/api/identify", async (req, res) => {
       },
     });
 
-    scansUsed++;
+    recordScan(req);
     const startedAt = Date.now();
     // Retry sequencing lives in src/lib/modelRetry.ts, where it is unit
     // tested — the behaviour that matters (three tries, then a different
@@ -465,7 +524,7 @@ app.post("/api/identify", async (req, res) => {
     // two of the day's twenty recognitions on every miss.
     if (!shortlist.length) delete result.matchedStation;
 
-    return res.json({ ...result, budget: scanBudget() });
+    return res.json({ ...result, budget: scanBudget(req) });
   } catch (error: any) {
     const message = String(error?.message ?? error);
 
@@ -475,7 +534,7 @@ app.post("/api/identify", async (req, res) => {
       return res.status(429).json({
         error: "Daily recognition limit reached. Please try again tomorrow.",
         code: "quota_exhausted",
-        budget: scanBudget(),
+        budget: scanBudget(req),
       });
     }
 
@@ -513,7 +572,10 @@ app.post("/api/identify", async (req, res) => {
 });
 
 // Lets the scanner show what is left before anyone spends one.
-app.get("/api/identify/budget", (_req, res) => res.json(scanBudget()));
+app.get("/api/identify/budget", (req, res) => {
+  if (!requireAppKey(req, res)) return;
+  res.json(scanBudget(req));
+});
 
 // Check if SMTP is configured for real email sending
 app.get("/api/smtp-status", (req, res) => {
@@ -527,6 +589,8 @@ app.get("/api/smtp-status", (req, res) => {
 
 // Send real email via SMTP
 app.post("/api/send-email", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
   try {
     const { to, subject, body } = req.body;
 

@@ -939,7 +939,7 @@ export default function App() {
 
                   {/* TAB 8: AR Tour */}
                   {activeTab === "ar" && (
-                    <ArTour stations={activeChurchRoute.stations} />
+                    <ArTour stations={activeChurchRoute.stations} parishId={activeChurchRoute.id} />
                   )}
 
                   {/* TAB 9: Pilgrim Catechism Quiz */}

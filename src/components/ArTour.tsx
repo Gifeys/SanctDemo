@@ -17,6 +17,9 @@ import { useCamera, type CameraStatus } from "../lib/useCamera";
 import { useQrScanner } from "../lib/useQrScanner";
 import type { QrScanResult } from "../lib/qr";
 import type { Station } from "../types";
+import { arAvailability, arTourUrl } from "../lib/arApp";
+import { apiUrl } from "../lib/apiBase";
+import { withAppKey } from "../lib/appKey";
 
 /**
  * ArTour — the camera experience behind the AR Tour tab.
@@ -112,7 +115,30 @@ function stationToRecognition(station: Station, source: Recognition["source"] = 
   };
 }
 
-export default function ArTour({ stations = [] }: { stations?: Station[] }) {
+function ArTourLaunch({ parishId }: { parishId?: string }) {
+  const availability = arAvailability(
+    typeof navigator === "undefined" ? "" : navigator.userAgent,
+  );
+
+  if (availability.kind !== "ready") {
+    return (
+      <p className="text-[14px] leading-relaxed text-[var(--color-brand-secondary)] px-1 font-sans">
+        {availability.reason}
+      </p>
+    );
+  }
+
+  return (
+    <a
+      href={arTourUrl(parishId ?? "route-mhcp")}
+      className="w-full flex items-center justify-center gap-2 bg-[var(--color-brand-primary)] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
+    >
+      <Sparkles className="w-4 h-4" /> Open the AR walking tour
+    </a>
+  );
+}
+
+export default function ArTour({ stations = [], parishId }: { stations?: Station[]; parishId?: string }) {
   const camera = useCamera();
   const stationNames = stations.map((s) => s.name);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -127,7 +153,7 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
   // a scan over a number that is only informational.
   useEffect(() => {
     let live = true;
-    void fetch("/api/identify/budget")
+    void fetch(apiUrl("/api/identify/budget"), { headers: withAppKey() })
       .then(r => (r.ok ? r.json() : null))
       .then(b => {
         if (live && b) setBudget(b);
@@ -185,9 +211,9 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
     const timeout = window.setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
 
     try {
-      const response = await fetch("/api/identify", {
+      const response = await fetch(apiUrl("/api/identify"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withAppKey({ "Content-Type": "application/json" }),
         signal: controller.signal,
         body: JSON.stringify({
           imageBase64: frame.base64,
@@ -532,6 +558,12 @@ export default function ArTour({ stations = [] }: { stations?: Station[] }) {
               </button>
             )}
           </div>
+
+          {/* Launch the native AR tour.
+              Separate app because the browser cannot keep content anchored
+              to a place once the trigger image leaves the camera - that needs
+              ARCore, and no web API offers it on either platform today. */}
+          <ArTourLaunch parishId={parishId} />
 
           {result && !sheetOpen && (
             <button

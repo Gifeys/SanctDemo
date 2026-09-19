@@ -1,0 +1,48 @@
+# Render deployment for the SanctiWalk backend.
+#
+# The Android app bundles the web interface inside the APK, but the AI
+# recognition still needs a server: it holds the Gemini API key, which must
+# never ship inside an app anyone can unpack. This deploys that server.
+#
+# Deploying also solves problems that have nothing to do with the APK:
+# a real HTTPS certificate (so the camera works in any phone browser with no
+# security warning), and a fixed address that does not change when you switch
+# WiFi networks.
+
+services:
+  - type: web
+    name: sanctiwalk-api
+    runtime: node
+    plan: free
+    region: singapore # closest Render region to the Philippines
+
+    # `npm run build` does both halves: vite build for the web interface,
+    # esbuild for the server bundle it then serves.
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+
+    healthCheckPath: /api/identify/budget
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      - key: NODE_ENV
+        value: production
+
+      # Set in the Render dashboard, never here. sync:false tells Render to
+      # prompt for it rather than read it from this file, which is committed
+      # to a repository.
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # The shared key the app must send. Generate a long random string,
+      # set it here, and use the SAME value as VITE_APP_KEY when building
+      # the APK. Without it the endpoints are open to anyone who finds the
+      # URL and your Gemini quota is theirs to spend.
+      - key: APP_KEY
+        sync: false
+
+      # Per-IP daily ceiling on recognitions. Raise it if a demo needs more.
+      - key: DAILY_SCAN_LIMIT
+        value: "20"

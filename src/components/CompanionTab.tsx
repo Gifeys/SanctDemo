@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Route, Station } from "../types";
 import { Sparkles, MapPin, Clock, BrainCircuit, Play, Compass, Loader2 } from "lucide-react";
+import { apiUrl } from "../lib/apiBase";
+import { withAppKey } from "../lib/appKey";
 
 interface CompanionTabProps {
   onLoadCustomRoute: (customRoute: Route) => void;
@@ -41,11 +43,11 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
     }, 1500);
 
     try {
-      const res = await fetch("/api/generate-walk", {
+      const res = await fetch(apiUrl("/api/generate-walk"), {
         method: "POST",
-        headers: {
+        headers: withAppKey({
           "Content-Type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           location,
           interest,
@@ -76,7 +78,8 @@ export default function CompanionTab({ onLoadCustomRoute, isOffline }: Companion
           coordinates: { 
             lat: 14.5 + (Math.random() - 0.5) * 0.1, 
             lng: 121.0 + (Math.random() - 0.5) * 0.1 
-          },          qrCode: `SW-AI-QR-${idx}`
+          },
+          qrCode: `SW-AI-QR-${idx}`
         }))
       };
 
