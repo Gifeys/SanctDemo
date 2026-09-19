@@ -8,7 +8,7 @@
     "insufficient permissions' while the rules file plainly says",
     "`allow read: if true` - the file was never in force.",
     "",
-    "THE IMPORTANT BIT: `database` below is a NAMED database, not (default).",
+    "The AI Studio project used a NAMED database; this one uses (default).",
     "The Firebase CLI deploys Firestore rules to (default) unless told",
     "otherwise, so deploying without this line would write the rules to an",
     "empty database nobody uses and change nothing about the real one - while",
@@ -17,7 +17,7 @@
   ],
 
   "firestore": {
-    "database": "ai-studio-sanctiwalk-e85dfc3b-8350-408d-ba3f-45fea094f812",
+    "database": "(default)",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
