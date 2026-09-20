@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qr:posters": "node scripts/generate-qr-posters.mjs",
-    "build:app": "vite build"
+    "build:app": "vite build",
+    "apk": "vite build && cap sync android && cd android && gradlew assembleDebug",
+    "apk:lan": "cross-env CAP_LAN_TEST=1 npm run apk"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
