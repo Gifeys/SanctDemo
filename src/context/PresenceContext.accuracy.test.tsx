@@ -53,7 +53,7 @@ describe('PresenceProvider accuracy handling', () => {
   })
 
   it('clears accuracy when GPS is denied — never shows a stale figure for an unknown position', async () => {
-    let errorCb: (() => void) | null = null
+    let errorCb: ((e: any) => void) | null = null
     let successCb: ((p: any) => void) | null = null
     Object.defineProperty(globalThis.navigator, 'geolocation', {
       value: {
@@ -73,8 +73,11 @@ describe('PresenceProvider accuracy handling', () => {
     })
     expect(screen.getByTestId('accuracy').textContent).toBe('15')
 
+    // code 1 is PERMISSION_DENIED - the only error that means the user
+    // genuinely refused. A timeout must NOT clear the position, which is
+    // covered in PresenceContext.geoTransient.test.tsx.
     await act(async () => {
-      errorCb && errorCb()
+      errorCb && errorCb({ code: 1 })
     })
     expect(screen.getByTestId('accuracy').textContent).toBe('null')
   })

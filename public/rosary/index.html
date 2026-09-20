@@ -8,6 +8,17 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>Holy Rosary</title>
 
+<!-- Anchors every relative path below to /rosary/, regardless of whether the
+     page was reached as /rosary/index.html, /rosary/ or /rosary.
+
+     Without this the Rosary broke in production and worked in development,
+     which read as "it only works on my phone". The dev server serves
+     /rosary/index.html verbatim, so "20 Mysteries/..." resolved to
+     /rosary/20 Mysteries/... Static hosts redirect /rosary/index.html to
+     /rosary with NO trailing slash, and the same relative path then resolves
+     to /20 Mysteries/... at the site root - 404, every mystery image blank. -->
+<base href="/rosary/"/>
+
 <!-- =====================================================================
      ============  EDIT HERE - YOUR PICTURES AND MUSIC  ==================
      =====================================================================
@@ -37,7 +48,7 @@
      ================================================================== -->
 <script>
 // The picture from your original design - the last resort for any slot.
-const DESIGN_IMAGE = "https://lh3.googleusercontent.com/aida-public/AB6AXuAILQ0OYZYPkNTPnw_2o3NKvCgAwCrAMbjjo2xD44zI04A3tHF4WbuhWeenrSS62-qtAe6BGojzgIK3FqEofU-ywGgFxtIRI0dDH-beUM7OQwHM3auu9MCPwaRTWM8cJiE9f-UQK24j298kcZRkAEfoWV1UHjY8cwOQO1HaJn_AcQUL1Ii6galjyTbWiN7DcJ9EadW9dYWObnmPzBszQyvm9k6gKzxBb637XdADKtTuZH8g692Csgxbkw4vldYvpMTULw";
+const DESIGN_IMAGE = "start-background.png";
 
 /* One scene per decade, in prayer order 1-5 - your own pictures. */
 const SCENES = {

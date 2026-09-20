@@ -227,7 +227,15 @@ function isTileHostError(error: unknown): boolean {
 }
 
 export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
-  const { position, accuracyMeters, simulation } = usePresence();
+  const { position, accuracyMeters, gpsStatus, simulation } = usePresence();
+
+  // The position on screen is the last one the device gave us, which is
+  // not the same as where the pilgrim is standing now. When the watch
+  // stops producing fixes the dot silently freezes, and the honest
+  // reading of "Recentre does nothing after I move" is that it flew to a
+  // stale point exactly as asked. Say so rather than let the badge keep
+  // asserting a metre figure for a fix that has stopped arriving.
+  const positionIsStale = simulation === "off" && (gpsStatus === "lost" || gpsStatus === "searching");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   // Parish markers keyed by parish id, so a search result can fly to and
@@ -944,9 +952,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               ? "Your position is unknown — enable GPS or the location simulator"
               : simulation !== "off"
                 ? "Recentre the map on your simulated position"
-                : accuracyMeters != null
-                  ? `Recentre the map on your position (accurate to ±${Math.round(accuracyMeters)} m)`
-                  : "Recentre the map on your position"
+                : positionIsStale
+                  ? "Recentre on your last known position — GPS has stopped updating"
+                  : accuracyMeters != null
+                    ? `Recentre the map on your position (accurate to ±${Math.round(accuracyMeters)} m)`
+                    : "Recentre the map on your position"
           }
           aria-label="Recentre map on my location"
         >
@@ -981,7 +991,13 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             className={simulation !== "off" ? "dmap-live__position-badge dmap-live__position-badge--sim" : "dmap-live__position-badge"}
             data-testid="position-accuracy-badge"
           >
-            {simulation !== "off" ? "Simulated location" : accuracyMeters != null ? `Accurate to ±${Math.round(accuracyMeters)} m` : "Accuracy unknown"}
+            {simulation !== "off"
+              ? "Simulated location"
+              : positionIsStale
+                ? "Last known position — still looking for GPS"
+                : accuracyMeters != null
+                  ? `Accurate to ±${Math.round(accuracyMeters)} m`
+                  : "Accuracy unknown"}
           </div>
         )}
         {distancePanel}

@@ -5,7 +5,13 @@ import { ROUTES } from '../data'
 import type { Route } from '../types'
 
 export type SimulationValue = 'off' | 'approaching_mhcp' | 'at_mhcp' | 'at_src'
-export type GpsStatus = 'idle' | 'granted' | 'denied' | 'unavailable'
+export type GpsStatus =
+  | 'idle'
+  | 'granted'
+  | 'denied' // the user refused, or the OS blocked it - not recoverable here
+  | 'unavailable' // no geolocation API at all
+  | 'searching' // a fix has not arrived yet, or one timed out; still trying
+  | 'lost' // had a fix, then the device stopped producing one
 
 export const SIMULATIONS: { value: SimulationValue; label: string }[] = [
   { value: 'off', label: 'Off — use real GPS' },
@@ -132,28 +138,48 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    setGpsStatus(current => (current === 'granted' ? current : 'searching'))
+    let everFixed = false
+
     const id = navigator.geolocation.watchPosition(
       p => {
+        everFixed = true
         setGpsStatus('granted')
         setAccuracyMeters(p.coords.accuracy ?? null)
         applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude })
       },
-      () => {
-        // Denied permission is the normal state in a defense room. Without
-        // applying a null position here, the app would keep asserting the
-        // pilgrim is standing at whatever parish was last resolved.
-        setGpsStatus('denied')
-        setAccuracyMeters(null)
-        applyPosition(null, { instant: true })
+      err => {
+        // Three very different failures used to be collapsed into 'denied',
+        // and the position was wiped for all of them. That was the bug
+        // behind "recentre stops working after I move": indoors or on a cold
+        // start a fix routinely takes longer than the old 15s timeout, the
+        // TIMEOUT error fired, the app declared the user had refused
+        // permission and threw away a perfectly good last-known position -
+        // which also disabled the Recentre button, since it is disabled
+        // whenever position is null.
+        //
+        // Only PERMISSION_DENIED is a refusal. The other two are transient,
+        // and watchPosition keeps trying after them, so the last known
+        // position is kept and the status says we are still looking.
+        // Defensive: browsers always pass a GeolocationPositionError, but
+        // treat a malformed one as transient rather than as a refusal.
+        // Falsely reporting denial is the bug this whole branch exists to
+        // fix, so that is the safer way to be wrong.
+        if (err?.code === 1) {
+          setGpsStatus('denied')
+          setAccuracyMeters(null)
+          applyPosition(null, { instant: true })
+          return
+        }
+
+        setGpsStatus(everFixed ? 'lost' : 'searching')
       },
-      // enableHighAccuracy asks the device for its best available fix
-      // (GPS chip over coarse wifi/cell triangulation where possible).
-      // maximumAge: 5000 means a cached fix is only reused if it is under
-      // 5 seconds old — short enough that "it thinks I'm somewhere I was
-      // an hour ago" cannot happen from this cache. timeout: 15000 gives
-      // the device up to 15s to produce a fix before watchPosition's error
-      // callback fires (handled above) rather than hanging silently.
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+      // No `timeout`. On a watch it does not mean "give up after this" - it
+      // fires an error and keeps going, so all it achieved was the false
+      // denial above. maximumAge: 0 forbids reusing a cached fix at all:
+      // this app's whole premise is where the pilgrim is standing NOW, and a
+      // cached fix is exactly how a map ends up showing where they were.
+      { enableHighAccuracy: true, maximumAge: 0 },
     )
     return () => navigator.geolocation.clearWatch(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps

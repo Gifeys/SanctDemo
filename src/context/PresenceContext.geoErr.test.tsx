@@ -23,7 +23,7 @@ describe('PresenceProvider geolocation error handling', () => {
   })
 
   it('applies a null position and reports denied when the error callback fires', async () => {
-    let errorCb: (() => void) | null = null
+    let errorCb: ((e: any) => void) | null = null
     Object.defineProperty(globalThis.navigator, 'geolocation', {
       value: {
         watchPosition: (_success: any, error: any) => {
@@ -37,9 +37,11 @@ describe('PresenceProvider geolocation error handling', () => {
 
     render(<PresenceProvider><Probe /></PresenceProvider>)
 
-    // Simulate the permission-denied path.
+    // A real GeolocationPositionError always carries a code; code 1 is
+    // PERMISSION_DENIED. The old call passed nothing and only worked
+    // because the handler ignored its argument and assumed refusal.
     await act(async () => {
-      errorCb && errorCb()
+      errorCb && (errorCb as any)({ code: 1 })
     })
 
     expect(screen.getByTestId('gps').textContent).toBe('denied')

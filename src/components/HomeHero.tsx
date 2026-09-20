@@ -74,7 +74,9 @@ export default function HomeHero({ onWalkThere, onOpenParish }: HomeHeroProps) {
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-brand-text)]">
           {gpsStatus === "denied"
             ? "Location is switched off, so the app cannot tell which parish you are nearest. Turn it on to see distances and walking times."
-            : "Finding your location…"}
+            : gpsStatus === "unavailable"
+              ? "This device cannot report a location, so distances and walking times are unavailable. Browse the parishes on the map instead."
+              : "Finding your location…"}
         </p>
       </section>
     );

@@ -101,11 +101,21 @@ export interface DeviceHeading {
   status: HeadingStatus
   /** iOS only: call from a tap handler to request sensor access. */
   requestPermission: () => Promise<void>
+  /**
+   * Reported heading error in degrees, where the platform provides one
+   * (iOS `webkitCompassAccuracy`). Null on Android, which exposes no such
+   * figure through DeviceOrientationEvent. A negative value means iOS
+   * considers the reading unreliable and the magnetometer needs calibrating.
+   */
+  accuracyDegrees: number | null
+  /** True when the reading is known to be untrustworthy - prompt a figure-of-eight. */
+  needsCalibration: boolean
 }
 
 export function useDeviceHeading({ alpha = DEFAULT_SMOOTHING_ALPHA }: { alpha?: number } = {}): DeviceHeading {
   const [heading, setHeading] = useState<number | null>(null)
   const [rawHeading, setRawHeading] = useState<number | null>(null)
+  const [accuracyDegrees, setAccuracyDegrees] = useState<number | null>(null)
   const [status, setStatus] = useState<HeadingStatus>(() => {
     if (!isHeadingSupported()) return 'unsupported'
     if (typeof window !== 'undefined' && !window.isSecureContext) return 'insecure'
@@ -130,8 +140,20 @@ export function useDeviceHeading({ alpha = DEFAULT_SMOOTHING_ALPHA }: { alpha?: 
     }
   }, [])
 
+  // Listening is gated on PERMISSION, not on `status`.
+  //
+  // This used to be `if (status !== 'granted') return`, which made the
+  // "no magnetometer" timer below self-fulfilling: after 3 seconds with no
+  // reading it set status to 'unavailable', the effect re-ran, and the
+  // listeners were torn down - so a sensor that simply took four seconds to
+  // produce its first absolute reading could never recover. The compass was
+  // dead for the rest of the session and the UI said the hardware was
+  // missing. Magnetometers are routinely slow to settle, especially
+  // uncalibrated ones indoors, which is exactly where this app is used.
+  const listening = status === 'granted' || status === 'unavailable'
+
   useEffect(() => {
-    if (status !== 'granted') return
+    if (!listening) return
 
     let sawAbsoluteReading = false
 
@@ -139,7 +161,20 @@ export function useDeviceHeading({ alpha = DEFAULT_SMOOTHING_ALPHA }: { alpha?: 
       const reading = readEventHeading(event as AbsoluteOrientationEvent)
       if (reading === null) return
 
+      // A reading arriving after the timer already gave up puts the
+      // compass back into service instead of leaving it wrongly reported
+      // as missing hardware.
+      if (!sawAbsoluteReading) setStatus('granted')
       sawAbsoluteReading = true
+
+      const accuracy = (event as AbsoluteOrientationEvent).webkitCompassAccuracy
+      setAccuracyDegrees(typeof accuracy === 'number' ? accuracy : null)
+
+      // The screen's rotation, not the device's. Adding it is correct:
+      // rotating the phone 90 degrees anticlockwise makes the device's top
+      // point 90 degrees further anticlockwise while screen.orientation.angle
+      // reports 90, and the two cancel to give the bearing the user is
+      // actually looking along.
       const corrected = normalizeDegrees(reading + screenAngle())
       setRawHeading(corrected)
       smoothedRef.current = smoothHeading(smoothedRef.current, corrected, { alpha })
@@ -165,7 +200,11 @@ export function useDeviceHeading({ alpha = DEFAULT_SMOOTHING_ALPHA }: { alpha?: 
       window.removeEventListener('deviceorientation', onOrientation)
       window.clearTimeout(noSensorTimer)
     }
-  }, [status, alpha])
+  }, [listening, alpha])
 
-  return { heading, rawHeading, status, requestPermission }
+  // iOS reports -1 when it cannot trust the compass at all, and anything
+  // past ~25 degrees is too coarse to point someone down a nave with.
+  const needsCalibration = accuracyDegrees !== null && (accuracyDegrees < 0 || accuracyDegrees > 25)
+
+  return { heading, rawHeading, status, requestPermission, accuracyDegrees, needsCalibration }
 }
