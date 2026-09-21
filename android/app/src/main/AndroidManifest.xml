@@ -44,6 +44,20 @@
          permission, so declaring INTERNET alone is not enough. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- The Rosary's glow responds to the voice of whoever is praying, which
+         it measures with a loudness meter over the microphone
+         (public/rosary/index.html, startMeter). Leaving these undeclared did
+         not merely disable that: Capacitor maps an AUDIO_CAPTURE request from
+         the WebView onto RECORD_AUDIO and launches it, the framework refuses
+         an undeclared permission outright, and the result came back to
+         BridgeWebChromeClient twice - the second call to deny() threw
+         IllegalStateException on the main thread and took the whole app down.
+         That was the Rosary "crashing": a FATAL EXCEPTION, not a slow page.
+         MODIFY_AUDIO_SETTINGS is requested alongside RECORD_AUDIO by that
+         same Capacitor code path, so both have to be here. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Parish detection and walking directions. Coarse is listed too so the
          app still installs and degrades gracefully on a device that refuses
          precise location. -->
