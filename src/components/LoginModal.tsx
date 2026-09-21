@@ -1,8 +1,55 @@
 import React, { useState } from "react";
-import { Sparkles, KeyRound, Mail, ShieldAlert, CheckCircle, ShieldCheck, User, ArrowRight, UserPlus } from "lucide-react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { ShieldAlert, CheckCircle, ShieldCheck } from "lucide-react";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
 import { auth, db } from "../lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+
+// A label that sits on the field's top border, as in the design. The
+// browser has no such control, so it is a relatively positioned box with
+// an absolutely positioned caption punched through the outline.
+function Field({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+}: {
+  label: string;
+  type: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  autoComplete?: string;
+}) {
+  const id = `field-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`;
+  return (
+    <div className="relative">
+      <label
+        htmlFor={id}
+        className="absolute -top-2 left-3.5 px-1.5 bg-[var(--color-brand-card)] text-[13px] font-medium text-[var(--color-brand-secondary)] z-10"
+      >
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        autoComplete={autoComplete}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-transparent border border-[var(--color-brand-border)] rounded-xl px-3.5 py-3.5 text-[16px] text-[var(--color-brand-text)] placeholder:text-[var(--color-brand-secondary)]/60 outline-none transition-colors focus:border-[var(--color-brand-primary)]"
+      />
+    </div>
+  );
+}
 
 interface LoginModalProps {
   onLoginSuccess: (email: string, isAdmin: boolean) => void;
@@ -20,6 +67,33 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Checked: the session survives closing the app. Unchecked: it ends with
+  // it. This is Firebase's own persistence setting, not a stored password.
+  const [rememberMe, setRememberMe] = useState(true);
+
+  const handleForgotPassword = async () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+    if (!email) {
+      setErrorMsg("Enter your e-mail above first, and we will send a reset link to it.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      // Deliberately the same message whether or not the address is
+      // registered: saying "no such account" would tell anyone who asks
+      // which e-mails have accounts here.
+      setSuccessMsg(`If ${email} has an account, a password reset link is on its way.`);
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      setErrorMsg(
+        error?.code === "auth/invalid-email"
+          ? "Please enter a valid e-mail address."
+          : "Could not send the reset e-mail. Please try again.",
+      );
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +113,9 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
     setIsLoading(true);
 
     try {
+      // Set before signing in, so the very first session honours the choice.
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
       if (activeMode === "signup") {
         if (!fullName) {
           setErrorMsg("Please enter your full name.");
@@ -115,54 +192,52 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
       } else if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
         friendlyMessage = "Invalid email or password. Please try again.";
       } else if (error.code === "auth/invalid-email") {
-        friendlyMessage = "Please enter a valid email address.";
+        friendlyMessage = "Please enter a valid e-mail address.";
+      } else if (error.code === "auth/configuration-not-found") {
+        // Nothing the person can do about this one, and "check your
+        // credentials" blamed them for it. It means e-mail/password
+        // sign-in has not been switched on in the Firebase console.
+        friendlyMessage =
+          "Sign-in is not switched on for this parish app yet. This is a setting on our side, not a problem with your details.";
+      } else if (error.code === "auth/network-request-failed") {
+        friendlyMessage = "No connection. Check your internet and try again.";
+      } else if (error.code === "auth/too-many-requests") {
+        friendlyMessage = "Too many attempts. Please wait a moment and try again.";
       }
       setErrorMsg(friendlyMessage);
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-      {/* Sleek Apple-Style Page Header */}
-      <div className="px-6 pt-8 pb-4 shrink-0 text-left">
-        <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest block font-sans">
-          Pilgrim Profile
-        </span>
-        <h2 className="text-3xl font-black text-[var(--color-brand-text)] tracking-tight mt-0.5 uppercase font-sans">
-          {isLoggedIn ? "My Session" : activeMode === "signin" ? "Sign In" : "Register"}
-        </h2>
-        <p className="text-[15px] text-[var(--color-brand-secondary)] mt-1.5 leading-relaxed font-sans max-w-xs">
-          {isLoggedIn
-            ? "Manage your active SanctiWalk identity and sync your pilgrimage points securely."
-            : "Connect your SanctiWalk profile to log steps, complete catechesis, and collect historical stamp badges."
-          }
-        </p>
-      </div>
-
-      <div className="p-4 flex-1 flex flex-col justify-start">
-        {isLoggedIn ? (
+  // Signed in: the account summary, unchanged in substance.
+  if (isLoggedIn) {
+    return (
+      <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+        <div className="px-6 pt-6 pb-10 max-w-[420px] w-full mx-auto space-y-6">
           <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-6 text-center space-y-5 shadow-xs">
-            <div className="h-16 w-16 bg-[var(--color-brand-primary)]/10 rounded-full flex items-center justify-center mx-auto text-[var(--color-brand-secondary)]">
+            <div className="h-16 w-16 bg-[var(--color-brand-primary)]/10 rounded-full flex items-center justify-center mx-auto text-[var(--color-brand-primary)]">
               <ShieldCheck className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-sans uppercase tracking-wider">
-                Active Pilgrim Session
+              <h3 className="text-sm font-bold text-[var(--color-brand-text)] uppercase tracking-wider">
+                Signed in
               </h3>
-              <p className="text-[15px] text-[var(--color-brand-secondary)] font-sans">
-                You are currently signed in as:
+              <p className="text-[15px] text-[var(--color-brand-secondary)]">
+                You are signed in as
               </p>
-              <span className="inline-block text-[15px] font-mono font-bold text-[var(--color-brand-text)] bg-[var(--color-brand-card)] px-4 py-1.5 rounded-full border border-[var(--color-brand-border)] mt-2">
+              <span className="inline-block text-[15px] font-mono font-bold text-[var(--color-brand-text)] bg-[var(--color-brand-card-sunk)] px-4 py-1.5 rounded-full border border-[var(--color-brand-border)] mt-2 break-all">
                 {userEmail}
               </span>
             </div>
 
             {isAdmin && (
-              <div className="p-4 bg-[var(--color-brand-card)]/30 border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl text-[15px] leading-relaxed font-sans text-left space-y-1.5">
-                <span className="font-bold text-[var(--color-brand-text)] block uppercase tracking-wider text-sm">Admin Privilege Unlocked</span>
-                <p className="text-[15px] text-[var(--color-brand-secondary)]">You now have authorization to edit parish history details, add/remove parish bulletin announcements, and moderate pilgrim logs in the <strong>Admin Portal</strong>.</p>
+              <div className="p-4 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl text-[15px] leading-relaxed text-left space-y-1.5">
+                <span className="font-bold block uppercase tracking-wider text-sm">Admin Privilege Unlocked</span>
+                <p className="text-[15px] text-[var(--color-brand-secondary)]">
+                  You now have authorization to edit parish history details, add or remove parish bulletin
+                  announcements, and moderate pilgrim logs in the <strong>Admin Portal</strong>.
+                </p>
               </div>
             )}
 
@@ -170,139 +245,148 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
               onClick={onLogout}
               className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 active:scale-98 transition-all text-[15px] font-bold uppercase tracking-wider rounded-full border border-red-200"
             >
-              Log Out pilgrim profile
+              Sign out
             </button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Sliding Tab Control */}
-            <div className="bg-[var(--color-brand-card)] p-1 rounded-2xl flex items-center">
+        </div>
+      </div>
+    );
+  }
+
+  const signingUp = activeMode === "signup";
+
+  return (
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+      <div className="px-6 pt-4 pb-10 max-w-[420px] w-full mx-auto">
+        {/* The heading carries the screen; there is no eyebrow above it and
+            no second panel of explanation below. */}
+        <header className="text-center pt-6 pb-8">
+          <h2 className="text-[34px] leading-[1.15] font-extrabold tracking-tight text-[var(--color-brand-primary)]">
+            {signingUp ? (
+              <>
+                Create your
+                <br />
+                account.
+              </>
+            ) : (
+              <>
+                Login to your
+                <br />
+                account.
+              </>
+            )}
+          </h2>
+          <p className="mt-3 text-[15px] text-[var(--color-brand-secondary)]">
+            {signingUp
+              ? "Hello, let us set up your pilgrim profile"
+              : "Hello, welcome back to your account"}
+          </p>
+        </header>
+
+        <form onSubmit={handleAuth} className="space-y-5">
+          {errorMsg && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-start gap-2 text-[15px]">
+              <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl flex items-start gap-2 text-[15px]">
+              <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {signingUp && (
+            <Field
+              label="Full name"
+              type="text"
+              value={fullName}
+              onChange={setFullName}
+              placeholder="Juan dela Cruz"
+              autoComplete="name"
+            />
+          )}
+
+          <Field
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="example@email.com"
+            autoComplete="email"
+          />
+
+          <Field
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="Your Password"
+            autoComplete={signingUp ? "new-password" : "current-password"}
+          />
+
+          <div className="flex items-center justify-between gap-3 text-[15px]">
+            <label className="flex items-center gap-2 text-[var(--color-brand-secondary)] select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 accent-[var(--color-brand-primary)]"
+              />
+              <span>Remember me</span>
+            </label>
+
+            {!signingUp && (
               <button
-                onClick={() => { setActiveMode("signin"); setErrorMsg(""); setSuccessMsg(""); }}
-                className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
-                  activeMode === "signin" 
-                    ? "bg-[var(--color-brand-card)] text-[var(--color-brand-text)] shadow-xs" 
-                    : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
-                }`}
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
               >
-                Sign In
+                Forgot Password?
               </button>
-              <button
-                onClick={() => { setActiveMode("signup"); setErrorMsg(""); setSuccessMsg(""); }}
-                className={`flex-1 py-2 text-[15px] font-bold rounded-xl transition-all uppercase ${
-                  activeMode === "signup" 
-                    ? "bg-[var(--color-brand-card)] text-[var(--color-brand-text)] shadow-xs" 
-                    : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-text)]"
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-4">
-              <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest pl-1 font-sans">
-                {activeMode === "signin" ? "Access Devotee Account" : "Register Devotee Passport"}
-              </h3>
-
-              {successMsg && (
-                <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-2xl flex items-center gap-2 text-[15px] font-sans">
-                  <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                  <span>{successMsg}</span>
-                </div>
-              )}
-
-              {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-center gap-2 text-[15px] font-sans">
-                  <ShieldAlert className="w-4 h-4 text-red-600 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAuth} className="space-y-4 text-[15px]">
-                {/* Full Name for registration */}
-                {activeMode === "signup" && (
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1">
-                      Full Name / Devotee Handle
-                    </label>
-                    <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
-                      <User className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-                      <input
-                        type="text"
-                        placeholder="Juana dela Cruz"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Email Address */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1 font-sans">
-                    Email Address
-                  </label>
-                  <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
-                    <Mail className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-                    <input
-                      type="email"
-                      placeholder="pilgrim@sti.edu"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password PIN */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider pl-1 font-sans">
-                    Password
-                  </label>
-                  <div className="bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl p-3 flex items-center gap-2.5 transition-all focus-within:border-[var(--color-brand-primary)]">
-                    <KeyRound className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-transparent outline-none text-[15px] text-[var(--color-brand-text)]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Beautiful dynamic login button */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-50 text-white active:scale-95 transition-all text-[15px] font-bold uppercase tracking-widest rounded-full shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  {isLoading ? (
-                    <span>Processing Authorization...</span>
-                  ) : (
-                    <>
-                      <span>{activeMode === "signin" ? "Authenticate Passport" : "Register Profile"}</span>
-                      {activeMode === "signin" ? <ArrowRight className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-
-            {/* iOS Style Info Card */}
-            <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 space-y-2 text-[15px] text-[var(--color-brand-secondary)] shadow-xs">
-              <strong className="block text-[var(--color-brand-text)] font-bold uppercase tracking-wider text-sm font-sans">Registration Info:</strong>
-              <div className="space-y-1.5 font-sans leading-relaxed">
-                <p>Register with any standard email to create a pilgrim profile. Administrative access to the parish office portal is granted individually by parish staff and cannot be self-assigned.</p>
-                <p>All authenticated credentials map directly to securely sandboxed Firestore sessions.</p>
-              </div>
-            </div>
+            )}
           </div>
-        )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-60 text-white text-[16px] font-bold rounded-2xl transition-colors active:scale-[0.99]"
+          >
+            {isLoading ? "Please wait…" : signingUp ? "Create account" : "Login"}
+          </button>
+        </form>
+
+        {/* Where the design puts Facebook / Google / Apple. Those need
+            providers enabled and configured in Firebase, and none are, so
+            buttons here would be three things that look tappable and do
+            nothing. This switches between the two accounts the app can
+            actually create. */}
+        <div className="flex items-center gap-3 my-7">
+          <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
+          <span className="text-[14px] text-[var(--color-brand-secondary)]">
+            {signingUp ? "or sign in with" : "or sign up with"}
+          </span>
+          <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMode(signingUp ? "signin" : "signup");
+            setErrorMsg("");
+            setSuccessMsg("");
+          }}
+          className="w-full py-3.5 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl text-[15px] font-semibold text-[var(--color-brand-text)] hover:border-[var(--color-brand-primary)] transition-colors"
+        >
+          {signingUp ? "An existing e-mail account" : "A new e-mail account"}
+        </button>
+
+        <p className="mt-6 text-[14px] leading-relaxed text-[var(--color-brand-secondary)] text-center">
+          Admin access to the parish office portal is granted by parish staff and
+          cannot be self-assigned.
+        </p>
       </div>
     </div>
   );
