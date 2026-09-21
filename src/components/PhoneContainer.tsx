@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Smartphone, Monitor, Wifi, WifiOff, Battery } from "lucide-react";
+import { useDeviceSurface } from "../lib/displayMode";
 
 interface PhoneContainerProps {
   children: React.ReactNode;
@@ -18,6 +19,11 @@ export default function PhoneContainer({
 }: PhoneContainerProps) {
   const [currentTime, setCurrentTime] = useState("");
 
+  // On a real phone there is nothing to simulate: the device IS the frame.
+  // Drawing a mockup there cost most of the screen and made sign-in - which
+  // covers the whole display - look like the app changing size.
+  const deviceSurface = useDeviceSurface();
+
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -32,6 +38,13 @@ export default function PhoneContainer({
     const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  if (deviceSurface) {
+    // The app, and only the app, edge to edge. No toolbar, no notch, no
+    // invented battery percentage, and no viewport switch - a phone cannot
+    // usefully be shown "the desktop version" of a layout built for it.
+    return <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0">{children}</div>;
+  }
 
   return (
     // A centred column: a slim toolbar, then the app. The page used to be a

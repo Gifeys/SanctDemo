@@ -17,6 +17,7 @@ import SacramentsTab from "./components/SacramentsTab";
 import ArTour from "./components/ArTour";
 import PilgrimQuiz from "./components/PilgrimQuiz";
 import LoginModal from "./components/LoginModal";
+import { useDeviceSurface } from "./lib/displayMode";
 import AdminPortal from "./components/AdminPortal";
 import RosarySettingsModal from "./components/RosarySettingsModal";
 import PresenceSheet from "./components/PresenceSheet";
@@ -172,6 +173,13 @@ export default function App() {
   
   const [isOffline, setIsOffline] = useState(false);
   const [isMobileOnly, setIsMobileOnly] = useState(true);
+
+  // A real phone gets the whole screen. The centring and the 24px of
+  // breathing room below only make sense around the desktop mockup; applied
+  // to the installed app they inset it from the edges it should be using,
+  // and left the fixed-position screens (sign-in, search) looking like a
+  // different app at a different size.
+  const deviceSurface = useDeviceSurface();
   const [isRosarySettingsOpen, setIsRosarySettingsOpen] = useState(false);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
@@ -715,7 +723,13 @@ export default function App() {
           />
         </div>
       )}
-    <div className="min-h-screen bg-[var(--color-brand-card)] text-[var(--color-brand-text)] flex flex-col justify-between font-sans">
+    <div
+      className={
+        deviceSurface
+          ? "h-[100dvh] bg-[var(--color-brand-card)] text-[var(--color-brand-text)] flex flex-col font-sans overflow-hidden"
+          : "min-h-screen bg-[var(--color-brand-card)] text-[var(--color-brand-text)] flex flex-col justify-between font-sans"
+      }
+    >
       {/* There is deliberately no desktop workspace header. It carried a
           "SanctiWalk Core Workspace / Prepared for STI College Capstone
           Defense" title and a "Return to Church Selection" button, which is
@@ -723,7 +737,13 @@ export default function App() {
           app. The button also returned to a selection step the app no longer
           has. */}
       {/* Main Container Workspace */}
-      <main className="flex-1 flex items-center justify-center py-6 select-none relative">
+      <main
+        className={
+          deviceSurface
+            ? "flex-1 flex flex-col select-none relative min-h-0"
+            : "flex-1 flex items-center justify-center py-6 select-none relative"
+        }
+      >
         <PhoneContainer
           isOffline={isOffline}
           setIsOffline={setIsOffline}
