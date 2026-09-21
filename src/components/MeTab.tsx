@@ -2,6 +2,7 @@ import React from "react";
 import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User } from "lucide-react";
 import { UserProgress } from "../types";
 import { BADGES } from "../data";
+import { isMinistryApplication, statusPresentation } from "../lib/ministryApplication";
 
 type Application = {
   id: string;
@@ -10,6 +11,10 @@ type Application = {
   details: string;
   date: string;
   status: string;
+  // Present on ministry applications only. See lib/ministryApplication.ts.
+  ministryName?: string;
+  parishName?: string;
+  submittedAt?: string;
 };
 
 interface MeTabProps {
@@ -52,6 +57,11 @@ export default function MeTab({
   // The design shows a name and initials. Signed out there is no name to
   // show, so the header says "Pilgrim" rather than an empty avatar — the app
   // works fully without an account and should not imply otherwise.
+  // Ministry applications carry the four-status lifecycle and their own
+  // fields; everything else in the collection (sacrament bookings) does not.
+  const ministryApplications = applications.filter(isMinistryApplication);
+  const otherApplications = applications.filter(app => !isMinistryApplication(app));
+
   const displayName = isLoggedIn && userEmail ? userEmail.split("@")[0] : "Pilgrim";
   const initials = displayName
     .split(/[.\s_-]+/)
@@ -108,13 +118,70 @@ export default function MeTab({
         {isLoggedIn && (
           <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5 space-y-3">
             <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans flex items-center gap-1.5">
-              <ClipboardList className="w-4 h-4 text-[var(--color-brand-secondary)]" /> My Applications
+              <ClipboardList className="w-4 h-4 text-[var(--color-brand-secondary)]" /> My Application
             </h4>
-            {applications.length === 0 ? (
-              <p className="text-[15px] text-[var(--color-brand-secondary)]">No applications submitted yet.</p>
+
+            {ministryApplications.length === 0 ? (
+              <p className="text-[15px] text-[var(--color-brand-secondary)]">
+                No ministry application submitted yet. Ministries are under your
+                parish dashboard.
+              </p>
             ) : (
-              <div className="space-y-2.5">
-                {applications.map((app) => (
+              <div className="space-y-3">
+                {ministryApplications.map((app) => {
+                  const status = statusPresentation(app.status);
+                  return (
+                    <div
+                      key={app.id}
+                      className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] p-3.5 space-y-2"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <h5 className="font-bold text-[var(--color-brand-text)] text-[15px] leading-snug">
+                          {/* Older rows predate the structured fields, so
+                              fall back to the summary rather than showing a
+                              blank line. */}
+                          {app.ministryName ?? app.details}
+                        </h5>
+                        <span
+                          className={`text-sm font-bold px-2 py-0.5 rounded-full border shrink-0 ${status.className}`}
+                        >
+                          {status.dot} {status.label}
+                        </span>
+                      </div>
+
+                      <dl className="text-[15px] space-y-0.5">
+                        {app.parishName && (
+                          <div className="flex gap-2">
+                            <dt className="text-[var(--color-brand-secondary)] w-[7.5rem] shrink-0">Parish</dt>
+                            <dd className="text-[var(--color-brand-text)]">{app.parishName}</dd>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <dt className="text-[var(--color-brand-secondary)] w-[7.5rem] shrink-0">Date submitted</dt>
+                          <dd className="text-[var(--color-brand-text)]">{app.date}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  );
+                })}
+
+                <p className="text-[15px] text-[var(--color-brand-secondary)] leading-relaxed">
+                  We will contact you through your registered email regarding your
+                  application.
+                </p>
+              </div>
+            )}
+
+            {/* Sacrament bookings and the rest still belong to the pilgrim
+                and were visible here before, so they stay - under their own
+                heading rather than mixed in with ministry applications,
+                which have their own four statuses. */}
+            {otherApplications.length > 0 && (
+              <div className="pt-3 border-t border-[var(--color-brand-border)] space-y-2.5">
+                <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
+                  Other Submissions
+                </h4>
+                {otherApplications.map((app) => (
                   <div key={app.id} className="border-b border-[var(--color-brand-card)]/60 pb-2 last:border-0 last:pb-0">
                     <div className="flex justify-between items-start gap-2">
                       <h5 className="font-bold text-[var(--color-brand-text)] text-[15px]">{app.type}</h5>

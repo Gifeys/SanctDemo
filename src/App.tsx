@@ -189,7 +189,15 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
 
-  // Simulated Database store: Dynamic Pilgrim Applications & Visitor transaction logs
+  // The applications collection in Firestore: ministry applications and
+  // sacrament bookings share it, distinguished by `type`.
+  //
+  // The first six fields are what every application has had from the start
+  // and what the existing lists render. The rest arrive on ministry
+  // applications (see lib/ministryApplication.ts) and are optional here
+  // because the sacrament bookings and the older seeded rows do not carry
+  // them - reading ministry or parish off `details` was the alternative,
+  // and parsing a sentence is not a data model.
   const [applications, setApplications] = useState<Array<{
     id: string;
     type: string;
@@ -197,6 +205,15 @@ export default function App() {
     details: string;
     date: string;
     status: string;
+    email?: string;
+    mobile?: string;
+    ministryId?: string;
+    ministryName?: string;
+    parishId?: string;
+    parishName?: string;
+    message?: string;
+    consent?: boolean;
+    submittedAt?: string;
   }>>([]);
 
   // Dynamic Announcements list
@@ -949,7 +966,13 @@ export default function App() {
 
                   {/* TAB 6: Volunteer Guilds list */}
                   {activeTab === "ministries" && (
-                    <MinistriesTab parish={activeChurchRoute} onAddApplication={handleAddApplication} />
+                    <MinistriesTab
+                      parish={activeChurchRoute}
+                      onAddApplication={handleAddApplication}
+                      uid={uid}
+                      userEmail={userEmail}
+                      onOpenSignIn={() => setIsSignInOpen(true)}
+                    />
                   )}
 
                   {/* TAB 7: Sacraments office */}

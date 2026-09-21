@@ -1,11 +1,25 @@
 import React, { useState } from "react";
 import ParishContentEditor from "./ParishContentEditor";
 import { ShieldCheck, Sparkles, BarChart2, Database, FileText, Settings, Trash2, Edit, Plus, Check, Mail, CalendarRange, X, Send, Clock, Loader2 } from "lucide-react";
+import { MINISTRY_STATUSES, isMinistryApplication, statusPresentation } from "../lib/ministryApplication";
 import { apiUrl } from "../lib/apiBase";
 import { withAppKey } from "../lib/appKey";
 
 interface AdminPortalProps {
-  applications: Array<{ id: string; type: string; applicant: string; details: string; date: string; status: string }>;
+  applications: Array<{
+    id: string;
+    type: string;
+    applicant: string;
+    details: string;
+    date: string;
+    status: string;
+    // Ministry applications carry these; sacrament bookings do not.
+    email?: string;
+    mobile?: string;
+    ministryName?: string;
+    parishName?: string;
+    message?: string;
+  }>;
   onDeleteApplication: (id: string) => void;
   onUpdateApplicationStatus: (id: string, status: string) => void;
   announcements: Array<{ id: string; title: string; date: string; time: string; type: string }>;
@@ -661,7 +675,23 @@ Mary Help of Christians Parish`);
                         </div>
                         <div>
                           <span className="text-white font-serif italic block">Applicant: {app.applicant}</span>
-                          <p className="text-[var(--color-brand-secondary)] font-mono leading-normal break-all text-sm">{app.details}</p>
+
+                          {/* A ministry application has its own fields, so
+                              the office reads them rather than picking them
+                              out of one run-on line. Anything without them
+                              (a sacrament booking, or a row seeded before
+                              they existed) still shows its summary. */}
+                          {isMinistryApplication(app) && app.ministryName ? (
+                            <div className="text-sm font-mono text-[var(--color-brand-secondary)] space-y-0.5 mt-1">
+                              <div>Ministry: <span className="text-white">{app.ministryName}</span></div>
+                              {app.parishName && <div>Parish: <span className="text-white">{app.parishName}</span></div>}
+                              {app.email && <div className="break-all">Email: <span className="text-white">{app.email}</span></div>}
+                              <div>Mobile: <span className="text-white">{app.mobile || "not given"}</span></div>
+                              {app.message && <div className="leading-normal">Message: <span className="text-white">{app.message}</span></div>}
+                            </div>
+                          ) : (
+                            <p className="text-[var(--color-brand-secondary)] font-mono leading-normal break-all text-sm">{app.details}</p>
+                          )}
                         </div>
                         <div className="flex justify-between items-center pt-0.5 text-sm font-mono text-[var(--color-brand-secondary)]">
                           <span>Logged: {app.date}</span>
@@ -690,6 +720,44 @@ Mary Help of Christians Parish`);
                             Reject
                           </button>
                         </div>
+
+                        {/* Setting the status directly, with no email to
+                            compose. The three buttons above open the
+                            email modals and still do; this is for the
+                            common case of moving an application along.
+                            The existing flow is untouched because some
+                            offices do want to write to the applicant. */}
+                        {isMinistryApplication(app) && (
+                          <div className="pt-1.5 border-t border-[var(--color-brand-primary)]/10 flex items-center gap-2">
+                            <label
+                              htmlFor={`status-${app.id}`}
+                              className="text-[7.5px] text-[var(--color-brand-secondary)] uppercase tracking-wider font-bold shrink-0"
+                            >
+                              Set status
+                            </label>
+                            <select
+                              id={`status-${app.id}`}
+                              value={MINISTRY_STATUSES.includes(app.status as never) ? app.status : ""}
+                              onChange={(e) => {
+                                if (e.target.value) onUpdateApplicationStatus(app.id, e.target.value);
+                              }}
+                              className="flex-1 bg-[var(--color-brand-text)] text-white font-mono text-sm px-2 py-1 rounded border border-[var(--color-brand-primary)]/40 outline-none"
+                            >
+                              {/* A status from the older email flow is not
+                                  one of the four, so it is offered as the
+                                  current value rather than silently
+                                  displaying "Pending". */}
+                              {!MINISTRY_STATUSES.includes(app.status as never) && (
+                                <option value="">{app.status} (current)</option>
+                              )}
+                              {MINISTRY_STATUSES.map((status) => (
+                                <option key={status} value={status}>
+                                  {statusPresentation(status).dot} {status}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
