@@ -78,6 +78,52 @@ function getLanIps(): string[] {
 // with an HTML error page. The client then failed to parse it as JSON and
 // reported "Could not reach the server", so a size limit surfaced as a
 // network fault, intermittently, depending on what the camera was pointed at.
+// Cross-origin access for the packaged app.
+//
+// On the web SanctiWalk is served BY this server, so every /api call is
+// same-origin and CORS never enters into it. Inside the APK it is not:
+// Capacitor serves the bundle from https://localhost and this server is a
+// different origin, so the browser demands CORS headers and silently
+// refuses the request without them. That is why the scanner failed on the
+// phone with the endpoint plainly reachable - the request arrived and the
+// WebView threw the answer away.
+//
+// The same applies to the deployed backend, where the app's origin is
+// still https://localhost, so this is not tunnel-specific plumbing.
+//
+// The allowlist is the app's own origins plus localhost and private-LAN
+// dev servers. It is not `*`, because these endpoints spend a real Gemini
+// quota and the APP_KEY header is what stands between them and anyone who
+// finds the URL; a wildcard would let any web page in the world use a
+// key lifted from the bundle.
+const APP_ORIGINS = new Set([
+  "https://localhost",      // Capacitor, Android
+  "capacitor://localhost",  // Capacitor, iOS
+  "http://localhost",
+]);
+
+const isAllowedOrigin = (origin: string) =>
+  APP_ORIGINS.has(origin) ||
+  /^https?:\/\/localhost:\d+$/.test(origin) ||
+  /^https?:\/\/(?:192\.168|10)\.\d{1,3}\.\d{1,3}(?::\d+)?$/.test(origin);
+
+app.use("/api", (req, res, next) => {
+  const origin = req.headers.origin;
+  if (typeof origin === "string" && isAllowedOrigin(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-SanctiWalk-Key");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+  // Preflight needs an answer before any body parsing or auth.
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 app.use(express.json({ limit: "12mb" }));
 
 // Lazy-initialize Gemini API
