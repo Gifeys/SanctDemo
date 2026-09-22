@@ -882,7 +882,7 @@ export default function App() {
 
 
                 {/* PRIMARY VIEW CONTENT WORKSPACE */}
-                <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+                <div className="app-scroll flex-1 min-h-0 flex flex-col overflow-y-auto">
                   
                   {/* TAB 1: Parish Dashboard / Home Tab — TODAY first, then
                       the parish grid, then diocese-wide content. Extracted

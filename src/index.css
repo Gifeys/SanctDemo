@@ -1304,6 +1304,9 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   isolation: isolate;
   overflow: hidden;
   background: #101B4A;
+  /* Paints up into the status bar area rather than stopping below it. */
+  margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: 22px;
   /* Pulls the rounded content sheet up over the header's lower edge. */
   margin-bottom: -26px;
@@ -1329,7 +1332,10 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 .parish-welcome__content {
   position: relative;
-  padding: 14px 20px 0;
+  /* The status bar sits over this band in the packaged app, so the top
+     row is inset past it. On the web the inset is zero and this is just
+     the design's own 14px. */
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 0;
   color: #fff;
 }
 
@@ -1451,4 +1457,21 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 .home-motif {
   position: relative;
+}
+
+/* On a touch device this WebView draws a classic 6px scrollbar and takes
+   that width out of the layout, so the full-bleed header band stopped six
+   pixels short of the screen edge with a pale strip beside it. Phones
+   scroll by touch and expect an overlay indicator, so the gutter is
+   removed there; on a desktop pointer the scrollbar stays, because there
+   it is the only way to see or drag the scroll position. */
+@media (pointer: coarse) {
+  .app-scroll {
+    scrollbar-width: none;
+  }
+
+  .app-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
