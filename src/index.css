@@ -1244,11 +1244,12 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 /* The faint church line-art behind everything. Drawn rather than shipped as
    an image so it recolours with the token and costs no request. */
+/* Colour only. The pattern now comes from the per-section motifs below,
+   which is what the design does: push-pins behind the bulletin, calendars
+   behind the schedule, crosses behind the history. Painting the old
+   church line-art here as well put two watermarks on top of each other. */
 .home-bright__ground {
   background-color: var(--color-brand-bg);
-  background-image: var(--home-watermark-svg);
-  background-size: 132px 132px;
-  background-repeat: repeat;
 }
 
 /* The three section titles: centred, heavy, widely tracked, stacked over
@@ -1288,4 +1289,166 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .home-rail-dots span[data-active="true"] {
   width: 20px;
   background: color-mix(in srgb, var(--home-heading) 55%, transparent);
+}
+
+/* ---------------------------------------------------------------------
+   The welcome header, from the supplied PSD.
+
+   Dark navy, full bleed, with the parish's patron image coming in from the
+   right and the text sitting over it. The measurements are taken from the
+   design at its own scale: the artboard is 1127px wide for a 390px screen,
+   so everything from it is divided by 2.89.
+   --------------------------------------------------------------------- */
+.parish-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #101B4A;
+  padding-bottom: 22px;
+  /* Pulls the rounded content sheet up over the header's lower edge. */
+  margin-bottom: -26px;
+}
+
+.parish-welcome__image {
+  position: absolute;
+  inset: 0 0 0 28%;
+  background-size: cover;
+  background-position: center top;
+  z-index: -2;
+}
+
+/* Darkens everything a little, the text side a lot. */
+.parish-welcome__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, #101B4A 34%, rgb(16 27 74 / 0.72) 52%, rgb(16 27 74 / 0.08) 78%),
+    linear-gradient(180deg, rgb(16 27 74 / 0.55), rgb(16 27 74 / 0.12) 38%, rgb(16 27 74 / 0.45));
+}
+
+.parish-welcome__content {
+  position: relative;
+  padding: 14px 20px 0;
+  color: #fff;
+}
+
+.parish-welcome__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.parish-welcome__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-primary);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.parish-welcome__crest {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.parish-welcome__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 0.92);
+  color: #5A6B8C;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.parish-welcome__avatar:active { transform: scale(0.94); }
+
+.parish-welcome__greeting {
+  font-family: var(--font-primary);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: 0 2px 10px rgb(6 12 38 / 0.45);
+}
+
+.parish-welcome__date {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.9);
+  text-shadow: 0 1px 8px rgb(6 12 38 / 0.5);
+}
+
+/* The parish name is the one italic serif on the screen, exactly as the
+   design has it - it is the title of the page, not a label. */
+.parish-welcome__parish {
+  margin: 14px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgb(6 12 38 / 0.5);
+}
+
+.parish-welcome__location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 14.5px;
+  color: rgb(255 255 255 / 0.92);
+  text-shadow: 0 1px 8px rgb(6 12 38 / 0.55);
+}
+
+/* The content sheet below the header: rounded top corners lifted over the
+   navy, with the chevron the design puts at its top edge. */
+.home-sheet {
+  position: relative;
+  border-radius: 30px 30px 0 0;
+  padding-top: 8px;
+  background: linear-gradient(180deg, #E7EFFC 0%, #F4F8FE 42%, #EEF3FC 100%);
+}
+
+.home-sheet__handle {
+  display: grid;
+  place-items: center;
+  padding: 8px 0 2px;
+  color: color-mix(in srgb, var(--home-heading) 45%, transparent);
+}
+
+/* Each section carries its own faint motif, as the design does: push-pins
+   behind the bulletin, calendars behind the schedule, crosses behind the
+   history. The images are the PSD's own icons. */
+.home-motif {
+  background-repeat: repeat;
+  background-size: 118px auto;
+}
+.home-motif--pin { background-image: url("/ui/motif-pin.png"); }
+.home-motif--calendar { background-image: url("/ui/motif-calendar.png"); }
+.home-motif--cross { background-image: url("/ui/motif-cross.png"); }
+
+/* The motifs are dark line art, so they are knocked back hard rather than
+   recoloured - at 7% they read as the design's pale grey without needing a
+   second set of tinted files. */
+.home-motif::before {
+  content: none;
+}
+.home-motif {
+  position: relative;
 }

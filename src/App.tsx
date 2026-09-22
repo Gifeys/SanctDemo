@@ -892,6 +892,11 @@ export default function App() {
                   {activeTab === "home" && (
                     <Dashboard
                       parish={activeChurchRoute}
+                      firstName={
+                        isLoggedIn && userEmail
+                          ? userEmail.split("@")[0].split(/[._-]/)[0]
+                          : undefined
+                      }
                       announcements={announcements}
                       onNavigate={(tab) => setActiveTab(tab)}
                       onSelectParish={handleSelectParish}

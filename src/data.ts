@@ -333,6 +333,21 @@ export const PARISH_PATRON_IMAGES: Record<string, string | undefined> = {
   // the client. Converted from the original iPhone HEIC — which no browser
   // outside Safari can display — and resized from 3024x4032 to 1200px wide.
   "route-mhcp": "/parish/mary-help-patron.jpg",
+
+  // San Roque's patron, extracted from the PSD the parish supplied. Until
+  // now this parish had no photograph at all and its history card fell back
+  // to the placeholder illustration.
+  "route-src": "/parish/san-roque-hero.jpg",
+}
+
+/**
+ * The image behind the welcome header, which is a different picture from the
+ * one on the history card: the header needs something that reads at a glance
+ * behind text, the card needs the subject whole.
+ */
+export const PARISH_HEADER_IMAGES: Record<string, string | undefined> = {
+  "route-mhcp": "/parish/mary-help-hero.jpg",
+  "route-src": "/parish/san-roque-hero.jpg",
 }
 
 export const PARISH_PATRON_SAINTS: Record<string, string> = {
@@ -363,7 +378,8 @@ export const ROUTES: Route[] = [
         description: "The central sanctuary of Mary Help of Christians Parish, designed for deep worship and Eucharist celebration.",
         history: "Consecrated as the spiritual center of the parish. It holds the tabernacle and displays majestic holy figures depicting the Salesian devotions.",
         reflection: "Quiet your heart as you stand before the Altar. In the stillness, listen to God's whisper. What are you most grateful for today?",
-        coordinates: { lat: 14.6305, lng: 120.9711 },        imageUrl: "https://dioceseofkalookan.ph/wp-content/uploads/2020/12/maryhelpPic1-1-1024x680.jpg",
+        coordinates: { lat: 14.6305, lng: 120.9711 },
+        imageUrl: "https://dioceseofkalookan.ph/wp-content/uploads/2020/12/maryhelpPic1-1-1024x680.jpg",
         qrCode: "MHCP-ALTAR"
       },
       {
@@ -372,7 +388,8 @@ export const ROUTES: Route[] = [
         description: "The majestic crowned image of Mary Help of Christians holding the Child Jesus with open arms.",
         history: "A title promoted strongly by St. John Bosco. This specific parish image has been a source of spiritual comfort, community miracles, and grace since the parish's founding.",
         reflection: "Mary holds Jesus, presenting Him to us as our ultimate help. Where in your life do you need a helper today? Sincere prayer is never ignored.",
-        coordinates: { lat: 14.6308, lng: 120.9715 },        qrCode: "MHCP-PATRON"
+        coordinates: { lat: 14.6308, lng: 120.9715 },
+        qrCode: "MHCP-PATRON"
       },
       {
         id: "mhcp-bapt",
@@ -380,7 +397,8 @@ export const ROUTES: Route[] = [
         description: "The holy font where infants and adults enter into God's family, baptized in water and the Spirit.",
         history: "Located at the church entrance, symbolizing baptism as the doorway to all other sacraments. Built in high-polish granite.",
         reflection: "Water brings life and cleanses. Remember that your life has a divine purpose. How can you bring a clean start and hope to someone who is down today?",
-        coordinates: { lat: 14.6302, lng: 120.9708 },        qrCode: "MHCP-BAPT"
+        coordinates: { lat: 14.6302, lng: 120.9708 },
+        qrCode: "MHCP-BAPT"
       }
     ]
   },
@@ -406,7 +424,8 @@ export const ROUTES: Route[] = [
         description: "The solemn altar and seat of the Bishop of Kalookan, hosting major religious feasts and historical assemblies.",
         history: "Originally built in 1815, the church witnessed the Philippine Revolution as a stronghold. Consecrated as a Cathedral in 2003 under the first bishop.",
         reflection: "Reflect on the resilience of this cathedral, standing strong through wars and natural events. How resilient is your spirit in times of trial?",
-        coordinates: { lat: 14.6514, lng: 120.9739 },        qrCode: "SRC-ALTAR"
+        coordinates: { lat: 14.6514, lng: 120.9739 },
+        qrCode: "SRC-ALTAR"
       },
       {
         id: "src-statue",
@@ -414,7 +433,8 @@ export const ROUTES: Route[] = [
         description: "The highly venerated statue of San Roque, representing his life of sacrifice and healing.",
         history: "Venerated by the community. San Roque was a layman who cared for plague-stricken people in Europe, and is invoked for protection against sickness and health crises.",
         reflection: "San Roque put his life at risk to nurse others. Who among your sick neighbors, friends, or family members can you pray for or reach out to today?",
-        coordinates: { lat: 14.6518, lng: 120.9742 },        qrCode: "SRC-ROQUE"
+        coordinates: { lat: 14.6518, lng: 120.9742 },
+        qrCode: "SRC-ROQUE"
       }
     ]
   }

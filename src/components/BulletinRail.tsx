@@ -16,6 +16,15 @@ import { MINISTRIES, SACRAMENTS } from "../data";
 // server hid as readily as the build did.
 const PLACEHOLDER_PHOTO = "/parish/placeholder-photo.svg";
 
+/**
+ * The parish's own photographs, from the design the parish supplied: the
+ * altar servers in the sanctuary, and a christening. They replace the
+ * placeholder illustration, which stood in only because no photography had
+ * been collected - it now has been.
+ */
+const MINISTRY_PHOTO = "/parish/ministry-altar-servers.jpg";
+const SACRAMENT_PHOTO = "/parish/sacraments-christening.jpg";
+
 export interface Announcement {
   id: string;
   title: string;
@@ -106,7 +115,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
           label="Ministries"
           hint="Join a group ministry in this parish."
           caption={MINISTRIES[0]?.name}
-          imageUrl={PLACEHOLDER_PHOTO}
+          imageUrl={MINISTRY_PHOTO}
           onClick={() => onNavigate("ministries")}
         />
         <RailLink
@@ -114,7 +123,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
           label="Sacraments"
           hint="Baptism, marriage and confession, arranged with the parish office."
           caption={SACRAMENTS[0]?.name}
-          imageUrl={PLACEHOLDER_PHOTO}
+          imageUrl={SACRAMENT_PHOTO}
           onClick={() => onNavigate("sacraments")}
         />
       </div>

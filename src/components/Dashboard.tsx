@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { User } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import { Route } from "../types";
-import { PARISH_PATRON_SAINTS, PARISH_PATRON_IMAGES } from "../data";
+import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES } from "../data";
 import BulletinRail from "./BulletinRail";
-import ParishHero from "./ParishHero";
+import ParishWelcomeHeader from "./ParishWelcomeHeader";
 import MassScheduleCard from "./MassScheduleCard";
 import ChurchHistoryCard from "./ChurchHistoryCard";
 import { useParishContent } from "../lib/useParishContent";
@@ -28,6 +28,8 @@ interface DashboardProps {
   onWalkThere: (parishId: string) => void;
   /** Opens the full-screen parish search. */
   onOpenSearch: () => void;
+  /** First name of the signed-in pilgrim; the greeting omits it when absent. */
+  firstName?: string;
 }
 
 function parishDisplayName(parish: Route): string {
@@ -53,7 +55,7 @@ export function formatCountdown(target: Date, now: Date): string {
   return `in ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function Dashboard({ parish, announcements, onNavigate }: DashboardProps) {
+export default function Dashboard({ parish, announcements, onNavigate, firstName }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
 
@@ -83,29 +85,17 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
           and Scan stay warm paper. Rolling the theme app-wide later means
           moving the block in index.css to :root, not editing components. */}
 
-      {/* The date and the avatar share one row; the photograph below spans
-          the full content width. */}
-      <div className="px-5 pt-6 pb-3 shrink-0 flex items-center justify-between gap-3">
-        <span className="text-[14px] font-mono uppercase tracking-[0.14em] text-[var(--color-brand-secondary)]">
-          {now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
-        </span>
-        <button
-          onClick={() => onNavigate("me")}
-          className="h-9 w-9 rounded-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all"
-          aria-label="Me"
-        >
-          <User className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Rendered here rather than nested in the header block: a sticky
-          element can only stay pinned within its parent's box, so inside that
-          block the parish name unstuck the moment the block ended. */}
-      <ParishHero
+      {/* The welcome band from the design: the patron image behind the
+          greeting, the date, the parish name and where it is. It replaces a
+          date row plus a collapsing photo card, which read as a list item
+          rather than as arriving at the parish's own page. */}
+      <ParishWelcomeHeader
         parishName={parishName}
         location={parish.location}
-        patron={PARISH_PATRON_SAINTS[parish.id]}
-        imageUrl={managed?.photoUrl ?? PARISH_PATRON_IMAGES[parish.id]}
+        imageUrl={managed?.photoUrl ?? PARISH_HEADER_IMAGES[parish.id] ?? PARISH_PATRON_IMAGES[parish.id]}
+        firstName={firstName}
+        onOpenProfile={() => onNavigate("me")}
+        now={now}
       />
 
       {managed?.description && (
@@ -116,7 +106,12 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
         </div>
       )}
 
-      <div className="px-4 pb-4">
+      <div className="home-sheet px-4 pb-4">
+        <div className="home-sheet__handle" aria-hidden="true">
+          <ChevronUp className="w-6 h-6" />
+        </div>
+
+        <div className="home-motif home-motif--pin">
         <h2 className="home-section-title">
           Parish
           <br />
@@ -124,6 +119,9 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
         </h2>
         <BulletinRail announcements={announcements} onNavigate={onNavigate} />
 
+        </div>
+
+        <div className="home-motif home-motif--calendar">
         <h2 className="home-section-title">
           Mass
           <br />
@@ -154,6 +152,9 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
           </div>
         )}
 
+        </div>
+
+        <div className="home-motif home-motif--cross">
         <h2 className="home-section-title">
           Church
           <br />
@@ -164,6 +165,7 @@ export default function Dashboard({ parish, announcements, onNavigate }: Dashboa
           parishName={parishName}
           onOpenHistory={() => onNavigate("history")}
         />
+        </div>
 
         {/* The Verse of the Day card now lives on Pray, at the client's
             request. It was the last thing on a long Home scroll, where it
