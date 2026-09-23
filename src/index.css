@@ -1514,23 +1514,75 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 /* Each section carries its own faint motif, as the design does: push-pins
    behind the bulletin, calendars behind the schedule, crosses behind the
-   history. The images are the PSD's own icons. */
-.home-motif {
-  background-repeat: repeat;
-  background-size: 118px auto;
-}
-.home-motif--pin { background-image: url("/ui/motif-pin.png"); }
-.home-motif--calendar { background-image: url("/ui/motif-calendar.png"); }
-.home-motif--cross { background-image: url("/ui/motif-cross.png"); }
+   history. The images are the PSD's own icons.
 
-/* The motifs are dark line art, so they are knocked back hard rather than
-   recoloured - at 7% they read as the design's pale grey without needing a
-   second set of tinted files. */
-.home-motif::before {
-  content: none;
-}
+   TWO of each, not a repeating tile. This was tiled at 118px in both
+   directions, which filled every section with a dozen identical pins and
+   read as wallpaper. The PSD has exactly two layers per section - e.g.
+   `push-pin` and `push-pin copy` - sitting one on each side of the section
+   heading and bleeding off both edges of the screen. Comparing the pairs
+   pixel by pixel, each `copy` is the horizontal mirror of its partner
+   (difference 0.6 mirrored against 21 un-mirrored), which is why ::after
+   is the same image flipped rather than a second file.
+
+   The sizes and offsets are the PSD's own, divided by 3: the artboard is
+   1125px across where the phone is 375, which the 1030px history card
+   confirms - it is the 343px card on screen. Offsets are in pixels rather
+   than percentages because `background-position: left -15%` measures the
+   percentage against the container MINUS the image, not the container, so
+   a percentage there would not mean what it appears to. Pixels also keep
+   the bleed the same at any phone width, which is the point of a bleed. */
 .home-motif {
   position: relative;
+  /* Makes this a stacking context, so the motifs below sit behind this
+     section's own text but still in front of the sheet's gradient. Without
+     it a negative z-index escapes to the nearest stacking context and the
+     motifs vanish underneath the sheet. */
+  isolation: isolate;
+}
+
+.home-motif::before,
+.home-motif::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: var(--motif-top);
+  width: var(--motif-width);
+  aspect-ratio: var(--motif-ratio);
+  background: var(--motif) center / contain no-repeat;
+  pointer-events: none;
+}
+
+.home-motif::before { left: var(--motif-bleed); }
+
+/* The design's mirrored copy. */
+.home-motif::after {
+  right: var(--motif-bleed);
+  transform: scaleX(-1);
+}
+
+.home-motif--pin {
+  --motif: url("/ui/motif-pin.png");
+  --motif-ratio: 200 / 259;
+  --motif-width: 111px;
+  --motif-bleed: -51px;
+  --motif-top: -29px;
+}
+
+.home-motif--calendar {
+  --motif: url("/ui/motif-calendar.png");
+  --motif-ratio: 200 / 196;
+  --motif-width: 169px;
+  --motif-bleed: -108px;
+  --motif-top: -26px;
+}
+
+.home-motif--cross {
+  --motif: url("/ui/motif-cross.png");
+  --motif-ratio: 200 / 268;
+  --motif-width: 160px;
+  --motif-bleed: -73px;
+  --motif-top: -28px;
 }
 
 /* On a touch device this WebView draws a classic 6px scrollbar and takes

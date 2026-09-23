@@ -771,9 +771,14 @@ Mary Help of Christians Parish`);
       {/* Interactive Email/Scheduling Modal Overlay */}
       {selectedAppForAction && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 text-[var(--color-brand-text)] font-sans">
-          <div className="bg-[var(--color-brand-card)] rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-[var(--color-brand-border)] animate-in fade-in zoom-in-95 duration-200">
+          {/* Height-safe: capped at the overlay, header fixed, body scrolls.
+              This one compiles a whole email, so it was the tallest card in
+              the app and the first to push its own close button off the top
+              of a short screen - and `overflow-hidden` meant nothing
+              scrolled to bring it back. */}
+          <div className="bg-[var(--color-brand-card)] rounded-3xl w-full max-w-md max-h-full flex flex-col overflow-hidden shadow-2xl border border-[var(--color-brand-border)] animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="bg-[var(--color-brand-primary)] text-white p-4 flex items-center justify-between border-b border-[var(--color-brand-border)]/30">
+            <div className="shrink-0 bg-[var(--color-brand-primary)] text-white p-4 flex items-center justify-between border-b border-[var(--color-brand-border)]/30">
               <div className="flex items-center gap-1.5">
                 <Mail className="w-4 h-4 text-[var(--color-brand-on-accent)]" />
                 <h3 className="text-[15px] font-bold tracking-wider uppercase font-serif italic text-white">
@@ -792,7 +797,7 @@ Mary Help of Christians Parish`);
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 space-y-3.5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-3.5">
               {emailSentSuccess ? (
                 <div className="py-6 text-center space-y-3">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${isLastEmailSimulated ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>

@@ -19,12 +19,20 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
       className="absolute inset-0 z-[70] flex items-center justify-center p-5 bg-black/60 transition-opacity duration-300 ease-out"
       onClick={onClose}
     >
+      {/* Height-safe: the card is capped at the overlay and split into a
+          header that stays and a body that scrolls. Without the cap a card
+          taller than the screen was centred, so it overflowed equally at
+          both ends and carried its own close button off the top - and
+          nothing scrolled, so there was no way to reach it or to shut the
+          modal except by guessing that the backdrop closes it. It happened
+          on any short viewport: a rotated phone, a small one, or a tall
+          card with the keyboard up. */}
       <div
-        className="w-full max-w-sm rounded-2xl border border-[var(--color-brand-on-accent)]/30 bg-[var(--color-brand-primary)] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
+        className="w-full max-w-sm max-h-full flex flex-col rounded-2xl border border-[var(--color-brand-on-accent)]/30 bg-[var(--color-brand-primary)] text-white shadow-2xl transition-all duration-300 ease-out font-secondary"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/10">
+        <div className="shrink-0 flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/10">
           <div className="flex items-center gap-1.5">
             <Navigation className="w-4 h-4 text-[var(--color-brand-on-accent)]" />
             <h2 className="text-base font-bold tracking-tight font-primary">Location Simulator</h2>
@@ -38,7 +46,7 @@ export default function SimulatorPanel({ isOpen, onClose }: SimulatorPanelProps)
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-5">
           {/* Simulation options */}
           <div>
             <div className="flex items-center gap-1.5 mb-2 text-sm font-semibold uppercase tracking-wider text-white/90">

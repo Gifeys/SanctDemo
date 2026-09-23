@@ -116,7 +116,13 @@ export default function SearchScreen({ onSelectParish, onClose }: SearchScreenPr
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0">
-      <div className="px-4 pt-5 pb-3 shrink-0 space-y-3">
+      {/* The inset keeps the field and Cancel clear of the status bar: this
+          screen is rendered into a `fixed inset-0` overlay, which starts at
+          the very top of the phone. */}
+      <div
+        className="px-4 pt-5 pb-3 shrink-0 space-y-3"
+        style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-3">
           <div className="flex-1 flex items-center gap-2.5 px-4 py-3 rounded-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)]">
             <SearchIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />

@@ -681,7 +681,15 @@ export default function App() {
           distance and so needs the position. */}
       {isChangeParishOpen && (
         <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
-          <div className="flex justify-end p-3 shrink-0">
+          {/* The inset keeps Cancel clear of the status bar. A `fixed
+              inset-0` overlay starts at the very top of the screen, so on a
+              phone that draws its status bar over the app this row was
+              underneath it and the only way out of the screen could not be
+              seen or tapped. */}
+          <div
+            className="flex justify-end p-3 shrink-0"
+            style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+          >
             <button
               type="button"
               onClick={() => setIsChangeParishOpen(false)}
@@ -698,7 +706,11 @@ export default function App() {
           where it stacked a second "Pilgrim Profile" header under the first. */}
       {isSignInOpen && (
         <div className="fixed inset-0 z-50 bg-[var(--color-brand-card)] flex flex-col">
-          <div className="flex justify-end p-3 shrink-0">
+          {/* Inset for the status bar, as above. */}
+          <div
+            className="flex justify-end p-3 shrink-0"
+            style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+          >
             <button
               type="button"
               onClick={() => setIsSignInOpen(false)}

@@ -9,7 +9,18 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- Portrait only. Every screen here is laid out as a single phone
+             column - the parish band, the bulletin rail, the rosary - and
+             rotated there is no second column for the extra width to become,
+             so landscape only made each screen shorter. That broke the
+             modals outright: the rosary settings card is about 530dp tall,
+             which in a 360dp-high landscape window overflowed by 84dp at
+             each end and took its own close button off the top of the
+             screen with nothing left to scroll. The modals are height-safe
+             now as well, because this lock does not apply to the same app
+             opened in a browser. -->
         <activity
+            android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"

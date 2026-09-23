@@ -92,8 +92,11 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0 overflow-y-auto">
-      {/* Header panel. Stands in for the design's full-bleed photograph. */}
-      <div className="shrink-0 bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 pt-5 pb-6 rounded-b-[2rem]">
+      {/* Header panel. Stands in for the design's full-bleed photograph.
+          Sticky, because it carries the only way back off this screen and
+          it used to scroll away with everything else - on a short screen
+          you had to scroll back up to leave. */}
+      <div className="sticky top-0 z-10 shrink-0 bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 pt-5 pb-6 rounded-b-[2rem]">
         <div className="flex items-center justify-between">
           <button
             type="button"
