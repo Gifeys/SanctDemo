@@ -133,7 +133,6 @@ export default function Dashboard({ parish, announcements, onNavigate, firstName
         <MassScheduleCard
           routeId={parish.id}
           now={now}
-          onOpenFullSchedule={() => onNavigate("mass")}
         />
 
         {/* What the day commemorates — the parish's own words if they have

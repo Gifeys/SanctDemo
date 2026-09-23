@@ -9,7 +9,6 @@ interface MassScheduleCardProps {
   /** The active tour route id, e.g. "route-mhcp". */
   routeId: string;
   now: Date;
-  onOpenFullSchedule: () => void;
 }
 
 /**
@@ -29,7 +28,6 @@ interface MassScheduleCardProps {
 export default function MassScheduleCard({
   routeId,
   now,
-  onOpenFullSchedule,
 }: MassScheduleCardProps) {
   const [expanded, setExpanded] = useState(true);
 
@@ -129,15 +127,6 @@ export default function MassScheduleCard({
             </button>
           </>
         )}
-
-        <button
-          type="button"
-          onClick={onOpenFullSchedule}
-          className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-[16px] font-semibold"
-        >
-          <Clock className="w-4 h-4" />
-          Full week's schedule
-        </button>
       </div>
     </section>
   );

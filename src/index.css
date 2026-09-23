@@ -1319,6 +1319,9 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   --pw-scale-delta: 0;
   --pw-media-dy: 0px;
   --pw-image-dy: 0px;
+  /* The height of the rounded lip below, in one place: the band's own
+     padding has to clear it and the script reads it back off ::after. */
+  --pw-lip: 26px;
 
   isolation: isolate;
   overflow: hidden;
@@ -1326,7 +1329,11 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   /* Paints up into the status bar area rather than stopping below it. */
   margin-top: calc(-1 * env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: 22px;
+  /* The lip is drawn INSIDE the band's bottom edge, so the text needs its
+     own breathing room on top of the lip's height. With only the 22px the
+     street address ran the last few pixels of its line box in under the
+     lip and the rounded edge cut across the lettering. */
+  padding-bottom: calc(22px + var(--pw-lip));
   /* Pulls the rounded content sheet up over the header's lower edge. */
   margin-bottom: -26px;
 }
@@ -1343,7 +1350,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 26px;
+  height: var(--pw-lip);
   background: #E7EFFC;
   border-radius: 30px 30px 0 0;
   z-index: 2;
