@@ -1317,6 +1317,8 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   --pw-collapse: 0px;
   --pw-title-dy: 0px;
   --pw-scale-delta: 0;
+  --pw-media-dy: 0px;
+  --pw-image-dy: 0px;
 
   isolation: isolate;
   overflow: hidden;
@@ -1355,7 +1357,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   position: absolute;
   inset: 0;
   z-index: -1;
-  transform: translate3d(0, calc(var(--pw-t) * 0.62 * var(--pw-collapse)), 0);
+  transform: translate3d(0, calc(var(--pw-t) * var(--pw-media-dy, 0px)), 0);
   will-change: transform;
 }
 
@@ -1379,20 +1381,18 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   will-change: transform;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* The band still has to collapse — the parish name staying on screen is
-     information, not decoration — but nothing moves at a different rate to
-     the finger, so there is no motion the scroll did not ask for. */
-  .parish-welcome__media {
-    transform: translate3d(0, calc(var(--pw-t) * var(--pw-collapse)), 0);
-  }
-}
-
 .parish-welcome__image {
   position: absolute;
   inset: 0 0 0 28%;
   background-size: cover;
   background-position: center top;
+  /* On top of the wrapper's parallax: the small extra shift that lands the
+     patron's face in the collapsed bar rather than behind the sheet's lip.
+     It is per parish, because each photograph is composed differently — see
+     PARISH_HEADER_FACES in data.ts. A transform rather than moving
+     background-position, which would repaint the picture every frame. */
+  transform: translate3d(0, calc(var(--pw-t) * var(--pw-image-dy, 0px)), 0);
+  will-change: transform;
 }
 
 /* Darkens everything a little, the text side a lot. */

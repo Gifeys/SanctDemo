@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronUp } from "lucide-react";
 import { Route } from "../types";
-import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES } from "../data";
+import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES, PARISH_HEADER_FACES } from "../data";
 import BulletinRail from "./BulletinRail";
 import ParishWelcomeHeader from "./ParishWelcomeHeader";
 import MassScheduleCard from "./MassScheduleCard";
@@ -93,6 +93,9 @@ export default function Dashboard({ parish, announcements, onNavigate, firstName
         parishName={parishName}
         location={parish.location}
         imageUrl={managed?.photoUrl ?? PARISH_HEADER_IMAGES[parish.id] ?? PARISH_PATRON_IMAGES[parish.id]}
+        // Only for the parish's own photograph. An admin-uploaded one has
+        // nobody to say where the face is, so it keeps the plain crop.
+        imageFaceY={managed?.photoUrl ? undefined : PARISH_HEADER_FACES[parish.id]}
         firstName={firstName}
         onOpenProfile={() => onNavigate("me")}
         now={now}

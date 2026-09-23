@@ -350,6 +350,33 @@ export const PARISH_HEADER_IMAGES: Record<string, string | undefined> = {
   "route-src": "/parish/san-roque-hero.jpg",
 }
 
+/**
+ * How far down each header photograph the patron's face sits, as a fraction
+ * of the picture's height.
+ *
+ * The home band collapses to a bar about 90px tall as the page scrolls, and
+ * which part of the photograph survives that is decided by the picture's own
+ * composition — so no single crop can serve both of these. Mary Help's is a
+ * landscape frame with the faces just past the middle; San Roque's is a
+ * portrait with his head in the top third. Left to one rule, Mary's face
+ * ended up behind the sheet's rounded lip and only the crown and halo showed.
+ *
+ * Measured by opening each file and reading off where the face is:
+ *
+ *   mary-help-hero.jpg   1200x900   Mary's face y 455-575, the child's
+ *                                   455-600; centred on the pair at y 535
+ *   san-roque-hero.jpg   902x1265   head and hat y 200-445, centred at 322
+ *
+ * ParishWelcomeHeader turns this into the offset that lands the face in the
+ * middle of the collapsed bar. A parish with no entry here — including one
+ * whose photograph was uploaded through the admin portal, where nobody has
+ * said where the face is — keeps the plain top-aligned crop.
+ */
+export const PARISH_HEADER_FACES: Record<string, number | undefined> = {
+  "route-mhcp": 0.59,
+  "route-src": 0.255,
+}
+
 export const PARISH_PATRON_SAINTS: Record<string, string> = {
   "route-mhcp": "Maria Auxiliadora (Mary Help of Christians)",
   "route-src": "San Roque",

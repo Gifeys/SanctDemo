@@ -7,6 +7,12 @@ interface ParishWelcomeHeaderProps {
   location?: string;
   /** The parish's patron image, bled in behind the text from the right. */
   imageUrl?: string;
+  /**
+   * How far down that photograph the patron's face sits, 0 to 1. Given, the
+   * collapse keeps the face in the bar; omitted, the picture stays
+   * top-aligned and whatever survives the crop survives it.
+   */
+  imageFaceY?: number;
   /** First name of the signed-in pilgrim, or undefined when signed out. */
   firstName?: string;
   onOpenProfile: () => void;
@@ -19,6 +25,14 @@ const PINNED_SCALE = 21 / 27;
 /** Room above and below the name in the collapsed bar. */
 const PINNED_PAD_TOP = 11;
 const PINNED_PAD_BOTTOM = 9;
+
+/**
+ * How much of the scroll the photograph absorbs. At 0 it travels with the
+ * band; at 1 it is nailed to the screen. Between them it drifts, which is
+ * what reads as depth. Under reduced motion it becomes 1, so nothing moves
+ * at a rate the finger did not ask for.
+ */
+const PHOTO_PARALLAX = 0.62;
 
 /**
  * The welcome header from the design: a dark navy band with the parish's
@@ -73,12 +87,16 @@ export default function ParishWelcomeHeader({
   parishName,
   location,
   imageUrl,
+  imageFaceY,
   firstName,
   onOpenProfile,
   now,
 }: ParishWelcomeHeaderProps) {
   const bandRef = useRef<HTMLElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLDivElement | null>(null);
+  /** The photograph's own pixel size, once the browser has told us. */
+  const natural = useRef<{ w: number; h: number } | null>(null);
 
   useEffect(() => {
     const band = bandRef.current;
@@ -90,6 +108,7 @@ export default function ParishWelcomeHeader({
 
     let collapse = 0;
     let ticking = false;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const measure = () => {
       // offsetTop and offsetHeight, not rects: the title already carries a
@@ -115,6 +134,21 @@ export default function ParishWelcomeHeader({
       // of the screen once the band has slid up by `collapse`.
       band.style.setProperty("--pw-title-dy", `${PINNED_PAD_TOP - titleTop + collapse}px`);
       band.style.setProperty("--pw-scale-delta", String(1 - PINNED_SCALE));
+
+      // The photograph's parallax. Reduced motion takes it to 1, which
+      // holds the picture still rather than drifting it.
+      const parallax = reduce.matches ? 1 : PHOTO_PARALLAX;
+      band.style.setProperty("--pw-media-dy", `${parallax * collapse}px`);
+
+      band.style.setProperty(
+        "--pw-image-dy",
+        `${faceOffset(imageRef.current, natural.current, imageFaceY, {
+          collapse,
+          collapsedHeight,
+          lip,
+          parallax,
+        })}px`,
+      );
     };
 
     const apply = () => {
@@ -143,8 +177,22 @@ export default function ParishWelcomeHeader({
       apply();
     };
 
+    // The photograph is a CSS background, so its proportions are not on the
+    // element. Asking for them separately reads the browser's cache — the
+    // picture is already on screen — and remeasures once they arrive.
+    let probe: HTMLImageElement | null = null;
+    if (imageUrl && imageFaceY !== undefined && !natural.current) {
+      probe = new window.Image();
+      probe.onload = () => {
+        natural.current = { w: probe!.naturalWidth, h: probe!.naturalHeight };
+        remeasure();
+      };
+      probe.src = imageUrl;
+    }
+
     remeasure();
     view.addEventListener("scroll", onScroll, { passive: true });
+    reduce.addEventListener("change", remeasure);
     // The band's height moves with how many lines the parish name takes, and
     // the scroller's with the keyboard and the address bar.
     const resize = new ResizeObserver(remeasure);
@@ -153,9 +201,11 @@ export default function ParishWelcomeHeader({
 
     return () => {
       view.removeEventListener("scroll", onScroll);
+      reduce.removeEventListener("change", remeasure);
       resize.disconnect();
+      if (probe) probe.onload = null;
     };
-  }, [parishName, location, imageUrl, firstName]);
+  }, [parishName, location, imageUrl, imageFaceY, firstName]);
 
   const date = now
     .toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
@@ -170,6 +220,7 @@ export default function ParishWelcomeHeader({
         {imageUrl && (
           <div
             className="parish-welcome__image"
+            ref={imageRef}
             style={{ backgroundImage: `url("${imageUrl}")` }}
           />
         )}
@@ -230,6 +281,52 @@ export default function ParishWelcomeHeader({
       </div>
     </header>
   );
+}
+
+/**
+ * How far to shift the photograph, at full collapse, to put the patron's
+ * face in the middle of the collapsed bar's clear area. Negative moves the
+ * picture up, which brings a lower part of it into the bar.
+ *
+ * The band's visible remainder is `collapsedHeight`, and the sheet's rounded
+ * lip covers its last pixels, so the area a face can actually be seen in is
+ * what is left above that lip.
+ *
+ * `background-size: cover` scales the picture by whichever axis is short,
+ * and `background-position: 50% 0%` aligns its top with the box's top — so
+ * the face's row inside the box is simply its fraction of the scaled height.
+ * Everything else here is bookkeeping: the band will have travelled up by
+ * `collapse` and the picture back down by `parallax * collapse`, leaving
+ * `slack` still to account for.
+ *
+ * Returns 0 when there is nothing to work with — no photograph, no measured
+ * size, or no recorded face position — which leaves the plain top-aligned
+ * crop the band has always had.
+ */
+function faceOffset(
+  image: HTMLElement | null,
+  natural: { w: number; h: number } | null,
+  faceY: number | undefined,
+  band: { collapse: number; collapsedHeight: number; lip: number; parallax: number },
+): number {
+  if (!image || !natural || faceY === undefined || band.collapse <= 0) return 0;
+  if (!natural.w || !natural.h) return 0;
+
+  const scale = Math.max(image.offsetWidth / natural.w, image.offsetHeight / natural.h);
+  const scaledHeight = natural.h * scale;
+  const faceRow = faceY * scaledHeight;
+  const clearCentre = (band.collapsedHeight - band.lip) / 2;
+  const slack = band.collapse * (1 - band.parallax);
+
+  // Clamped so the photograph still covers the bar: any further down and its
+  // top edge would leave a band of bare navy above it, any further up and
+  // its bottom edge would leave one below.
+  const lowest = band.collapsedHeight - scaledHeight + slack;
+  return clamp(clearCentre - faceRow + slack, lowest, slack);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 /**
