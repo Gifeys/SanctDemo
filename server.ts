@@ -617,7 +617,22 @@ app.post("/api/identify", async (req, res) => {
   }
 });
 
-// Lets the scanner show what is left before anyone spends one.
+// Is this server up? Nothing more.
+//
+// The host's health check has to reach this without a key: it is an
+// anonymous GET from the platform, and a check that 401s reads as a dead
+// service - the deploy is then held back and never goes live. render.yaml
+// used to point at /api/identify/budget, which is key-guarded, so setting
+// APP_KEY would have failed every deploy from then on.
+//
+// It answers only "yes", with no quota, version or configuration in it, so
+// there is nothing here worth guarding.
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// Lets the scanner show what is left before anyone spends one. Guarded:
+// how much Gemini quota is left is nobody else's business.
 app.get("/api/identify/budget", (req, res) => {
   if (!requireAppKey(req, res)) return;
   res.json(scanBudget(req));

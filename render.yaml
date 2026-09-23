@@ -21,7 +21,11 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
 
-    healthCheckPath: /api/identify/budget
+    # Must be an endpoint that answers WITHOUT the app key. Render calls
+    # this anonymously, so a guarded path 401s, the service is judged
+    # unhealthy and the deploy is never promoted - which is what would have
+    # happened here the moment APP_KEY below was set.
+    healthCheckPath: /api/health
 
     envVars:
       - key: NODE_VERSION
