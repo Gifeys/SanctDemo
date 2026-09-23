@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ShieldAlert, CheckCircle, ShieldCheck } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { ShieldAlert, CheckCircle, ShieldCheck, UserPlus } from "lucide-react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -11,9 +11,12 @@ import {
 import { auth, db } from "../lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
-// A label that sits on the field's top border, as in the design. The
-// browser has no such control, so it is a relatively positioned box with
-// an absolutely positioned caption punched through the outline.
+// Label above the box, which is how the reference layout does it: the
+// caption sits on its own line in muted type and the field below carries
+// nothing but the value. It replaces a label punched through the field's
+// top border - that notch is fussy at this size, and it put the caption
+// and its field on the same visual line, so a column of three of them
+// read as one block rather than three labelled things.
 function Field({
   label,
   type,
@@ -31,10 +34,10 @@ function Field({
 }) {
   const id = `field-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`;
   return (
-    <div className="relative">
+    <div>
       <label
         htmlFor={id}
-        className="absolute -top-2 left-3.5 px-1.5 bg-[var(--color-brand-card)] text-[13px] font-medium text-[var(--color-brand-secondary)] z-10"
+        className="block mb-1.5 text-[14px] font-semibold text-[var(--color-brand-text)]"
       >
         {label}
       </label>
@@ -45,7 +48,7 @@ function Field({
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent border border-[var(--color-brand-border)] rounded-xl px-3.5 py-3.5 text-[16px] text-[var(--color-brand-text)] placeholder:text-[var(--color-brand-secondary)]/60 outline-none transition-colors focus:border-[var(--color-brand-primary)]"
+        className="w-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] rounded-xl px-4 py-3.5 text-[16px] text-[var(--color-brand-text)] placeholder:text-[var(--color-brand-secondary)]/70 outline-none transition-colors focus:border-[var(--color-brand-primary)] focus:bg-[var(--color-brand-card)]"
       />
     </div>
   );
@@ -67,6 +70,13 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Switching mode adds or removes a field, so the form changes height
+  // under a button that has just taken focus - and the browser then
+  // scrolls to keep that button in view, which pushed the emblem and the
+  // heading off the top of the screen. Switching forms should show the top
+  // of the new one.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Checked: the session survives closing the app. Unchecked: it ends with
   // it. This is Firebase's own persistence setting, not a stored password.
@@ -256,30 +266,36 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
   const signingUp = activeMode === "signup";
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+    <div
+      ref={scrollRef}
+      className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto"
+    >
       <div className="px-6 pt-4 pb-10 max-w-[420px] w-full mx-auto">
-        {/* The heading carries the screen; there is no eyebrow above it and
-            no second panel of explanation below. */}
-        <header className="text-center pt-6 pb-8">
-          <h2 className="text-[34px] leading-[1.15] font-extrabold tracking-tight text-[var(--color-brand-primary)]">
+        {/* Emblem, then a short heading, then one line under it - the
+            order the reference layout uses. The emblem is the diocese
+            crest rather than a padlock or a shield: this is the way into
+            one particular diocese's app, and its own mark says that,
+            where a generic security glyph would only say "a form". */}
+        <header className="text-center pt-6 pb-7">
+          <div className="mx-auto mb-5 h-[72px] w-[72px] rounded-full bg-[var(--color-brand-primary)]/8 border border-[var(--color-brand-border)] grid place-items-center">
             {signingUp ? (
-              <>
-                Create your
-                <br />
-                account.
-              </>
+              <UserPlus className="w-8 h-8 text-[var(--color-brand-primary)]" />
             ) : (
-              <>
-                Login to your
-                <br />
-                account.
-              </>
+              <img
+                src="/ui/diocese-crest.png"
+                alt=""
+                className="w-10 h-10 object-contain"
+              />
             )}
+          </div>
+
+          <h2 className="text-[30px] leading-[1.15] font-extrabold tracking-tight text-[var(--color-brand-text)]">
+            {signingUp ? "Create account" : "Welcome back"}
           </h2>
-          <p className="mt-3 text-[15px] text-[var(--color-brand-secondary)]">
+          <p className="mt-2 text-[15px] text-[var(--color-brand-secondary)]">
             {signingUp
-              ? "Hello, let us set up your pilgrim profile"
-              : "Hello, welcome back to your account"}
+              ? "Set up your pilgrim profile to get started."
+              : "Sign in to continue to your parish."}
           </p>
         </header>
 
@@ -352,22 +368,23 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-60 text-white text-[16px] font-bold rounded-2xl transition-colors active:scale-[0.99]"
+            className="w-full py-4 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] disabled:opacity-60 text-white text-[16px] font-bold rounded-full transition-colors active:scale-[0.99]"
           >
-            {isLoading ? "Please wait…" : signingUp ? "Create account" : "Login"}
+            {isLoading ? "Please wait…" : signingUp ? "Create account" : "Sign in"}
           </button>
         </form>
 
-        {/* Where the design puts Facebook / Google / Apple. Those need
-            providers enabled and configured in Firebase, and none are, so
-            buttons here would be three things that look tappable and do
-            nothing. This switches between the two accounts the app can
-            actually create. */}
-        <div className="flex items-center gap-3 my-7">
+        {/* "Or", then a full-width outlined alternative - the reference
+            layout's own pattern for a second way in.
+
+            In the reference that slot holds Google, Apple and Facebook.
+            Those need providers enabled and configured in Firebase and
+            none are, so buttons there would be three things that look
+            tappable and do nothing. What genuinely exists is the other
+            mode, so that is what the slot carries. */}
+        <div className="flex items-center gap-3 my-6">
           <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
-          <span className="text-[14px] text-[var(--color-brand-secondary)]">
-            {signingUp ? "or sign in with" : "or sign up with"}
-          </span>
+          <span className="text-[14px] text-[var(--color-brand-secondary)]">Or</span>
           <span className="h-px flex-1 bg-[var(--color-brand-border)]" />
         </div>
 
@@ -377,10 +394,11 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
             setActiveMode(signingUp ? "signin" : "signup");
             setErrorMsg("");
             setSuccessMsg("");
+            scrollRef.current?.scrollTo({ top: 0 });
           }}
-          className="w-full py-3.5 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl text-[15px] font-semibold text-[var(--color-brand-text)] hover:border-[var(--color-brand-primary)] transition-colors"
+          className="w-full py-3.5 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-full text-[15px] font-semibold text-[var(--color-brand-text)] hover:border-[var(--color-brand-primary)] transition-colors"
         >
-          {signingUp ? "An existing e-mail account" : "A new e-mail account"}
+          {signingUp ? "Sign in to an existing account" : "Create a new account"}
         </button>
 
         <p className="mt-6 text-[14px] leading-relaxed text-[var(--color-brand-secondary)] text-center">
