@@ -1300,7 +1300,24 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    so everything from it is divided by 2.89.
    --------------------------------------------------------------------- */
 .parish-welcome {
-  position: relative;
+  /* Scrolls up by exactly the amount that should disappear, then pins. The
+     offset is negative, which is the whole trick: the band keeps its full
+     layout height, so the page never changes length and the scroll position
+     is never clamped, while the part that should go simply travels off the
+     top. See ParishWelcomeHeader for the rest. */
+  position: sticky;
+  top: calc(-1 * var(--pw-collapse, 0px));
+  /* Above the content sheet, so the sheet scrolls underneath the collapsed
+     bar instead of over it. */
+  z-index: 20;
+
+  /* Defaults, so the resting band is correct before any script runs and
+     stays correct if none ever does. */
+  --pw-t: 0;
+  --pw-collapse: 0px;
+  --pw-title-dy: 0px;
+  --pw-scale-delta: 0;
+
   isolation: isolate;
   overflow: hidden;
   background: #101B4A;
@@ -1312,19 +1329,76 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   margin-bottom: -26px;
 }
 
+/* The content sheet's rounded top, drawn by the band rather than by the
+   sheet. The band now paints above the sheet, which would otherwise hide
+   the lip the design shows overlapping the navy; drawing it here keeps the
+   resting appearance identical and, once collapsed, carries the lip along
+   so the sheet reads as tucked under the bar. Its colour is the first stop
+   of .home-sheet's gradient. */
+.parish-welcome::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  background: #E7EFFC;
+  border-radius: 30px 30px 0 0;
+  z-index: 2;
+}
+
+/* Drifts up more slowly than the page, so the collapse reads as depth
+   rather than as the photograph being dragged away. The factor is how much
+   of the scroll the picture absorbs: 0 would move it with the band, 1 would
+   nail it to the screen. */
+.parish-welcome__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  transform: translate3d(0, calc(var(--pw-t) * 0.62 * var(--pw-collapse)), 0);
+  will-change: transform;
+}
+
+/* Fades while sliding out of the way. Fading rather than letting the screen
+   edge clip it is what stops the greeting being cut through mid-letter on
+   the way out, and the 1.45 has it gone before the collapse finishes. */
+.parish-welcome__intro {
+  transform: translate3d(0, calc(var(--pw-t) * -16px), 0);
+  opacity: calc(1 - var(--pw-t) * 1.45);
+  will-change: transform, opacity;
+}
+
+/* Travels DOWN inside the band by as much as the band travels up, which
+   holds it still on screen, and shrinks to the collapsed size as it goes.
+   Scaling rather than animating font-size keeps it off the layout path —
+   font-size would lay the page out again on every frame. */
+.parish-welcome__title {
+  transform: translate3d(0, calc(var(--pw-t) * var(--pw-title-dy)), 0)
+    scale(calc(1 - var(--pw-t) * var(--pw-scale-delta)));
+  transform-origin: left top;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The band still has to collapse — the parish name staying on screen is
+     information, not decoration — but nothing moves at a different rate to
+     the finger, so there is no motion the scroll did not ask for. */
+  .parish-welcome__media {
+    transform: translate3d(0, calc(var(--pw-t) * var(--pw-collapse)), 0);
+  }
+}
+
 .parish-welcome__image {
   position: absolute;
   inset: 0 0 0 28%;
   background-size: cover;
   background-position: center top;
-  z-index: -2;
 }
 
 /* Darkens everything a little, the text side a lot. */
 .parish-welcome__scrim {
   position: absolute;
   inset: 0;
-  z-index: -1;
   background:
     linear-gradient(90deg, #101B4A 34%, rgb(16 27 74 / 0.72) 52%, rgb(16 27 74 / 0.08) 78%),
     linear-gradient(180deg, rgb(16 27 74 / 0.55), rgb(16 27 74 / 0.12) 38%, rgb(16 27 74 / 0.45));
@@ -1474,4 +1548,53 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
     width: 0;
     height: 0;
   }
+}
+
+/* The dots under the bulletin rail: one per card, the one in view drawn as
+   a pill. Horizontal, because they mirror the axis the rail scrolls on. */
+.rail-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+/* The visible dot is 7px, which no finger can hit. The button around it is
+   the touch target and the dot is only its mark. */
+.rail-dots__hit {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rail-dots__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  /* Falls back to the app accent: the rail is a shared component and
+     --home-heading only exists inside Home's bright theme. */
+  background: color-mix(in srgb, var(--home-heading, var(--color-brand-primary)) 26%, transparent);
+  transition: width 0.18s ease, background 0.18s ease;
+}
+
+.rail-dots__hit[aria-current="true"] .rail-dots__dot {
+  width: 18px;
+  background: var(--home-heading, var(--color-brand-primary));
+}
+
+.rail-dots__hit:focus-visible {
+  outline: 2px solid var(--home-heading, var(--color-brand-primary));
+  outline-offset: 1px;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-dots__dot { transition: none; }
 }

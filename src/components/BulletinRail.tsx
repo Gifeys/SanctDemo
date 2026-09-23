@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useRef } from "react";
+import RailDots from "./RailDots";
 import { useDragSafeClicks } from "../lib/useDragSafeClicks";
 import { CalendarDays, ChevronRight, Users, Sparkles } from "lucide-react";
 import { MINISTRIES, SACRAMENTS } from "../data";
@@ -53,6 +55,7 @@ interface BulletinRailProps {
 export default function BulletinRail({ announcements, onNavigate }: BulletinRailProps) {
   // Without this, swiping the rail opens whichever card the finger started on.
   const dragSafe = useDragSafeClicks();
+  const railRef = useRef<HTMLDivElement | null>(null);
   const now = new Date();
   const upcoming = announcements
     .map(a => ({ ...a, when: new Date(a.date) }))
@@ -74,6 +77,7 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
       <div
         className="card-rail"
         role="list"
+        ref={railRef}
         {...dragSafe}
       >
         {/* Said plainly rather than left looking empty. Past announcements
@@ -127,6 +131,12 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
           onClick={() => onNavigate("sacraments")}
         />
       </div>
+
+      {/* Under the rail, not over it: a card hanging half off the right edge
+          gives no sign the rail scrolls, and these say how much there is.
+          Keyed on the announcement count so the dots are recounted when the
+          parish posts or retires one. */}
+      <RailDots railRef={railRef} refreshKey={String(upcoming.length)} />
     </section>
   );
 }
