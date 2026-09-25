@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
+import { parishTheme } from "../lib/parishTheme";
 
 interface ParishHistorySection {
   /** Sits above the paragraphs in small caps, as "OUR HISTORY" does. */
@@ -77,19 +78,7 @@ export function parishHistoryLede(routeId: string): string | undefined {
   return PARISH_HISTORY[routeId]?.sections[0]?.paragraphs[0];
 }
 
-/**
- * The panel's colours, sampled from the parish's own artboard in
- * "SANCTIWALK UI (1).psd" rather than picked here. The design gives each
- * parish a gradient drawn out of its patron's own image — the blue of Maria
- * Auxiliadora's mantle, the burnt orange of San Roque's habit — so the page
- * belongs to the church it is about rather than to the app.
- */
-const PARISH_HISTORY_ACCENT: Record<string, { top: string; bottom: string }> = {
-  "route-mhcp": { top: "#3DA8EA", bottom: "#00204C" },
-  "route-src": { top: "#D37931", bottom: "#46280F" },
-};
 
-const DEFAULT_ACCENT = { top: "#2D5FA8", bottom: "#0B1D3F" };
 
 /**
  * The photograph the history page opens on, taken from the parish's own
@@ -136,13 +125,14 @@ export function parishHeroPhoto(routeId: string, managedPhoto?: string | null): 
 }
 
 /**
- * A parish's two panel colours. Exported so the parish's own page can wear
- * the same livery as its history rather than the app's flat navy - in the
- * PSD these are one design, and a pilgrim moving between them should not
- * feel they have changed apps.
+ * A parish's two panel colours, from the one table that holds every
+ * parish's livery. Kept as a named export because three call sites read the
+ * panel gradient specifically, and "the history panel's colours" is a
+ * clearer thing to ask for than two fields of a theme.
  */
 export function parishAccent(routeId: string): { top: string; bottom: string } {
-  return PARISH_HISTORY_ACCENT[routeId] ?? DEFAULT_ACCENT;
+  const theme = parishTheme(routeId);
+  return { top: theme.panelTop, bottom: theme.panelBottom };
 }
 
 interface ChurchHistoryProps {
@@ -176,7 +166,7 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
   const title = managed?.historyTitle?.trim() || patron || parishName;
   const hero = parishHeroPhoto(parish.id, managed?.historyPhotoUrl);
   const photo = hero.src;
-  const accent = PARISH_HISTORY_ACCENT[parish.id] ?? DEFAULT_ACCENT;
+  const accent = parishAccent(parish.id);
 
   // Admin-written history replaces the compiled text rather than joining it.
   // A parish that has written its own history has said what it wants said,

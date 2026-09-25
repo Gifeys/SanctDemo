@@ -6,6 +6,7 @@ import BulletinRail from "./BulletinRail";
 import ParishWelcomeHeader from "./ParishWelcomeHeader";
 import MassScheduleCard from "./MassScheduleCard";
 import ChurchHistoryCard from "./ChurchHistoryCard";
+import { parishThemeStyle } from "../lib/parishTheme";
 import { useParishContent } from "../lib/useParishContent";
 import { liturgicalDay } from "../lib/liturgical";
 
@@ -78,12 +79,20 @@ export default function Dashboard({ parish, announcements, onNavigate, firstName
   const commemorates = managed?.commemoratesText?.trim() || today.feast;
 
   return (
-    <div className="home-bright home-bright__ground flex-1 flex flex-col text-left">
+    <div
+      className="home-bright home-bright__ground flex-1 flex flex-col text-left"
+      style={parishThemeStyle(parish.id)}
+    >
       {/* The bright theme is scoped to THIS element, not to :root. Every
           component below — including shared ones like BulletinRail — picks up
           the new palette through the same role tokens, while Map, Pray, Me
           and Scan stay warm paper. Rolling the theme app-wide later means
-          moving the block in index.css to :root, not editing components. */}
+          moving the block in index.css to :root, not editing components.
+
+          The parish's own three colours ride in on the same element, so the
+          whole screen wears its livery: the navy was never the app's colour,
+          it was Mary Help's, and San Roque's screen was wearing another
+          parish's blue. */}
 
       {/* The welcome band from the design: the patron image behind the
           greeting, the date, the parish name and where it is. It replaces a

@@ -78,6 +78,16 @@ function walkingMinutes(distanceMeters: number): number {
   return distanceMeters / WALK_SPEED_MPS / 60
 }
 
+/**
+ * The same conversion, for callers that have a distance from somewhere else
+ * - a multi-leg trip summing its legs, say. Exported so nothing outside this
+ * file has to know WALK_SPEED_MPS or repeat the arithmetic, which is how two
+ * screens end up quoting different times for the same walk.
+ */
+export function walkingMinutesFor(distanceMeters: number): number {
+  return walkingMinutes(distanceMeters)
+}
+
 function directRoute(from: Coordinates, to: Coordinates): WalkingRoute {
   const distanceMeters = haversineMeters(from, to)
   return {

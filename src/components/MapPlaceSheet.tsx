@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigation, X, ChevronRight, Footprints, Bike, Car } from "lucide-react";
+import { Navigation, X, ChevronRight, Footprints, Bike, Car, Check, Plus } from "lucide-react";
 import {
   TRAVEL_MODES,
   formatModeDuration,
@@ -36,6 +36,10 @@ interface MapPlaceSheetProps {
    * reported it as the same journey giving two different answers.
    */
   measuring?: boolean;
+  /** True when this church is already on the visit being planned. */
+  inTrip: boolean;
+  /** Adds this church to the visit, or takes it back off. */
+  onToggleTrip: () => void;
   onDirections: () => void;
   onStartWalking: () => void;
   onOpenParish: () => void;
@@ -71,6 +75,8 @@ export default function MapPlaceSheet({
   directionsBusy,
   hasRoute,
   measuring = false,
+  inTrip,
+  onToggleTrip,
   onDirections,
   onStartWalking,
   onOpenParish,
@@ -186,6 +192,21 @@ export default function MapPlaceSheet({
                   {directionsBusy ? "Finding a route…" : "Directions"}
                 </button>
               )}
+
+              {/* Beside Directions, not instead of it. Directions answers
+                  "take me to this one"; this answers "and this one too" -
+                  a Bisita Iglesia is seven churches, and having to leave
+                  the map and come back for each one is the errand the
+                  planner exists to remove. */}
+              <button
+                type="button"
+                className={inTrip ? "map-sheet__add map-sheet__add--on" : "map-sheet__add"}
+                onClick={onToggleTrip}
+                aria-pressed={inTrip}
+              >
+                {inTrip ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {inTrip ? "On the visit" : "Add to visit"}
+              </button>
             </div>
 
             {/* Only while there is no route. Once one is drawn the mode row

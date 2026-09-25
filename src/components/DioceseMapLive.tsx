@@ -10,7 +10,18 @@ import { buildChurchPinElement } from "../lib/mapMarkers";
 import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
+import { Plus } from "lucide-react";
 import { type MapOrientationMode } from "./CompassControl";
+import TripPlanner from "./TripPlanner";
+import {
+  MAX_TRIP_STOPS,
+  isOptimalOrder,
+  measureTrip,
+  orderStops,
+  stopLabel,
+  type TripRoute,
+  type TripStop,
+} from "../lib/pilgrimage";
 import NavigationOverlay from "./NavigationOverlay";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
@@ -210,6 +221,69 @@ function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute
   }
 }
 
+const TRIP_SOURCE = "trip-line-src";
+const TRIP_LAYER = "trip-line";
+
+/**
+ * The whole visit as one line.
+ *
+ * Every leg concatenated rather than a layer per hop: a Bisita Iglesia is
+ * one journey, and fourteen sources with fourteen layers to add and remove
+ * is fourteen chances to leak one. The dash tells the same story the single
+ * route line tells - solid where the streets were routed, dashed where the
+ * router could not answer and the line is a straight one.
+ */
+function upsertTripLayer(map: MapLibreMap, trip: TripRoute, accentColor: string) {
+  const coordinates: [number, number][] = [];
+  for (const leg of trip.legs) {
+    if (!leg.route) continue;
+    for (const point of leg.route.path) {
+      const last = coordinates[coordinates.length - 1];
+      // The end of one leg is the start of the next; drawn twice it is a
+      // zero-length segment that MapLibre renders as a blob at every church.
+      if (last && last[0] === point.lng && last[1] === point.lat) continue;
+      coordinates.push([point.lng, point.lat]);
+    }
+  }
+
+  if (coordinates.length < 2) {
+    removeTripLayer(map);
+    return;
+  }
+
+  const data: GeoJSON.Feature<GeoJSON.LineString> = {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "LineString", coordinates },
+  };
+  const dasharray = trip.hasDirectLeg ? [2, 2] : [1, 0];
+
+  const source = map.getSource(TRIP_SOURCE) as GeoJSONSource | undefined;
+  if (source) {
+    source.setData(data);
+  } else {
+    map.addSource(TRIP_SOURCE, { type: "geojson", data });
+  }
+
+  if (map.getLayer(TRIP_LAYER)) {
+    map.setPaintProperty(TRIP_LAYER, "line-dasharray", dasharray);
+    map.setPaintProperty(TRIP_LAYER, "line-color", accentColor);
+  } else {
+    map.addLayer({
+      id: TRIP_LAYER,
+      type: "line",
+      source: TRIP_SOURCE,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": accentColor, "line-width": 4, "line-dasharray": dasharray },
+    });
+  }
+}
+
+function removeTripLayer(map: MapLibreMap) {
+  if (map.getLayer(TRIP_LAYER)) map.removeLayer(TRIP_LAYER);
+  if (map.getSource(TRIP_SOURCE)) map.removeSource(TRIP_SOURCE);
+}
+
 function removeRouteLayer(map: MapLibreMap, routeId: string) {
   const { sourceId, layerId } = routeLineId(routeId);
   if (map.getLayer(layerId)) map.removeLayer(layerId);
@@ -254,6 +328,17 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   const [mode, setMode] = useState<"loading" | "live" | "fallback">("loading");
   const [offlineFlagged, setOfflineFlagged] = useState(false);
   const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
+
+  // A Bisita Iglesia in progress: the churches chosen, in the order they
+  // will be visited, and the measured walk between them.
+  const [tripStops, setTripStops] = useState<TripStop[]>([]);
+  const [tripOpen, setTripOpen] = useState(false);
+  const [trip, setTrip] = useState<TripRoute | null>(null);
+  const [tripMeasuring, setTripMeasuring] = useState(false);
+  /** Markers keyed by stop id, so only the letters that changed are redrawn. */
+  const tripMarkersRef = useRef<Map<string, MapLibreMarker>>(new Map());
+  /** So "Add a church" can put the cursor where the next church is named. */
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   // North-up, and no longer switchable. The dial that used to toggle it has
   // been taken off the map: the direction cone on the you-are-here dot
@@ -788,6 +873,16 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     if (!map || !marker) return;
 
     setQuery("");
+
+    // While a visit is being planned, searching for a church is how you add
+    // it. Opening its place card instead would mean a tap, a card, and a
+    // second tap for every church on the list.
+    if (tripOpen && parish.coordinates) {
+      toggleTripStop({ id: parish.id, name: parish.name, coordinates: parish.coordinates });
+      map.flyTo({ center: marker.getLngLat(), zoom: 14, duration: 600 });
+      return;
+    }
+
     map.flyTo({
       center: marker.getLngLat(),
       zoom: 16,
@@ -796,6 +891,118 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     });
     setSelectedParishId(parish.id);
   }
+
+  // ---- the Bisita Iglesia planner ---------------------------------------
+
+  /** Adds a church to the visit, or takes it out if it is already in. */
+  function toggleTripStop(parish: { id: string; name: string; coordinates: Coordinates }) {
+    setTripStops(prev => {
+      if (prev.some(stop => stop.id === parish.id)) {
+        return prev.filter(stop => stop.id !== parish.id);
+      }
+      if (prev.length >= MAX_TRIP_STOPS) return prev;
+      return [
+        ...prev,
+        {
+          id: parish.id,
+          name: shortLabel(parish.name),
+          coordinates: parish.coordinates,
+          routeId: LIVE_PARISH_TO_ROUTE_ID[parish.id] ?? null,
+        },
+      ];
+    });
+    setTripOpen(true);
+  }
+
+  function clearTrip() {
+    setTripStops([]);
+    setTrip(null);
+  }
+
+  // Measures the visit whenever the churches or their order change.
+  //
+  // Debounced, because adding four churches in four taps would otherwise
+  // fire four full trips at OSRM's public demo server - the last three of
+  // which are already obsolete when they are sent. The sequence counter is
+  // the same guard the single-route request uses: a slow answer to an old
+  // question must never overwrite a fast answer to the current one.
+  const tripRequestRef = useRef(0);
+  useEffect(() => {
+    if (tripStops.length === 0) {
+      setTrip(null);
+      setTripMeasuring(false);
+      return;
+    }
+
+    const ticket = ++tripRequestRef.current;
+    setTripMeasuring(true);
+    const timer = window.setTimeout(() => {
+      void measureTrip(positionRef.current, tripStops).then(result => {
+        if (tripRequestRef.current !== ticket) return;
+        setTrip(result);
+        setTripMeasuring(false);
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+    // positionRef is read at call time on purpose: re-measuring the whole
+    // visit on every GPS tick would be a request a second.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripStops]);
+
+  // Draws the visit: one line through every church, and a lettered marker
+  // at each one.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mode !== "live" || !map) return;
+
+    const markers = tripMarkersRef.current;
+    const wanted = new Set(tripStops.map(stop => stop.id));
+    for (const [id, marker] of markers) {
+      if (!wanted.has(id)) {
+        marker.remove();
+        markers.delete(id);
+      }
+    }
+
+    tripStops.forEach((stop, index) => {
+      const existing = markers.get(stop.id);
+      if (existing) {
+        // Only the letter can have changed - reordering does not move a
+        // church - so the element is relabelled rather than rebuilt.
+        const el = existing.getElement();
+        if (el.textContent !== stopLabel(index)) el.textContent = stopLabel(index);
+        return;
+      }
+      const el = document.createElement("div");
+      el.className = "dmap-live__trip-stop";
+      el.textContent = stopLabel(index);
+      el.title = stop.name;
+      const marker = new MapLibreMarker({ element: el, anchor: "center" })
+        .setLngLat([stop.coordinates.lng, stop.coordinates.lat])
+        .addTo(map);
+      markers.set(stop.id, marker);
+    });
+
+    if (trip) {
+      upsertTripLayer(map, trip, resolveColor("var(--color-brand-accent)"));
+    } else {
+      removeTripLayer(map);
+    }
+  }, [tripStops, trip, mode]);
+
+  // The markers and the line outlive any single render, so they need taking
+  // down when the map itself goes - the map teardown effect above owns the
+  // parish pins, and this owns these.
+  useEffect(() => {
+    const markers = tripMarkersRef.current;
+    return () => {
+      markers.forEach(marker => marker.remove());
+      markers.clear();
+    };
+  }, []);
+
+  const tripOptimal = isOptimalOrder(position, tripStops);
 
   // Straight-line distance only, and labelled "direct" so it is never
   // mistaken for a walking distance. A real routed figure needs an OSRM
@@ -857,14 +1064,49 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             <line x1="13.5" y1="13.5" x2="18" y2="18" />
           </svg>
           <input
+            ref={searchInputRef}
             type="search"
             className="dmap-search__input"
-            placeholder="Search parish or place"
-            aria-label="Search parish or place"
+            placeholder={tripOpen ? "Search a church to add" : "Search parish or place"}
+            aria-label={tripOpen ? "Search a church to add to this visit" : "Search parish or place"}
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
+
+          {/* The plus the client asked for, on the search bar rather than
+              off in a corner: the errand it starts is "another church", and
+              searching is how you name one. It carries the count once a
+              visit is under way, so the planner is findable again after it
+              has been closed. */}
+          <button
+            type="button"
+            className="dmap-search__add"
+            onClick={() => setTripOpen(true)}
+            aria-label={
+              tripStops.length > 0
+                ? `Open this visit (${tripStops.length} churches)`
+                : "Plan a visit to several churches"
+            }
+            title="Plan a Bisita Iglesia"
+          >
+            {tripStops.length > 0 ? tripStops.length : <Plus className="w-4 h-4" />}
+          </button>
         </div>
+
+        {tripOpen && (
+          <TripPlanner
+            stops={tripStops}
+            trip={trip}
+            measuring={tripMeasuring}
+            optimal={tripOptimal}
+            hasPosition={position !== null}
+            onAddStop={() => searchInputRef.current?.focus()}
+            onRemoveStop={id => setTripStops(prev => prev.filter(stop => stop.id !== id))}
+            onOptimise={() => setTripStops(prev => orderStops(positionRef.current, prev))}
+            onClear={clearTrip}
+            onClose={() => setTripOpen(false)}
+          />
+        )}
 
         {query.trim() !== "" && (
           <ul className="dmap-results">
@@ -945,6 +1187,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               if (routeId) onSelectParishRef.current(routeId);
             }}
             onClose={() => setSelectedParishId(null)}
+            inTrip={tripStops.some(stop => stop.id === selectedParish.id)}
+            onToggleTrip={() =>
+              toggleTripStop({
+                id: selectedParish.id,
+                name: selectedParish.name,
+                coordinates: selectedParish.coordinates,
+              })
+            }
           />
         )}
 
