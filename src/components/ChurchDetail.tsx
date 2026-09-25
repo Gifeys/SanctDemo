@@ -1,7 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, Heart, Church, Footprints, Ruler, Clock, ScanLine, BookOpen, Users, Sparkles } from "lucide-react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { ArrowLeft, Heart, Church, Footprints, Ruler, Clock, ScanLine, Users, Sparkles } from "lucide-react";
 import type { Route } from "../types";
 import { MASS_SCHEDULES, PARISH_PATRON_SAINTS } from "../data";
+import { parishAccent, parishHeroPhoto } from "./ChurchHistory";
+import ChurchHistoryCard from "./ChurchHistoryCard";
 import { nextMass, parseTimes } from "../lib/schedule";
 import { usePresence } from "../context/PresenceContext";
 import { haversineMeters, type Coordinates } from "../lib/geo";
@@ -31,15 +33,21 @@ interface ChurchDetailProps {
 }
 
 /**
- * A parish's own page — the redesign's screen 05.
+ * A parish's own page — the redesign's screen 05, reached from the map.
  *
- * The mockup opens on a full-bleed parish photograph. There are no parish
- * photographs in this project yet; the field team is collecting them, and the
- * data-collection sheet asks for them by name. Rather than ship a stock
- * cathedral that isn't this church — which would be worse than nothing, since
- * a pilgrim would be looking for a building that doesn't match — the header is
- * a typographic panel carrying the same information, with a note naming what
- * is missing.
+ * The header used to be a flat navy panel. That was a stand-in written when
+ * this project had no parish photography at all, and it has outlived its
+ * reason: both live parishes now have their patron photographed, so the page
+ * opens the way the PSD opens its history pages — the patron filling the top
+ * of the screen, and the parish rising over the bottom of that photograph on
+ * a panel coloured out of the image.
+ *
+ * The livery comes from the same table the history page uses (parishAccent),
+ * so walking from this page into the history is one continuous design rather
+ * than two. The photograph is the PATRON, not the building: the field team is
+ * still collecting exteriors, and a stock cathedral that isn't this church
+ * would be worse than none — a pilgrim would be looking for a building that
+ * does not match.
  */
 export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }: ChurchDetailProps) {
   const { position } = usePresence();
@@ -89,76 +97,97 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
     : [];
 
   const stationCount = parish.stations?.length ?? 0;
+  const accent = parishAccent(parish.id);
+  const hero = parishHeroPhoto(parish.id);
+  const patronPhoto = hero.src;
+  const accentStyle = {
+    "--ph-top": accent.top,
+    "--ph-bottom": accent.bottom,
+    "--ph-face": hero.position,
+  } as CSSProperties;
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0 overflow-y-auto">
-      {/* Header panel. Stands in for the design's full-bleed photograph.
-          Sticky, because it carries the only way back off this screen and
-          it used to scroll away with everything else - on a short screen
-          you had to scroll back up to leave. */}
-      <div className="sticky top-0 z-10 shrink-0 bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 pt-5 pb-6 rounded-b-[2rem]">
-        <div className="flex items-center justify-between">
+      <header className="parish-hero" style={accentStyle}>
+        <div className="parish-hero__frame">
+          {patronPhoto ? (
+            <img className="parish-hero__photo" src={patronPhoto} alt={patron ? `${patron}, the patron of this parish` : ""} />
+          ) : (
+            <div className="parish-hero__photo parish-hero__photo--empty" aria-hidden />
+          )}
+
+          {/* Floating over the photograph rather than sitting in a bar above
+              it. Back was in a sticky bar before, for a real reason: on a
+              short screen the header scrolled away and took the only way out
+              with it. These sit in a sticky frame instead, so they stay put
+              while the photograph scrolls under them. */}
           <button
             type="button"
             onClick={onBack}
             aria-label="Back"
-            className="flex items-center gap-1.5 text-[16px] font-semibold"
+            className="parish-hero__control parish-hero__control--back"
           >
-            <ArrowLeft className="w-5 h-5" /> Back
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <button
             type="button"
             aria-label="Save this parish"
-            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+            className="parish-hero__control parish-hero__control--save"
           >
             <Heart className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mt-6 flex items-center gap-2 text-[14px] font-mono uppercase tracking-[0.14em] opacity-80">
-          <Church className="w-4 h-4" />
-          {[record?.vicariate ? `${record.vicariate} (unconfirmed)` : null, record?.established ? `est. ${record.established}` : null]
-            .filter(Boolean)
-            .join(" · ") || "Diocese of Kalookan"}
-        </div>
+        <div className="parish-hero__panel">
+          {patronPhoto && <img className="parish-hero__watermark" src={patronPhoto} alt="" aria-hidden />}
 
-        <h1 className="mt-2 text-[30px] font-bold leading-[1.12] tracking-tight">
-          {parish.name.replace(" Guide", "").replace(" Tour", "")}
-        </h1>
-        {patron && <p className="mt-1.5 text-[16px] opacity-85">{patron}</p>}
+          <div className="parish-hero__body">
+            <div className="flex items-center gap-2 text-[14px] font-mono uppercase tracking-[0.14em] opacity-80">
+              <Church className="w-4 h-4 shrink-0" />
+              {[record?.vicariate ? `${record.vicariate} (unconfirmed)` : null, record?.established ? `est. ${record.established}` : null]
+                .filter(Boolean)
+                .join(" · ") || "Diocese of Kalookan"}
+            </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <HeaderStat
-            icon={<Ruler className="w-4 h-4" />}
-            value={metres !== null ? formatDistance(metres) : "—"}
-            label={metres === null ? "location off" : route?.kind === "routed" ? "walking route" : "direct"}
-          />
-          <HeaderStat
-            icon={<Footprints className="w-4 h-4" />}
-            value={minutes !== null ? formatWalkingMinutes(minutes) : "—"}
-            label="on foot"
-          />
-          <HeaderStat
-            icon={<Clock className="w-4 h-4" />}
-            value={upcoming ? upcoming.time : "—"}
-            label={upcoming ? "next Mass" : "no times yet"}
-          />
-        </div>
+            <h1 className="parish-hero__name">
+              {parish.name.replace(" Guide", "").replace(" Tour", "")}
+            </h1>
+            {patron && <p className="mt-1.5 text-[16px] opacity-90">{patron}</p>}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <MassNowBadge routeId={parish.id} />
-          {stationCount > 0 && (
-            <span className="text-[14px] font-semibold px-3 py-1.5 rounded-full bg-white/12">
-              {stationCount} scannable {stationCount === 1 ? "station" : "stations"}
-            </span>
-          )}
-          {schedule && !schedule.scheduleVerified && (
-            <span className="text-[14px] font-semibold px-3 py-1.5 rounded-full bg-[var(--color-brand-error)]">
-              Mass times unconfirmed
-            </span>
-          )}
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              <HeaderStat
+                icon={<Ruler className="w-4 h-4" />}
+                value={metres !== null ? formatDistance(metres) : "—"}
+                label={metres === null ? "location off" : route?.kind === "routed" ? "walking route" : "direct"}
+              />
+              <HeaderStat
+                icon={<Footprints className="w-4 h-4" />}
+                value={minutes !== null ? formatWalkingMinutes(minutes) : "—"}
+                label="on foot"
+              />
+              <HeaderStat
+                icon={<Clock className="w-4 h-4" />}
+                value={upcoming ? upcoming.time : "—"}
+                label={upcoming ? "next Mass" : "no times yet"}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <MassNowBadge routeId={parish.id} />
+              {stationCount > 0 && (
+                <span className="text-[14px] font-semibold px-3 py-1.5 rounded-full bg-white/12">
+                  {stationCount} scannable {stationCount === 1 ? "station" : "stations"}
+                </span>
+              )}
+              {schedule && !schedule.scheduleVerified && (
+                <span className="text-[14px] font-semibold px-3 py-1.5 rounded-full bg-[var(--color-brand-error)]">
+                  Mass times unconfirmed
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="p-4 space-y-4">
         {/* Today at this church */}
@@ -190,11 +219,20 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
           </p>
         </section>
 
+        {/* The parish's history, on the page rather than behind a tile
+            labelled "History". It is the same card Home carries and it opens
+            the same page, so a pilgrim who reaches a parish from the map
+            gets its history where a pilgrim who reaches it from Home does. */}
+        <ChurchHistoryCard
+          routeId={parish.id}
+          parishName={parish.name.replace(" Guide", "").replace(" Tour", "")}
+          onOpenHistory={() => onNavigate("history")}
+        />
+
         {/* Entry points into the screens that already hold this parish's
             content, rather than duplicating them here. */}
         <div className="grid grid-cols-2 gap-3">
           <DetailLink icon={<Clock className="w-5 h-5" />} label="Mass schedule" onClick={() => onNavigate("mass")} />
-          <DetailLink icon={<BookOpen className="w-5 h-5" />} label="History" onClick={() => onNavigate("history")} />
           <DetailLink icon={<Users className="w-5 h-5" />} label="Ministries" onClick={() => onNavigate("ministries")} />
           <DetailLink icon={<Sparkles className="w-5 h-5" />} label="Sacraments" onClick={() => onNavigate("sacraments")} />
           {stationCount > 0 && (
@@ -206,10 +244,12 @@ export default function ChurchDetail({ parish, onBack, onWalkThere, onNavigate }
           )}
         </div>
 
-        {/* The design's own note about photography, kept honest. */}
+        {/* Still true, and still worth saying: the photograph at the top of
+            this page is the parish's PATRON, not its building. The field
+            team is collecting exteriors. */}
         <p className="text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
-          Parish photographs are still being gathered by the field team. This page will carry a
-          picture of the church itself once they arrive.
+          Photographs of the church building are still being gathered by the field team. This
+          page will carry one once they arrive.
         </p>
       </div>
 

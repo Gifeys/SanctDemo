@@ -170,6 +170,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<
     "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "church" | "me" | "admin" | "pwa-devkit"
   >("home");
+
+  // Where "Back" goes from the history page. It is opened from two places -
+  // the Learn more on Home's Church History card, and the parish's own page
+  // reached from the map - and a single hardcoded destination would strand
+  // whoever came from the other one.
+  const [historyReturnTab, setHistoryReturnTab] = useState<"home" | "church">("home");
   
   const [isOffline, setIsOffline] = useState(false);
   const [isMobileOnly, setIsMobileOnly] = useState(true);
@@ -910,7 +916,10 @@ export default function App() {
                           : undefined
                       }
                       announcements={announcements}
-                      onNavigate={(tab) => setActiveTab(tab)}
+                      onNavigate={(tab) => {
+                        if (tab === "history") setHistoryReturnTab("home");
+                        setActiveTab(tab);
+                      }}
                       onSelectParish={handleSelectParish}
                       onWalkThere={handleWalkThere}
                       onOpenSearch={() => setIsSearchOpen(true)}
@@ -960,7 +969,10 @@ export default function App() {
                       parish={activeChurchRoute}
                       onBack={() => setActiveTab("home")}
                       onWalkThere={handleWalkThere}
-                      onNavigate={tab => setActiveTab(tab)}
+                      onNavigate={tab => {
+                        if (tab === "history") setHistoryReturnTab("church");
+                        setActiveTab(tab);
+                      }}
                     />
                   )}
 
@@ -978,7 +990,10 @@ export default function App() {
                   {/* TAB 5: Church History archive — same fix: renders the
                       active parish's own history rather than an internal tab. */}
                   {activeTab === "history" && (
-                    <ChurchHistory parish={activeChurchRoute} />
+                    <ChurchHistory
+                      parish={activeChurchRoute}
+                      onBack={() => setActiveTab(historyReturnTab)}
+                    />
                   )}
 
                   {/* TAB 6: Volunteer Guilds list */}

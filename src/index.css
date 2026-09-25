@@ -1686,3 +1686,295 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 @media (prefers-reduced-motion: reduce) {
   .rail-dots__dot { transition: none; }
 }
+
+/* ── A parish's history ───────────────────────────────────────────────────
+   The "MHCP HISTORY PAGE" / "SRCP HISTORY PAGE" artboards from the client's
+   PSD, which are the same layout in two liveries: the patron fills the top
+   of the screen, and the history rises over the bottom of that photograph on
+   a panel coloured out of the image.
+
+   The two colours come in as --ph-top and --ph-bottom, set per parish by the
+   component. Everything here is written against those variables, so a third
+   parish is a pair of hex values and no CSS. */
+.parish-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  background: var(--ph-bottom);
+  scrollbar-width: none;
+}
+.parish-history::-webkit-scrollbar { display: none; }
+
+/* Just under half the screen, as in the artboard. A fraction rather than a
+   fixed height: the same 46% frames the patron the same way on a 640px
+   phone and on a 900px one, where 320px would fill the first and float in
+   the middle of the second. */
+.parish-history__hero {
+  position: relative;
+  height: 46vh;
+  min-height: 260px;
+  background: var(--ph-bottom);
+}
+
+.parish-history__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The face, not the middle of the frame, and measured per photograph
+     rather than guessed once for all of them - the two patrons are framed
+     quite differently, and one rule that suits Maria Auxiliadora crops San
+     Roque through the eyes. The component supplies --ph-face. */
+  object-position: var(--ph-face, center 30%);
+  display: block;
+}
+
+.parish-history__photo--empty {
+  background: linear-gradient(180deg, var(--ph-top), var(--ph-bottom));
+}
+
+/* Over the photograph, where the design has no header at all. Dark enough to
+   read against a gilded statue under warm light, which is the one background
+   a white button cannot be trusted on. */
+.parish-history__back {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 14px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(9 14 32 / 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Pulled up over the photograph, which is what makes the page one image
+   rather than a picture with a caption under it. min-height keeps the colour
+   running to the bottom of the screen on a parish whose history is short —
+   without it the panel ends mid-screen and the scroll container's own
+   background shows through as a band. */
+.parish-history__panel {
+  position: relative;
+  margin-top: -34px;
+  min-height: 54vh;
+  border-radius: 34px 34px 0 0;
+  background: linear-gradient(180deg, var(--ph-top) 0%, var(--ph-bottom) 62%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The patron again, behind the words. Very low opacity and offset to the
+   right, as in the PSD: it is texture, not a second photograph, and anything
+   stronger competes with the text it sits under. */
+.parish-history__watermark {
+  position: absolute;
+  top: 0;
+  right: -18%;
+  width: 92%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  opacity: 0.17;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.parish-history__body {
+  padding: 30px 22px calc(34px + env(safe-area-inset-bottom));
+  color: #fff;
+}
+
+/* The one italic serif on the page, matching the parish name in the home
+   header. The shadow is the design's and it earns its place here: the title
+   sits directly over the brightest part of the panel gradient. */
+.parish-history__title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 3px 16px rgb(6 12 38 / 0.45);
+}
+
+.parish-history__section { margin-top: 26px; }
+.parish-history__section:first-of-type { margin-top: 14px; }
+
+.parish-history__eyebrow {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgb(6 12 38 / 0.4);
+}
+
+.parish-history__paragraph {
+  margin: 0 0 14px;
+  font-size: 16.5px;
+  line-height: 1.62;
+  color: rgb(255 255 255 / 0.93);
+}
+.parish-history__paragraph:last-child { margin-bottom: 0; }
+
+/* ── The Church History card on Home ──────────────────────────────────────
+   The card's own type, so it matches the history page it opens: the same
+   italic Georgia for the patron's name, and a "LEARN MORE" centred under
+   the whole card with a short rule beneath it, exactly as the PSD has it. */
+.church-history-card__title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgb(6 12 38 / 0.45);
+}
+
+/* Six lines, then it stops. The card carries the opening of the history
+   rather than a summary written for it, so it has to end somewhere; ending
+   mid-sentence under a "Learn more" is the design's own answer to that. */
+.church-history-card__body {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.9);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  overflow: hidden;
+}
+
+.church-history-card__more {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 4px 20px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 10px rgb(6 12 38 / 0.55);
+}
+
+/* The rule under the words - "Rectangle 8" in the PSD. A pseudo-element so
+   it centres on the label itself whatever the label says. */
+.church-history-card__more::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 2px;
+  margin: 7px auto 0;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.85);
+}
+
+/* ── A parish's page, reached from the map ────────────────────────────────
+   The same construction as .parish-history, in the same per-parish livery,
+   because in the PSD they are one design. What differs is proportion: this
+   page is mostly information, so the photograph takes a third of the screen
+   rather than half, and the panel carries facts instead of prose. */
+.parish-hero {
+  position: relative;
+  flex-shrink: 0;
+  background: var(--ph-bottom);
+}
+
+/* Sticky, and deliberately so. The old header was a sticky bar because it
+   carried the only way off this page; put the photograph in a sticky frame
+   and the two buttons inside it stay reachable at any scroll position while
+   the panel and everything below it slide over the image. */
+.parish-hero__frame {
+  position: sticky;
+  top: 0;
+  height: 34vh;
+  min-height: 190px;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.parish-hero__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--ph-face, center 30%);
+  display: block;
+}
+
+.parish-hero__photo--empty {
+  background: linear-gradient(180deg, var(--ph-top), var(--ph-bottom));
+}
+
+.parish-hero__control {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(9 14 32 / 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.parish-hero__control--back { left: 14px; }
+.parish-hero__control--save { right: 14px; }
+
+/* Relative, so it paints over the sticky frame behind it rather than under
+   it. Without this the photograph wins the stacking order and the panel
+   disappears the moment the page scrolls. */
+.parish-hero__panel {
+  position: relative;
+  z-index: 1;
+  margin-top: -30px;
+  border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, var(--ph-top) 0%, var(--ph-bottom) 78%);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.parish-hero__watermark {
+  position: absolute;
+  top: 0;
+  right: -20%;
+  width: 88%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 16%;
+  opacity: 0.15;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.parish-hero__body {
+  padding: 24px 20px 26px;
+  color: #fff;
+}
+
+/* The same italic Georgia as the history page's title and the home header's
+   parish name. It is the title of the page, not a label. */
+.parish-hero__name {
+  margin: 8px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 31px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 2px 14px rgb(6 12 38 / 0.45);
+}
