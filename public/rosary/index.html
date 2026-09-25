@@ -1104,7 +1104,7 @@ header {
   <div id="finish">
     <h2 class="serif" id="fin-title">Amen.</h2>
     <p id="fin-body"></p>
-    <button class="ghost-btn serif" id="fin-again">Pray again</button>
+    <button class="ghost-btn serif" id="fin-again">Thanks be to God</button>
   </div>
 
 </div>
@@ -1130,9 +1130,9 @@ const P = {
     glory:"Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
     fatima:"O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to Heaven, especially those in most need of Thy mercy.",
     salve:"Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve. To thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious Advocate, thine eyes of mercy toward us, and after this our exile show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Amen.",
-    closing:"O God, whose only begotten Son, by His life, death and resurrection, has purchased for us the rewards of eternal life; grant, we beseech Thee, that meditating upon these mysteries of the most holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ our Lord. Amen.",
+    closing:"Let us pray. O God, whose only begotten Son, by His life, death, and resurrection, has purchased for us the rewards of eternal life, grant, we beseech Thee, that while meditating on these mysteries of the most holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through Christ our Lord. Amen.",
     ui: {
-      mystery:"Mysteries", language:"Language", begin:"Begin", again:"Pray again",
+      mystery:"Mysteries", language:"Language", begin:"Begin", again:"Thanks be to God",
       music:"Background Music", musicOn:"On", musicOff:"Off",
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
@@ -1197,9 +1197,9 @@ const P = {
     glory:"Luwalhati sa Ama, sa Anak, at sa Espiritu Santo. Kapara noong unang-una, ngayon at magpakailanman, at magpasawalang hanggan. Amen.",
     fatima:"O Hesus ko, patawarin Mo kami sa aming mga kasalanan. Iligtas Mo kami sa apoy ng impiyerno. Hanguin Mo ang lahat ng mga kaluluwa patungo sa langit, lalo na yaong mga higit na nangangailangan ng Iyong awa.",
     salve:"Aba po, Santa Mariang Hari, Ina ng awa. Ikaw ang kabuhayan at katamisan, aba pinananaligan ka namin. Ikaw nga ang tinatawagan namin, pinapanaw na taong anak ni Eva. Ikaw rin ang pinagbubuntuhang hininga namin ng aming pagtangis dini sa lupang bayang kahapis-hapis. Ay aba, pintakasi ka namin, ilingon mo sa amin ang mata mong maawain. At saka kung matapos yaring pagpanaw sa amin, ipakita mo sa amin ang iyong Anak na si Hesus. Santa Maria, Ina ng Diyos, maawain, maalam, at matamis na Birhen. Amen.",
-    closing:"O Diyos, na ang Bugtong Mong Anak, sa pamamagitan ng Kanyang buhay, kamatayan at muling pagkabuhay, ay ipinagkamit kami ng gantimpala ng buhay na walang hanggan. Ipagkaloob Mo po, isinasamo namin, na sa pagbubulay-bulay namin sa mga misteryong ito ng banal na Rosaryo ng Mahal na Birheng Maria, aming matularan ang tinutukoy nito at makamtan ang ipinangangako nito, alang-alang kay Kristong aming Panginoon. Amen.",
+    closing:"Manalangin tayo. O Diyos, na ang Bugtong Mong Anak, sa pamamagitan ng Kanyang buhay, kamatayan at muling pagkabuhay, ay ipinagkamit kami ng gantimpala ng buhay na walang hanggan. Ipagkaloob Mo po, isinasamo namin, na sa pagbubulay-bulay namin sa mga misteryong ito ng banal na Rosaryo ng Mahal na Birheng Maria, aming matularan ang tinutukoy nito at makamtan ang ipinangangako nito, alang-alang kay Kristong aming Panginoon. Amen.",
     ui: {
-      mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Manalangin muli",
+      mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Salamat sa Diyos",
       music:"Musikang Panlikod", musicOn:"Naka-on", musicOff:"Naka-off",
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
@@ -1542,10 +1542,18 @@ function buildSequence(setKey, lang) {
     }
   }
 
-  // 8. The medal - the fifth decade's Glory Be and Fatima, then Hail Holy Queen.
-  s.push(Object.assign(M("glory"),  { decade:5, bead:MEDAL }));
-  s.push(Object.assign(M("fatima"), { decade:5, bead:MEDAL }));
-  s.push(Object.assign(M("salve"),  { bead:MEDAL, section:"close" }));
+  // 8. The medal - the fifth decade's Glory Be and Fatima, then Hail Holy
+  //    Queen, then the prayer that answers it.
+  //
+  //    The closing prayer ("Let us pray. O God, whose only begotten Son...")
+  //    was written in every language table below and never once pushed into
+  //    the sequence, so the Rosary went straight from the Salve Regina to
+  //    the final Sign of the Cross and simply left this prayer out. It is
+  //    not optional - it is the oration the Hail Holy Queen leads into.
+  s.push(Object.assign(M("glory"),   { decade:5, bead:MEDAL }));
+  s.push(Object.assign(M("fatima"),  { decade:5, bead:MEDAL }));
+  s.push(Object.assign(M("salve"),   { bead:MEDAL, section:"close" }));
+  s.push(Object.assign(M("closing"), { bead:MEDAL, section:"close" }));
 
   // 9. The crucifix again - the closing Sign of the Cross.
   s.push(Object.assign(M("sign"), { bead:CROSS, section:"close" }));
@@ -2918,13 +2926,42 @@ function endSession() {
   resumeSlideshow();
 }
 
+/**
+ * Tell the app shell the rosary has been put down.
+ *
+ * This file is mounted same-origin in an <iframe> by
+ * src/components/PrayScreen.tsx, which used to carry its own "Back" bar
+ * above it. Two rows of chrome stacked on one screen - a Back bar, and then
+ * this page's own exit button right under it - so the outer one was removed
+ * and its job handed here. Without this message the exit would drop the
+ * pilgrim on THIS page's start screen with the Pray screen still behind it
+ * and no way back to it.
+ *
+ * Harmless when the page is opened on its own: postMessage to a parent that
+ * is this same window goes nowhere and endSession has already run.
+ */
+function tellShellWeAreDone() {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "sanctiwalk.rosary.exit" }, window.location.origin);
+    }
+  } catch (e) {}
+}
+
 el.btnExit.addEventListener("click", function (e) {
   e.stopPropagation();
   endSession();
   toast(P[S.lang].ui.exited);
+  tellShellWeAreDone();
 });
 
-el.finAgain.addEventListener("click", function () { endSession(); });
+// "Thanks be to God" closes the Rosary rather than offering another one.
+// endSession still runs first, so the microphone, the music and the wake
+// lock are all released whether or not a shell is listening.
+el.finAgain.addEventListener("click", function () {
+  endSession();
+  tellShellWeAreDone();
+});
 
 function onViewportChange() {
   fitRosary();

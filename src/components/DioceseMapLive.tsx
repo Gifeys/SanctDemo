@@ -10,7 +10,7 @@ import { buildChurchPinElement } from "../lib/mapMarkers";
 import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
-import CompassControl, { type MapOrientationMode } from "./CompassControl";
+import { type MapOrientationMode } from "./CompassControl";
 import NavigationOverlay from "./NavigationOverlay";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
@@ -255,9 +255,20 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   const [offlineFlagged, setOfflineFlagged] = useState(false);
   const [routes, setRoutes] = useState<Record<string, WalkingRoute>>({});
   const [query, setQuery] = useState("");
-  // North-up by default, matching Google Maps: the map only starts turning
-  // with the pilgrim once they ask it to.
-  const [orientationMode, setOrientationMode] = useState<MapOrientationMode>("north-up");
+  // North-up, and no longer switchable. The dial that used to toggle it has
+  // been taken off the map: the direction cone on the you-are-here dot
+  // already shows which way the pilgrim faces, so a second compass beside it
+  // was saying the same thing twice while covering the map to do it.
+  //
+  // The mode is kept as a value rather than inlined because the cone and the
+  // map bearing both branch on it, and a rotating map is the obvious next
+  // thing to want back.
+  //
+  // The cast is load-bearing: TypeScript narrows a const declared straight
+  // from a string literal down to that literal, and then reads every
+  // `=== "heading-up"` below as a comparison that cannot hold and reports it
+  // as a mistake. Widening back to the union keeps both branches legal.
+  const orientationMode = "north-up" as MapOrientationMode;
   // The parish currently being navigated to, if any. Separate from a drawn
   // route: a route is a line on the map, navigation is a live session that
   // follows the pilgrim and reroutes.
@@ -327,7 +338,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedParishId]);
-  const { heading, status: headingStatus, requestPermission: requestHeadingPermission } = useDeviceHeading();
+  // Only the bearing is read here now. The status and the permission request
+  // were for the compass dial's own UI; the hook asks for the sensor itself
+  // on the first touch, so nothing on the map has to drive it.
+  const { heading } = useDeviceHeading();
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
   // and re-running that effect on every render would tear down and rebuild
@@ -933,14 +947,6 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             onClose={() => setSelectedParishId(null)}
           />
         )}
-
-        <CompassControl
-          heading={heading}
-          status={headingStatus}
-          mode={orientationMode}
-          onToggleMode={() => setOrientationMode(m => (m === "north-up" ? "heading-up" : "north-up"))}
-          onRequestPermission={() => void requestHeadingPermission()}
-        />
 
         <button
           type="button"

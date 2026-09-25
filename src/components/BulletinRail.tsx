@@ -63,7 +63,10 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
     .sort((a, b) => a.when.getTime() - b.when.getTime());
 
   return (
-    <section>
+    // The rail's cards and its end padding are both sized off this element's
+    // width (cqw), which is what lets a centred card actually sit centred.
+    // See .card-rail in index.css.
+    <section className="card-rail-frame">
       {/* The section TITLE belongs to the caller, not to this component.
           Home now heads it with a large display heading, and a second
           "Parish bulletin" directly beneath read as a stutter. What stays is

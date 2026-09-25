@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Settings } from "lucide-react";
 import DailyRosary from "./DailyRosary";
 import { liturgicalDay } from "../lib/liturgical";
 import { verseForDate } from "../lib/verses";
@@ -31,6 +31,29 @@ interface PrayScreenProps {
  */
 export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
   const [praying, setPraying] = useState(false);
+
+  // Leaving the Rosary is the iframe's own business now.
+  //
+  // This screen used to put a "Back" bar above the iframe, which stacked
+  // directly on top of the rosary's own header - two rows of chrome, and two
+  // ways out, one of which (this one) the pilgrim had to reach past the
+  // other to use. The bar is gone; the rosary's exit button and its
+  // "Thanks be to God" both post this message when they close a session.
+  //
+  // The origin is checked because a message event will happily carry
+  // anything from anywhere. The rosary is served from this same origin, so
+  // nothing else has standing to end a prayer.
+  useEffect(() => {
+    if (!praying) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "sanctiwalk.rosary.exit") return;
+      setPraying(false);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [praying]);
+
   const now = new Date();
   const today = liturgicalDay(now);
   const verse = verseForDate(now);
@@ -41,16 +64,6 @@ export default function PrayScreen({ onOpenSettings }: PrayScreenProps) {
   if (praying) {
     return (
       <div className="flex-1 flex flex-col min-h-0 bg-[var(--color-brand-card)]">
-        <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-brand-border)]">
-          <button
-            type="button"
-            onClick={() => setPraying(false)}
-            className="flex items-center gap-1.5 text-[16px] font-semibold text-[var(--color-brand-primary)]"
-          >
-            <ArrowLeft className="w-5 h-5" /> Back
-          </button>
-          <span className="text-[15px] text-[var(--color-brand-secondary)]">{set} Mysteries</span>
-        </div>
         <DailyRosary />
       </div>
     );

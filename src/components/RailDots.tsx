@@ -109,11 +109,14 @@ export default function RailDots({ railRef, refreshKey }: RailDotsProps) {
  * How far the rail would have to scroll to bring `card` to its resting
  * place. Zero means the card is already there.
  *
- * The rail snaps cards to its start behind a scroll-padding, so "there" is
- * that padding in from the left edge rather than the edge itself — reading
- * it from the computed style keeps this honest if the padding changes.
+ * The rail snaps cards to its CENTRE, so "there" is the middle of the
+ * scrollport. Measuring centre against centre needs nothing from the
+ * computed style: the previous version read scroll-padding-left, which was
+ * the resting place only while cards aligned to the start, and would now
+ * mark a card as arrived while it was still half a card short.
  */
 function offsetOf(rail: HTMLElement, card: HTMLElement): number {
-  const padLeft = parseFloat(getComputedStyle(rail).scrollPaddingLeft) || 0;
-  return card.getBoundingClientRect().left - rail.getBoundingClientRect().left - padLeft;
+  const railBox = rail.getBoundingClientRect();
+  const cardBox = card.getBoundingClientRect();
+  return cardBox.left + cardBox.width / 2 - (railBox.left + railBox.width / 2);
 }

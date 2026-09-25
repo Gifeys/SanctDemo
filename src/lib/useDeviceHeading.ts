@@ -202,6 +202,27 @@ export function useDeviceHeading({ alpha = DEFAULT_SMOOTHING_ALPHA }: { alpha?: 
     }
   }, [listening, alpha])
 
+  // Start the compass on the first touch, rather than on a button.
+  //
+  // `prompt` is a platform quirk, not a decision the pilgrim made: iOS will
+  // not hand over the magnetometer except from inside a real gesture, so the
+  // sensor cannot start itself on load. That constraint used to surface as an
+  // "Enable compass" pill on the map - one more control to find and tap
+  // before a compass that the pilgrim never asked to be off would work.
+  //
+  // Any gesture satisfies iOS, so the first one anywhere in the app is taken.
+  // `pointerdown` fires before the tap it belongs to is over, so the request
+  // is inside the gesture window; `once` and the `prompt` guard together mean
+  // this asks exactly once and never again after an answer. A refusal lands
+  // in `denied` and is not re-asked, because iOS would not show the sheet a
+  // second time anyway and pestering would achieve nothing.
+  useEffect(() => {
+    if (status !== 'prompt') return
+    const start = () => void requestPermission()
+    window.addEventListener('pointerdown', start, { once: true })
+    return () => window.removeEventListener('pointerdown', start)
+  }, [status, requestPermission])
+
   // iOS reports -1 when it cannot trust the compass at all, and anything
   // past ~25 degrees is too coarse to point someone down a nave with.
   const needsCalibration = accuracyDegrees !== null && (accuracyDegrees < 0 || accuracyDegrees > 25)

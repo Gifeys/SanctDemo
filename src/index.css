@@ -1006,18 +1006,39 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   touch-action: pan-x;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  scroll-padding-left: 16px;
+  scroll-padding-inline: 0;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 0 16px 4px;
+  /* Enough room either side for the FIRST and LAST card to reach the centre.
+     A centre-snapping rail whose end cards cannot physically get there just
+     parks them against the padding, which is the off-centre look this was
+     changed to fix. The scrollport is the rail's border box - the section
+     plus the 16px it is pulled out to either side - so the slack beside a
+     card of width `w` is (100cqw + 32px - w) / 2, and at w = 74cqw that is
+     the calc below. Change one and the other has to follow. */
+  padding: 0 calc(13cqw + 16px) 4px;
   margin: 0 -16px;
+}
+
+/* The width the cqw maths above is measured against. Containment has to sit
+   on the section rather than on the rail itself: the rail's own padding is
+   what is being solved for, and a container sized by its own content box
+   would be defining that padding in terms of itself. */
+.card-rail-frame {
+  container-type: inline-size;
 }
 .card-rail::-webkit-scrollbar { display: none; }
 
-/* Snap to the start, not the centre: a rail reads left-to-right, and centre
-   snapping leaves the first card half off the screen on arrival. */
+/* Snap to the centre. Aligning to the start put every resting card hard
+   against the left gutter with the whole of the slack - and the peek of the
+   next card - piled on the right, which reads as a rail that has been
+   scrolled rather than one sitting where it belongs. Centred, the card being
+   read is in the middle of the screen and both neighbours show an edge, so
+   which way there is more to swipe is visible in both directions.
+
+   This is only true because of the padding above; see the note there. */
 .card-rail > * {
-  scroll-snap-align: start;
+  scroll-snap-align: center;
   flex: 0 0 auto;
   /* The cards are buttons, and a button's default touch-action overrides the
      rail's. Without this a drag that begins on a card is treated as a tap on
@@ -1033,15 +1054,23 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    description; at the old 54% the description broke to two or three words a
    line. The empty-bulletin notice is narrower — it is one sentence, and at
    card width it pushed the ministry card, the useful one, off the screen. */
-.card-rail__card { width: 78%; }
-.card-rail__note { width: 62%; }
+/* One width for everything in the rail, in cqw so it is measured against the
+   section rather than against the rail's own content box, which the padding
+   above already depends on.
+
+   The notice used to be narrower than a card. That was right when cards
+   snapped to the left and a wide notice pushed the ministry card off the
+   screen; centred, the notice is its own slide with dots under it, and a
+   rail whose slides are different widths cannot be centred to one padding. */
+.card-rail__card,
+.card-rail__note { width: 74cqw; }
 
 /* The section cards match each other's height whatever their copy runs to —
    two photo cards of visibly different heights side by side reads as a
    mistake. They stretch; the notice above does not, which is the whole
    reason the rail aligns to flex-start rather than stretching everything. */
 .card-rail__link {
-  width: 78%;
+  width: 74cqw;
   align-self: stretch;
 }
 
