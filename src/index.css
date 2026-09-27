@@ -326,11 +326,24 @@
 .dmap-search__input::placeholder { color: var(--color-brand-secondary); }
 
 /* Result list, hanging below the search bar. */
+/* Above everything, including the visit planner.
+   The planner is a sheet pinned to the bottom at z-index 30, and searching
+   is how a church gets added to it - so with the keyboard up on a phone the
+   sheet rose to meet the results list and covered it. Measured at a
+   420px-tall viewport, which is about what an Android phone has left with
+   the keyboard open: 119px of the list was behind the sheet, including the
+   first result. You could not see what you were searching for.
+   Wider, and lower, than before: it used to stop 52px short of the right
+   edge to clear the zoom buttons, which cost a quarter of the width on
+   every phone. Starting below them instead buys that back.
+   The height is capped against the DYNAMIC viewport, so when the keyboard
+   opens the list shortens rather than running underneath it. */
 .dmap-results {
-  position: absolute; z-index: 6; top: 52px;
-  left: 8px; right: 52px;
+  position: absolute; z-index: 40; top: 60px;
+  left: 8px; right: 8px;
   margin: 0; padding: 4px; list-style: none;
-  max-height: 190px; overflow-y: auto;
+  max-height: min(44dvh, 260px); overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: 0.75rem;
   background: var(--color-brand-card);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
@@ -1568,6 +1581,16 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   position: relative;
   border-radius: 30px 30px 0 0;
   padding-top: 8px;
+  /* Clips the section motifs at the screen edge, which is where they were
+     always meant to stop.
+     They bleed outwards on purpose - `--motif-bleed` is negative so each
+     pair runs off both sides - but a bleed to the RIGHT extends the
+     scrollable width of every ancestor, and that was the 92px the whole app
+     could be dragged sideways into. Clipping here removes the overflow at
+     its source rather than forbidding the scroll higher up; the sheet spans
+     the full width, so the motifs still disappear off the edge exactly as
+     before. overflow-y stays visible, which `clip` on one axis permits. */
+  overflow-x: clip;
   /* Slightly deeper at the top, palest in the middle, back to the page
      ground at the foot - the same shape as before, now in the parish's
      own tint. */
@@ -1673,6 +1696,19 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    scroll by touch and expect an overlay indicator, so the gutter is
    removed there; on a desktop pointer the scrollbar stays, because there
    it is the only way to see or drag the scroll position. */
+/* The page must never scroll sideways.
+   overflow-y-auto sets only ONE axis, and CSS then computes the other from
+   `visible` to `auto` - so the app has been horizontally scrollable all
+   along. It had 92px of slack to slide into, which is what produced the
+   white column down the right-hand side with the content pushed off to the
+   left: one stray sideways drag on the bulletin rail and the whole app was
+   scrolled over, with no way to tell what had happened.
+   `clip` rather than `hidden`, because hidden makes this a programmatic
+   scroll container all over again; clip simply refuses. */
+.app-scroll {
+  overflow-x: clip;
+}
+
 @media (pointer: coarse) {
   .app-scroll {
     scrollbar-width: none;

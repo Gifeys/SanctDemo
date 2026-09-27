@@ -25,7 +25,7 @@ interface TripPlannerProps {
 }
 
 /**
- * Planning a Bisita Iglesia — a visit to several churches in one journey.
+ * Planning a visit to several churches in one journey.
  *
  * The tradition is seven churches on Maundy Thursday, and the hard part has
  * never been finding them; it is deciding the order. A group standing in
@@ -64,7 +64,7 @@ export default function TripPlanner({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="trip__heading">
-          <p className="trip__title">Bisita Iglesia</p>
+          <p className="trip__title">Add church</p>
           <p className="trip__sub">
             {stops.length === 0
               ? "Add the churches you want to visit"

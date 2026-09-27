@@ -1085,15 +1085,22 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
             aria-label={
               tripStops.length > 0
                 ? `Open this visit (${tripStops.length} churches)`
-                : "Plan a visit to several churches"
+                : "Add a church to visit"
             }
-            title="Plan a Bisita Iglesia"
+            title="Add church"
           >
             {tripStops.length > 0 ? tripStops.length : <Plus className="w-4 h-4" />}
           </button>
         </div>
 
-        {tripOpen && (
+        {/* Hidden while a search is being typed.
+            Raising the results above the sheet stops them being covered;
+            this stops them being crowded. The sheet is where the churches
+            being chosen are listed, and choosing one is exactly when it is
+            in the way - so it stands aside for as long as there is a query,
+            and comes back the moment one is picked, because selecting a
+            result clears the query. */}
+        {tripOpen && query.trim() === "" && (
           <TripPlanner
             stops={tripStops}
             trip={trip}
