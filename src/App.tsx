@@ -1090,9 +1090,8 @@ export default function App() {
                 >
                   <button
                     onClick={() => setActiveTab("home")}
-                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
-                      activeTab === "home" ? "text-[var(--color-brand-secondary)] font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
-                    }`}
+                    className={`tab-item ${activeTab === "home" ? "tab-item--on" : ""}`}
+                    aria-current={activeTab === "home" ? "page" : undefined}
                   >
                     <Home className="w-5 h-5" />
                     <span className="text-base font-bold leading-none">Home</span>
@@ -1100,9 +1099,8 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab("navigator")}
-                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
-                      activeTab === "navigator" ? "text-[var(--color-brand-secondary)] font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
-                    }`}
+                    className={`tab-item ${activeTab === "navigator" ? "tab-item--on" : ""}`}
+                    aria-current={activeTab === "navigator" ? "page" : undefined}
                   >
                     <Map className="w-5 h-5" />
                     <span className="text-base font-bold leading-none">Map</span>
@@ -1132,9 +1130,8 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab("rosary")}
-                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
-                      activeTab === "rosary" ? "text-[var(--color-brand-secondary)] font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
-                    }`}
+                    className={`tab-item ${activeTab === "rosary" ? "tab-item--on" : ""}`}
+                    aria-current={activeTab === "rosary" ? "page" : undefined}
                   >
                     <BookOpen className="w-5 h-5" />
                     <span className="text-base font-bold leading-none">Pray</span>
@@ -1142,9 +1139,8 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab("me")}
-                    className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 rounded-xl transition-all ${
-                      activeTab === "me" ? "text-[var(--color-brand-secondary)] font-bold" : "text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-secondary)]"
-                    }`}
+                    className={`tab-item ${activeTab === "me" ? "tab-item--on" : ""}`}
+                    aria-current={activeTab === "me" ? "page" : undefined}
                   >
                     <User className="w-5 h-5" />
                     <span className="text-base font-bold leading-none">Me</span>

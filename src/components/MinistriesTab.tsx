@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import ParishSectionHeader from "./ParishSectionHeader";
 import { MINISTRIES, MINISTRY_IMAGES } from "../data";
-import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight } from "lucide-react";
+import { searchMinistries, suggestionsFor } from "../lib/ministrySearch";
+import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Route } from "../types";
 import { buildMinistryApplication, type MinistryApplicationDoc } from "../lib/ministryApplication";
 
@@ -32,6 +33,14 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// the screen, and conflating those is what made the old page a list of
   /// rows that grew downwards while you read them.
   const [openId, setOpenId] = useState<string | null>(null);
+
+  /// What has been typed into the search box. Fifteen ministries is more
+  /// than anyone scrolls through looking for one they half-remember the
+  /// name of.
+  const [query, setQuery] = useState("");
+
+  const matches = searchMinistries(MINISTRIES, query);
+  const suggestions = suggestionsFor(MINISTRIES);
 
   // No ministry until one is chosen. The form used to sit at the bottom of
   // the page permanently, with its own "select target ministry" dropdown -
@@ -140,12 +149,61 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
             form to fill in rather than as people to join. */}
         {openId === null && (
           <div className="space-y-2.5">
-            <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic pl-1">
-              Available Ministries
-            </h3>
+            <div className="flex items-baseline justify-between gap-3 pl-1">
+              <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic">
+                Available Ministries
+              </h3>
+              <span className="text-[14px] text-[var(--color-brand-secondary)] shrink-0 tabular-nums">
+                {query.trim() ? `${matches.length} of ${MINISTRIES.length}` : MINISTRIES.length}
+              </span>
+            </div>
+
+            {/* In the flow, not floating over it. An overlay here would sit
+                on top of the very cards it filters, which is the thing it
+                exists to help you read. */}
+            <div className="ministry-search">
+              <Search className="w-4 h-4 shrink-0 text-[var(--color-brand-secondary)]" />
+              <input
+                type="search"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search a ministry"
+                aria-label="Search the ministries"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Clear the search"
+                  className="shrink-0 text-[var(--color-brand-secondary)]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Shown only before anything is typed. Each one is checked
+                against the ministries actually present, so a suggestion can
+                never lead to an empty screen. */}
+            {!query.trim() && suggestions.length > 0 && (
+              <div className="ministry-chips">
+                {suggestions.map(chip => (
+                  <button key={chip} type="button" onClick={() => setQuery(chip)}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {query.trim() && matches.length === 0 && (
+              <p className="px-1 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
+                No ministry matches &ldquo;{query.trim()}&rdquo;. Try a shorter word, or the
+                short name the parish uses &mdash; MAS, EMHC, SOCCOM.
+              </p>
+            )}
 
             <div className="space-y-3">
-              {MINISTRIES.map(min => (
+              {matches.map(min => (
                 <button
                   key={min.id}
                   type="button"
