@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { SACRAMENTS } from "../data";
-import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark, Info } from "lucide-react";
+import ParishSectionHeader from "./ParishSectionHeader";
+import { SACRAMENTS, SACRAMENT_IMAGES } from "../data";
+import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark, Info, ArrowLeft, ChevronRight } from "lucide-react";
 import { Route } from "../types";
 
 interface SacramentsTabProps {
@@ -8,9 +9,18 @@ interface SacramentsTabProps {
   onAddApplication: (app: { id: string; type: string; applicant: string; details: string; date: string; status: string }) => void;
 }
 
+/** Stands in until the parish photographs each sacrament. */
+const PLACEHOLDER_SACRAMENT = "/parish/placeholder-photo.svg";
+
 export default function SacramentsTab({ parish, onAddApplication }: SacramentsTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  /// Which sacrament has the whole screen, or null for the list. The same
+  /// split as Ministries: a sacrament is either one of several being browsed
+  /// or the only thing on the page, and the old accordion made every row
+  /// grow downwards while you were reading it.
+  const [openId, setOpenId] = useState<string | null>(null);
   const [selectedSacramentId, setSelectedSacramentId] = useState<string>("sac-baptism");
   
   // Booking Form State
@@ -69,29 +79,23 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-      {/* Page Header */}
-      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
-        <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
-          <Bookmark className="w-32 h-32 text-white" />
-        </div>
-        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
-          <Sparkles className="w-3.5 h-3.5" /> Holy Sacraments
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold font-serif italic tracking-tight">
-            Sacraments Office
-          </h2>
-          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
-            Review canonical guidelines, prepare documents, and schedule holy sacraments for your family.
-          </p>
-        </div>
+      <div hidden={openId !== null}>
+      <ParishSectionHeader
+        routeId={parish.id}
+        eyebrow="Holy Sacraments"
+        title="Sacraments Office"
+        blurb="Review the guidelines, prepare the documents, and arrange a sacrament with the parish."
+        icon={<Sparkles className="w-3.5 h-3.5" />}
+      />
       </div>
 
       <div className="p-4 space-y-4">
         {/* Canon law requirements for these sacraments do not change from
             parish to parish — this note keeps the app honest about that
             rather than implying the list below is {parishName}-specific. */}
-        <div className="flex items-start gap-2 p-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl">
+        <div className="flex items-start gap-2 p-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl"
+          hidden={openId !== null}
+        >
           <Info className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 mt-0.5" />
           <p className="text-[15px] text-[var(--color-brand-text)] font-sans leading-snug">
             Canonical requirements are the same diocese-wide. Booking below will be handled by <strong>{parishName}</strong>, your current parish.
@@ -105,31 +109,57 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
           </h3>
 
           <div className="space-y-2">
-            {SACRAMENTS.map((sac) => {
-              const isExpanded = expandedId === sac.id;
+            {/* The list: one photo card per sacrament, the same card Ministries
+                and the bulletin rail already use. */}
+            {openId === null && SACRAMENTS.map(sac => (
+              <button
+                key={sac.id}
+                type="button"
+                onClick={() => { setOpenId(sac.id); setExpandedId(sac.id); }}
+                className="ministry-card"
+              >
+                <span className="ministry-card__media">
+                  <img
+                    src={SACRAMENT_IMAGES[sac.id] ?? PLACEHOLDER_SACRAMENT}
+                    alt=""
+                    loading="lazy"
+                    onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_SACRAMENT; }}
+                  />
+                  <span className="ministry-card__scrim" aria-hidden />
+                  <span className="ministry-card__caption">{sac.name}</span>
+                </span>
+                <span className="ministry-card__foot">
+                  <Bookmark className="w-5 h-5 text-[var(--color-brand-primary)] shrink-0" />
+                  <span className="ministry-card__hint">{sac.description}</span>
+                  <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+                </span>
+              </button>
+            ))}
+
+            {(openId ? SACRAMENTS.filter(x => x.id === openId) : []).map((sac) => {
+              const isExpanded = true;
               return (
                 <div
                   key={sac.id}
                   className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
                 >
-                  <button
-                    onClick={() => toggleExpand(sac.id)}
-                    className="w-full p-4 flex items-center justify-between text-left select-none"
-                  >
-                    <div>
-                      <h4 className="text-[15px] font-bold text-[var(--color-brand-text)] font-serif italic">
-                        {sac.name}
-                      </h4>
-                      <p className="text-sm text-[var(--color-brand-secondary)] line-clamp-1 font-sans mt-0.5">
-                        {sac.description}
-                      </p>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-[var(--color-brand-secondary)]" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-[var(--color-brand-secondary)]" />
-                    )}
-                  </button>
+                  <div className="ministry-hero">
+                    <img
+                      src={SACRAMENT_IMAGES[sac.id] ?? PLACEHOLDER_SACRAMENT}
+                      alt=""
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_SACRAMENT; }}
+                    />
+                    <span className="ministry-hero__scrim" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(null)}
+                      aria-label="Back to the sacraments"
+                      className="ministry-hero__back"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h4 className="ministry-hero__name">{sac.name}</h4>
+                  </div>
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">

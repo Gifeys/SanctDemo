@@ -2452,3 +2452,89 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* ── The header on Ministries, Sacraments and pages like them ─────────────
+   The welcome band from Home, reused. It was a flat navy panel with a large
+   faded outline icon in the corner - the same panel for every parish, in
+   Mary Help's blue, so San Roque's ministries were introduced in another
+   parish's colours with a piece of clip-art where the rest of the app uses
+   the parish's own photography. */
+.parish-section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  flex-shrink: 0;
+  border-radius: 0 0 2rem 2rem;
+  background: var(--parish-band, #101B4A);
+  padding: 22px 20px 26px;
+  color: #fff;
+}
+
+/* From the right, behind the words, as the design has it on Home. */
+.parish-section__photo {
+  position: absolute;
+  inset: 0 0 0 28%;
+  z-index: -2;
+  background-size: cover;
+  background-position: center var(--psh-face, 30%);
+}
+
+.parish-section__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      var(--parish-band, #101B4A) 34%,
+      color-mix(in srgb, var(--parish-band, #101B4A) 74%, transparent) 54%,
+      color-mix(in srgb, var(--parish-band, #101B4A) 10%, transparent) 80%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--parish-band, #101B4A) 45%, transparent),
+      color-mix(in srgb, var(--parish-band, #101B4A) 10%, transparent) 40%,
+      color-mix(in srgb, var(--parish-band, #101B4A) 45%, transparent)
+    );
+}
+
+.parish-section__content { position: relative; max-width: 74%; }
+
+.parish-section__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-family: var(--font-mono-label), ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.88);
+  text-shadow: 0 1px 8px rgb(6 12 38 / 0.5);
+}
+
+/* The one italic serif the design uses for a parish's name - the same face
+   as .parish-welcome__parish on Home, which is what "the dashboard's fonts"
+   means here. It was Montserrat italic, which is not a serif at all: the
+   --font-serif token is mapped to Montserrat, so `font-serif italic` was
+   quietly giving a slanted sans. */
+.parish-section__title {
+  margin: 10px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgb(6 12 38 / 0.5);
+}
+
+.parish-section__blurb {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.9);
+  text-shadow: 0 1px 8px rgb(6 12 38 / 0.45);
+}

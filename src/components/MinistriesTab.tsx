@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ParishSectionHeader from "./ParishSectionHeader";
 import { MINISTRIES, MINISTRY_IMAGES } from "../data";
 import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight } from "lucide-react";
 import { Route } from "../types";
@@ -112,27 +113,13 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-      {/* Page Header. The list's, not a ministry's - a ministry opened on
-          its own gets the photograph as its header instead. */}
-      <div
-        className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]"
-        hidden={openId !== null}
-      >
-        <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
-          <Users className="w-32 h-32 text-white" />
-        </div>
-        <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
-          <Sparkles className="w-3.5 h-3.5" /> Serve and Volunteer
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold font-serif italic tracking-tight">
-            Parish Ministries
-          </h2>
-          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
-            "Go into the world and preach the Gospel." Join our lay ministries to serve the parish community.
-          </p>
-        </div>
-      </div>
+      <ParishSectionHeader
+        routeId={parish.id}
+        eyebrow="Serve and Volunteer"
+        title="Parish Ministries"
+        blurb="Join our lay ministries to serve the parish community."
+        icon={<Sparkles className="w-3.5 h-3.5" />}
+      />
 
       <div className="p-4 space-y-4">
         {/* These ministry types are the same across the diocese — this is

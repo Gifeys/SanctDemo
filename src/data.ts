@@ -162,6 +162,19 @@ export const MINISTRIES: Ministry[] = [
   }
 ];
 
+/**
+ * A photograph per sacrament, on the same terms as MINISTRY_IMAGES: the
+ * parish's own, or the placeholder. A christening photo from some other
+ * parish captioned "Holy Baptism" would read as this parish's christening.
+ */
+export const SACRAMENT_IMAGES: Record<string, string> = {
+  "sac-baptism": "/parish/sacraments-christening.jpg",
+  "sac-confirmation": "/sacraments/sac-confirmation.jpg",
+  "sac-matrimony": "/sacraments/sac-matrimony.jpg",
+  "sac-eucharist": "/sacraments/sac-eucharist.jpg",
+  "sac-confession": "/sacraments/sac-confession.jpg",
+};
+
 export const SACRAMENTS: Sacrament[] = [
   {
     id: "sac-baptism",
