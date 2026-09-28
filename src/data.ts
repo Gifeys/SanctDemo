@@ -87,79 +87,148 @@ export const ROSARY_MYSTERIES: RosaryMystery[] = [
 ];
 
 /**
- * A photograph per ministry, so the list reads as the parish rather than as
- * a form. Keyed by ministry id.
+ * A photograph per ministry, taken from the parish's own PDF.
  *
- * Only Altar Servers has a real photograph so far. The rest fall back to the
- * same placeholder the bulletin uses - an illustration of nothing in
- * particular, not a stock photo of some other parish's choir, which would
- * read as a picture of THIS parish's choir and be a quiet lie. Drop a file in
- * public/ministries named after the id and it appears; nothing else changes.
+ * The photograph on each page is taken to belong to the ministry whose text
+ * is on that page. That is an inference from the document's order, not
+ * something the PDF states - worth an eye over before anyone relies on it.
  */
 export const MINISTRY_IMAGES: Record<string, string> = {
-  "min-altar": "/parish/ministry-altar-servers.jpg",
-  "min-socom": "/ministries/min-socom.jpg",
-  "min-vocation": "/ministries/min-vocation.jpg",
-  "min-lector": "/ministries/min-lector.jpg",
-  "min-choir": "/ministries/min-choir.jpg",
+  "min-altar-servers": "/ministries/min-altar-servers.jpg",
+  "min-emhc": "/ministries/min-emhc.jpg",
+  "min-lectors": "/ministries/min-lectors.jpg",
+  "min-greeters": "/ministries/min-greeters.jpg",
+  "min-soccom": "/ministries/min-soccom.jpg",
+  "min-apostolado": "/ministries/min-apostolado.jpg",
+  "min-mother-butlers": "/ministries/min-mother-butlers.jpg",
+  "min-youth": "/ministries/min-youth.jpg",
+  "min-catechetical": "/ministries/min-catechetical.jpg",
+  "min-choir-cfc": "/ministries/min-choir-cfc.jpg",
+  "min-choir-teatro": "/ministries/min-choir-teatro.jpg",
+  "min-choir-singing-servants": "/ministries/min-choir-singing-servants.jpg",
+  "min-choir-charismatic": "/ministries/min-choir-charismatic.jpg",
+  "min-choir-marian-youth": "/ministries/min-choir-marian-youth.jpg",
+  "min-choir-apostleship": "/ministries/min-choir-apostleship.jpg",
 };
 
+/**
+ * Mary Help of Christians' own ministries, from the list the parish supplied.
+ *
+ * The words are theirs, verbatim and in Tagalog. They are the ones who get to
+ * say what their ministries do, and translating or tightening it here would
+ * be putting the app's voice in their mouth.
+ *
+ * Requirements are EMPTY on purpose. The parish's document states none, and
+ * the placeholder list this replaces had entries like "Age 10-25" that nobody
+ * at the parish had written. An empty list hides that section rather than
+ * inventing conditions for joining somebody else's ministry.
+ */
 export const MINISTRIES: Ministry[] = [
   {
-    id: "min-altar",
-    name: "Altar Servers",
-    description: "Young men dedicated to serving at the Holy Altar, maintaining the solemnity and order of parish liturgies.",
-    requirements: [
-      "Open heart to the call of God",
-      "Baptized Catholic",
-      "Ready for the Discernment Journey",
-      "Age 10-25"
-    ]
+    id: "min-altar-servers",
+    name: "Ministry of Altar Servers (MAS)",
+    description:
+      "Ang Ministry of Altar Servers (MAS) ay isang ministeryo na tumutugon sa marangal na tungkulin ng paglilingkod sa dambana ng Panginoon. Binubuo ito ng mga kabataang may bukas na puso at matatag na pananampalataya na kusang-loob na naglilingkod sa maayos at taimtim na pagdiriwang ng Banal na Liturhiya at iba pang sakramental na gawain ng Simbahan. Bilang mga lingkod ng dambana, hinuhubog ng ministeryong ito ang kanilang disiplina, kabanalan, at wastong asal, upang maging buhay na saksi ng kaayusan, paggalang, at kabanalan sa loob ng simbahan.",
+    requirements: [],
   },
   {
-    id: "min-socom",
-    name: "SOCOM (Social Communications) Ministry",
-    description: "Responsible for parish communications, live streaming of Holy Mass, photography, and spreading God's word digitally.",
-    requirements: [
-      "Interested in Media & Communications",
-      "Basic Knowledge of Social Media or Camera/Stream setups",
-      "Willingness to volunteer on Parish events",
-      "Age 15+"
-    ]
+    id: "min-emhc",
+    name: "Extraordinary Ministers of Holy Communion (EMHC)",
+    description:
+      "Ang Extraordinary Ministers of Holy Communion (EMHC) ay sumusuporta sa pari, lalo na sa mga Misa na may malalaking kongregasyon o kapag kailangang dalhin ang Komunyon sa mga maysakit, matatanda, o nasa bahay. Ang mga EMHC ay maingat na pinipili batay sa pananampalataya, moral na katangian, at aktibong pakikibahagi sa buhay ng Simbahan, at ang kanilang ministeryo ay nakaugat sa pagpapakumbaba at paglilingkod. Bilang kinatawan ng pamayanan, tinutulungan nilang matiyak na matatanggap ng mga mananampalataya ang Katawan at Dugo ni Kristo nang may dignidad at debosyon, at pinalalawak nila ang pastoral na pangangalaga ng Simbahan sa mga hindi makakadalo sa Misa.",
+    requirements: [],
   },
   {
-    id: "min-vocation",
-    name: "Vocation Recruitment Team",
-    description: "Invites members to consider religious vocations: priesthood, consecrated life, or holy diaconate.",
-    requirements: [
-      "Active participant in Parish life",
-      "Baptized Catholic with solid spiritual commitment",
-      "Passionate about supporting church vocations",
-      "Age 16-30"
-    ]
+    id: "min-lectors",
+    name: "Ministry of Lectors and Commentators (MLC)",
+    description:
+      "Ang Ministry of Lectors and Commentators (MLC) ay nakatuon sa malinaw, marangal, at makahulugang pagpapahayag ng Salita ng Diyos at ng mga paanyaya sa banal na pagdiriwang. Sa pamamagitan ng maayos na pagbasa ng Banal na Kasulatan at disiplinadong pagbibigay-gabay sa sambayanan bilang mga komentarista, tinutulungan ng ministeryong ito ang pamayanan na ganap na makilahok sa liturhiya. Sa kanilang paghahanda, disiplina, at paggalang sa kabanalan ng gawain, nagiging daluyan sila ng kaayusan, pagkaunawa, at mas malalim na pakikinig sa tinig ng Diyos.",
+    requirements: [],
   },
   {
-    id: "min-lector",
-    name: "Lector and Commentator Ministry",
-    description: "Proclaims the Sacred Scriptures with dignity, clarity, and deep understanding during liturgical services.",
-    requirements: [
-      "Clear speaking voice and public confidence",
-      "Regular attendee of Sunday mass",
-      "Completion of Parish liturgical reading seminar",
-      "Age 18+"
-    ]
+    id: "min-greeters",
+    name: "Ministry of Greeters and Collectors (MGC)",
+    description:
+      "Ang Ministry of Greeters and Collectors (MGC) ay nagsisilbing unang mukha ng pamayanang Kristiyano sa pamamagitan ng magalang na pagtanggap, maayos na paggabay, at mapagkalingang presensiya sa bawat mananampalataya. Kasabay nito, sila ay pinagkakatiwalaan sa tapat, disiplinado, at may pananagutang pangangalap ng mga handog, na nagsisilbing kongkretong pagpapahayag ng sakripisyo ng sambayanan para sa patuloy na misyon ng Simbahan. Sa kanilang pagpapakumbaba, integridad, at paggalang sa kabanalan ng gawain, pinagtitibay ng ministeryong ito ang kaayusan, pagkakaisa, at diwa ng paglilingkod sa loob ng pamayanang sumasamba.",
+    requirements: [],
   },
   {
-    id: "min-choir",
-    name: "Singing Servants of Christ (Choir)",
-    description: "Leads the congregation in liturgical song, elevating the Holy Mass and offering vocal praise to our Lord with beautiful hymns.",
-    requirements: [
-      "Deep passion for singing or playing musical instruments",
-      "Ready to attend weekly rehearsals and musical training",
-      "Committed to serving at Sunday masses and special parish feasts",
-      "Age 12+"
-    ]
-  }
+    id: "min-soccom",
+    name: "Social Communications Ministry (SOCCOM)",
+    description:
+      "Ang Social Communications Ministry (SOCCOM) ay nagpapalaganap ng mensahe ng Ebanghelyo sa pamamagitan ng wasto, responsable, at makabagong paggamit ng midya at komunikasyon. Sa pagdodokumento, pag-uulat, at pagpapahayag ng mga gawain ng Simbahan, nagsisilbi silang tinig at larawan ng pananampalatayang buhay ng pamayanan. Pinagtitibay ng SOCCOM ang ugnayan ng Simbahan at sambayanan, at ginagawang daluyan ang komunikasyon upang higit na maipahayag ang misyon ng Simbahan sa makabagong panahon.",
+    requirements: [],
+  },
+  {
+    id: "min-apostolado",
+    name: "Apostolado ng Panalangin (AnP)",
+    description:
+      "Ang Apostolado ng Panalangin (AnP) ay naglalayong palalimin ang ugnayan ng mananampalataya sa Diyos sa pamamagitan ng taimtim, sama-sama, at tuloy-tuloy na panalangin. Sa pag-aalay ng sarili, gawain, at paghihirap sa Panginoon, nagiging espirituwal na haligi ang ministeryong ito ng Simbahan na sumusuporta sa misyon nito sa pamamagitan ng pananampalataya at sakripisyo.",
+    requirements: [],
+  },
+  {
+    id: "min-mother-butlers",
+    name: "Mother Butlers Guild (MBG)",
+    description:
+      "Ang Mother Butlers Guild (MBG) ay isang ministeryong nakatuon sa masinop at mapagkalingang pangangalaga sa mga banal na kagamitan at sa kaayusan ng altar at simbahan. Sa kanilang tahimik ngunit mahalagang paglilingkod, ipinahahayag nila ang paggalang sa kabanalan ng liturhiya at ang diwa ng inang naglilingkod nang may pagmamahal at pananagutan.",
+    requirements: [],
+  },
+  {
+    id: "min-youth",
+    name: "Ministry on Youth Affairs",
+    description:
+      "Ang Ministry on Youth Affairs ay nagsisilbing gabay at katuwang ng kabataan sa kanilang paghubog bilang responsableng Kristiyano at aktibong kasapi ng Simbahan at lipunan. Sa pamamagitan ng pormasyon, pakikilahok, at paglilingkod, inihahanda ng ministeryong ito ang kabataan bilang mga pinuno ng kasalukuyan at hinaharap na Simbahan.",
+    requirements: [],
+  },
+  {
+    id: "min-catechetical",
+    name: "Catechetical Ministry",
+    description:
+      "Ang Catechetical Ministry ay may pananagutang ipahayag at ituro ang mga saligan ng pananampalatayang Katoliko sa malinaw, tapat, at sistematikong paraan. Sa kanilang pagtuturo at paggabay, pinalalalim nila ang pagkaunawa ng sambayanan sa doktrina at hinuhubog ang buhay-Kristiyano na nakaugat sa Ebanghelyo.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-cfc",
+    name: "Couples for Christ Choir",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-teatro",
+    name: "Teatro Pilipino Choir",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-singing-servants",
+    name: "Singing Servants of Christ",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-charismatic",
+    name: "Charismatic Music Ministry",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-marian-youth",
+    name: "Marian Youth Choir",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
+  {
+    id: "min-choir-apostleship",
+    name: "Apostleship of Prayer Chorale",
+    description:
+      "Nangangasiwa sa angkop na paggamit ng musika sa liturhiya upang suportahan ang panalangin at palalimin ang pakikilahok ng mga mananampalataya. Ito ay may pananagutan sa pagpili at paghahanda ng mga himno at awiting liturhikal para sa mga Banal na Misa at iba pang pagdiriwang ng Simbahan. Sa pamamagitan ng taimtim at maayos na musika, naglilingkod ito para sa higit na kaluwalhatian ng Diyos.",
+    requirements: [],
+  },
 ];
 
 /**

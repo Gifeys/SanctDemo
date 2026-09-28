@@ -214,7 +214,12 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                         {min.description}
                       </p>
                       
-                      <div className="space-y-1.5">
+                      {/* Only when the parish has actually stated some. Their
+                          own ministry list gives none, and a "Requirements to
+                          Join" heading over an empty list reads as a page that
+                          failed to load rather than as a ministry anyone may
+                          join. */}
+                      <div className="space-y-1.5" hidden={min.requirements.length === 0}>
                         <h5 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
                           Requirements to Join:
                         </h5>
