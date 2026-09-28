@@ -2563,21 +2563,23 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   line-height: 1;
 }
 
-/* Colour AND a soft fill behind it. Colour alone is not enough on a phone
-   held at arm's length in a bright church, and it is the only signal for
-   anyone who cannot separate these two blues. */
+/* The icon fills solid; nothing sits behind the tab.
+   The pill that used to be here read as a button someone had left pressed,
+   and it boxed in one tab of five. A solid icon beside four outlined ones
+   is the stronger signal anyway - it changes the SHAPE, not just the
+   colour, so it still reads at arm's length in a bright church and for
+   anyone who cannot separate the two greys. */
 .tab-item--on {
   color: var(--color-brand-primary);
-  background: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
 }
 
-/* The icon reads as filled rather than drawn, which is the difference a
-   phone user actually notices between a selected tab and an idle one.
-   Lucide icons are strokes, so this fills the shape with the same ink at
-   low alpha instead of swapping in a second icon set. */
+/* Lucide icons are drawn as strokes with no fill, so filling them turns the
+   outline into a solid silhouette. The stroke stays the same colour as the
+   fill, otherwise the shape gains a visible border it does not have when
+   idle and appears to grow on selection. */
 .tab-item--on svg {
-  fill: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
-  stroke-width: 2.4;
+  fill: var(--color-brand-primary);
+  stroke: var(--color-brand-primary);
 }
 
 /* ── Searching the ministries ─────────────────────────────────────────────
