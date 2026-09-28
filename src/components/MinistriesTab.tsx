@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { MINISTRIES } from "../data";
-import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X } from "lucide-react";
+import { MINISTRIES, MINISTRY_IMAGES } from "../data";
+import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight } from "lucide-react";
 import { Route } from "../types";
 import { buildMinistryApplication, type MinistryApplicationDoc } from "../lib/ministryApplication";
 
@@ -14,9 +14,23 @@ interface MinistriesTabProps {
   onOpenSignIn: () => void;
 }
 
+/**
+ * Stands in until the parish photographs each ministry. An illustration of
+ * nothing in particular rather than a stock photo of somebody else's choir,
+ * which in this card would read as a photo of THIS parish's choir.
+ */
+const PLACEHOLDER_MINISTRY = "/parish/placeholder-photo.svg";
+
 export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn }: MinistriesTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  /// Which ministry has been opened to its own full screen, or null for the
+  /// list. Separate from expandedId, which the accordion still uses: a
+  /// ministry is either one of several being browsed or the only thing on
+  /// the screen, and conflating those is what made the old page a list of
+  /// rows that grew downwards while you read them.
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // No ministry until one is chosen. The form used to sit at the bottom of
   // the page permanently, with its own "select target ministry" dropdown -
@@ -98,8 +112,12 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-      {/* Page Header */}
-      <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
+      {/* Page Header. The list's, not a ministry's - a ministry opened on
+          its own gets the photograph as its header instead. */}
+      <div
+        className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]"
+        hidden={openId !== null}
+      >
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
           <Users className="w-32 h-32 text-white" />
         </div>
@@ -120,45 +138,88 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
         {/* These ministry types are the same across the diocese — this is
             not {parishName}'s own private list, and the app should say so
             rather than implying otherwise. */}
-        <div className="flex items-start gap-2 p-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl">
+        <div
+          className="flex items-start gap-2 p-3 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl"
+          hidden={openId !== null}
+        >
           <Info className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 mt-0.5" />
           <p className="text-[15px] text-[var(--color-brand-text)] font-sans leading-snug">
             These ministries are offered diocese-wide. Applying below will route your application to <strong>{parishName}</strong>, your current parish.
           </p>
         </div>
 
-        {/* Ministries List Accordion */}
-        <div className="space-y-2.5">
-          <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic pl-1">
-            Available Ministries
-          </h3>
+        {/* The list: one photo card per ministry, the same card the bulletin
+            rail uses on Home. It was a stack of text rows, which read as a
+            form to fill in rather than as people to join. */}
+        {openId === null && (
+          <div className="space-y-2.5">
+            <h3 className="text-[15px] font-bold text-[var(--color-brand-secondary)] uppercase tracking-widest font-serif italic pl-1">
+              Available Ministries
+            </h3>
 
+            <div className="space-y-3">
+              {MINISTRIES.map(min => (
+                <button
+                  key={min.id}
+                  type="button"
+                  onClick={() => {
+                    setOpenId(min.id);
+                    setExpandedId(min.id);
+                    setApplyingToId(null);
+                    setIsSubmitted(false);
+                  }}
+                  className="ministry-card"
+                >
+                  <span className="ministry-card__media">
+                    <img
+                      src={MINISTRY_IMAGES[min.id] ?? PLACEHOLDER_MINISTRY}
+                      alt=""
+                      loading="lazy"
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_MINISTRY; }}
+                    />
+                    <span className="ministry-card__scrim" aria-hidden />
+                    <span className="ministry-card__caption">{min.name}</span>
+                  </span>
+                  <span className="ministry-card__foot">
+                    <Users className="w-5 h-5 text-[var(--color-brand-primary)] shrink-0" />
+                    <span className="ministry-card__hint">{min.description}</span>
+                    <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* One ministry, on its own screen. Only the opened one is rendered,
+            so the accordion below is always the expanded state - there is
+            nothing else on the page to collapse against. */}
+        <div className="space-y-2.5">
           <div className="space-y-2">
-            {MINISTRIES.map((min) => {
-              const isExpanded = expandedId === min.id;
+            {(openId ? MINISTRIES.filter(m => m.id === openId) : []).map((min) => {
+              const isExpanded = true;
               return (
                 <div
                   key={min.id}
                   className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
                 >
-                  <button
-                    onClick={() => toggleExpand(min.id)}
-                    className="w-full p-4 flex items-center justify-between text-left select-none"
-                  >
-                    <div>
-                      <h4 className="text-[15px] font-bold text-[var(--color-brand-text)] font-serif italic">
-                        {min.name}
-                      </h4>
-                      <p className="text-sm text-[var(--color-brand-secondary)] line-clamp-1 font-sans mt-0.5">
-                        {min.description}
-                      </p>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-[var(--color-brand-secondary)]" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-[var(--color-brand-secondary)]" />
-                    )}
-                  </button>
+                  <div className="ministry-hero">
+                    <img
+                      src={MINISTRY_IMAGES[min.id] ?? PLACEHOLDER_MINISTRY}
+                      alt=""
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_MINISTRY; }}
+                    />
+                    <span className="ministry-hero__scrim" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={() => { setOpenId(null); setApplyingToId(null); }}
+                      aria-label="Back to the ministries"
+                      className="ministry-hero__back"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h4 className="ministry-hero__name">{min.name}</h4>
+                  </div>
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">

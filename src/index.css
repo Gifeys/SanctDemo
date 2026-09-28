@@ -2331,3 +2331,124 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   background: var(--color-brand-primary);
   color: var(--color-brand-on-accent);
 }
+
+/* ── Ministries ───────────────────────────────────────────────────────────
+   The list was a stack of text rows that grew downwards as you opened them,
+   which reads as a form to fill in rather than as people to join. It is the
+   same photo card the bulletin rail uses on Home, and opening one gives it
+   the whole screen the way a parish history page does. */
+.ministry-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.05);
+}
+
+.ministry-card__media {
+  position: relative;
+  display: block;
+  height: 116px;
+}
+.ministry-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* A scrim rather than a shadow: what sits behind the caption is a
+   photograph nobody has chosen yet, so its brightness cannot be assumed. */
+.ministry-card__scrim {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 58px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72), transparent);
+}
+
+.ministry-card__caption {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.ministry-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.ministry-card__hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--color-brand-secondary);
+  /* Two lines, then it stops. These descriptions run to a full sentence and
+     the card is a summary, not the page. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* The opened ministry's header: the photograph, with its name over it. */
+.ministry-hero {
+  position: relative;
+  height: 210px;
+}
+.ministry-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ministry-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(9 14 32 / 0.86) 8%, rgb(9 14 32 / 0.15) 60%, rgb(9 14 32 / 0.35));
+}
+
+.ministry-hero__name {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 14px;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 1.12;
+  color: #fff;
+  text-wrap: balance;
+  text-shadow: 0 2px 14px rgb(6 12 38 / 0.5);
+}
+
+.ministry-hero__back {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(9 14 32 / 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}

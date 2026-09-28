@@ -86,6 +86,24 @@ export const ROSARY_MYSTERIES: RosaryMystery[] = [
   }
 ];
 
+/**
+ * A photograph per ministry, so the list reads as the parish rather than as
+ * a form. Keyed by ministry id.
+ *
+ * Only Altar Servers has a real photograph so far. The rest fall back to the
+ * same placeholder the bulletin uses - an illustration of nothing in
+ * particular, not a stock photo of some other parish's choir, which would
+ * read as a picture of THIS parish's choir and be a quiet lie. Drop a file in
+ * public/ministries named after the id and it appears; nothing else changes.
+ */
+export const MINISTRY_IMAGES: Record<string, string> = {
+  "min-altar": "/parish/ministry-altar-servers.jpg",
+  "min-socom": "/ministries/min-socom.jpg",
+  "min-vocation": "/ministries/min-vocation.jpg",
+  "min-lector": "/ministries/min-lector.jpg",
+  "min-choir": "/ministries/min-choir.jpg",
+};
+
 export const MINISTRIES: Ministry[] = [
   {
     id: "min-altar",
