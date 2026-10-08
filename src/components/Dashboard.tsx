@@ -35,6 +35,24 @@ interface DashboardProps {
   onBackToMyParish?: () => void;
   /** First name of the signed-in pilgrim; the greeting omits it when absent. */
   firstName?: string;
+  /**
+   * Which part of the bulletin to show, when something outside the
+   * dashboard needs to choose.
+   *
+   * Sancti needs this. Offering "want me to open the Mass schedule?" and
+   * then landing the pilgrim on the bulletin with the ministries showing
+   * is not opening anything - the section they said yes to is one of
+   * three, and only one is on screen at a time.
+   *
+   * Carries an `id` because the same section can be asked for twice:
+   * ask Sancti for the Mass schedule, tap History yourself, ask again,
+   * and a bare section value would be unchanged and the request would
+   * do nothing. The id makes each request its own event.
+   *
+   * Undefined means nobody outside has an opinion and the dashboard
+   * keeps its own.
+   */
+  sectionRequest?: { section: HomeSection; id: number };
 }
 
 function parishDisplayName(parish: Route): string {
@@ -62,6 +80,7 @@ export function formatCountdown(target: Date, now: Date): string {
 
 export default function Dashboard({
   parish, announcements, onNavigate, firstName, onOpenSearch, onBackToMyParish,
+  sectionRequest,
 }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
@@ -87,6 +106,15 @@ export default function Dashboard({
    * notice.
    */
   const [section, setSection] = useState<HomeSection>("ministries");
+
+  // A request from outside wins, until the pilgrim taps a different one
+  // themselves. Held as state rather than read straight from the prop so
+  // the three buttons keep working afterwards: a prop read directly would
+  // pin the bulletin to whatever Sancti last asked for and make the
+  // chooser look broken.
+  useEffect(() => {
+    if (sectionRequest) setSection(sectionRequest.section);
+  }, [sectionRequest?.id, sectionRequest?.section]);
   const today = liturgicalDay(now);
 
   // The parish's own words win; the calendar's named feast is the fallback.

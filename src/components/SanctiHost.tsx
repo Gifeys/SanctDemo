@@ -39,6 +39,13 @@ import type { Language } from "../lib/language";
 export interface SanctiTools {
   /** Switch tabs. */
   go: (tab: string) => void;
+  /**
+   * Show one part of the Parish Bulletin on Home.
+   *
+   * Home shows one of its three sections at a time, so going to Home is
+   * not the same as showing the thing on Home that was asked for.
+   */
+  showHomeSection: (section: "ministries" | "mass" | "history") => void;
   /** Make this parish the one on screen. */
   selectParish: (parishId: string) => void;
   /** Open the map focused on a parish. */
@@ -133,20 +140,18 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         break;
       case "OPEN_MASS_SCHEDULE":
         if (parishId) t.selectParish(parishId);
-        // The Mass tab, not Home.
+        // Home, with the bulletin already turned to the Mass schedule.
         //
-        // This used to open Home and highlight the schedule card on it,
-        // which worked while Home showed all of its sections at once.
-        // Home is now a chooser - one section at a time - so unless the
-        // pilgrim happened to be on the Mass section already, accepting
-        // "open the Mass schedule" landed them on Home with the
-        // ministries showing and a highlight pointing at nothing.
-        //
-        // There is a whole screen for this: the full table, for the
-        // parish on screen. Offering to open the schedule and opening
-        // the schedule should be the same thing.
-        t.go("mass");
-        setOpen(false);
+        // Going to Home was not enough once Home became a chooser: it
+        // shows one of its three sections at a time, so accepting "open
+        // the Mass schedule" landed the pilgrim on the ministries with
+        // a highlight pointing at a card that was not rendered. The
+        // section has to be chosen for them, which is the whole
+        // difference between arriving at a screen and arriving at the
+        // thing they asked for.
+        t.go("home");
+        t.showHomeSection("mass");
+        point("mass-schedule", "The Mass times for this parish, kept by the parish office.");
         break;
       case "OPEN_CHURCH_HISTORY":
         if (parishId) t.selectParish(parishId);

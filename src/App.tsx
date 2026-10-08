@@ -8,6 +8,7 @@ import PwaBanner from "./components/PwaBanner";
 
 // New Components
 import Dashboard from "./components/Dashboard";
+import { type HomeSection } from "./components/HomeQuickLinks";
 import MeTab from "./components/MeTab";
 import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
@@ -121,13 +122,14 @@ function ParishTheme({ parishId }: { parishId: string | null }) {
  */
 function SanctiMount({
   activeParishId, activeParishName, content, language,
-  onGo, onSelectParish, onWalkTo, onFollowParish,
+  onGo, onShowHomeSection, onSelectParish, onWalkTo, onFollowParish,
 }: {
   activeParishId: string;
   activeParishName: string;
   content: import("./lib/parishContent").ParishContent | null;
   language: "en" | "fil";
   onGo: (tab: string) => void;
+  onShowHomeSection: (section: HomeSection) => void;
   onSelectParish: (parishId: string) => void;
   onWalkTo: (parishId: string) => void;
   onFollowParish: (parishId: string) => void;
@@ -137,6 +139,7 @@ function SanctiMount({
     <SanctiHost
       tools={{
         go: onGo,
+        showHomeSection: onShowHomeSection,
         selectParish: onSelectParish,
         walkTo: onWalkTo,
         followParish: onFollowParish,
@@ -206,6 +209,18 @@ export default function App() {
   const [homeParishId, setHomeParishId] = useState<string | null>(() =>
     loadHomeParishId(VALID_HOME_IDS) ?? firstLiveParishId()
   );
+  /**
+   * A request from outside the dashboard for one part of the bulletin.
+   *
+   * Sancti sets this when the pilgrim accepts "want me to open the Mass
+   * schedule?". The id makes a repeat request its own event; see
+   * Dashboard's sectionRequest.
+   */
+  const [homeSectionRequest, setHomeSectionRequest] =
+    useState<{ section: HomeSection; id: number } | null>(null);
+  const showHomeSection = useCallback((section: HomeSection) => {
+    setHomeSectionRequest(prev => ({ section, id: (prev?.id ?? 0) + 1 }));
+  }, []);
   const [isChangeParishOpen, setIsChangeParishOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
@@ -1185,6 +1200,7 @@ export default function App() {
                       onSelectParish={handleSelectParish}
                       onWalkThere={handleWalkThere}
                       onOpenSearch={() => setIsSearchOpen(true)}
+                      sectionRequest={homeSectionRequest ?? undefined}
                     />
                   )}
 
@@ -1419,6 +1435,7 @@ export default function App() {
                       content={activeParishContent}
                       language={language}
                       onGo={tab => setActiveTab(tab as typeof activeTab)}
+                      onShowHomeSection={showHomeSection}
                       onSelectParish={setSelectedChurchId}
                       onWalkTo={handleWalkThere}
                       onFollowParish={id => toggleFollowParish(id, true)}
