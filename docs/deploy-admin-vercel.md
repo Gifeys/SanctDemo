@@ -16,6 +16,23 @@ to run server-side here, and nothing to configure beyond the build.
 - **buildCommand** `npm run build:app` — `vite build` only. The ordinary
   `npm run build` also bundles `server.ts` into `dist/`, and a Node
   bundle has no business in a static deployment.
+- **installCommand** `npm install --ignore-scripts`. Two packages in
+  this tree compile C++ at install time: `canvas`, a hard dependency of
+  `mind-ar` (the AR scanner), and `re2`, which arrives under
+  `firebase-tools`. Neither is used by the build - Vite never loads
+  them - but npm still builds them, and on Vercel's Node 24 image
+  node-pre-gyp finds no prebuilt binary, falls back to compiling from
+  source, and fails. The whole deployment then ends at
+  `npm install exited with 1`, before the build is reached.
+
+  Skipping install scripts skips exactly that compilation. esbuild and
+  rollup, the two things a Vite build genuinely needs a binary for,
+  ship theirs as platform-specific optional packages rather than
+  install scripts, so they are unaffected. Verified by installing this
+  lockfile with the flag and building from it.
+
+  Do NOT remove this to "clean up" the config. The deployment fails
+  without it.
 - **rewrites** every path to `index.html`. This is the one setting that
   must not be missed: without it `/admin/applications` returns 404 the
   moment anyone refreshes the page or follows a link to it, because
