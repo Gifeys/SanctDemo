@@ -133,8 +133,20 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         break;
       case "OPEN_MASS_SCHEDULE":
         if (parishId) t.selectParish(parishId);
-        t.go("home");
-        point("mass-schedule", "The Mass times for this parish, kept by the parish office.");
+        // The Mass tab, not Home.
+        //
+        // This used to open Home and highlight the schedule card on it,
+        // which worked while Home showed all of its sections at once.
+        // Home is now a chooser - one section at a time - so unless the
+        // pilgrim happened to be on the Mass section already, accepting
+        // "open the Mass schedule" landed them on Home with the
+        // ministries showing and a highlight pointing at nothing.
+        //
+        // There is a whole screen for this: the full table, for the
+        // parish on screen. Offering to open the schedule and opening
+        // the schedule should be the same thing.
+        t.go("mass");
+        setOpen(false);
         break;
       case "OPEN_CHURCH_HISTORY":
         if (parishId) t.selectParish(parishId);
