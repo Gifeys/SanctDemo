@@ -11,6 +11,9 @@ import { PARISH_PATRON_IMAGES } from "../data";
 import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
 import { accuracyRadiusExpression } from "../lib/mapAccuracy";
+import {
+  FOLLOW_DURATION_MS, FOLLOW_ZOOM, followCamera, needsCameraMove, shouldFollow,
+} from "../lib/followCamera";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import { Plus } from "lucide-react";
 import { type MapOrientationMode } from "./CompassControl";
@@ -435,6 +438,8 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // keeps the same lookup for the same reason.
   const markersRef = useRef<Map<string, MapLibreMarker>>(new Map());
   const youMarkerRef = useRef<MapLibreMarker | null>(null);
+  /** The marker's own element, so navigation can restyle it without a render. */
+  const youElementRef = useRef<HTMLDivElement | null>(null);
   // The direction light inside the "you are here" dot, held directly so
   // the compass can be written to its transform at sensor rate without
   // re-rendering this component. The sensor fires several times a second;
@@ -480,6 +485,15 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // True once the camera has closed in for the current navigation session, so
   // a reroute mid-walk does not yank it back.
   const didZoomForNavRef = useRef(false);
+  /**
+   * True once the walker has dragged the map during a navigation session.
+   *
+   * Panning mid-route is a deliberate act - checking a side street, or how
+   * far is left - and a camera that hauls you back a second later makes it
+   * impossible. Following stops until Recentre is tapped. A ref, not state:
+   * it is read inside a camera effect that must not re-run because of it.
+   */
+  const userPannedRef = useRef(false);
 
 
   // The tapped pin, shown as a place sheet over the map. Held as an id
@@ -677,6 +691,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     mapRef.current = map;
 
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+
+    // A drag by the walker suspends the follow camera. `dragstart` and not
+    // `movestart`: the camera's own easeTo fires movestart too, so listening
+    // for that would have the map stop following itself on the first fix.
+    map.on("dragstart", () => { userPannedRef.current = true; });
 
     // Tapping the map itself dismisses the place sheet. Pin taps stop
     // propagation, so this only ever fires on empty map.
@@ -876,6 +895,25 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       you.appendChild(beam);
       beamRef.current = beam;
 
+      // The walking puck, for turn-by-turn only.
+      //
+      // A dot says where you are; it cannot say which way you are
+      // pointing, and while you are following a route that is the thing
+      // you check at every corner. The beam answers it on a north-up
+      // map, but the navigation camera turns the map to your heading -
+      // and a beam that always points straight up a map that is always
+      // turned to your heading is a beam that never moves.
+      //
+      // So navigation swaps the dot for an arrow, the way every
+      // turn-by-turn app people have already used does it. CSS decides
+      // which is visible; both exist from the start so no element has
+      // to be built mid-walk.
+      const chevron = document.createElement("span");
+      chevron.className = "dmap-live__chevron";
+      chevron.setAttribute("aria-hidden", "true");
+      you.appendChild(chevron);
+      youElementRef.current = you;
+
       youMarkerRef.current = new MapLibreMarker({ element: you, anchor: "center" })
         .setLngLat([position.lng, position.lat])
         .addTo(map);
@@ -946,6 +984,63 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     const mapBearing = mapRef.current?.getBearing() ?? 0;
     beam.style.transform = `translate(-50%, -100%) rotate(${heading - mapBearing}deg)`;
   }, [heading]);
+
+  // Walk with the walker.
+  //
+  // Navigation used to close in once, at the start, and then leave the
+  // camera where it was: fifty metres later you were off the edge of your
+  // own route, looking at the corner you set out from. This keeps the
+  // walker pinned low on the screen with the road ahead above them, and
+  // turns the map so the direction of travel is up.
+  //
+  // Every decision in here is in lib/followCamera.ts, where it can be
+  // tested. Neither a GPS fix nor a magnetometer reading exists in a
+  // desktop browser, so maths left in this file could only ever be checked
+  // by walking outside with a handset.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mode !== "live") return;
+    if (!shouldFollow(navigatingTo !== null, userPannedRef.current)) return;
+    if (!position) return;
+
+    const current = {
+      center: { lat: map.getCenter().lat, lng: map.getCenter().lng },
+      bearing: map.getBearing(),
+      zoom: map.getZoom(),
+    };
+    // GPS jitters by metres while standing still and the compass wavers by
+    // a degree; without this the camera restarts its ease on every reading
+    // and the map shivers in the hand.
+    if (!needsCameraMove(current, position, heading)) return;
+
+    // The walker's own zoom is kept. Pinching out to see the rest of the
+    // route and being overruled a second later is the same complaint as
+    // being dragged back after a pan.
+    const zoom = didZoomForNavRef.current ? current.zoom : FOLLOW_ZOOM;
+
+    map.easeTo({
+      ...followCamera(position, heading, current.bearing, zoom),
+      duration: FOLLOW_DURATION_MS,
+      // Linear. An ease-in-out that is still accelerating when the next
+      // fix arrives reads as the map lurching once a second.
+      easing: t => t,
+    });
+  }, [mode, navigatingTo, position?.lat, position?.lng, heading]);
+
+  // The dot becomes an arrow while a route is being followed, and the map
+  // goes back to flat north-up when it ends.
+  useEffect(() => {
+    const you = youElementRef.current;
+    if (you) you.dataset.navigating = navigatingTo ? "true" : "false";
+
+    if (navigatingTo) return;
+    userPannedRef.current = false;
+    const map = mapRef.current;
+    if (!map) return;
+    if (map.getPitch() > 0.5 || Math.abs(map.getBearing()) > 0.5) {
+      map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+    }
+  }, [navigatingTo]);
 
 
   // `heading` still drives heading-up mode below, which turns the MAP
@@ -1036,6 +1131,19 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   function recentreOnMe() {
     const map = mapRef.current;
     if (!map || !position) return;
+
+    // Mid-route this is how following is resumed after a pan - which is
+    // the button's whole job once a walk is under way, and the reason it
+    // stays on screen while the instruction card covers everything else.
+    if (navigatingTo) {
+      userPannedRef.current = false;
+      map.easeTo({
+        ...followCamera(position, heading, map.getBearing(), Math.max(map.getZoom(), FOLLOW_ZOOM)),
+        duration: 600,
+      });
+      return;
+    }
+
     map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 15) });
   }
 

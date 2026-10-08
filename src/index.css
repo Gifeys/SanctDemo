@@ -798,6 +798,52 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 @media (prefers-reduced-motion: reduce) {
   .dmap-live__beam { transition-duration: 1ms; }
 }
+
+/* The walking puck.
+ *
+ * While turn-by-turn is running the camera turns the map to the walker's
+ * heading, so "up the screen" IS the way they are facing. The beam, which
+ * earns its keep on a north-up map, would then be pinned straight up and
+ * never move - so navigation hides it and shows an arrow instead, which is
+ * what the direction of travel looks like in every turn-by-turn app anyone
+ * has already used.
+ *
+ * The arrow does not rotate. The map does. */
+.dmap-live__marker--you[data-navigating="true"] {
+  /* The dot's fill and ring hand over to the arrow entirely, or the arrow
+     sits on a blue disc and reads as a badge rather than a heading. */
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.dmap-live__marker--you[data-navigating="true"] .dmap-live__beam {
+  display: none;
+}
+
+.dmap-live__chevron {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: none;
+  /* A rounded triangle rather than a hard one: at this size a sharp apex
+     aliases into a grey smudge on a phone screen. Drawn as a mask so the
+     fill below stays a single colour and the white rim can be a filter. */
+  background: #1AC6D9;
+  clip-path: polygon(50% 6%, 93% 92%, 50% 72%, 7% 92%);
+  filter:
+    drop-shadow(0 0 2.5px #fff)
+    drop-shadow(0 0 2.5px #fff)
+    drop-shadow(0 2px 3px rgb(0 0 0 / 0.4));
+}
+
+.dmap-live__marker--you[data-navigating="true"] .dmap-live__chevron {
+  display: block;
+}
 /* ── Compass ──────────────────────────────────────────────────────────────
    Sits below the zoom control, above "Recentre on me". Tapping it swaps
    between north-up and heading-up. */
