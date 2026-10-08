@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, ChevronUp, Clock } from "lucide-react";
 import { MASS_SCHEDULES } from "../data";
 import { liturgicalDay } from "../lib/liturgical";
-import { dayOfMonth, sundayMassCard } from "../lib/sundayMasses";
+import { dayOfMonth, sundayMassCard, type MassTime } from "../lib/sundayMasses";
 import { useParishContent } from "../lib/useParishContent";
 
 interface MassScheduleCardProps {
@@ -99,7 +99,7 @@ export default function MassScheduleCard({
                 {card.anticipated && (
                   <MassRow
                     label="Anticipated Mass"
-                    times={[card.anticipated.time]}
+                    times={[card.anticipated]}
                     date={card.anticipated.date}
                   />
                 )}
@@ -139,16 +139,35 @@ export default function MassScheduleCard({
  * rather than fixed columns — a parish with three Sunday Masses should not
  * leave a ragged hole, and one with eight should not overflow.
  */
-function MassRow({ label, times, date }: { label: string; times: string[]; date: Date }) {
+/**
+ * A suspended Mass is struck through and labelled, not removed.
+ *
+ * Someone who comes at 8:00 every Sunday needs to see that the 8:00
+ * exists and is off this week. An absence tells them nothing - they
+ * assume they misremembered and turn up anyway.
+ */
+function MassRow({ label, times, date }: { label: string; times: MassTime[]; date: Date }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <p className="text-[17px] font-bold">{label}</p>
         <ul className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1">
-          {times.map(time => (
-            <li key={time} className="flex items-center gap-1.5 text-[16px] text-white/95">
+          {times.map(({ time, available }) => (
+            <li
+              key={time}
+              className={`flex items-center gap-1.5 text-[16px] ${
+                available ? "text-white/95" : "text-white/55"
+              }`}
+            >
               <Clock className="w-3.5 h-3.5 shrink-0 opacity-80" />
-              <span className="font-variant-numeric tabular-nums">{time}</span>
+              <span className={`font-variant-numeric tabular-nums${available ? "" : " line-through"}`}>
+                {time}
+              </span>
+              {!available && (
+                <span className="text-[12px] font-bold uppercase tracking-wider whitespace-nowrap">
+                  Not available
+                </span>
+              )}
             </li>
           ))}
         </ul>

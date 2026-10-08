@@ -2,7 +2,50 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 export interface MassScheduleEntry {
   day: string
+  /** One or more times for this day, comma separated: "6:00 AM, 8:00 AM". */
   time: string
+  /**
+   * Times on this day the parish has temporarily suspended.
+   *
+   * A list of exceptions, not a flag per time, for the same reason
+   * closedApplications is: absent means everything runs, so every parish
+   * that has never touched this keeps its full schedule. The strings
+   * match the entries in `time` exactly.
+   *
+   * Suspended, not deleted: the app still SHOWS a 8:00 AM Mass marked
+   * "Not available", because a parishioner who turns up at 8 needs to
+   * know the Mass exists and is off, not to find no mention of it and
+   * assume they misremembered.
+   */
+  unavailableTimes?: string[]
+  /** "No 6pm Mass during the renovation" - shown with the day. */
+  note?: string
+}
+
+/** True unless the parish has suspended this particular Mass. */
+export function isTimeAvailable(entry: MassScheduleEntry, time: string): boolean {
+  return !(entry.unavailableTimes ?? []).includes(time.trim())
+}
+
+/** The times on this day that are actually being celebrated. */
+export function availableTimes(entry: MassScheduleEntry): string[] {
+  return parseTimes(entry.time).filter((t) => isTimeAvailable(entry, t))
+}
+
+/** Adds or removes one time from a day's suspended list. */
+export function withTimeAvailability(
+  entry: MassScheduleEntry,
+  time: string,
+  available: boolean,
+): MassScheduleEntry {
+  const next = new Set(entry.unavailableTimes ?? [])
+  if (available) next.delete(time.trim())
+  else next.add(time.trim())
+  const list = [...next]
+  // Dropped entirely when empty rather than written as [], so a parish
+  // that never suspends anything keeps the document it always had.
+  const { unavailableTimes: _old, ...rest } = entry
+  return list.length > 0 ? { ...rest, unavailableTimes: list } : rest
 }
 
 export interface NextMass {
@@ -32,7 +75,10 @@ export function toMinutes(time: string): number {
 export function nextMass(schedule: MassScheduleEntry[], now: Date): NextMass | null {
   if (schedule.length === 0) return null
 
-  const byDay = new Map(schedule.map((s) => [s.day, parseTimes(s.time)]))
+  // Suspended Masses are not candidates for "the next Mass". Telling
+  // someone to come at 8 for a Mass the parish has called off is the one
+  // failure this whole feature exists to prevent.
+  const byDay = new Map(schedule.map((s) => [s.day, availableTimes(s)]))
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
   for (let offset = 0; offset < 8; offset++) {

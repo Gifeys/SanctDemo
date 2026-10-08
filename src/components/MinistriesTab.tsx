@@ -4,7 +4,15 @@ import { MINISTRIES, MINISTRY_IMAGES } from "../data";
 import { searchMinistries, suggestionsFor } from "../lib/ministrySearch";
 import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Route } from "../types";
-import { buildMinistryApplication, type MinistryApplicationDoc } from "../lib/ministryApplication";
+import { type MinistryApplicationDoc } from "../lib/ministryApplication";
+import ApplicationForm from "./ApplicationForm";
+import SignInFirst from "./SignInFirst";
+import ItemDetailSections from "./ItemDetailSections";
+import { resolveMinistry } from "../lib/itemContent";
+import { submitApplication } from "../lib/applications";
+import { useParishContent } from "../lib/useParishContent";
+import { isOpenForApplications, closedMessage } from "../lib/availability";
+import AvailabilityBadge from "./AvailabilityBadge";
 
 interface MinistriesTabProps {
   parish: Route;
@@ -25,6 +33,12 @@ const PLACEHOLDER_MINISTRY = "/parish/placeholder-photo.svg";
 
 export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn }: MinistriesTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
+
+  // Which ministries this parish is currently taking applications for.
+  // Parish-scoped, not global: the choir may be full at Mary Help and
+  // short-handed at San Roque, and the ministries themselves are shared.
+  const managed = useParishContent(parish.id);
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /// Which ministry has been opened to its own full screen, or null for the
@@ -42,83 +56,60 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   const matches = searchMinistries(MINISTRIES, query);
   const suggestions = suggestionsFor(MINISTRIES);
 
-  // No ministry until one is chosen. The form used to sit at the bottom of
-  // the page permanently, with its own "select target ministry" dropdown -
-  // so the page asked which ministry twice, once by tapping Apply and again
-  // in the form. Now Apply is what opens the form, and the ministry is the
-  // one whose card was tapped.
+  /// Which ministry's application screen is open, or null.
+  ///
+  /// Applying now takes over the whole screen rather than unfolding a
+  /// form under the card. Reading about a ministry and applying to it
+  /// are two different jobs, and the form needs room for its steps, its
+  /// validation and its review - none of which fit under a description
+  /// without burying the thing you were reading.
   const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
-  // Application Form State
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  /// What the pilgrim last sent, so the list can say so when they come
+  /// back out of the application screen.
   const [submittedMinistry, setSubmittedMinistry] = useState<string>("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const applyingTo = MINISTRIES.find(m => m.id === applyingToId) ?? null;
-
-  const closeForm = () => {
-    setApplyingToId(null);
-    setErrorMsg("");
-  };
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleApply = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!applyingTo) return;
-
+  // The application screen replaces everything, including the tab's own
+  // header. Rendering it alongside would leave "Parish Ministries" and a
+  // search box above a form, which is the half-measure this replaced.
+  if (applyingTo) {
     if (!uid) {
-      // The Firestore rules require an owning uid, and My Application has
-      // nowhere to appear without an account.
-      setErrorMsg("Please sign in first, so the parish can reply to you and you can follow your application.");
-      return;
+      return (
+        <SignInFirst
+          what={applyingTo.name}
+          onSignIn={onOpenSignIn}
+          onBack={() => setApplyingToId(null)}
+        />
+      );
     }
-    if (!fullName.trim()) {
-      setErrorMsg("Please enter your full name.");
-      return;
-    }
-    if (!userEmail) {
-      setErrorMsg("Your account has no email address, so the parish would have no way to reply.");
-      return;
-    }
-    if (!consent) {
-      setErrorMsg("Please agree to be contacted about your application.");
-      return;
-    }
-
-    onAddApplication(
-      buildMinistryApplication({
-        uid,
-        fullName,
-        email: userEmail,
-        mobile: phone,
-        ministryId: applyingTo.id,
-        ministryName: applyingTo.name,
-        // Taken from the dashboard the pilgrim is already inside, never
-        // asked for again.
-        parishId: parish.id,
-        parishName,
-        message,
-        consent,
-      }),
+    return (
+      <ApplicationForm
+        kind="ministry"
+        itemId={applyingTo.id}
+        itemName={applyingTo.name}
+        parishName={parishName}
+        defaults={{ email: userEmail }}
+        onClose={() => setApplyingToId(null)}
+        onSubmitted={() => {
+          setSubmittedMinistry(applyingTo.name);
+          setIsSubmitted(true);
+          // Deliberately NOT onAddApplication. That prop writes a second
+          // document straight to the applications collection, and
+          // ApplicationForm has already written the real one through
+          // lib/applications - the one with the reference number, the
+          // history entry and the notification. Calling both would file
+          // every application twice.
+        }}
+      />
     );
-
-    setSubmittedMinistry(applyingTo.name);
-    setIsSubmitted(true);
-    setErrorMsg("");
-    setApplyingToId(null);
-
-    setFullName("");
-    setPhone("");
-    setMessage("");
-    setConsent(false);
-  };
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
@@ -128,6 +119,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
         title="Parish Ministries"
         blurb="Join our lay ministries to serve the parish community."
         icon={<Sparkles className="w-3.5 h-3.5" />}
+        collapsing
       />
 
       <div className="p-4 space-y-4">
@@ -213,7 +205,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                     setApplyingToId(null);
                     setIsSubmitted(false);
                   }}
-                  className="ministry-card"
+                  className={`ministry-card${isOpenForApplications(managed, min.id) ? "" : " is-unavailable"}`}
                 >
                   <span className="ministry-card__media">
                     <img
@@ -230,6 +222,13 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                     <span className="ministry-card__hint">{min.description}</span>
                     <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                   </span>
+                  {/* On the list too, not only inside. Otherwise the only
+                      way to find out the choir is closed is to open it. */}
+                  {!isOpenForApplications(managed, min.id) && (
+                    <span className="block px-3 pb-3">
+                      <AvailabilityBadge open={false} kind="ministry" />
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -243,10 +242,13 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
           <div className="space-y-2">
             {(openId ? MINISTRIES.filter(m => m.id === openId) : []).map((min) => {
               const isExpanded = true;
+              const resolved = resolveMinistry(managed, min.id);
               return (
                 <div
                   key={min.id}
-                  className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all"
+                  className={`bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] overflow-hidden shadow-xs transition-all${
+                    isOpenForApplications(managed, min.id) ? "" : " is-unavailable"
+                  }`}
                 >
                   <div className="ministry-hero">
                     <img
@@ -268,157 +270,57 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">
-                      <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed">
-                        {min.description}
-                      </p>
-                      
-                      {/* Only when the parish has actually stated some. Their
-                          own ministry list gives none, and a "Requirements to
-                          Join" heading over an empty list reads as a page that
-                          failed to load rather than as a ministry anyone may
-                          join. */}
-                      <div className="space-y-1.5" hidden={min.requirements.length === 0}>
-                        <h5 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
-                          Requirements to Join:
-                        </h5>
-                        <ul className="space-y-1 text-[15px] text-[var(--color-brand-text)]">
-                          {min.requirements.map((req, idx) => (
-                            <li key={idx} className="flex gap-2 items-center text-[15px]">
-                              <Check className="w-3.5 h-3.5 text-green-700 shrink-0" />
-                              <span>{req}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <AvailabilityBadge
+                        open={isOpenForApplications(managed, min.id)}
+                        kind="ministry"
+                      />
 
-                      <button
-                        onClick={() => {
-                          setApplyingToId(min.id);
-                          setIsSubmitted(false);
-                          setErrorMsg("");
-                          // The form is rendered directly under this card,
-                          // so there is nothing to scroll to - it appears
-                          // where the pilgrim is already looking.
-                        }}
-                        className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
-                      >
-                        Apply
-                      </button>
+                      {/* The parish's own words where they have written
+                          any, the compiled description where they have
+                          not. Every section below renders only when it
+                          has something in it - a heading over an empty
+                          list reads as a page that failed to load. */}
+                      <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed">
+                        {resolved?.about ?? min.description}
+                      </p>
+
+                      {resolved && <ItemDetailSections item={resolved} />}
+
+                      {/* Closed ministries keep their card, their
+                          description and their requirements. Hiding them
+                          would leave a pilgrim wondering whether the
+                          ministry had been disbanded or whether the app
+                          was broken; greyed out, the answer is on the
+                          card. */}
+                      {isOpenForApplications(managed, min.id) ? (
+                        <button
+                          onClick={() => {
+                            setApplyingToId(min.id);
+                            setIsSubmitted(false);
+                          }}
+                          className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
+                        >
+                          Apply now
+                        </button>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            disabled
+                            className="py-1.5 px-3 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] text-sm font-bold uppercase tracking-wider rounded-full cursor-not-allowed"
+                          >
+                            Not available
+                          </button>
+                          <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
+                            {closedMessage("ministry", min.name)}
+                          </p>
+                        </div>
+                      )}
 
                       {/* The form for THIS ministry, opened by the button
                           above. Nothing asks which ministry, and nothing
                           asks which parish: tapping Apply answered the
                           first and the dashboard answers the second. */}
-                      {applyingToId === min.id && (
-                        <form
-                          onSubmit={handleApply}
-                          className="mt-3 pt-3 border-t border-[var(--color-brand-border)] space-y-2.5 text-[15px]"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h5 className="text-[15px] font-bold text-[var(--color-brand-text)] font-serif italic">
-                                Apply to {min.name}
-                              </h5>
-                              <p className="text-sm text-[var(--color-brand-secondary)]">
-                                {parishName}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={closeForm}
-                              aria-label="Cancel this application"
-                              className="p-1 text-[var(--color-brand-secondary)] shrink-0"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {errorMsg && (
-                            <div className="p-2 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-1.5">
-                              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                              <span className="text-sm font-bold">{errorMsg}</span>
-                            </div>
-                          )}
-
-                          {!uid && (
-                            <button
-                              type="button"
-                              onClick={onOpenSignIn}
-                              className="w-full p-2.5 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl text-left text-sm font-semibold text-[var(--color-brand-text)]"
-                            >
-                              Sign in first &mdash; the parish replies by email, and your
-                              application appears under Me so you can follow it.
-                            </button>
-                          )}
-
-                          <div className="space-y-1">
-                            <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                              Full Name *
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="Juan dela Cruz"
-                              value={fullName}
-                              onChange={(e) => setFullName(e.target.value)}
-                              className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
-                            />
-                          </div>
-
-                          {/* Shown, not asked. The account already has it,
-                              and it is what the coordinator will reply to. */}
-                          <div className="space-y-1">
-                            <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                              Email Address *
-                            </label>
-                            <p className="w-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] text-[var(--color-brand-text)] break-all">
-                              {userEmail || "Sign in to use your account email"}
-                            </p>
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                              Mobile Number
-                            </label>
-                            <input
-                              type="tel"
-                              placeholder="0917-XXXXXXX"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                              Why would you like to join this ministry?
-                            </label>
-                            <textarea
-                              rows={2}
-                              placeholder="Optional"
-                              value={message}
-                              onChange={(e) => setMessage(e.target.value)}
-                              className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)] font-sans resize-none"
-                            />
-                          </div>
-
-                          <label className="flex items-start gap-2 text-[15px] text-[var(--color-brand-text)] font-sans">
-                            <input
-                              type="checkbox"
-                              checked={consent}
-                              onChange={(e) => setConsent(e.target.checked)}
-                              className="mt-1 shrink-0"
-                            />
-                            <span>I agree to be contacted regarding my ministry application.</span>
-                          </label>
-
-                          <button
-                            type="submit"
-                            className="w-full py-2.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[var(--color-brand-primary-dark)] shadow-xs"
-                          >
-                            Submit Application
-                          </button>
-                        </form>
-                      )}
                     </div>
                   )}
                 </div>

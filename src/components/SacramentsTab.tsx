@@ -3,17 +3,35 @@ import ParishSectionHeader from "./ParishSectionHeader";
 import { SACRAMENTS, SACRAMENT_IMAGES } from "../data";
 import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark, Info, ArrowLeft, ChevronRight } from "lucide-react";
 import { Route } from "../types";
+import { submitApplication } from "../lib/applications";
+import { useParishContent } from "../lib/useParishContent";
+import ApplicationForm from "./ApplicationForm";
+import SignInFirst from "./SignInFirst";
+import ItemDetailSections from "./ItemDetailSections";
+import { resolveSacrament } from "../lib/itemContent";
+import { isOpenForApplications, closedMessage } from "../lib/availability";
+import AvailabilityBadge from "./AvailabilityBadge";
 
 interface SacramentsTabProps {
   parish: Route;
   onAddApplication: (app: { id: string; type: string; applicant: string; details: string; date: string; status: string }) => void;
+  /** The signed-in pilgrim. Applying without one is refused by the rules. */
+  uid?: string | null;
+  userEmail?: string;
+  onOpenSignIn?: () => void;
 }
 
 /** Stands in until the parish photographs each sacrament. */
 const PLACEHOLDER_SACRAMENT = "/parish/placeholder-photo.svg";
 
-export default function SacramentsTab({ parish, onAddApplication }: SacramentsTabProps) {
+export default function SacramentsTab({
+  parish, onAddApplication, uid, userEmail, onOpenSignIn,
+}: SacramentsTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
+
+  // Which sacraments this parish is currently taking applications for.
+  const managed = useParishContent(parish.id);
+
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /// Which sacrament has the whole screen, or null for the list. The same
@@ -21,61 +39,51 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
   /// or the only thing on the page, and the old accordion made every row
   /// grow downwards while you were reading it.
   const [openId, setOpenId] = useState<string | null>(null);
-  const [selectedSacramentId, setSelectedSacramentId] = useState<string>("sac-baptism");
-  
-  // Booking Form State
-  const [applicantName, setApplicantName] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
-  const [parentOrSponsor, setParentOrSponsor] = useState("");
-  const [hasPSA, setHasPSA] = useState(false);
-  const [hasBaptismal, setHasBaptismal] = useState(false);
-  const [isBooked, setIsBooked] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  /// Which sacrament's application screen is open, or null.
+  ///
+  /// Apply used to scroll to a form at the bottom of this page - a form
+  /// which then asked, again, which sacrament you wanted. Tapping Apply
+  /// had already answered that. It is now its own screen, and the
+  /// sacrament is the one whose page you were reading.
+  const [applyingToId, setApplyingToId] = useState<string | null>(null);
+  const [lastSent, setLastSent] = useState<string>("");
+
+  const applyingTo = SACRAMENTS.find(s => s.id === applyingToId) ?? null;
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!applicantName || !bookingDate) {
-      setErrorMsg("Please fill in the Applicant Name and select a Date.");
-      return;
+  if (applyingTo) {
+    if (!uid) {
+      return (
+        <SignInFirst
+          what={applyingTo.name}
+          onSignIn={onOpenSignIn ?? (() => {})}
+          onBack={() => setApplyingToId(null)}
+        />
+      );
     }
-
-    const targetSac = SACRAMENTS.find(s => s.id === selectedSacramentId);
-    
-    // Check specific checkbox requirements depending on sacrament type
-    if (selectedSacramentId === "sac-baptism" && !hasPSA) {
-      setErrorMsg("Please confirm that you have prepared the PSA Birth Certificate copy.");
-      return;
+    // The parish can close a sacrament while this screen is open - the
+    // content is live. Checked here as well as on the button, so a
+    // screen left open overnight cannot post into a closed queue. The
+    // security rules refuse it too; this makes the refusal a sentence.
+    if (!isOpenForApplications(managed, applyingTo.id)) {
+      setApplyingToId(null);
+      return null;
     }
-    if (selectedSacramentId === "sac-matrimony" && (!hasPSA || !hasBaptismal)) {
-      setErrorMsg("Holy Matrimony requires preparing both PSA Birth Certificates and Baptismal annotations.");
-      return;
-    }
-
-    // Create booking record
-    const newBooking = {
-      id: "sac-" + Date.now(),
-      type: "Sacrament Booking",
-      applicant: applicantName,
-      details: `${targetSac?.name || "Baptism"} - Scheduled Date: ${bookingDate} (Sponsor/Parent: ${parentOrSponsor || "None specified"})`,
-      date: new Date().toLocaleDateString(),
-      status: "Awaiting Parish Interview"
-    };
-
-    onAddApplication(newBooking);
-    setIsBooked(true);
-    setErrorMsg("");
-
-    // Clear form
-    setApplicantName("");
-    setBookingDate("");
-    setParentOrSponsor("");
-    setHasPSA(false);
-    setHasBaptismal(false);
-  };
+    return (
+      <ApplicationForm
+        kind="sacrament"
+        itemId={applyingTo.id}
+        itemName={applyingTo.name}
+        parishName={parishName}
+        defaults={{ email: userEmail }}
+        onClose={() => setApplyingToId(null)}
+        onSubmitted={() => setLastSent(applyingTo.name)}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
@@ -86,6 +94,7 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
         title="Sacraments Office"
         blurb="Review the guidelines, prepare the documents, and arrange a sacrament with the parish."
         icon={<Sparkles className="w-3.5 h-3.5" />}
+        collapsing
       />
       </div>
 
@@ -116,7 +125,7 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
                 key={sac.id}
                 type="button"
                 onClick={() => { setOpenId(sac.id); setExpandedId(sac.id); }}
-                className="ministry-card"
+                className={`ministry-card${isOpenForApplications(managed, sac.id) ? "" : " is-unavailable"}`}
               >
                 <span className="ministry-card__media">
                   <img
@@ -138,6 +147,7 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
 
             {(openId ? SACRAMENTS.filter(x => x.id === openId) : []).map((sac) => {
               const isExpanded = true;
+              const resolved = resolveSacrament(managed, sac.id);
               return (
                 <div
                   key={sac.id}
@@ -163,40 +173,47 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">
+                      <AvailabilityBadge
+                        open={isOpenForApplications(managed, sac.id)}
+                        kind="sacrament"
+                      />
+
+                      {/* The parish's own words where they have written
+                          any; the compiled text where they have not.
+                          Requirements, schedule, process and reminders
+                          each render only when there is something in
+                          them - see ItemDetailSections. */}
                       <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed">
-                        {sac.description}
+                        {resolved?.about ?? sac.description}
                       </p>
 
-                      <div className="p-2.5 bg-[var(--color-brand-card)]/40 rounded-xl border border-[var(--color-brand-border)]/40 text-[15px]">
-                        <span className="font-bold text-[var(--color-brand-secondary)] block font-serif italic">Parish Schedule:</span>
-                        <span className="text-[var(--color-brand-text)]">{sac.scheduleDetails}</span>
-                      </div>
-                      
-                      <div className="space-y-1.5">
-                        <h5 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
-                          Required Documents to Submit:
-                        </h5>
-                        <ul className="space-y-1 text-[15px] text-[var(--color-brand-text)]">
-                          {sac.requirements.map((req, idx) => (
-                            <li key={idx} className="flex gap-2 items-center text-[15px]">
-                              <Check className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                              <span>{req}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      {resolved && <ItemDetailSections item={resolved} />}
 
-                      <button
-                        onClick={() => {
-                          setSelectedSacramentId(sac.id);
-                          setIsBooked(false);
-                          const element = document.getElementById("booking-form");
-                          element?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
-                      >
-                        Schedule / Book Now
-                      </button>
+                      {/* The information stays readable either way. A
+                          pilgrim whose parish has paused Confirmation
+                          still needs the requirements, so they can have
+                          the papers ready when it reopens. */}
+                      {isOpenForApplications(managed, sac.id) ? (
+                        <button
+                          onClick={() => setApplyingToId(sac.id)}
+                          className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
+                        >
+                          Apply now
+                        </button>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            disabled
+                            className="py-1.5 px-3 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] text-sm font-bold uppercase tracking-wider rounded-full cursor-not-allowed"
+                          >
+                            Not available
+                          </button>
+                          <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
+                            {closedMessage("sacrament", sac.name)}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -205,137 +222,6 @@ export default function SacramentsTab({ parish, onAddApplication }: SacramentsTa
           </div>
         </div>
 
-        {/* Booking Form Section */}
-        <div id="booking-form" className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-4 shadow-xs space-y-3">
-          <h3 className="text-sm font-bold text-[var(--color-brand-text)] font-serif italic border-b border-[var(--color-brand-border)]/45 pb-1.5">
-            Pre-Schedule Sacrament
-          </h3>
-
-          {isBooked ? (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-2">
-              <CheckCircle className="w-8 h-8 text-amber-700 mx-auto" />
-              <div className="space-y-0.5">
-                <h4 className="text-[15px] font-bold text-amber-900 font-serif italic">Pre-Booking Submitted!</h4>
-                <p className="text-[15px] text-amber-800 leading-relaxed font-sans">
-                  Your reservation request has been logged! Please bring the physical documents to the {parishName} Parish Office for verification and canonical approval.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsBooked(false)}
-                className="mt-1.5 text-sm bg-[var(--color-brand-primary)] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wide"
-              >
-                Schedule Another Sacrament
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleBooking} className="space-y-2.5 text-[15px]">
-              {errorMsg && (
-                <div className="p-2 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center gap-1.5">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  <span className="text-sm font-bold">{errorMsg}</span>
-                </div>
-              )}
-
-              {/* Selection */}
-              <div className="space-y-1">
-                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                  Select Sacrament
-                </label>
-                <select
-                  value={selectedSacramentId}
-                  onChange={(e) => {
-                    setSelectedSacramentId(e.target.value);
-                    setErrorMsg("");
-                  }}
-                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2 font-bold font-serif italic text-[15px] outline-none"
-                >
-                  {SACRAMENTS.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Applicant Name */}
-              <div className="space-y-1">
-                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                  Applicant's Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Name of child / couple / baptismal candidate"
-                  value={applicantName}
-                  onChange={(e) => setApplicantName(e.target.value)}
-                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
-                />
-              </div>
-
-              {/* Target Date */}
-              <div className="space-y-1">
-                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                  Desired Date of Sacrament
-                </label>
-                <input
-                  type="date"
-                  value={bookingDate}
-                  onChange={(e) => setBookingDate(e.target.value)}
-                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
-                />
-              </div>
-
-              {/* Parent/Sponsor Information */}
-              <div className="space-y-1">
-                <label className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-serif italic">
-                  Parent / Primary Sponsor Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Primary parent or key sponsor name"
-                  value={parentOrSponsor}
-                  onChange={(e) => setParentOrSponsor(e.target.value)}
-                  className="w-full bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-xl p-2.5 text-[15px] outline-none text-[var(--color-brand-text)]"
-                />
-              </div>
-
-              {/* Document Checklist Validation */}
-              <div className="space-y-1.5 pt-1.5 border-t border-[var(--color-brand-card)]">
-                <span className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider">
-                  Document Readiness:
-                </span>
-                
-                <div className="space-y-1">
-                  <label className="flex items-center gap-2 text-[15px] text-[var(--color-brand-text)] select-none">
-                    <input
-                      type="checkbox"
-                      checked={hasPSA}
-                      onChange={(e) => setHasPSA(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded accent-[var(--color-brand-primary)]"
-                    />
-                    <span>I have prepared the official PSA Birth Certificate</span>
-                  </label>
-
-                  {(selectedSacramentId === "sac-matrimony" || selectedSacramentId === "sac-confirmation") && (
-                    <label className="flex items-center gap-2 text-[15px] text-[var(--color-brand-text)] select-none">
-                      <input
-                        type="checkbox"
-                        checked={hasBaptismal}
-                        onChange={(e) => setHasBaptismal(e.target.checked)}
-                        className="h-3.5 w-3.5 rounded accent-[var(--color-brand-primary)]"
-                      />
-                      <span>I have prepared the Catholic Baptismal Certificate</span>
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full mt-1.5 py-2.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)] text-white text-[15px] font-bold uppercase tracking-wider rounded-full border border-[var(--color-brand-primary-dark)] shadow-xs"
-              >
-                File Sacrament Request Form
-              </button>
-            </form>
-          )}
-        </div>
       </div>
     </div>
   );

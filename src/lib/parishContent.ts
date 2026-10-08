@@ -47,6 +47,29 @@ export interface ParishContent {
   /** The photograph behind the Mass schedule panel on Home. */
   massImageUrl?: string;
 
+  /**
+   * Ministries and sacraments this parish is NOT currently accepting
+   * applications for, by id.
+   *
+   * A list of exceptions rather than a flag on each one, so a parish with
+   * no document at all is open for everything rather than closed for
+   * everything. See lib/availability.ts for the full reasoning - and note
+   * that the security rules read this exact field when they decide whether
+   * to accept an application, so its shape is not free to change.
+   */
+  closedApplications?: string[];
+
+  /**
+   * What the parish has written about each ministry and sacrament,
+   * keyed by id: the about text, requirements, schedule, process and
+   * reminders a pilgrim reads before applying.
+   *
+   * Separate from the application records on purpose - a parish
+   * correcting a requirement must not have to touch anybody's
+   * submission. See lib/itemContent.ts.
+   */
+  itemContent?: Record<string, import("./itemContent").ItemContent>;
+
   /** Who last changed this and when — a parish office needs an audit trail. */
   updatedBy?: string;
   updatedAt?: string;

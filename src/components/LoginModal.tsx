@@ -282,8 +282,8 @@ export default function LoginModal({ onLoginSuccess, onLogout, isLoggedIn, userE
               <UserPlus className="w-8 h-8 text-[var(--color-brand-primary)]" />
             ) : (
               <img
-                src="/ui/diocese-crest.png"
-                alt=""
+                src="/ui/sanctiwalk-mark-navy.png"
+                alt="SanctiWalk"
                 className="w-10 h-10 object-contain"
               />
             )}

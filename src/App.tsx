@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { PresenceProvider, usePresence } from "./context/PresenceContext";
 import PhoneContainer from "./components/PhoneContainer";
 import Onboarding from "./components/Onboarding";
 import SearchScreen from "./components/SearchScreen";
-import ChurchDetail from "./components/ChurchDetail";
 import PrayScreen from "./components/PrayScreen";
 import PwaBanner from "./components/PwaBanner";
 
@@ -13,6 +12,7 @@ import MeTab from "./components/MeTab";
 import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
 import MinistriesTab from "./components/MinistriesTab";
+import ParishSectionHeader from "./components/ParishSectionHeader";
 import SacramentsTab from "./components/SacramentsTab";
 import ArTour from "./components/ArTour";
 import PilgrimQuiz from "./components/PilgrimQuiz";
@@ -26,11 +26,25 @@ import CustomDioceseMap from "./components/CustomDioceseMap";
 
 // Firebase imports
 import { auth, db } from "./lib/firebase";
+import { logActivity } from "./lib/activityLog";
+import { getProfile } from "./lib/userProfile";
+import { watchNotifications, unreadCount } from "./lib/notifications";
+import { useReminders } from "./lib/useReminders";
+import { useParishContents } from "./lib/useParishContents";
+import type { ParishReminders } from "./lib/reminderSchedule";
+import {
+  loadFollowed, saveFollowed, withFollowed, remindableParishes,
+} from "./lib/followedParishes";
+import { notifyNow } from "./lib/deviceNotifications";
+import { announcementsForParish, publishedOnly } from "./lib/announcements";
+import ReminderSettingsCard from "./components/ReminderSettingsCard";
+import MyApplicationsPage from "./components/MyApplicationsPage";
+import NotificationsPage from "./components/NotificationsPage";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs, writeBatch, query, where } from "firebase/firestore";
 
 import { Route, UserProgress } from "./types";
-import { ROUTES, BADGES } from "./data";
+import { ROUTES, BADGES, MASS_SCHEDULES } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
@@ -167,15 +181,60 @@ export default function App() {
   const [selectedChurchId, setSelectedChurchId] = useState<string | null>(() =>
     routeForHomeParish(loadHomeParishId(VALID_HOME_IDS))
   );
-  const [activeTab, setActiveTab] = useState<
-    "home" | "navigator" | "rosary" | "mass" | "ministries" | "history" | "sacraments" | "ar" | "quiz" | "church" | "me" | "admin" | "pwa-devkit"
-  >("home");
+  type Tab =
+    | "home" | "navigator" | "rosary" | "mass" | "ministries" | "history"
+    | "sacraments" | "ar" | "quiz" | "me" | "admin" | "pwa-devkit"
+    | "myApplications" | "notifications";
+
+  /**
+   * The tab, remembered across a restart.
+   *
+   * Not a convenience. Android's low-memory killer terminates this app
+   * while it is in the background - every recorded exit on the test
+   * phone was reason=3 LOW_MEMORY, not a crash - and a WebView app
+   * carrying a map is a large, attractive target. When that happens the
+   * app restarts from scratch, and landing back on Home after having
+   * been on the Map is exactly what "the map crashed" looks like from
+   * the outside.
+   *
+   * It cannot stop the kill. It can make coming back feel like coming
+   * back rather than starting over.
+   *
+   * "ar" and "admin" are deliberately NOT restored: reopening straight
+   * into the camera, or into the parish office, is not what someone
+   * returning to the app expects.
+   */
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem("sanctiwalk.tab");
+      const restorable: Tab[] = ["home", "navigator", "rosary", "mass", "me"];
+      if (saved && (restorable as string[]).includes(saved)) return saved as Tab;
+    } catch {
+      // Private mode, or storage blocked. Home is the right fallback.
+    }
+    return "home";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sanctiwalk.tab", activeTab);
+    } catch {
+      // Nothing to do; the tab simply will not be remembered.
+    }
+  }, [activeTab]);
 
   // Where "Back" goes from the history page. It is opened from two places -
   // the Learn more on Home's Church History card, and the parish's own page
   // reached from the map - and a single hardcoded destination would strand
   // whoever came from the other one.
-  const [historyReturnTab, setHistoryReturnTab] = useState<"home" | "church">("home");
+  // History is reached from the dashboard now that the separate parish
+  // page is gone, so there is only one place to go back to.
+  const [historyReturnTab] = useState<"home">("home");
+
+  // Whether Scan's viewfinder is open, so the parish band can get out of
+  // the way of a live camera.
+  const [scanCameraLive, setScanCameraLive] = useState(false);
+
   
   const [isOffline, setIsOffline] = useState(false);
   const [isMobileOnly, setIsMobileOnly] = useState(true);
@@ -192,8 +251,84 @@ export default function App() {
   // Identity state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  // The greeting name.
+  //
+  // The pilgrim's own nickname when they have set one, which is the whole
+  // point of having one. The email's first word is the fallback, and it
+  // was the only thing here before - which is how someone came to be
+  // greeted as "sanctiwalk" on their own home screen.
+  const [nickname, setNickname] = useState<string | undefined>(undefined);
+  /** The pilgrim's own parish, from their profile. Home returns here. */
+  const [myParishId, setMyParishId] = useState<string | null>(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const greetingName =
+    (isLoggedIn ? nickname?.trim() : "") ||
+    (isLoggedIn && userEmail ? userEmail.split("@")[0].split(/[._-]/)[0] : undefined);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
+  /**
+   * Unread count, and a phone notification for anything new.
+   *
+   * The seen-set is what stops the second half firing for history. On
+   * the first snapshot every existing notification is "new" to this
+   * listener, and without recording them first, opening the app would
+   * put every decision the parish ever made into the notification tray
+   * at once.
+   */
+  const seenNotificationsRef = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUnreadNotifications(0);
+      seenNotificationsRef.current = null;
+      return;
+    }
+    return watchNotifications(items => {
+      setUnreadNotifications(unreadCount(items));
+
+      const ids = new Set(items.map(n => n.id).filter(Boolean) as string[]);
+      if (seenNotificationsRef.current === null) {
+        // First snapshot: adopt it silently.
+        seenNotificationsRef.current = ids;
+        return;
+      }
+
+      if (!remindersRef.current.settings.applicationUpdates) {
+        seenNotificationsRef.current = ids;
+        return;
+      }
+
+      for (const item of items) {
+        if (!item.id || seenNotificationsRef.current.has(item.id)) continue;
+        if (item.readAt) continue;
+        // Raised on the phone, not only in the app. This is the one
+        // category that cannot be scheduled in advance - the parish
+        // decides when it decides - so it arrives when the app is next
+        // open. See lib/deviceNotifications.ts for why not push.
+        void notifyNow(item.title, item.body);
+      }
+      seenNotificationsRef.current = ids;
+    });
+  }, [isLoggedIn, uid]);
+  // Read once per sign-in, then kept current by Me's editor rather than
+  // re-read on every render.
+  useEffect(() => {
+    if (!isLoggedIn || !uid) { setNickname(undefined); return; }
+    let live = true;
+    void getProfile(uid).then(p => {
+      if (!live) return;
+      setNickname(p?.nickname ?? undefined);
+      // The parish chosen at signup. Home belongs to it: it is the one
+      // the pilgrim actually attends, and the one their applications go
+      // to. Anything else on screen is a visit.
+      if (p?.churchId) {
+        setMyParishId(p.churchId);
+        setSelectedChurchId(current => current ?? p.churchId);
+      }
+    });
+    return () => { live = false; };
+  }, [isLoggedIn, uid]);
 
   // The applications collection in Firestore: ministry applications and
   // sacrament bookings share it, distinguished by `type`.
@@ -416,6 +551,65 @@ export default function App() {
 
   const activeChurchRoute = ROUTES.find(r => r.id === selectedChurchId) || ROUTES[0];
 
+  /**
+   * The phone's reminder alarms.
+   *
+   * Built from the parishes the pilgrim FOLLOWS, not the one they
+   * happen to be looking at. Those are different questions, and
+   * conflating them meant that glancing at another parish's Mass times
+   * silently replaced every reminder for their own — and glancing back
+   * replaced them again.
+   */
+  const [followedParishes, setFollowedParishes] = useState<string[]>(loadFollowed);
+  const remindableIds = useMemo(
+    () => remindableParishes(followedParishes, homeParishId),
+    [followedParishes, homeParishId],
+  );
+  const followedContent = useParishContents(remindableIds);
+
+  const reminderParishes = useMemo<ParishReminders[]>(
+    () => remindableIds.map(id => {
+      const route = ROUTES.find(r => r.id === id);
+      return {
+        parishId: id,
+        parishName: route?.name.replace(" Guide", "").replace(" Tour", "") ?? id,
+        // The parish's own times where an admin has entered them, the
+        // compiled ones otherwise — the same precedence the Mass card
+        // uses, so a reminder and the card can never disagree.
+        massSchedule: followedContent[id]?.massSchedule ?? MASS_SCHEDULES[id]?.schedule ?? [],
+        announcements: publishedOnly(announcementsForParish(announcements, id)),
+      };
+    }),
+    [remindableIds, followedContent, announcements],
+  );
+
+  const reminders = useReminders(reminderParishes);
+
+  const toggleFollowParish = useCallback((parishId: string, follow: boolean) => {
+    setFollowedParishes(current => {
+      const next = withFollowed(current, parishId, follow, homeParishId);
+      saveFollowed(next);
+      return next;
+    });
+  }, [homeParishId]);
+
+  // Read by the notification watcher above, which is declared earlier and
+  // must not re-subscribe every time a setting changes.
+  const remindersRef = useRef(reminders);
+  remindersRef.current = reminders;
+
+  // Shown only when the dashboard is on a parish that is not the
+  // pilgrim's own - which happens two ways, both deliberate: walking near
+  // another parish, or searching for one. Offering "back" while already
+  // home would be a button that does nothing.
+  const viewingAnotherParish =
+    myParishId !== null && activeChurchRoute.id !== myParishId;
+
+  const backToMyParish = () => {
+    if (myParishId) setSelectedChurchId(myParishId);
+    setActiveTab("home");
+  };
+
   // Presence sheet actions: the pilgrim may be physically near a parish they
   // haven't selected in-app yet (e.g. they came straight from the church
   // selector), so opening the tour or AR screen also switches the active
@@ -553,14 +747,10 @@ export default function App() {
     earnBadge("badge-5"); // Community Active badge represents engagement
     addPoints(200);
 
-    // Dynamic application registration
-    handleAddApplication({
-      type: "User Authenticated",
-      applicant: email,
-      details: `Logged into SanctiWalk Devotee Profile (${adminFlag ? "ADMIN" : "PILGRIM"})`,
-      date: new Date().toLocaleDateString(),
-      status: "Session Authorized"
-    });
+    // A sign-in is an event, not an application. It used to be written
+    // into the applications collection, which put login records in the
+    // queue the parish office works through.
+    void logActivity("sign_in", `Signed in as ${adminFlag ? "admin" : "pilgrim"}`);
 
     if (adminFlag) {
       setActiveTab("admin");
@@ -605,15 +795,7 @@ export default function App() {
         newBadges.push("badge-2");
       }
 
-      // Auto log station visit to Admin dashboard
-      handleAddApplication({
-        id: "vst-" + Date.now(),
-        type: "Station Visited",
-        applicant: isLoggedIn ? userEmail : "Anonymous Pilgrim",
-        details: `Scanned & Checked in at Station: ${stationId}`,
-        date: new Date().toLocaleDateString(),
-        status: "Stamp Awarded"
-      });
+      void logActivity("station_visit", `Checked in at station ${stationId}`);
 
       const updatedProgress = {
         ...prev,
@@ -652,15 +834,7 @@ export default function App() {
     addPoints(100); // 100 points for adding a comment
     earnBadge("badge-5"); // Unlock Community Active badge
 
-    // Log comment event
-    handleAddApplication({
-      id: "cmt-" + Date.now(),
-      type: "Station Comment Posted",
-      applicant: isLoggedIn ? userEmail : "Public User",
-      details: `Commented: "${activeCommentInput.substring(0, 45)}..." at ${stationId}`,
-      date: new Date().toLocaleDateString(),
-      status: "Moderated Approval"
-    });
+    void logActivity("station_comment", `Commented at station ${stationId}`);
   };
 
   const liveParishes = ROUTES.filter(r => r.status !== "coming_soon");
@@ -910,16 +1084,16 @@ export default function App() {
                   {activeTab === "home" && (
                     <Dashboard
                       parish={activeChurchRoute}
-                      firstName={
-                        isLoggedIn && userEmail
-                          ? userEmail.split("@")[0].split(/[._-]/)[0]
-                          : undefined
-                      }
+                      firstName={greetingName}
                       announcements={announcements}
-                      onNavigate={(tab) => {
-                        if (tab === "history") setHistoryReturnTab("home");
-                        setActiveTab(tab);
-                      }}
+                      followingThisParish={followedParishes.includes(activeChurchRoute.id)}
+                      onToggleFollowParish={
+                        activeChurchRoute.id === homeParishId
+                          ? undefined
+                          : follow => toggleFollowParish(activeChurchRoute.id, follow)
+                      }
+                      onNavigate={setActiveTab}
+                      onBackToMyParish={viewingAnotherParish ? backToMyParish : undefined}
                       onSelectParish={handleSelectParish}
                       onWalkThere={handleWalkThere}
                       onOpenSearch={() => setIsSearchOpen(true)}
@@ -964,21 +1138,13 @@ export default function App() {
                   )}
 
                   {/* The parish's own page — the redesign's screen 05. */}
-                  {activeTab === "church" && (
-                    <ChurchDetail
-                      parish={activeChurchRoute}
-                      onBack={() => setActiveTab("home")}
-                      onWalkThere={handleWalkThere}
-                      onNavigate={tab => {
-                        if (tab === "history") setHistoryReturnTab("church");
-                        setActiveTab(tab);
-                      }}
-                    />
-                  )}
 
                   {/* TAB 3: Daily Rosary guide */}
                   {activeTab === "rosary" && (
-                    <PrayScreen onOpenSettings={() => setIsRosarySettingsOpen(true)} />
+                    <PrayScreen
+                      onOpenSettings={() => setIsRosarySettingsOpen(true)}
+                      parish={activeChurchRoute}
+                    />
                   )}
 
                   {/* TAB 4: Mass schedule table — follows the active parish,
@@ -1009,12 +1175,62 @@ export default function App() {
 
                   {/* TAB 7: Sacraments office */}
                   {activeTab === "sacraments" && (
-                    <SacramentsTab parish={activeChurchRoute} onAddApplication={handleAddApplication} />
+                    <SacramentsTab
+                      parish={activeChurchRoute}
+                      onAddApplication={handleAddApplication}
+                      uid={uid}
+                      userEmail={userEmail}
+                      onOpenSignIn={() => setIsSignInOpen(true)}
+                    />
                   )}
 
                   {/* TAB 8: AR Tour */}
                   {activeTab === "ar" && (
-                    <ArTour stations={activeChurchRoute.stations} parishId={activeChurchRoute.id} />
+                    <div
+                      className={
+                        scanCameraLive
+                          ? "flex-1 flex flex-col min-h-0"
+                          : "flex-1 flex flex-col min-h-0 bg-[var(--color-brand-card)]"
+                      }
+                    >
+                      {/* Wrapped out here rather than inside ArTour: that
+                          component returns early for each of its camera
+                          states, so a banner added to one of them would
+                          vanish in the others.
+
+                          Gone entirely once the viewfinder is up - the
+                          screen is the camera then, and the scroller goes
+                          with it so the picture is not inside something
+                          that can be scrolled. */}
+                      {/* Both children are KEYED, and that is load-bearing.
+                          React matches siblings by position when they have
+                          no key, so the moment the camera went live and the
+                          band unmounted, ArTour shifted from the second
+                          child to the first - React tore it down and built
+                          a fresh one, which stopped the camera it had just
+                          started. The banner then cleared, the band came
+                          back, and it began again. The scanner could never
+                          stay open for more than a frame. */}
+                      {!scanCameraLive && (
+                        <ParishSectionHeader
+                          key="ar-band"
+                          routeId={activeChurchRoute.id}
+                          eyebrow="Explore in Augmented Reality"
+                          title="AR Walk"
+                          blurb="Point your camera at the marker to begin, then at each station as you walk."
+                          icon={<Sparkles className="w-3.5 h-3.5" />}
+                          collapsing
+                        />
+                      )}
+                      <ArTour
+                        key="ar-tour"
+                        stations={activeChurchRoute.stations}
+                        parishId={activeChurchRoute.id}
+                        parishName={activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
+                        onClose={() => setActiveTab("home")}
+                        onCameraLiveChange={setScanCameraLive}
+                      />
+                    </div>
                   )}
 
                   {/* TAB 9: Pilgrim Catechism Quiz */}
@@ -1031,8 +1247,23 @@ export default function App() {
                       Settings, all assembled from state the app already
                       tracks. Replaces the old standalone "Devotee
                       Authentication" screen, which is now folded in here. */}
+                  {activeTab === "myApplications" && (
+                    <MyApplicationsPage
+                      applications={applications}
+                      onBack={() => setActiveTab("me")}
+                    />
+                  )}
+
+                  {activeTab === "notifications" && (
+                    <NotificationsPage onBack={() => setActiveTab("me")} />
+                  )}
+
                   {activeTab === "me" && (
                     <MeTab
+                      onOpenApplications={() => setActiveTab("myApplications")}
+                      onOpenNotifications={() => setActiveTab("notifications")}
+                      unreadNotifications={unreadNotifications}
+                      onNicknameChange={setNickname}
                       isLoggedIn={isLoggedIn}
                       userEmail={userEmail}
                       isAdmin={isAdmin}
@@ -1046,6 +1277,22 @@ export default function App() {
                       onOpenAdmin={() => setActiveTab("admin")}
                       onOpenSimulator={() => setIsSimulatorOpen(true)}
                       onOpenSignIn={() => setIsSignInOpen(true)}
+                      reminders={
+                        <ReminderSettingsCard
+                          settings={reminders.settings}
+                          update={reminders.update}
+                          permission={reminders.permission}
+                          enable={reminders.enable}
+                          scheduled={reminders.scheduled}
+                          supported={reminders.supported}
+                          followed={followedParishes.map(id => ({
+                            id,
+                            name: ROUTES.find(r => r.id === id)
+                              ?.name.replace(" Guide", "").replace(" Tour", "") ?? id,
+                          }))}
+                          onUnfollow={id => toggleFollowParish(id, false)}
+                        />
+                      }
                     />
                   )}
 

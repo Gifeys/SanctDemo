@@ -49,6 +49,25 @@ export type CaptureResult =
   | { ok: false; reason: CaptureFailure };
 
 /**
+ * Narrows a CaptureResult to its failure branch.
+ *
+ * `if (!result.ok)` ought to be enough, and in a strict project it is. This
+ * one compiles without `strictNullChecks`, and without it TypeScript does
+ * not narrow a union by a boolean discriminant - so `result.reason` inside
+ * that branch was an error, and the four distinct failure messages below
+ * were unreachable as far as the compiler was concerned.
+ *
+ * A user-defined type guard narrows regardless of that setting. Turning
+ * `strict` on across the project would be the real fix and is a bigger
+ * decision than this file.
+ */
+export function captureFailed(
+  result: CaptureResult,
+): result is { ok: false; reason: CaptureFailure } {
+  return !result.ok;
+}
+
+/**
  * True when getUserMedia can even be attempted here. False on a bare LAN IP
  * over plain HTTP (e.g. http://192.168.1.7:5173) — the browser hides
  * mediaDevices entirely rather than prompting and denying, so this has to be

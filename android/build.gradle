@@ -24,6 +24,65 @@ allprojects {
     }
 }
 
+/*
+ * Compile every module with whichever modern JDK this machine has.
+ *
+ * Capacitor 8's plugin modules declare `sourceCompatibility 21`, and the
+ * Kotlin Android plugin turns that into a request for a JDK 21 toolchain
+ * SPECIFICALLY - not "21 or newer". A machine with 17 and 23 installed
+ * then fails with "Cannot find a Java installation matching
+ * {languageVersion=21}", which reads as a missing JDK when the real
+ * problem is an exact-version match.
+ *
+ * Pinning the toolchain to the JDK actually running Gradle fixes it
+ * without a download and without installing a third JDK. Compiling
+ * source level 21 on a newer JDK is ordinary and supported; the class
+ * files are identical.
+ *
+ * If this project ever moves to a machine with JDK 21, this block is
+ * harmless - it just pins to 21 there instead.
+ */
+def gradleJdk = JavaLanguageVersion.of(JavaVersion.current().majorVersion)
+
+subprojects {
+    afterEvaluate { proj ->
+        // The JDK that RUNS the compilers. Whatever modern one is here.
+        def javaExt = proj.extensions.findByType(JavaPluginExtension)
+        if (javaExt != null) {
+            javaExt.toolchain.languageVersion.set(gradleJdk)
+        }
+
+        /*
+         * The bytecode level both compilers EMIT, which is a different
+         * question and has to match between them.
+         *
+         * Capacitor's modules set `sourceCompatibility 21`, so javac
+         * emits 21. Kotlin would otherwise follow the toolchain and emit
+         * whatever it caps at - 22 for Kotlin 2.0 on a JDK 23 toolchain -
+         * and Gradle rejects the pair outright:
+         *
+         *     Inconsistent JVM-target compatibility detected for tasks
+         *     'compileDebugJavaWithJavac' (21) and 'compileDebugKotlin' (22)
+         *
+         * Pinning Kotlin to 21 settles it on the version javac already
+         * picked, rather than dragging Java up to a level the Kotlin
+         * compiler cannot reach.
+         */
+        // Guarded by plugin id, and matched on the task's class NAME.
+        // `:app` has no Kotlin plugin, so naming the KotlinCompile class
+        // directly there fails configuration with "Could not get unknown
+        // property 'org'" - the class simply is not on that project's
+        // classpath.
+        proj.plugins.withId("org.jetbrains.kotlin.android") {
+            proj.tasks.configureEach { t ->
+                if (t.class.name.startsWith("org.jetbrains.kotlin.gradle.tasks.KotlinCompile")) {
+                    t.kotlinOptions.jvmTarget = "21"
+                }
+            }
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

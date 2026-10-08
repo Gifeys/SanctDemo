@@ -1,164 +1,207 @@
-import type { ReactNode } from "react";
-import { useRef } from "react";
-import RailDots from "./RailDots";
-import { useDragSafeClicks } from "../lib/useDragSafeClicks";
-import { CalendarDays, ChevronRight, Users, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, Sparkles } from "lucide-react";
 import { MINISTRIES, SACRAMENTS } from "../data";
-
-/**
- * Stands in until the parish supplies photographs.
- *
- * An illustration, not a stock photo: a picture of some other church's
- * altar servers in Mary Help of Christians' card would read as a picture of
- * THIS parish. Same principle as scheduleVerified in data.ts - show the
- * placeholder, never the plausible-looking wrong thing.
- */
-// placeholder-ministry.svg has never existed; only placeholder-photo.svg
-// does. The bulletin has been showing a broken-image icon, which the dev
-// server hid as readily as the build did.
-const PLACEHOLDER_PHOTO = "/parish/placeholder-photo.svg";
+import { formatWhen, upcomingAnnouncements, type AnnouncementDoc } from "../lib/announcements";
 
 /**
  * The parish's own photographs, from the design the parish supplied: the
- * altar servers in the sanctuary, and a christening. They replace the
- * placeholder illustration, which stood in only because no photography had
- * been collected - it now has been.
+ * altar servers in the sanctuary, and a christening.
  */
 const MINISTRY_PHOTO = "/parish/ministry-altar-servers.jpg";
 const SACRAMENT_PHOTO = "/parish/sacraments-christening.jpg";
 
-export interface Announcement {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: string;
-}
+export type Announcement = AnnouncementDoc;
 
 interface BulletinRailProps {
-  announcements: Announcement[];
+  announcements: AnnouncementDoc[];
   onNavigate: (tab: "ministries" | "sacraments" | "mass") => void;
 }
 
 /**
- * The parish bulletin — a horizontally swiping rail on Home.
+ * The Parish Bulletin, below the Verse of the Day.
  *
- * Fed by the announcements the admin panel already writes to Firestore, so
- * this is live parish data rather than a second menu. The three section cards
- * follow at the end so the rail is never empty before anyone has posted
- * anything — a bulletin board with nothing on it reads as broken, not as
- * quiet.
+ * ## Why nothing here slides any more
  *
- * Announcements are sorted soonest-first and past ones are dropped: a
- * bulletin still showing last month's fiesta is worse than a short one.
+ * It was one horizontal rail carrying the verse, the announcements and the
+ * two section cards together, and that was wrong in two different ways at
+ * once. The announcements are a stack of the same kind of thing, so moving
+ * between them should be a change of content, not a change of place - they
+ * CROSSFADE. The two section cards are a fixed pair that fit side by side
+ * on a phone, so swiping to reach the second one hid a card that was never
+ * off screen to begin with - they are simply BOTH THERE.
+ *
+ * A rail is for a list whose length you do not know. Neither of these is
+ * that, and treating them as one made the only genuinely variable thing on
+ * the screen - the verse - swipeable too.
  */
 export default function BulletinRail({ announcements, onNavigate }: BulletinRailProps) {
-  // Without this, swiping the rail opens whichever card the finger started on.
-  const dragSafe = useDragSafeClicks();
-  const railRef = useRef<HTMLDivElement | null>(null);
   const now = new Date();
-  const upcoming = announcements
-    .map(a => ({ ...a, when: new Date(a.date) }))
-    .filter(a => !Number.isNaN(a.when.getTime()) && a.when.getTime() >= startOfDay(now))
-    .sort((a, b) => a.when.getTime() - b.when.getTime());
+  const upcoming = upcomingAnnouncements(announcements, now);
 
   return (
-    // The rail's cards and its end padding are both sized off this element's
-    // width (cqw), which is what lets a centred card actually sit centred.
-    // See .card-rail in index.css.
-    <section className="card-rail-frame">
-      {/* The section TITLE belongs to the caller, not to this component.
-          Home now heads it with a large display heading, and a second
-          "Parish bulletin" directly beneath read as a stutter. What stays is
-          the count, which is the part that actually changes. */}
-      <div className="flex items-baseline justify-end px-1 mb-2.5">
-        <span className="text-[15px] text-[var(--color-brand-secondary)]">
-          {upcoming.length > 0 ? `${upcoming.length} coming up` : "Nothing posted yet"}
-        </span>
-      </div>
+    <section className="bulletin">
+      <AnnouncementDeck items={upcoming} now={now} />
 
-      <div
-        className="card-rail"
-        role="list"
-        ref={railRef}
-        {...dragSafe}
-      >
-        {/* Said plainly rather than left looking empty. Past announcements
-            are filtered out, so a bulletin whose events have all been and
-            gone shows this instead of three stale dates. */}
-        {upcoming.length === 0 && (
-          <p
-            role="listitem"
-            // Narrower than a real card: it is one sentence, and at full card
-            // width it pushed the ministry card - the useful one - off screen.
-            className="card-rail__note rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]"
-          >
-            No upcoming events posted for this parish yet. New announcements appear here first.
-          </p>
-        )}
-
-        {upcoming.map(item => (
-          <article
-            role="listitem"
-            key={item.id}
-            className="card-rail__card rounded-[22px] bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] p-4"
-          >
-            <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold px-2.5 py-1 rounded-md bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)]">
-              <CalendarDays className="w-3.5 h-3.5" />
-              {item.type}
-            </span>
-            <h3 className="mt-2.5 text-[16px] font-semibold leading-snug text-[var(--color-brand-text)]">
-              {item.title}
-            </h3>
-            <p className="mt-1 text-[15px] text-[var(--color-brand-secondary)]">
-              {formatWhen(item.when, now)}
-              {item.time ? ` · ${item.time}` : ""}
-            </p>
-          </article>
-        ))}
-
-        <RailLink
-          icon={<Users className="w-5 h-5" />}
+      {/* The pair, not a rail. Equal columns, so neither reads as the
+          primary one - a parish's ministries and its sacraments are not
+          ranked against each other. */}
+      <div className="bulletin-pair">
+        <SectionCard
+          icon={<Users className="w-4 h-4" />}
           label="Ministries"
-          hint="Join a group ministry in this parish."
+          hint="Join a group in this parish."
           caption={MINISTRIES[0]?.name}
           imageUrl={MINISTRY_PHOTO}
           onClick={() => onNavigate("ministries")}
         />
-        <RailLink
-          icon={<Sparkles className="w-5 h-5" />}
+        <SectionCard
+          icon={<Sparkles className="w-4 h-4" />}
           label="Sacraments"
-          hint="Baptism, marriage and confession, arranged with the parish office."
+          hint="Arranged with the parish office."
           caption={SACRAMENTS[0]?.name}
           imageUrl={SACRAMENT_PHOTO}
           onClick={() => onNavigate("sacraments")}
         />
       </div>
-
-      {/* Under the rail, not over it: a card hanging half off the right edge
-          gives no sign the rail scrolls, and these say how much there is.
-          Keyed on the announcement count so the dots are recounted when the
-          parish posts or retires one. */}
-      <RailDots railRef={railRef} refreshKey={String(upcoming.length)} />
     </section>
   );
 }
 
 /**
- * One section card in the rail: a photograph, then the label and what it is.
+ * The announcements, one at a time, crossfading.
  *
- * The description lives INSIDE the card rather than in a panel underneath.
- * An earlier version opened the detail below the rail, and the client was
- * right to reject it: on a phone that panel sits below the fold, so the thing
- * the tap revealed is the one thing you cannot see.
+ * Every slide is rendered into the SAME grid cell rather than laid out in
+ * a row, which is what makes the fade possible and also what keeps the
+ * deck's height fixed: the cell is as tall as the tallest announcement, so
+ * moving between a short notice and a long one does not make the page
+ * below it jump.
+ *
+ * The inactive slides are inert, not merely transparent - `visibility`
+ * and `aria-hidden` together, or a screen reader reads all four at once
+ * and a tab lands on a card nobody can see.
  */
-function RailLink({
-  icon,
-  label,
-  hint,
-  caption,
-  imageUrl,
-  onClick,
+function AnnouncementDeck({
+  items,
+  now,
+}: {
+  items: Array<AnnouncementDoc & { when: Date | null }>;
+  now: Date;
+}) {
+  const [index, setIndex] = useState(0);
+  const touchX = useRef<number | null>(null);
+
+  // A parish retiring the announcement you were looking at must not leave
+  // the deck pointing past the end of the list.
+  useEffect(() => {
+    setIndex(i => (i > items.length - 1 ? Math.max(0, items.length - 1) : i));
+  }, [items.length]);
+
+  if (items.length === 0) {
+    return (
+      <p className="bulletin-note">
+        Nothing from the parish office this week. Announcements, feast days and
+        schedule changes appear here first.
+      </p>
+    );
+  }
+
+  const count = items.length;
+  const go = (next: number) => setIndex(((next % count) + count) % count);
+
+  return (
+    <div className="bulletin-deck-frame">
+      <div
+        className="bulletin-deck"
+        onTouchStart={e => { touchX.current = e.touches[0]?.clientX ?? null; }}
+        onTouchEnd={e => {
+          const from = touchX.current;
+          touchX.current = null;
+          if (from === null || count < 2) return;
+          const dx = (e.changedTouches[0]?.clientX ?? from) - from;
+          // Generous enough that a slightly diagonal vertical scroll does
+          // not count as a swipe.
+          if (Math.abs(dx) > 45) go(index + (dx < 0 ? 1 : -1));
+        }}
+      >
+        {items.map((item, i) => (
+          <article
+            key={item.id}
+            className={
+              "bulletin-card"
+              + (item.imageUrl ? "" : " bulletin-card--text")
+              + (i === index ? " is-current" : "")
+            }
+            aria-hidden={i === index ? undefined : true}
+            // The deck is one region that changes; without this a reader
+            // announces the whole stack on every move.
+            aria-roledescription="announcement"
+          >
+            {item.imageUrl && (
+              <span className="bulletin-card__photo">
+                <img src={item.imageUrl} alt="" loading="lazy" />
+              </span>
+            )}
+            <span className="bulletin-card__body">
+              <span className="bulletin-card__chip">
+                <CalendarDays className="w-3.5 h-3.5" aria-hidden />
+                {item.type}
+              </span>
+              <h3 className="bulletin-card__title">{item.title}</h3>
+              <p className="bulletin-card__when">
+                {item.when ? formatWhen(item.when, now) : "From the parish office"}
+                {item.time ? ` · ${item.time}` : ""}
+              </p>
+              {item.body && <p className="bulletin-card__body-text">{item.body}</p>}
+            </span>
+          </article>
+        ))}
+      </div>
+
+      {count > 1 && (
+        <div className="bulletin-deck__nav">
+          <button
+            type="button"
+            onClick={() => go(index - 1)}
+            aria-label="Previous announcement"
+            className="bulletin-deck__arrow"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <span className="bulletin-deck__dots">
+            {items.map((item, i) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => go(i)}
+                aria-label={`Announcement ${i + 1} of ${count}`}
+                aria-current={i === index ? "true" : undefined}
+                className={`bulletin-deck__dot${i === index ? " is-current" : ""}`}
+              />
+            ))}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => go(index + 1)}
+            aria-label="Next announcement"
+            className="bulletin-deck__arrow"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One of the two section cards. The description lives INSIDE the card
+ * rather than in a panel underneath: on a phone that panel sits below the
+ * fold, so the thing the tap revealed is the one thing you cannot see.
+ */
+function SectionCard({
+  icon, label, hint, caption, imageUrl, onClick,
 }: {
   icon: ReactNode;
   label: string;
@@ -169,54 +212,31 @@ function RailLink({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="card-rail__link overflow-hidden rounded-[22px] bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-left transition-colors hover:border-[var(--color-brand-primary)]"
-    >
+    <button type="button" onClick={onClick} className="bulletin-section">
       {imageUrl && (
-        <span className="relative block">
-          <img src={imageUrl} alt="" className="w-full h-[116px] object-cover" loading="lazy" />
+        <span className="bulletin-section__photo">
+          <img src={imageUrl} alt="" loading="lazy" />
           {caption && (
             <>
               {/* A scrim, not a shadow: what sits behind the caption is a
-                  photograph nobody has chosen yet, so its brightness cannot
-                  be assumed. */}
-              <span
-                aria-hidden
-                className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent"
-              />
-              <span className="absolute left-3 right-3 bottom-2 block text-[14px] font-semibold leading-snug text-white">
-                {caption}
-              </span>
+                  photograph whose brightness cannot be assumed. */}
+              <span className="bulletin-section__scrim" aria-hidden />
+              <span className="bulletin-section__caption">{caption}</span>
             </>
           )}
         </span>
       )}
-
-      <span className="block p-4">
-        <span className="flex items-center gap-2 text-[16px] font-semibold text-[var(--color-brand-text)]">
-          <span className="text-[var(--color-brand-primary)]">{icon}</span>
+      <span className="bulletin-section__body">
+        <span className="bulletin-section__label">
+          <span className="bulletin-section__icon">{icon}</span>
+          {/* No chevron. At half a phone's width "Sacraments" plus its
+              icon already fills the row, and a chevron pushed to the end
+              was simply clipped - the card is a button, which is what
+              says it opens. */}
           {label}
-          <ChevronRight className="w-4 h-4 ml-auto text-[var(--color-brand-secondary)]" />
         </span>
-        <span className="mt-1 block text-[15px] leading-snug text-[var(--color-brand-secondary)]">
-          {hint}
-        </span>
+        <span className="bulletin-section__hint">{hint}</span>
       </span>
     </button>
   );
-}
-
-function startOfDay(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
-/** "Today", "Tomorrow", "Saturday", or a date once it is more than a week off. */
-function formatWhen(when: Date, now: Date): string {
-  const days = Math.round((startOfDay(when) - startOfDay(now)) / 86_400_000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  if (days < 7) return when.toLocaleDateString("en-US", { weekday: "long" });
-  return when.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }

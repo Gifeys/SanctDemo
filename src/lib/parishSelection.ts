@@ -15,11 +15,14 @@
 //
 // 'pin' covers every place a pilgrim picks *which* parish to look at — a
 // map pin/popup, a search result, a parish card — and opens that parish's
-// own page. That used to be "home" (the Dashboard). The redesign gives a
-// parish a screen of its own — its distance, today's Masses, and links out
-// to History/Ministries/Sacraments/Scan — so 'pin' now lands on "church".
-// Home stays the dashboard for the parish you are at, not a parish you
-// picked from a list.
+// dashboard.
+//
+// It briefly opened a separate parish screen instead, carrying the
+// distance, today's Masses and links out to History/Ministries/
+// Sacraments/Scan. That screen is gone: the dashboard already shows all
+// of it for whichever parish is active, so the extra page was a second
+// version of Home that you had to leave before you could use anything on
+// it. Picking a parish now simply makes it the active one.
 //
 // 'presence-open-tour' is the presence sheet's own "Open Tour" button
 // (paired with its "AR Tour" button) — the pilgrim is already standing at
@@ -35,7 +38,6 @@ export type Tab =
   | "sacraments"
   | "ar"
   | "quiz"
-  | "church"
   | "me"
   | "admin"
   | "pwa-devkit"
@@ -43,5 +45,5 @@ export type Tab =
 export type ParishSelectionSource = "pin" | "presence-open-tour"
 
 export function tabForParishSelection(source: ParishSelectionSource): Tab {
-  return source === "presence-open-tour" ? "navigator" : "church"
+  return source === "presence-open-tour" ? "navigator" : "home"
 }

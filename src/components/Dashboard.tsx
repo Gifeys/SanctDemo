@@ -1,26 +1,21 @@
 import { useEffect, useState } from "react";
-import { ChevronUp } from "lucide-react";
+import { Bell, ChevronUp } from "lucide-react";
 import { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES, PARISH_HEADER_FACES } from "../data";
 import BulletinRail from "./BulletinRail";
+import VerseCard from "./VerseCard";
 import ParishWelcomeHeader from "./ParishWelcomeHeader";
 import MassScheduleCard from "./MassScheduleCard";
 import ChurchHistoryCard from "./ChurchHistoryCard";
 import { parishThemeStyle } from "../lib/parishTheme";
 import { useParishContent } from "../lib/useParishContent";
 import { liturgicalDay } from "../lib/liturgical";
+import { announcementsForParish, publishedOnly, type AnnouncementDoc } from "../lib/announcements";
 
-type Announcement = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: string;
-};
 
 interface DashboardProps {
   parish: Route;
-  announcements: Announcement[];
+  announcements: AnnouncementDoc[];
   onNavigate: (
     tab: "mass" | "history" | "ministries" | "sacraments" | "ar" | "navigator" | "rosary" | "me"
   ) => void;
@@ -29,6 +24,17 @@ interface DashboardProps {
   onWalkThere: (parishId: string) => void;
   /** Opens the full-screen parish search. */
   onOpenSearch: () => void;
+  /**
+   * Given only when this dashboard is showing a parish that is not the
+   * pilgrim's own, which is what puts "Back to my parish" on the band.
+   */
+  onBackToMyParish?: () => void;
+  /**
+   * Whether this parish's Masses are already being reminded about.
+   * Absent on the pilgrim's own parish, which is always on.
+   */
+  followingThisParish?: boolean;
+  onToggleFollowParish?: (follow: boolean) => void;
   /** First name of the signed-in pilgrim; the greeting omits it when absent. */
   firstName?: string;
 }
@@ -56,7 +62,10 @@ export function formatCountdown(target: Date, now: Date): string {
   return `in ${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function Dashboard({ parish, announcements, onNavigate, firstName }: DashboardProps) {
+export default function Dashboard({
+  parish, announcements, onNavigate, firstName, onOpenSearch, onBackToMyParish,
+  followingThisParish, onToggleFollowParish,
+}: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
 
@@ -106,9 +115,49 @@ export default function Dashboard({ parish, announcements, onNavigate, firstName
         // nobody to say where the face is, so it keeps the plain crop.
         imageFaceY={managed?.photoUrl ? undefined : PARISH_HEADER_FACES[parish.id]}
         firstName={firstName}
-        onOpenProfile={() => onNavigate("me")}
+        onSearch={onOpenSearch}
+        onBackToMyParish={onBackToMyParish}
         now={now}
       />
+
+      {/* Reminders for a parish that is not your own.
+          Offered here, on that parish's own screen, and only when you
+          are away from yours - it is the moment the question makes
+          sense, and it is the one place the answer is unambiguous
+          about WHICH parish is meant. Looking at a parish does not
+          sign you up for anything; this switch does, and nothing else
+          does.
+
+          The caller decides when to pass the handler, and it keys that
+          on the SAME home parish the reminders are built from. Tying
+          it to "Back to my parish" instead looked right and was not:
+          that button keys off the signed-in profile, which is null
+          when signed out, so the switch never appeared for anyone who
+          had not logged in. */}
+      {onToggleFollowParish && (
+        <div className="px-4 pt-3">
+          <label className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] p-4 cursor-pointer">
+            <Bell className="w-5 h-5 shrink-0 text-[var(--color-brand-primary)]" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-bold leading-snug text-[var(--color-brand-text)]">
+                Remind me about this parish
+              </span>
+              <span className="block text-[14px] leading-snug text-[var(--color-brand-secondary)]">
+                {followingThisParish
+                  ? `You will be reminded before Mass at ${parishName} as well as your own.`
+                  : `Mass times and feast days here, alongside your own parish's.`}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="availability-switch"
+              aria-label={`Remind me about ${parishName}`}
+              checked={followingThisParish ?? false}
+              onChange={e => onToggleFollowParish(e.target.checked)}
+            />
+          </label>
+        </div>
+      )}
 
       {managed?.description && (
         <div className="px-5 pt-1.5">
@@ -129,7 +178,28 @@ export default function Dashboard({ parish, announcements, onNavigate, firstName
           <br />
           Bulletin
         </h2>
-        <BulletinRail announcements={announcements} onNavigate={onNavigate} />
+
+        {/* The bulletin reads top to bottom: the verse, then what the
+            parish has announced, then the two ways in. The verse is the
+            thing that changes every day, so it leads and stays put —
+            inside the old rail it was one card among four and had to be
+            swiped away to reach the others. */}
+        <div className="home-verse">
+          <VerseCard />
+        </div>
+
+        {/* Scoped to the parish being shown, not to the pilgrim's own.
+            Searching your way onto San Roque's dashboard and reading Mary
+            Help's announcements there was the bug this closes. The legacy
+            diocese-wide ones - the documents with no churchId at all -
+            still appear everywhere; see lib/announcements.ts.
+
+            Published only - a draft the parish is still writing, and
+            anything they have archived, must never reach a home screen. */}
+        <BulletinRail
+          announcements={publishedOnly(announcementsForParish(announcements, parish.id))}
+          onNavigate={onNavigate}
+        />
 
         </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronUp, ScanLine, Map as MapIcon } from "lucide-react";
+import { ChevronUp, ScanLine, Map as MapIcon, X } from "lucide-react";
 import { usePresence } from "../context/PresenceContext";
 import { nextMass } from "../lib/schedule";
 import { MASS_SCHEDULES } from "../data";
@@ -35,30 +35,53 @@ function nextMassLabel(parishId: string): string {
 export default function PresenceSheet({ onOpenTour, onOpenAR }: PresenceSheetProps) {
   const { presence, parish } = usePresence();
   const [collapsed, setCollapsed] = useState(false);
+  /**
+   * Dismissed outright, not just collapsed.
+   *
+   * Collapsing leaves a bar across the bottom of every screen. Someone
+   * who is standing in their own parish all morning does not need to be
+   * told so all morning, so the X takes it away entirely until they
+   * arrive somewhere else.
+   */
+  const [dismissed, setDismissed] = useState(false);
 
   // Arriving at a different parish (or leaving/re-entering `present`) must
   // re-open the sheet — a pilgrim who hid it at one church shouldn't find it
   // silently hidden at the next one.
   useEffect(() => {
     setCollapsed(false);
+    setDismissed(false);
   }, [presence.parishId, presence.mode]);
 
-  if (presence.mode !== "present" || !parish) return null;
+  if (presence.mode !== "present" || !parish || dismissed) return null;
 
   const displayName = parish.name.replace(" Guide", "").replace(" Tour", "");
 
   if (collapsed) {
     return (
       <div className="absolute bottom-16 inset-x-0 z-40 px-3 pb-2">
-        <button
-          onClick={() => setCollapsed(false)}
-          className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl shadow-md transition-all duration-300 ease-out bg-[var(--color-brand-primary)] border border-[var(--color-brand-border)]"
-        >
-          <span className="text-[16px] font-bold text-white font-sans">
-            You are near {displayName}
-          </span>
-          <ChevronUp className="w-4 h-4 text-[var(--color-brand-card)] shrink-0" />
-        </button>
+        <div className="w-full flex items-center gap-1 px-2 py-1 rounded-2xl shadow-md bg-[var(--color-brand-primary)] border border-[var(--color-brand-border)]">
+          <button
+            onClick={() => setCollapsed(false)}
+            className="flex-1 min-w-0 flex items-center justify-between gap-2 px-2 py-2 text-left"
+          >
+            <span className="text-[16px] font-bold text-white font-sans truncate">
+              You are near {displayName}
+            </span>
+            <ChevronUp className="w-4 h-4 text-[var(--color-brand-card)] shrink-0" />
+          </button>
+
+          {/* Its own button, outside the expand target: a dismiss nested
+              inside "tap to expand" is a tap that does the opposite of
+              what the row says. */}
+          <button
+            onClick={() => setDismissed(true)}
+            aria-label="Hide this until I reach another parish"
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -75,12 +98,24 @@ export default function PresenceSheet({ onOpenTour, onOpenAR }: PresenceSheetPro
               {displayName}
             </h3>
           </div>
-          <button
-            onClick={() => setCollapsed(true)}
-            className="text-[15px] font-bold text-[var(--color-brand-secondary)] px-2 py-1 rounded-lg hover:bg-[var(--color-brand-card)] transition-colors shrink-0"
-          >
-            Hide
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Two different things, so two buttons. "Hide" leaves the
+                thin bar you can tap to bring this back; the X means you
+                do not want to be told again at this parish. */}
+            <button
+              onClick={() => setCollapsed(true)}
+              className="text-[15px] font-bold text-[var(--color-brand-secondary)] px-2 py-1 rounded-lg hover:bg-[var(--color-brand-card)] transition-colors"
+            >
+              Hide
+            </button>
+            <button
+              onClick={() => setDismissed(true)}
+              aria-label="Dismiss until I reach another parish"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-brand-secondary)] hover:bg-[var(--color-brand-card)]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <p className="text-[15px] text-[var(--color-brand-text)] font-sans">

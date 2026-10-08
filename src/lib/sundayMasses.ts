@@ -1,4 +1,4 @@
-import { parseTimes, type MassScheduleEntry } from './schedule'
+import { isTimeAvailable, parseTimes, type MassScheduleEntry } from './schedule'
 
 /**
  * The Sunday Mass card's data: the anticipated Mass and the Sunday Masses,
@@ -14,13 +14,28 @@ import { parseTimes, type MassScheduleEntry } from './schedule'
  * from the moment someone enters their times.
  */
 
+/**
+ * One Mass, and whether it is actually being celebrated.
+ *
+ * A suspended Mass stays in this list rather than being filtered out.
+ * Dropping it would leave a parishioner who comes every week at 8:00
+ * seeing no 8:00 Mass at all, which reads as "I misremembered" rather
+ * than "the parish has called it off this week".
+ */
+export interface MassTime {
+  time: string
+  available: boolean
+}
+
 export interface SundayMassCard {
   /** The Saturday evening Mass that fulfils the Sunday obligation. */
-  anticipated: { time: string; date: Date } | null
+  anticipated: (MassTime & { date: Date }) | null
   /** Every Mass on the Sunday itself, in the order the parish lists them. */
-  sunday: { times: string[]; date: Date }
+  sunday: { times: MassTime[]; date: Date }
   /** True when this parish's times are placeholders, not parish-confirmed. */
   unverified: boolean
+  /** The parish's own note for the Sunday, if they have written one. */
+  note?: string
 }
 
 /** The next Sunday on or after `from`. Sunday itself counts as today. */
@@ -76,15 +91,28 @@ export function sundayMassCard(
 ): SundayMassCard {
   const sunday = nextSunday(now)
   const anticipated = anticipatedTime(schedule)
+  const saturdayEntry = schedule.find(entry => entry.day === 'Saturday')
   const sundayEntry = schedule.find(entry => entry.day === 'Sunday')
 
   return {
-    anticipated: anticipated ? { time: anticipated, date: saturdayBefore(sunday) } : null,
+    anticipated: anticipated
+      ? {
+          time: anticipated,
+          available: saturdayEntry ? isTimeAvailable(saturdayEntry, anticipated) : true,
+          date: saturdayBefore(sunday),
+        }
+      : null,
     sunday: {
-      times: sundayEntry ? parseTimes(sundayEntry.time) : [],
+      times: sundayEntry
+        ? parseTimes(sundayEntry.time).map(time => ({
+            time,
+            available: isTimeAvailable(sundayEntry, time),
+          }))
+        : [],
       date: sunday,
     },
     unverified: !verified,
+    ...(sundayEntry?.note ? { note: sundayEntry.note } : {}),
   }
 }
 

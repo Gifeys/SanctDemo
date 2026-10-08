@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { parseTimes, toMinutes, nextMass, type MassScheduleEntry, massStatus } from './schedule'
+import {
+  parseTimes, toMinutes, nextMass, massStatus,
+  availableTimes, isTimeAvailable, withTimeAvailability,
+  type MassScheduleEntry,
+} from './schedule'
 
 const mhcSchedule: MassScheduleEntry[] = [
   { day: 'Monday', time: '6:00 AM' },
@@ -146,5 +150,49 @@ describe('massStatus', () => {
   it('ignores unparseable times rather than throwing', () => {
     const messy = [{ day: 'Wednesday', time: 'sometimes, 6:00 AM' }]
     expect(massStatus(messy, wed(6, 10)).state).toBe('in-progress')
+  })
+})
+
+describe('Masses the parish has suspended', () => {
+  const sunday: MassScheduleEntry = { day: 'Sunday', time: '6:00 AM, 8:00 AM, 10:00 AM' }
+
+  it('everything runs when nothing is suspended', () => {
+    expect(availableTimes(sunday)).toEqual(['6:00 AM', '8:00 AM', '10:00 AM'])
+    expect(isTimeAvailable(sunday, '8:00 AM')).toBe(true)
+  })
+
+  it('drops the suspended one from what is being celebrated', () => {
+    const entry = { ...sunday, unavailableTimes: ['8:00 AM'] }
+    expect(availableTimes(entry)).toEqual(['6:00 AM', '10:00 AM'])
+    expect(isTimeAvailable(entry, '8:00 AM')).toBe(false)
+  })
+
+  it('never sends anyone to a suspended Mass', () => {
+    // nextMass is what the home card counts down to. A countdown to a
+    // Mass the parish has called off is the one thing this must not do.
+    const schedule = [{ ...sunday, unavailableTimes: ['6:00 AM', '8:00 AM'] }]
+    const saturday = new Date(2026, 8, 12, 9, 0)
+    expect(nextMass(schedule, saturday)?.time).toBe('10:00 AM')
+  })
+
+  it('reports no next Mass when every one that day is suspended', () => {
+    const schedule = [{ ...sunday, unavailableTimes: ['6:00 AM', '8:00 AM', '10:00 AM'] }]
+    expect(nextMass(schedule, new Date(2026, 8, 12, 9, 0))).toBeNull()
+  })
+
+  it('suspending and restoring are exact inverses', () => {
+    const off = withTimeAvailability(sunday, '8:00 AM', false)
+    expect(off.unavailableTimes).toEqual(['8:00 AM'])
+    const on = withTimeAvailability(off, '8:00 AM', true)
+    // The field is dropped rather than left as an empty array, so a
+    // parish that restores everything keeps the document it always had.
+    expect(on.unavailableTimes).toBeUndefined()
+    expect(on).toEqual(sunday)
+  })
+
+  it('does not mutate the entry it was given', () => {
+    const entry = { ...sunday }
+    withTimeAvailability(entry, '8:00 AM', false)
+    expect(entry.unavailableTimes).toBeUndefined()
   })
 })

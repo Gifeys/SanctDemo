@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The status-bar icon for parish reminders.
+
+  Android draws a notification's small icon as a SILHOUETTE: every
+  non-transparent pixel is repainted white (or black on a light status
+  bar) and everything else is dropped. A coloured app icon used here
+  comes out as a solid white blob, which is the commonest reason a
+  notification looks broken. So this is a single flat path with no
+  colour of its own - a cross, which is the one shape that reads at
+  24dp and says "church" without detail that would be lost anyway.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.5,2h3v5.5H19v3h-5.5V22h-3V10.5H5v-3h5.5V2z" />
+</vector>

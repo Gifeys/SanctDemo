@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MapPin, User } from "lucide-react";
+import { ArrowLeft, MapPin, Search } from "lucide-react";
 import { findScroller } from "../lib/findScroller";
 
 interface ParishWelcomeHeaderProps {
@@ -15,7 +15,13 @@ interface ParishWelcomeHeaderProps {
   imageFaceY?: number;
   /** First name of the signed-in pilgrim, or undefined when signed out. */
   firstName?: string;
-  onOpenProfile: () => void;
+  /** Opens parish search, from the top-right corner. */
+  onSearch: () => void;
+  /**
+   * Given only when the band is showing a parish that is NOT the
+   * pilgrim's own. Its presence is what puts the way back on screen.
+   */
+  onBackToMyParish?: () => void;
   /** Rendered so the date matches the rest of the screen's clock. */
   now: Date;
 }
@@ -89,7 +95,8 @@ export default function ParishWelcomeHeader({
   imageUrl,
   imageFaceY,
   firstName,
-  onOpenProfile,
+  onSearch,
+  onBackToMyParish,
   now,
 }: ParishWelcomeHeaderProps) {
   const bandRef = useRef<HTMLElement | null>(null);
@@ -235,30 +242,67 @@ export default function ParishWelcomeHeader({
             opacity move the crest, the greeting and the date together. */}
         <div className="parish-welcome__intro">
           <div className="parish-welcome__top">
-            <span className="parish-welcome__brand">
-              <img src="/ui/diocese-crest.png" alt="" className="parish-welcome__crest" />
-              SanctiWalk
-            </span>
+            {/* The horizontal lockup: the emblem with "SanctiWalk" beside
+                it on one line.
+                
+                Composed rather than lifted whole, because the brand file
+                has no such variant - its Primary stacks "Sancti / Walk"
+                and its Secondary sets the word underneath the emblem. Both
+                pieces are the file's own artwork, taken from the Secondary
+                and set side by side; nothing here is retyped in a
+                substitute font. */}
+            {/* Away from your own parish, the brand slot becomes the way
+                back. Nothing else on this screen says you are looking at
+                somewhere other than your parish - the band wears that
+                parish's photograph and colours, which is exactly what
+                makes it convincing - so the way home has to be where your
+                eye already goes. */}
+            {onBackToMyParish ? (
+              <button
+                type="button"
+                onClick={onBackToMyParish}
+                className="parish-welcome__back"
+              >
+                <ArrowLeft className="w-[15px] h-[15px] shrink-0" aria-hidden />
+                Back to my parish
+              </button>
+            ) : (
+              <span className="parish-welcome__brand">
+                <img
+                  src="/ui/sanctiwalk-lockup-white.png"
+                  alt="SanctiWalk"
+                  className="parish-welcome__lockup"
+                />
+              </span>
+            )}
 
+            {/* Search, not the profile. Your account already lives behind
+                the Me tab; what this corner is for is finding the other
+                parish. */}
             <button
               type="button"
-              onClick={onOpenProfile}
+              onClick={onSearch}
               className="parish-welcome__avatar"
-              aria-label="Your profile"
+              aria-label="Search parishes"
             >
-              <User className="w-[18px] h-[18px]" />
+              <Search className="w-[18px] h-[18px]" />
             </button>
           </div>
 
+          {/* "Welcome," is the same word every day; the name is the part
+              worth reading. They were set at one size, so the greeting
+              shouted the greeting. Now the salutation is small and quiet
+              and the name carries the line. */}
           <p className="parish-welcome__greeting">
             {firstName ? (
               <>
-                Welcome,
-                <br />
-                {firstName}
+                <span className="parish-welcome__salutation">Welcome,</span>
+                <span className="parish-welcome__name">{firstName}</span>
               </>
             ) : (
-              "Welcome"
+              <span className="parish-welcome__salutation parish-welcome__salutation--alone">
+                Welcome
+              </span>
             )}
           </p>
 

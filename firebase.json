@@ -15,14 +15,22 @@
     "reporting success. The name comes from firestoreDatabaseId in",
     "firebase-applet-config.json, which is what src/lib/firebase.ts connects to."
   ],
-
   "firestore": {
     "database": "(default)",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-
   "storage": {
     "rules": "storage.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "singleProjectMode": true,
+    "ui": {
+      "enabled": false
+    }
   }
 }

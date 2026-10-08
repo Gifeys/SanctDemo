@@ -9,8 +9,12 @@ import { describe, it, expect } from 'vitest'
 import { tabForParishSelection } from './parishSelection'
 
 describe('tabForParishSelection', () => {
-  it('opens the parish’s own profile ("church") for a pin/card/search selection', () => {
-    expect(tabForParishSelection('pin')).toBe('church')
+  it('opens the parish’s dashboard for a pin/card/search selection', () => {
+    // It used to open a separate parish screen. That screen is gone: the
+    // dashboard already carries the distance, today's Masses and the
+    // links out, so the extra page was a second Home you had to leave
+    // before you could use anything on it.
+    expect(tabForParishSelection('pin')).toBe('home')
   })
 
   it('never routes a pin/card selection to "navigator" — the map tab it may already be on', () => {

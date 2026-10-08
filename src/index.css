@@ -200,30 +200,27 @@
   stroke: var(--color-brand-primary);
 }
 
+/* "You are here", as every map app draws it: a solid blue dot in a white
+   collar, with a soft shadow lifting it off the basemap.
+
+   It was a green dot in a navy ring with a pulsing halo and a translucent
+   triangle fanning out of it. Three problems. Green is the colour this
+   app uses for "open now" on a parish, so the dot competed with the pins
+   it was supposed to be distinct from; the pulse drew the eye
+   continuously to a thing that was not changing; and the triangle read at
+   a glance as the marker simply BEING a triangle.
+
+   The white collar is not decoration - it is what keeps a blue dot
+   legible over a blue route line and over dark basemap features. */
 .dmap-live__marker--you {
   position: relative;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--color-brand-success);
-  border: 2px solid var(--color-brand-primary);
+  background: #1A73E8;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
   pointer-events: none;
-}
-/* The pulsing ring the client asked for, distinguishing "you are here"
-   from every parish pin. An HTML marker can't use the fallback SVG map's
-   `r` (radius) keyframe, so this pulses via a scaling pseudo-element ring
-   instead — same idea (grow and fade), different mechanism. */
-.dmap-live__marker--you::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 2px solid var(--color-brand-success);
-  animation: dmap-live-pulse 2s ease-out infinite;
-}
-@keyframes dmap-live-pulse {
-  0% { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(2.4); opacity: 0; }
 }
 
 .dmap-live__fallback-badge {
@@ -746,50 +743,61 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   outline-offset: 2px;
 }
 
-/* ── Direction cone on the "you are here" marker ──────────────────────────
-   Google Maps' pattern: a dot for where you are, a cone for which way you
-   face. The cone is a child of the marker rather than the marker element
-   itself, because MapLibre owns the marker's own transform for positioning
-   and would overwrite any rotation written there. Hidden (opacity 0) when
-   no heading is available — an arrow that points north on a device with no
-   magnetometer is a confident lie. */
-.dmap-live__cone {
+/* The direction light on the "you are here" dot.
+ *
+ * A soft fan, not a triangle. The first version was a hard-edged
+ * translucent wedge, and at a glance it read as the DOT being a triangle
+ * pointing somewhere rather than as a dot with a beam coming off it - so
+ * it was removed, which left the map with nothing saying which way you
+ * face. This is the middle version: it fades to nothing at its far edge
+ * and at both sides, so the eye reads light rather than a shape.
+ *
+ * Anchored at the dot's centre and rotated from there, which is why the
+ * transform is translate(-50%, -100%) - the fan hangs upward from the
+ * centre point and rotate() then swings it around that same point.
+ * Changing one without the other makes the beam orbit the dot instead of
+ * turning on the spot. */
+.dmap-live__beam {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  /* Rotation happens about the dot's centre, so the cone swings around the
-     pilgrim rather than orbiting some offset point. */
-  transform-origin: 0 0;
-  transition: opacity 200ms ease;
+  width: 76px;
+  height: 76px;
+  transform: translate(-50%, -100%) rotate(0deg);
+  transform-origin: 50% 100%;
   pointer-events: none;
-}
-.dmap-live__cone::before {
-  content: "";
-  position: absolute;
-  left: -26px;
-  bottom: 5px;
-  width: 52px;
-  height: 46px;
-  /* Brightest at the dot and fading out along the beam, like a torch:
-     the pilgrim is certain where they are and progressively less certain
-     the further ahead the beam reaches. */
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--color-brand-accent) 72%, transparent),
-    color-mix(in srgb, var(--color-brand-accent) 18%, transparent) 72%,
-    transparent
+  /* Hidden until the compass produces a real bearing; the component sets
+     this to 1. A beam stuck at due north is worse than no beam. */
+  opacity: 0;
+  transition: opacity 240ms ease;
+  /* The fan shape. A cone of about 60 degrees, clipped out of a circle
+     so the far edge is round rather than cut straight across. */
+  clip-path: polygon(50% 100%, 20% 0%, 80% 0%);
+  /* Transparent for the first fifth, so the beam does not wash over the
+     blue dot it comes from. MapLibre puts a transform on the marker
+     element, which makes it a stacking context - so `z-index: -1` would
+     not reliably put this behind the dot, and clearing the centre is the
+     version that does not depend on that. */
+  /* The dot's own blue (#1A73E8), not the parish brand navy. The beam
+     belongs to the dot, and a navy fan coming off a bright blue dot
+     reads as two unrelated things - as well as being nearly invisible
+     against the map's pale grey. */
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgb(26 115 232 / 0) 0%,
+    rgb(26 115 232 / 0) 16%,
+    rgb(26 115 232 / 0.55) 32%,
+    rgb(26 115 232 / 0.3) 58%,
+    rgb(26 115 232 / 0) 84%
   );
-  /* A cone rather than an arrowhead: the widening beam reads as "facing
-     roughly this way", which is honest about a magnetometer's precision. */
-  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-}
-@media (prefers-reduced-motion: reduce) {
-  .dmap-live__cone { transition: none; }
+  /* Softens the straight sides left by clip-path, so the edges of the
+     beam do not read as drawn lines. */
+  filter: blur(2.5px);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .dmap-live__beam { transition-duration: 1ms; }
+}
 /* ── Compass ──────────────────────────────────────────────────────────────
    Sits below the zoom control, above "Recentre on me". Tapping it swaps
    between north-up and heading-up. */
@@ -1385,6 +1393,11 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
   isolation: isolate;
   overflow: hidden;
+  /* Scan and Pray put the band inside a flex column that is itself the
+     scroller, and a flex child with no basis is free to be squashed - the
+     band collapsed to 48px on both. Home never showed it because its
+     column is not the scroller. The band's height is its content's. */
+  flex-shrink: 0;
   background: var(--parish-band, #101B4A);
   /* Paints up into the status bar area rather than stopping below it. */
   margin-top: calc(-1 * env(safe-area-inset-top, 0px));
@@ -1503,19 +1516,25 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .parish-welcome__brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-primary);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: #fff;
+}
+
+/* Sized by HEIGHT, width following. The lockup is 3.4:1; fixing the width
+   instead would let the bar's height move whenever the artwork changed. */
+.parish-welcome__lockup {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 .parish-welcome__crest {
-  width: 26px;
-  height: 26px;
+  /* The submark is a portrait oval, roughly 3:4. A square box with
+     object-fit: contain would letterbox it and leave it visually smaller
+     than the wordmark beside it, so the box matches the artwork instead.
+     No border-radius: the mark is already a closed oval, and rounding its
+     bounding box only clips the cross. */
+  width: 22px;
+  height: 29px;
   object-fit: contain;
-  border-radius: 6px;
 }
 
 .parish-welcome__avatar {
@@ -1534,13 +1553,48 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 .parish-welcome__greeting {
   font-family: var(--font-primary);
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.02;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
   margin: 0;
   text-shadow: 0 2px 10px rgb(6 12 38 / 0.45);
+}
+
+/* The salutation. Small, wide-tracked and slightly held back - it is the
+   same word every morning, and at 30px it was the loudest thing on a
+   screen whose job is to say which parish you are in. */
+.parish-welcome__salutation {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  color: rgb(255 255 255 / 0.82);
+}
+
+/* Standing alone - signed out, with no name to follow - it would look
+   stranded at label size, so it keeps some presence. */
+.parish-welcome__salutation--alone {
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.parish-welcome__name {
+  display: block;
+  margin-top: 3px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: 0.005em;
+  /* A nickname is written the way its owner wrote it. Upper-casing it
+     turned "Adrich" into shouting and mangled any name with its own
+     capitalisation. */
+  text-transform: none;
+  color: #fff;
+  /* Long nicknames shorten rather than pushing the parish name off the
+     band. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .parish-welcome__date {
@@ -2470,6 +2524,53 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   color: #fff;
 }
 
+/* ---- the collapsing variant, as Home's welcome band does it -----------
+   Same trick: the band keeps its full layout height and is sticky with a
+   NEGATIVE top, so it travels up by exactly the amount that should
+   disappear and then pins. Nothing changes layout, so the page never
+   changes length and the scroll position is never clamped - shrinking the
+   band's own height fights itself on a barely-scrollable page.
+
+   One custom property, --ps-t, runs 0 to 1 and everything derives from it.
+   If the script never runs it stays 0 and the band simply scrolls away. */
+.parish-section--collapsing {
+  --ps-t: 0;
+  --ps-collapse: 0px;
+  --ps-title-dy: 0px;
+  --ps-scale-delta: 0;
+  position: sticky;
+  top: calc(-1 * var(--ps-collapse, 0px));
+  z-index: 20;
+}
+
+/* The eyebrow and the blurb are the part that goes: they explain the tab,
+   and once you are reading the tab you no longer need explaining to. */
+.parish-section--collapsing .parish-section__eyebrow,
+.parish-section--collapsing .parish-section__blurb {
+  opacity: calc(1 - var(--ps-t) * 1.6);
+  transform: translateY(calc(var(--ps-t) * -10px));
+}
+
+/* The title stays, and shrinks. It travels down inside the band by as much
+   as the band travels up, which is what holds it on screen. */
+.parish-section--collapsing .parish-section__title {
+  transform-origin: left center;
+  transform:
+    translateY(calc(var(--ps-t) * var(--ps-title-dy)))
+    scale(calc(1 - var(--ps-t) * var(--ps-scale-delta)));
+}
+
+/* The photograph travels down inside the band as the band travels up, by
+   whatever amount puts the patron's face in the collapsed strip. The
+   distance is measured in the component, because it depends on the band's
+   height and on where the face sits in that particular frame. */
+.parish-section--collapsing {
+  --ps-photo-dy: 0px;
+}
+.parish-section--collapsing .parish-section__photo {
+  transform: translateY(calc(var(--ps-t) * var(--ps-photo-dy)));
+}
+
 /* From the right, behind the words, as the design has it on Home. */
 .parish-section__photo {
   position: absolute;
@@ -2627,4 +2728,1288 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   color: var(--color-brand-primary);
   background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+}
+
+
+/* ---------------------------------------------------------------- Scan
+   The two ways into the AR experience, offered as a choice rather than as
+   one button and a link underneath it. They are the same card as a
+   ministry - 22px, paper, hairline border - so the tab reads as part of
+   the app rather than as a feature bolted onto it. The photograph is the
+   parish's own, which is what makes the choice feel like this church's
+   rather than the software's. */
+.scan-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.05);
+}
+
+.scan-card__media { position: relative; display: block; height: 132px; }
+.scan-card__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* A scrim, not a shadow: these are gilded statues under warm light, so the
+   brightness behind the label cannot be assumed. */
+.scan-card__scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgb(12 16 28 / 0.78) 0%, rgb(12 16 28 / 0.22) 52%, transparent 100%);
+}
+
+.scan-card__title {
+  position: absolute; left: 16px; right: 16px; bottom: 11px;
+  color: #FAF8F4;
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic; font-weight: 700;
+  font-size: 21px; line-height: 1.15;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.45);
+}
+
+.scan-card__body { padding: 14px 16px 16px; }
+
+.scan-card__blurb {
+  margin: 0;
+  font-size: 15px; line-height: 1.5;
+  color: var(--color-brand-text);
+}
+
+.scan-card__note {
+  margin: 8px 0 0;
+  font-size: 13px; line-height: 1.45;
+  color: var(--color-brand-secondary);
+}
+.scan-card__note--error { color: var(--color-brand-error); font-weight: 600; }
+
+.scan-card__action {
+  margin-top: 13px;
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px;
+  border: 0; border-radius: 999px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+.scan-card__action:active { transform: scale(0.985); }
+.scan-card__action:disabled { opacity: 0.55; cursor: default; }
+
+/* The quieter of the two. Both are real choices, but the scanner is the
+   one the tab is named after, so the museum does not compete with it. */
+.scan-card__action--ghost {
+  background: transparent;
+  color: var(--color-brand-primary);
+  border: 1.5px solid var(--color-brand-primary);
+}
+
+
+/* ------------------------------------------------- photo parish pins
+   The two parishes with a patron photograph wear it on the map, in the
+   app's navy ring over a small stem - a round portrait reads as "this
+   particular church" where the glyph can only say "a church".
+
+   Sized for a thumb, not for the picture: 44px is the tap target, and at
+   that size the face is all that survives, which is why the crop is top
+   -weighted rather than centred. */
+.dmap__pin--photo {
+  display: block;
+  padding: 0; border: 0; background: none;
+  line-height: 0;
+  cursor: pointer;
+  /* Anchored at centre by MapLibre, so the stem is pushed below the disc
+     and the whole thing lifted by half the stem - which puts the stem's
+     point on the coordinate rather than the middle of the portrait. */
+  transform: translateY(-11px);
+}
+
+.dmap__pin-disc {
+  display: block;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--color-brand-primary);
+  background: var(--color-brand-card);
+  box-shadow: 0 2px 8px rgb(16 24 40 / 0.35);
+}
+.dmap__pin-disc img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+  display: block;
+}
+
+/* The point. A triangle rather than a teardrop: at 10px a teardrop's
+   curve is two pixels nobody can see, and the triangle keeps a crisp tip
+   on the coordinate. */
+.dmap__pin-stem {
+  display: block;
+  width: 0; height: 0;
+  margin: -2px auto 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 11px solid var(--color-brand-primary);
+  filter: drop-shadow(0 2px 2px rgb(16 24 40 / 0.3));
+}
+
+.dmap__pin--photo:focus-visible .dmap__pin-disc {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------- Verse of the Day card
+   The verse in the colour of the liturgical season, flat.
+
+   Every colour here is a custom property set by VerseCard from
+   liturgicalColours.ts, which guarantees the ink clears WCAG AA on its own
+   wash. Nothing in this block hardcodes green: the green belongs to
+   Ordinary Time, and the same rules carry violet, gold, red and rose. */
+.verse-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  min-height: 160px;
+  display: flex;
+  align-items: stretch;
+  background: var(--verse-tint, var(--color-brand-card-sunk));
+  border: 1px solid var(--verse-border, var(--color-brand-border));
+  /* The season named twice over - once in the chip, once as a firmer rule
+     along the top. It is what makes the card read as belonging to the
+     calendar rather than being a tinted box. */
+  border-top: 3px solid var(--verse-ink, var(--color-brand-primary));
+}
+
+.verse-card__body {
+  position: relative;
+  padding: 18px 18px 16px;
+  width: 100%;
+}
+
+.verse-card__eyebrow {
+  margin: 0 0 8px;
+  font-family: var(--font-mono-label, ui-monospace, monospace);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--verse-ink, var(--color-brand-secondary));
+  /* Lighter than the verse itself: it is a label, and at full strength it
+     competed with the scripture underneath it. */
+  opacity: 0.78;
+}
+
+.verse-card__text {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.52;
+  color: var(--color-brand-text);
+}
+
+.verse-card__foot {
+  margin-top: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.verse-card__ref {
+  font-size: 15px;
+  font-weight: 700;
+  font-style: normal;
+  color: var(--verse-ink, var(--color-brand-text));
+}
+
+/* The season as a chip rather than loose text, as it was over the
+   photograph. On the wash it is the ink on a slightly firmer version of
+   the same hue, so it reads as part of the card and not as a button. */
+.verse-card__season {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--verse-ink, var(--color-brand-text));
+  background: color-mix(in srgb, var(--verse-ink, #000) 10%, transparent);
+  border: 1px solid var(--verse-border, var(--color-brand-border));
+}
+
+@media (max-width: 380px) {
+  .verse-card { min-height: 148px; }
+  .verse-card__text { font-size: 16px; }
+}
+
+/* The verse at the top of the Parish Bulletin: full width of the sheet,
+   and no longer one slide of a rail. */
+.home-verse .verse-card {
+  /* Plain 100%, not cqw. `cqw` resolves against the nearest container-query
+     ancestor, and out here that is a container the width of the page - the
+     card escaped the phone by 500px the first time this was tried. */
+  width: 100%;
+  /* No photograph to give room to any more, so the floor is only what
+     stops a short verse becoming a letterbox. */
+  min-height: 150px;
+}
+
+.home-verse .verse-card__body {
+  padding: 16px 17px 15px;
+}
+
+.home-verse .verse-card__text {
+  font-size: 16.5px;
+  line-height: 1.5;
+  /* A clamp is still needed: the longest verses in the set run past five
+     lines, and the attribution must not be pushed off the card. */
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-verse .verse-card__foot {
+  margin-top: 12px;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.home-verse .verse-card__ref { font-size: 15px; }
+.home-verse .verse-card__season { font-size: 12.5px; padding: 4px 10px; }
+.home-verse .verse-card__eyebrow { font-size: 12.5px; margin-bottom: 8px; }
+
+
+/* The verse, standing alone above the bulletin rail. Full width of the
+   sheet, with the rail's own left/right rhythm. */
+.home-verse {
+  margin-bottom: 14px;
+}
+
+/* The way back to your own parish, in the slot the brand lockup uses
+   when you are already there. Pill-shaped and translucent so it reads as
+   a control against a photograph, whatever that photograph is. */
+.parish-welcome__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: rgb(255 255 255 / 0.16);
+  backdrop-filter: blur(3px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------- Parish Bulletin
+   Below the Verse of the Day: the announcements, then the two section
+   cards. Nothing here is a horizontal scroller — see the note at the top
+   of BulletinRail.tsx for why both halves stopped being one. */
+.bulletin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bulletin-note {
+  border-radius: 22px;
+  background: var(--color-brand-card-sunk);
+  border: 1px solid var(--color-brand-border);
+  padding: 16px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-brand-secondary);
+}
+
+/* Every slide occupies the same grid cell, so the frame is as tall as the
+   tallest announcement and the page below it never jumps when the deck
+   advances. This is also what makes a crossfade possible at all: two
+   siblings in a row cannot fade through each other. */
+.bulletin-deck {
+  display: grid;
+  /* Vertical panning still belongs to the page; the deck only wants the
+     horizontal flick, and it handles that itself in JS. */
+  touch-action: pan-y;
+}
+
+.bulletin-card {
+  grid-area: 1 / 1;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--color-brand-card-sunk);
+  border: 1px solid var(--color-brand-border);
+  display: flex;
+  flex-direction: column;
+
+  opacity: 0;
+  /* Inert, not merely invisible: without this the hidden slides still take
+     tab stops and still answer hit-testing over the visible one. */
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 320ms ease, visibility 0s linear 320ms;
+}
+
+.bulletin-card.is-current {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 320ms ease, visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulletin-card { transition-duration: 1ms; }
+}
+
+.bulletin-card__photo {
+  display: block;
+  position: relative;
+  /* A fixed ratio rather than a fixed height: the admin's uploads are all
+     cropped to 16:9 before they are stored, so this is the shape they
+     actually are. */
+  aspect-ratio: 16 / 9;
+  background: var(--color-brand-border);
+}
+
+.bulletin-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bulletin-card__body {
+  display: block;
+  padding: 14px 16px 16px;
+}
+
+.bulletin-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+
+.bulletin-card__title {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-brand-text);
+}
+
+.bulletin-card__when {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--color-brand-secondary);
+}
+
+.bulletin-card__body-text {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-brand-text);
+  /* Three lines on the card, the rest in the parish's own announcement
+     page. A deck whose height is set by its longest slide should not be
+     set by an essay. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bulletin-deck__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.bulletin-deck__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-card);
+  color: var(--color-brand-secondary);
+}
+
+.bulletin-deck__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* The hit area is 18px even though the dot reads as 7px — a 7px tap
+   target is not one. */
+.bulletin-deck__dot {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  background: none;
+  border: 0;
+}
+
+.bulletin-deck__dot::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-brand-border);
+  transition: background-color 200ms ease, width 200ms ease;
+}
+
+.bulletin-deck__dot.is-current::after {
+  width: 18px;
+  background: var(--color-brand-primary);
+}
+
+/* The two section cards. Equal columns at every width a phone has: they
+   fit, which is the whole reason they stopped being a rail. */
+.bulletin-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.bulletin-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-align: left;
+  border-radius: 22px;
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  transition: border-color 160ms ease;
+}
+
+.bulletin-section:hover,
+.bulletin-section:focus-visible {
+  border-color: var(--color-brand-primary);
+}
+
+.bulletin-section__photo {
+  display: block;
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+
+.bulletin-section__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bulletin-section__scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 56px;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72), transparent);
+}
+
+.bulletin-section__caption {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #fff;
+  /* Two lines at this width; a third pushed the ministry's own name off
+     the bottom of the photograph. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bulletin-section__body {
+  display: block;
+  padding: 12px 13px 13px;
+  /* Pushes both cards' bodies to the same depth whatever their hint runs
+     to, so the pair reads as a pair. */
+  flex: 1;
+}
+
+.bulletin-section__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--color-brand-text);
+}
+
+.bulletin-section__icon {
+  color: var(--color-brand-primary);
+  display: inline-flex;
+}
+
+.bulletin-section__hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--color-brand-secondary);
+}
+
+/* Narrow phones: the pair still fits, but the label needs the room more
+   than the chevron does. */
+@media (max-width: 360px) {
+  .bulletin-section__label { font-size: 14.5px; gap: 5px; }
+  .bulletin-section__hint { font-size: 13px; }
+}
+
+/* An announcement with no photograph, in a deck whose height is set by one
+   that has. Left at the top it floated in a tall empty box; centred, the
+   short slide reads as a card of its own rather than as a card that failed
+   to load its picture. */
+.bulletin-card--text {
+  justify-content: center;
+}
+
+/* ------------------------------------------------- Availability badge
+   Whether a ministry or sacrament is taking applications. Grey, not red,
+   when closed: a parish shutting the choir for Lent is housekeeping, and
+   red is the colour this app uses when something has gone wrong for the
+   person reading it. */
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: #2F5A41;
+  background: #E4F0E8;
+  border: 1px solid #BFD6C8;
+}
+
+.availability-badge__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.availability-badge--closed {
+  color: var(--color-brand-secondary);
+  background: var(--color-brand-card-sunk);
+  border-color: var(--color-brand-border);
+}
+
+/* A card whose applications are closed. The content stays fully legible —
+   only the photograph is pulled back, because that is the part that was
+   selling it. Greying the text would make the requirements, which are
+   still the useful part, the hardest thing on the card to read. */
+.is-unavailable .ministry-card__photo img,
+.is-unavailable .ministry-hero img,
+.is-unavailable .sacrament-card__photo img {
+  filter: grayscale(1);
+  opacity: 0.72;
+}
+
+/* A real <input type="checkbox"> painted as a switch. Built on the native
+   control rather than a div with an onClick, so it keeps the keyboard, the
+   focus ring and the state a screen reader reads. */
+.availability-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--color-brand-border);
+  border: 1px solid var(--color-brand-border);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.availability-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 160ms ease;
+}
+
+.availability-switch:checked {
+  background: var(--color-brand-success, #2F5A41);
+  border-color: var(--color-brand-success, #2F5A41);
+}
+
+.availability-switch:checked::after {
+  transform: translateX(20px);
+}
+
+.availability-switch:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.availability-switch:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* ------------------------------------------------- Parish office nav
+   Scrolls sideways on a phone rather than wrapping to three ragged rows.
+   The parish office is used on a desktop most of the time, but a priest
+   checking applications on a phone should not meet a broken header. */
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-bottom: 18px;
+}
+
+.admin-nav::-webkit-scrollbar { display: none; }
+
+.admin-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--color-brand-secondary);
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+.admin-nav__item:hover {
+  color: var(--color-brand-text);
+  border-color: var(--color-brand-primary);
+}
+
+.admin-nav__item.is-on {
+  color: var(--color-brand-on-accent);
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+
+/* ------------------------------------------------- Application screens
+   The form takes the whole screen, because applying is its own job and
+   not a footnote to the description you were reading. */
+.apply-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-brand-bg);
+}
+
+.apply-screen__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
+}
+
+.apply-screen__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}
+
+.apply-screen__count {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+
+.apply-screen__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 18px 32px;
+}
+
+.apply-screen__eyebrow {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+
+.apply-screen__title {
+  margin-top: 2px;
+  font-size: 23px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: var(--font-serif, Georgia, serif);
+  line-height: 1.22;
+  color: var(--color-brand-text);
+}
+
+.apply-screen__parish {
+  font-size: 15px;
+  color: var(--color-brand-secondary);
+}
+
+/* How far through. Four steps is short, but not knowing whether it is
+   four or fourteen is what makes people abandon a form on screen one. */
+.apply-progress {
+  display: flex;
+  gap: 5px;
+  margin: 14px 0 20px;
+}
+
+.apply-progress__seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-brand-border);
+  transition: background-color 200ms ease;
+}
+
+.apply-progress__seg.is-done { background: var(--color-brand-primary); }
+
+.apply-step__title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-brand-text);
+}
+
+.apply-step__blurb {
+  margin-top: 3px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-brand-secondary);
+}
+
+.apply-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-brand-text);
+}
+
+.apply-optional {
+  font-weight: 500;
+  color: var(--color-brand-secondary);
+}
+
+.apply-help {
+  margin: -2px 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-brand-secondary);
+}
+
+/* 16px minimum: anything smaller makes iOS Safari zoom the page the
+   moment the field is focused, and it never zooms back out. */
+.apply-input {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-card);
+  padding: 12px 13px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--color-brand-text);
+}
+
+.apply-input:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 1px;
+}
+
+.apply-input.is-bad { border-color: var(--color-brand-error); }
+
+.apply-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-border);
+  background: var(--color-brand-card);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-brand-text);
+}
+
+.apply-chip.is-on {
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+
+.apply-primary {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+
+.apply-primary:disabled { opacity: 0.6; }
+
+.apply-secondary {
+  width: 100%;
+  border-radius: 999px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border: 1.5px solid var(--color-brand-border);
+  color: var(--color-brand-text);
+}
+
+/* ------------------------------------------------- Scanner
+   Chrome for the camera screen: the instruction over the feed, the dark
+   sheet at the bottom, the AI/AR switch.
+
+   Scoped to its own tokens rather than the app palette. Everywhere else
+   in SanctiWalk sits on warm paper with navy type; here the background
+   is a live camera in a building that may be lit by one window, and the
+   palette has to answer that instead. */
+.scan {
+  --scan-sheet: rgb(9 12 22 / 0.94);
+  --scan-line: rgb(255 255 255 / 0.13);
+  --scan-ink: #fff;
+  --scan-dim: rgb(255 255 255 / 0.62);
+  /* The single accent: candle gold. The parish navy vanishes against a
+     dark nave, and gilt is already the colour that means "look here" in
+     this building. Spent only on the AR states, where the pilgrim is
+     being asked to find something. */
+  --scan-gild: #e9c77c;
+}
+
+/* ---- the instruction over the feed ---- */
+.scan-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 14px 0;
+}
+
+.scan-head__text {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  /* Optically centred against the close button, so the title sits in
+     the middle of the SCREEN rather than in the middle of the space the
+     button left over. */
+  padding-left: 40px;
+}
+
+.scan-head__title {
+  margin: 0;
+  font-size: 17.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--scan-ink);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.65);
+}
+
+.scan-head__sub {
+  margin: 4px auto 0;
+  max-width: 30ch;
+  font-size: 13.5px;
+  line-height: 1.42;
+  color: var(--scan-dim);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+
+.scan-head__close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--scan-ink);
+  background: rgb(0 0 0 / 0.38);
+  backdrop-filter: blur(6px);
+}
+
+/* ---- the sheet ---- */
+.scan-sheet {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  padding: 12px 14px 16px;
+  border-radius: 26px;
+  background: var(--scan-sheet);
+  border: 1px solid var(--scan-line);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  color: var(--scan-ink);
+}
+
+/* ---- AI / AR switch ---- */
+.scan-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  border: 1px solid var(--scan-line);
+}
+
+.scan-tab {
+  padding: 9px 10px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--scan-dim);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.scan-tab.is-on {
+  background: #fff;
+  color: #10131f;
+  font-weight: 700;
+}
+
+.scan-tab:focus-visible {
+  outline: 2px solid var(--scan-gild);
+  outline-offset: 2px;
+}
+
+/* ---- the target ---- */
+.scan-reticle {
+  position: absolute;
+  /* Above centre: the sheet occupies the lower third, so the optical
+     middle of the free space is higher than the middle of the screen. */
+  top: 40%;
+  left: 50%;
+  width: min(56%, 215px);
+  aspect-ratio: 4 / 5;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 420ms ease;
+}
+
+.scan-reticle.is-reading {
+  transform: translate(-50%, -50%) scale(0.94);
+}
+
+.scan-reticle__c {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 0 solid rgb(255 255 255 / 0.9);
+  transition: border-color 300ms ease;
+}
+
+.scan-reticle.is-reading .scan-reticle__c {
+  border-color: var(--scan-gild);
+}
+
+.scan-reticle__c--tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 10px; }
+.scan-reticle__c--tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 10px; }
+.scan-reticle__c--bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 10px; }
+.scan-reticle__c--br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 10px; }
+
+/* ---- the shutter ---- */
+.scan-shutter {
+  width: 72px;
+  height: 72px;
+  margin: 14px auto 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 3px solid rgb(255 255 255 / 0.9);
+  transition: transform 160ms ease;
+}
+
+.scan-shutter:active { transform: scale(0.94); }
+.scan-shutter:disabled { opacity: 0.55; }
+
+.scan-shutter__core {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #fff;
+  transition: width 260ms ease, height 260ms ease, background-color 260ms ease;
+}
+
+.scan-shutter__core.is-busy {
+  width: 24px;
+  height: 24px;
+  background: var(--scan-gild);
+}
+
+.scan-caption {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--scan-dim);
+}
+
+/* ---- AR panel ---- */
+.scan-panel { margin-top: 14px; }
+
+.scan-panel__title {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--scan-ink);
+}
+
+.scan-panel__body {
+  margin: 6px auto 0;
+  max-width: 34ch;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--scan-dim);
+}
+
+.scan-action {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 999px;
+  font-size: 15.5px;
+  font-weight: 700;
+  background: #fff;
+  color: #10131f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.scan-action--quiet {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--scan-ink);
+  border: 1px solid var(--scan-line);
+}
+
+.scan-action:active { transform: scale(0.99); }
+
+/* The read-in-progress bar. The one piece of non-user-triggered motion
+   on this screen, and it earns it: it is the only thing saying the app
+   has not frozen while the camera is being held still. */
+.scan-progress {
+  position: relative;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+  overflow: hidden;
+}
+
+.scan-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--scan-gild);
+  animation: scan-sweep 1.15s ease-in-out infinite;
+}
+
+@keyframes scan-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-progress::after { animation: none; width: 100%; opacity: 0.75; }
+}
+
+/* ---- the stop card, while the AR tour is running ---- */
+.scan-stop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.07);
+  border: 1px solid var(--scan-line);
+}
+
+/* Neutral, not gold. The narration control is already gold while it is
+   speaking, and two gold things in one small card fight each other -
+   the accent is worth more spent on the one that changes. */
+.scan-stop__n {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.14);
+  border: 1px solid var(--scan-line);
+  color: var(--scan-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.scan-stop__name {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--scan-ink);
+}
+
+.scan-stop__meta {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--scan-dim);
+}
+
+/* Narration. Gold while speaking, so the control states what it is
+   doing rather than relying on the icon alone. */
+.scan-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  padding: 7px 13px 7px 10px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--scan-ink);
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid var(--scan-line);
+}
+
+.scan-listen.is-speaking {
+  background: var(--scan-gild);
+  border-color: var(--scan-gild);
+  color: #221a06;
+}
+
+.scan-row {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.scan-row > .scan-action { margin-top: 0; }
+
+/* ---- the marker hint, when the pilgrim is not at one yet ---- */
+.scan-marker {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.scan-marker__tile {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.3);
+  backdrop-filter: blur(6px);
+  animation: scan-halo 2.4s ease-out infinite;
+}
+
+.scan-marker__tile img { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; }
+
+.scan-marker__label {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--scan-ink);
+}
+
+@keyframes scan-halo {
+  0%   { box-shadow: 0 0 0 0 rgb(233 199 124 / 0.45); }
+  70%  { box-shadow: 0 0 0 18px rgb(233 199 124 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(233 199 124 / 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-marker__tile { animation: none; border-color: var(--scan-gild); }
+}
+
+/* ---- status chip, while the AR tour is running ---- */
+.scan-chip {
+  position: absolute;
+  top: 62px;
+  left: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.5);
+  border: 1px solid var(--scan-line);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--scan-ink);
+  backdrop-filter: blur(6px);
+}
+
+.scan-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--scan-gild);
 }

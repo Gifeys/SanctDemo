@@ -16,3 +16,10 @@ node_modules/
 
 # Local dev binaries (cloudflared). Not part of the app.
 tools/
+
+# Vercel
+# .vercel holds the project link; .vercel-cli holds an auth TOKEN when the
+# CLI is pointed here with --global-config to work around an EXDEV rename
+# failure on this machine. Neither belongs in the repository.
+.vercel
+.vercel-cli

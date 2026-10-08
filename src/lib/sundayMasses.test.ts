@@ -81,7 +81,7 @@ describe('sundayMassCard', () => {
   it('reads the real parish schedule, not hardcoded times', () => {
     const card = sundayMassCard(MHCP, wednesday)
     // Exactly the times printed in the client's own mockup.
-    expect(card.sunday.times).toEqual([
+    expect(card.sunday.times.map(t => t.time)).toEqual([
       '6:00 AM',
       '7:30 AM',
       '9:00 AM',
@@ -89,6 +89,8 @@ describe('sundayMassCard', () => {
       '4:30 PM',
       '6:00 PM',
     ])
+    // Nothing suspended, so every one of them is on.
+    expect(card.sunday.times.every(t => t.available)).toBe(true)
     expect(card.anticipated?.time).toBe('6:00 PM')
   })
 
@@ -126,5 +128,44 @@ describe('dayOfMonth', () => {
 
   it('leaves two digits alone', () => {
     expect(dayOfMonth(new Date(2026, 8, 13))).toBe('13')
+  })
+})
+
+describe('a Mass the parish has suspended', () => {
+  const wednesday = new Date(2026, 8, 9)
+
+  const withSuspended = (unavailableTimes: string[]) => [
+    { day: 'Saturday', time: '6:00 AM, 6:00 PM' },
+    { day: 'Sunday', time: '6:00 AM, 8:00 AM, 10:00 AM', unavailableTimes },
+  ]
+
+  it('is still listed, marked unavailable, rather than disappearing', () => {
+    // The whole point. Someone who comes at 8 every week needs to see
+    // that the 8 exists and is off - an absence reads as "I
+    // misremembered" and they turn up anyway.
+    const card = sundayMassCard(withSuspended(['8:00 AM']), wednesday)
+    expect(card.sunday.times.map(t => t.time)).toEqual(['6:00 AM', '8:00 AM', '10:00 AM'])
+    expect(card.sunday.times.find(t => t.time === '8:00 AM')?.available).toBe(false)
+    expect(card.sunday.times.find(t => t.time === '6:00 AM')?.available).toBe(true)
+  })
+
+  it('a suspended anticipated Mass is reported as suspended, not hidden', () => {
+    const card = sundayMassCard([
+      { day: 'Saturday', time: '6:00 PM', unavailableTimes: ['6:00 PM'] },
+    ], wednesday)
+    expect(card.anticipated?.time).toBe('6:00 PM')
+    expect(card.anticipated?.available).toBe(false)
+  })
+
+  it('carries the parish note for the Sunday', () => {
+    const card = sundayMassCard([
+      { day: 'Sunday', time: '8:00 AM', note: 'No 10am Mass during the renovation' },
+    ], wednesday)
+    expect(card.note).toBe('No 10am Mass during the renovation')
+  })
+
+  it('a parish that has suspended nothing is unchanged', () => {
+    const card = sundayMassCard(withSuspended([]), wednesday)
+    expect(card.sunday.times.every(t => t.available)).toBe(true)
   })
 })

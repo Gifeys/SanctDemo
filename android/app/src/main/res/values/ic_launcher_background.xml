@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- The brand navy from the logo file. It was #FFFFFF, which on an
+         adaptive launcher put a white mark on a white plate. -->
+    <color name="ic_launcher_background">#02074A</color>
 </resources>

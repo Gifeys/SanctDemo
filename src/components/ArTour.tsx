@@ -13,12 +13,25 @@ import {
   WifiOff,
   QrCode,
 } from "lucide-react";
-import { useCamera, type CameraStatus } from "../lib/useCamera";
+import { useCamera, captureFailed, type CameraStatus, type CaptureFailure } from "../lib/useCamera";
 import { useQrScanner } from "../lib/useQrScanner";
 import type { QrScanResult } from "../lib/qr";
 import type { Station } from "../types";
+import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES } from "../data";
+
+const PLACEHOLDER_PHOTO = "/parish/placeholder-photo.svg";
+
+/** The church itself, for the card about pointing a camera around it. */
+const PARISH_CHURCH_PHOTOS: Record<string, string> = {
+  "route-mhcp": "/parish/mary-help-history.jpg",
+  "route-src": "/parish/san-roque-church.jpg",
+};
 import { arAvailability, arTourUrl } from "../lib/arApp";
 import { apiUrl } from "../lib/apiBase";
+import {
+  ScannerHeader, ScannerSheet, ScannerTabs, ScannerReticle, type ScannerMode,
+} from "./ScannerChrome";
+import ArScannerPanel, { type ArStage } from "./ArScannerPanel";
 import { withAppKey } from "../lib/appKey";
 
 /**
@@ -129,17 +142,71 @@ function ArTourLaunch({ parishId }: { parishId?: string }) {
   }
 
   return (
-    <a
-      href={arTourUrl(parishId ?? "route-mhcp")}
-      className="w-full flex items-center justify-center gap-2 bg-[var(--color-brand-primary)] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
-    >
-      <Sparkles className="w-4 h-4" /> Open the AR walking tour
+    <a href={arTourUrl(parishId ?? "route-mhcp")} className="scan-card__action scan-card__action--ghost">
+      <Sparkles className="w-4 h-4" /> Tour now
     </a>
   );
 }
 
-export default function ArTour({ stations = [], parishId }: { stations?: Station[]; parishId?: string }) {
+export default function ArTour({
+  stations = [], parishId, parishName = "your parish", onClose, onCameraLiveChange,
+}: {
+  stations?: Station[];
+  parishId?: string;
+  /** Named in the AR handover, so the pilgrim knows which tour is opening. */
+  parishName?: string;
+  /**
+   * Leaves the scanner. The reference design puts a close in the corner
+   * of the viewfinder, and on a screen that has taken over the display
+   * there has to be a visible way back that is not the system gesture.
+   */
+  onClose?: () => void;
+  /**
+   * Fires when the viewfinder opens or closes. The parish band lives above
+   * this component, and once the camera is up the screen is the camera -
+   * a header over a live viewfinder is covering the thing being scanned.
+   */
+  onCameraLiveChange?: (live: boolean) => void;
+}) {
+  // This parish's own pictures, so the choice looks like this church's
+  // rather than the software's. The patron fronts the museum because the
+  // museum is largely its statues; the church interior fronts the scanner
+  // because that is what the camera will be pointed at.
+  const museumImage =
+    PARISH_PATRON_IMAGES[parishId ?? ""] ?? PARISH_HEADER_IMAGES[parishId ?? ""] ?? PLACEHOLDER_PHOTO;
+  // The scanner's picture is the church, not the patron: the patron already
+  // fronts the museum card directly above, and two photographs of the same
+  // statue made the two choices look like one thing listed twice.
+  const scannerImage = PARISH_CHURCH_PHOTOS[parishId ?? ""] ?? PARISH_HEADER_IMAGES[parishId ?? ""] ?? PLACEHOLDER_PHOTO;
+
   const camera = useCamera();
+
+  // "ready" is the only status with a picture on screen; every other one
+  // is a card explaining why there is not.
+  const cameraLive = camera.status === "ready";
+
+  /**
+   * Open the camera as soon as the tab does.
+   *
+   * Tapping Scan used to land on a menu of cards with a "Scan now"
+   * button on one of them, so reaching the scanner took two taps and
+   * the first one showed something nobody came for. A scanner tab
+   * should be a viewfinder; the AI/AR switch inside it already offers
+   * the choice those cards were offering.
+   *
+   * Only from "idle". Re-running after a denial would reopen the
+   * permission prompt on every render, and after a grant it would stop
+   * and restart a camera that is already running.
+   */
+  useEffect(() => {
+    if (camera.status === "idle") void camera.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera.status]);
+  useEffect(() => {
+    onCameraLiveChange?.(cameraLive);
+    // Leaving the tab with the camera open must put the band back.
+    return () => onCameraLiveChange?.(false);
+  }, [cameraLive, onCameraLiveChange]);
   const stationNames = stations.map((s) => s.name);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Recognition | null>(null);
@@ -147,6 +214,18 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [budget, setBudget] = useState<ScanBudget | null>(null);
+
+  /**
+   * Which scanner is showing, and how far the AR one has got.
+   *
+   * They share the camera and the chrome and differ only in what they
+   * do with a frame, so this is one screen with a switch rather than
+   * two screens with a duplicate camera between them.
+   */
+  const [mode, setMode] = useState<ScannerMode>("ai");
+  const [arStage, setArStage] = useState<ArStage>("find");
+  const [arStop, setArStop] = useState(0);
+  const [arError, setArError] = useState<string | null>(null);
 
   // Fetched once so the remaining count is visible before anyone spends one.
   // Failure is silent: the counter just doesn't appear, rather than blocking
@@ -167,11 +246,15 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
   const scan = useCallback(async () => {
     const capture = camera.captureFrame();
 
-    if (!capture.ok) {
+    if (captureFailed(capture)) {
       // Each reason gets its own words. "It didn't work" is the same message
       // for a camera that has not painted a frame yet and for one that never
       // will, and those need different actions from the pilgrim.
-      const message: Record<typeof capture.reason, string> = {
+      // Record<CaptureFailure, …>, not Record<typeof capture.reason, …>:
+      // a `typeof` in a TYPE position reads the declared type, not the
+      // one narrowed by the `if` above, so it saw the whole union and
+      // the success branch has no `reason`.
+      const message: Record<CaptureFailure, string> = {
         "no-video": "The camera view is not open. Close and reopen the scanner.",
         "not-ready": "The camera is still warming up. Give it a second and tap again.",
         "no-canvas": "This browser could not prepare the image. Try reloading the app.",
@@ -510,60 +593,87 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
     }
 
     return (
-      <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
-        <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
-          <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">
-            <ScanLine className="w-32 h-32 text-white" />
-          </div>
-          <div className="flex items-center gap-1.5 text-[var(--color-brand-on-accent)] font-bold text-[15px] tracking-wider uppercase font-serif italic">
-            <Sparkles className="w-3.5 h-3.5" /> Augmented Reality
-          </div>
-          <h2 className="text-2xl font-bold font-serif italic tracking-tight">AR Tour</h2>
-          <p className="text-[15px] text-[var(--color-brand-secondary)] opacity-95 mt-1 max-w-xs leading-relaxed font-sans">
-            Point your camera at a feature of the church to learn about it.
-          </p>
-        </div>
+      /* No overflow here: App's .app-scroll is the page's one scroller, and a
+         second one inside it would scroll the cards while leaving the parish
+         band - which sits outside this component - stationary above them. */
+      <div className="flex-1 flex flex-col bg-[var(--color-brand-card)]">
+        {/* The flat navy panel with the faded clip-art scan icon used to sit
+            here. The parish band above this screen says the same thing in
+            the parish's own photography, so a second header was two titles
+            for one tab. */}
 
         <div className="p-4 space-y-3">
-          <div className="bg-[var(--color-brand-card)] rounded-3xl border border-[var(--color-brand-border)] p-5 shadow-xs space-y-3 text-center">
-            <div className="h-14 w-14 rounded-2xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] flex items-center justify-center mx-auto text-[var(--color-brand-accent)]">
-              {camera.status === "requesting" ? (
-                <Loader2 className="w-7 h-7 animate-spin" />
-              ) : statusCopy?.icon === "offline" ? (
-                <WifiOff className="w-7 h-7 text-[var(--color-brand-error)]" />
-              ) : camera.error ? (
-                <AlertTriangle className="w-7 h-7 text-[var(--color-brand-error)]" />
-              ) : (
-                <Camera className="w-7 h-7" />
+          {/* Two ways in, offered as a choice. The museum walk and the
+              scanner are different things - one is a guided tour of the
+              parish's own pieces, the other identifies whatever is in
+              front of you - and the old screen buried the first under a
+              link beneath the second. */}
+
+          <section className="scan-card">
+            <span className="scan-card__media">
+              <img src={museumImage} alt="" loading="lazy" />
+              <span className="scan-card__scrim" aria-hidden />
+              <span className="scan-card__title">AR Museum</span>
+            </span>
+            <div className="scan-card__body">
+              <p className="scan-card__blurb">
+                Walk the parish's own statues and history, placed where they
+                stand in the church.
+              </p>
+              <ArTourLaunch parishId={parishId} />
+            </div>
+          </section>
+
+          <section className="scan-card">
+            <span className="scan-card__media">
+              <img src={scannerImage} alt="" loading="lazy" />
+              <span className="scan-card__scrim" aria-hidden />
+              <span className="scan-card__title">Scanner</span>
+            </span>
+            <div className="scan-card__body">
+              <p className="scan-card__blurb">
+                {camera.status === "requesting"
+                  ? "Opening the camera…"
+                  : statusCopy?.title
+                    ? statusCopy.title
+                    : "Point your camera at an altar, statue or marker and the app will tell you what it is."}
+              </p>
+
+              {/* The privacy line stays with the button that asks for the
+                  camera - it is the answer to the permission prompt the
+                  pilgrim is about to see. */}
+              <p className={`scan-card__note${camera.error ? " scan-card__note--error" : ""}`}>
+                {camera.error ?? "Nothing is recorded — frames are analysed and discarded."}
+              </p>
+
+              {camera.status !== "insecure" && (
+                <button
+                  type="button"
+                  onClick={() => void camera.start()}
+                  disabled={camera.status === "requesting"}
+                  className="scan-card__action"
+                >
+                  {camera.status === "requesting" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Opening…
+                    </>
+                  ) : statusCopy?.icon === "offline" ? (
+                    <>
+                      <WifiOff className="w-4 h-4" /> Try again
+                    </>
+                  ) : camera.error ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4" /> Try again
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" /> Scan now
+                    </>
+                  )}
+                </button>
               )}
             </div>
-
-            <h3 className="text-base font-bold text-[var(--color-brand-text)] font-serif italic">
-              {camera.status === "requesting" ? "Opening the camera…" : statusCopy?.title ?? "Start the AR Tour"}
-            </h3>
-
-            <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">
-              {camera.error ??
-                "The tour uses your camera to recognise altars, statues, and markers around the parish. Nothing is recorded — frames are analysed and discarded."}
-            </p>
-
-            {camera.status !== "requesting" && camera.status !== "insecure" && (
-              <button
-                onClick={() => void camera.start()}
-                className="w-full bg-[var(--color-brand-primary)] text-white rounded-2xl py-3 font-bold text-[15px] font-sans active:scale-[0.98] transition-transform"
-              >
-                {camera.status === "denied" || camera.status === "in-use" || camera.status === "error"
-                  ? "Try again"
-                  : "Open camera"}
-              </button>
-            )}
-          </div>
-
-          {/* Launch the native AR tour.
-              Separate app because the browser cannot keep content anchored
-              to a place once the trigger image leaves the camera - that needs
-              ARCore, and no web API offers it on either platform today. */}
-          <ArTourLaunch parishId={parishId} />
+          </section>
 
           {result && !sheetOpen && (
             <button
@@ -601,8 +711,60 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
 
   const busy = phase === "scanning";
 
+  /* ---- what the overlay says, per mode and stage ---- */
+
+  const arStation = stations[arStop] ?? null;
+
+  const headline =
+    mode === "ai"
+      ? busy
+        ? { title: "Reading what you see", sub: "Hold steady" }
+        // One line at phone width. The longer version wrapped and shoved
+        // the subtitle down over the viewfinder.
+        : { title: "Point at a statue or marker", sub: "The AI scanner names it and tells you about it" }
+      : arStage === "find"
+        ? { title: "Find the SanctiWalk marker", sub: "The AR tour opens only at a marker — look for one beside the station" }
+        : arStage === "reading"
+          ? { title: "Hold the marker in the frame", sub: "Keep steady while it is read" }
+          : { title: arStation?.name ?? "AR tour running", sub: "Follow the markers around the church" };
+
+  function startAr() {
+    setArError(null);
+    setArStage("reading");
+
+    // The marker itself is read by the Unity app, not by this WebView.
+    // The pause is the handover, not a fake detection: it gives the
+    // pilgrim a moment to see that something happened before another
+    // app takes the screen.
+    window.setTimeout(() => {
+      const left = () => document.visibilityState === "hidden";
+
+      window.location.href = arTourUrl(parishId ?? "route-mhcp");
+
+      /*
+       * Nothing happens when the AR app is not installed.
+       *
+       * A custom scheme fails silently: no error, no navigation, the
+       * page simply stays put. Without this check the pilgrim would be
+       * left looking at "Reading the marker" for ever, with the app
+       * apparently frozen. If we are still here and still visible a
+       * moment later, the handover did not take.
+       */
+      window.setTimeout(() => {
+        if (left()) {
+          setArStage("live");
+        } else {
+          setArStage("find");
+          setArError(
+            "The SanctiWalk AR app did not open. It is a separate Android app — install it, then try again.",
+          );
+        }
+      }, 1200);
+    }, 1200);
+  }
+
   return (
-    <div className="flex-1 relative bg-black overflow-hidden">
+    <div className="scan flex-1 relative bg-black overflow-hidden">
       <video
         ref={camera.videoRef}
         className={`absolute inset-0 w-full h-full object-cover ${
@@ -622,41 +784,39 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
         }}
       />
 
-      {/* Reticle */}
+      {/* The instruction, over the feed. */}
       {!sheetOpen && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className={`relative transition-transform duration-500 ${busy ? "scale-95" : ""}`}
-            style={{ width: "min(62%, 240px)", aspectRatio: "1", marginTop: "-8%" }}
-          >
-            <span
-              className={`absolute top-0 left-0 w-7 h-7 rounded-tl-lg border-t-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
-            />
-            <span
-              className={`absolute top-0 right-0 w-7 h-7 rounded-tr-lg border-t-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
-            />
-            <span
-              className={`absolute bottom-0 left-0 w-7 h-7 rounded-bl-lg border-b-[2.5px] border-l-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
-            />
-            <span
-              className={`absolute bottom-0 right-0 w-7 h-7 rounded-br-lg border-b-[2.5px] border-r-[2.5px] transition-colors duration-500 ${busy ? "border-[var(--color-brand-on-accent)]" : "border-white/85"}`}
-            />
-          </div>
-        </div>
+        <ScannerHeader
+          title={headline.title}
+          subtitle={headline.sub}
+          onClose={onClose}
+        />
       )}
 
-      {/* Tells the pilgrim the code reader is already running, so they do not
-          go looking for a separate QR mode that does not exist. Hidden the
-          moment there is anything more urgent to say. */}
-      {!sheetOpen && !busy && !error && !result && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 max-w-[85%] px-3.5 py-2 rounded-full bg-black/55 backdrop-blur-md border border-white/15 flex items-center gap-2 pointer-events-none">
-          <QrCode className="w-3.5 h-3.5 text-white/80 shrink-0" />
-          <span className="text-[14px] font-sans text-white/90 text-center leading-snug">
-            Point at the parish code, or tap to identify what you see
+      {/* The target. In AI mode it frames whatever is being pointed at;
+          in AR it frames the marker while it is read. */}
+      {!sheetOpen && !(mode === "ar" && arStage === "find") && (
+        <ScannerReticle tight={busy || (mode === "ar" && arStage === "reading")} />
+      )}
+
+      {/* What to look for, when the pilgrim is not at a marker yet. */}
+      {!sheetOpen && mode === "ar" && arStage === "find" && (
+        <div className="scan-marker">
+          <span className="scan-marker__tile">
+            <img src="/ui/sanctiwalk-icon-512.png" alt="" />
           </span>
+          <span className="scan-marker__label">SanctiWalk marker</span>
         </div>
       )}
 
+      {!sheetOpen && mode === "ar" && arStage === "live" && (
+        <span className="scan-chip">
+          <span className="scan-chip__dot" aria-hidden />
+          AR tour running
+        </span>
+      )}
+
+      {/* Status pill */}
       {/* Status pill */}
       {(busy || error) && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-[85%] px-4 py-2 rounded-full bg-black/65 backdrop-blur-md border border-white/15 flex items-center gap-2">
@@ -669,65 +829,55 @@ export default function ArTour({ stations = [], parishId }: { stations?: Station
         </div>
       )}
 
-      {/* Recognised label — tap to reopen the full card */}
-      {result && !sheetOpen && (
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="absolute left-1/2 -translate-x-1/2 bottom-32 max-w-[80%] flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-black/70 backdrop-blur-md border border-white/15 text-left active:scale-[0.97] transition-transform"
-        >
-          <span className="flex flex-col min-w-0">
-            <span className="text-[14px] font-bold uppercase tracking-[0.09em] text-[var(--color-brand-on-accent)] font-sans">
-              {result.category}
-            </span>
-            <span className="text-[15px] font-semibold text-white truncate font-sans">
-              {result.title}
-            </span>
-          </span>
-        </button>
-      )}
 
-      {/* Controls */}
-      <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-9">
-        <button
-          onClick={camera.switchCamera}
-          disabled={!camera.hasMultipleCameras}
-          aria-label="Switch camera"
-          className="w-14 h-14 rounded-2xl bg-black/45 backdrop-blur-md border border-white/15 flex items-center justify-center text-white/85 disabled:opacity-30 active:scale-95 transition-transform"
-        >
-          <SwitchCamera className="w-5 h-5" />
-        </button>
-
-        <button
-          onClick={() => void scan()}
-          disabled={busy}
-          aria-label="Scan what the camera is pointed at"
-          className="w-[74px] h-[74px] rounded-full border-[3px] border-white/85 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-70"
-        >
-          <span
-            className={`rounded-full bg-[var(--color-brand-on-accent)] transition-all duration-300 ${busy ? "w-6 h-6" : "w-14 h-14"}`}
+      {/* The sheet: the switch, and whatever the chosen scanner needs. */}
+      {!sheetOpen && (
+        <ScannerSheet>
+          <ScannerTabs
+            mode={mode}
+            onChange={next => {
+              setMode(next);
+              setError(null);
+              // Coming back to AR should ask again where you are, not
+              // resume a tour you walked away from.
+              if (next === "ar") setArStage("find");
+            }}
           />
-        </button>
 
-        <div className="w-14" aria-hidden />
-      </div>
+          {mode === "ai" ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void scan()}
+                disabled={busy}
+                aria-label="Identify what the camera is pointed at"
+                className="scan-shutter"
+              >
+                <span className={`scan-shutter__core${busy ? " is-busy" : ""}`} />
+              </button>
 
-      {/* Recognitions left today. The allowance sits on the server's single
-          API key and is shared by every device, so this is the real number,
-          not a per-phone guess. It only appears once the count is known. */}
-      {budget && (
-        <div className="absolute bottom-[104px] left-0 right-0 flex justify-center pointer-events-none">
-          <span
-            className={`text-[14px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-md border ${
-              budget.remaining === 0
-                ? "bg-[var(--color-brand-error)]/85 border-white/20 text-white"
-                : "bg-black/45 border-white/15 text-white/90"
-            }`}
-          >
-            {budget.remaining === 0
-              ? `No scans left today · resets tomorrow`
-              : `${budget.remaining} of ${budget.limit} scans left today`}
-          </span>
-        </div>
+              <p className="scan-caption">
+                {budget && budget.remaining === 0
+                  ? "No scans left today — the allowance resets tomorrow."
+                  : budget
+                    ? `Tap to identify. ${budget.remaining} of ${budget.limit} scans left today.`
+                    : "Tap to identify. The parish code is read automatically."}
+              </p>
+            </>
+          ) : (
+            <ArScannerPanel
+              stage={arStage}
+              error={arError}
+              onFoundMarker={startAr}
+              onEndTour={() => { setArStage("find"); setArStop(0); }}
+              onNextStop={() => setArStop(i => (i + 1) % Math.max(stations.length, 1))}
+              station={arStation}
+              stopNumber={arStop + 1}
+              stopCount={stations.length}
+              parishName={parishName}
+            />
+          )}
+        </ScannerSheet>
       )}
 
       {/* Information card */}

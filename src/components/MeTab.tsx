@@ -1,8 +1,12 @@
-import React from "react";
-import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User, Bell, ChevronRight } from "lucide-react";
 import { UserProgress } from "../types";
 import { BADGES } from "../data";
-import { isMinistryApplication, statusPresentation } from "../lib/ministryApplication";
+import MyApplications from "./MyApplications";
+import EditProfileCard from "./EditProfileCard";
+import { auth } from "../lib/firebase";
+import { getProfile } from "../lib/userProfile";
+import NotificationsCard from "./NotificationsCard";
 
 type Application = {
   id: string;
@@ -18,6 +22,12 @@ type Application = {
 };
 
 interface MeTabProps {
+  /** Lets Home's greeting refresh the moment the nickname changes. */
+  onNicknameChange?: (nickname: string) => void;
+  onOpenApplications: () => void;
+  onOpenNotifications: () => void;
+  /** For the badge; the page itself owns the list. */
+  unreadNotifications: number;
   isLoggedIn: boolean;
   userEmail: string;
   isAdmin: boolean;
@@ -31,6 +41,14 @@ interface MeTabProps {
   onOpenSimulator: () => void;
   /** Opens the sign-in screen. */
   onOpenSignIn: () => void;
+  /**
+   * The reminder settings card, passed in rather than built here.
+   *
+   * It needs the parish's Mass schedule and announcements, which this
+   * tab has no business knowing about. App already holds both for the
+   * scheduler, so it hands the finished card down.
+   */
+  reminders?: React.ReactNode;
   /** The pilgrim's home parish, shown under their name in the header. */
   parishName?: string;
 }
@@ -53,16 +71,27 @@ export default function MeTab({
   onOpenSimulator,
   onOpenSignIn,
   parishName,
+  onNicknameChange,
+  onOpenApplications,
+  onOpenNotifications,
+  unreadNotifications,
+  reminders,
 }: MeTabProps) {
   // The design shows a name and initials. Signed out there is no name to
   // show, so the header says "Pilgrim" rather than an empty avatar — the app
   // works fully without an account and should not imply otherwise.
-  // Ministry applications carry the four-status lifecycle and their own
-  // fields; everything else in the collection (sacrament bookings) does not.
-  const ministryApplications = applications.filter(isMinistryApplication);
-  const otherApplications = applications.filter(app => !isMinistryApplication(app));
-
   const displayName = isLoggedIn && userEmail ? userEmail.split("@")[0] : "Pilgrim";
+  // Read once, then kept current by the card below rather than re-read.
+  const [photoUrl, setPhotoUrl] = useState<string>("");
+  useEffect(() => {
+    if (!isLoggedIn || !auth.currentUser) { setPhotoUrl(""); return; }
+    let live = true;
+    void getProfile(auth.currentUser.uid).then(p => {
+      if (live) setPhotoUrl(p?.photoUrl ?? "");
+    });
+    return () => { live = false; };
+  }, [isLoggedIn]);
+
   const initials = displayName
     .split(/[.\s_-]+/)
     .filter(Boolean)
@@ -85,12 +114,24 @@ export default function MeTab({
             <p className="mt-0.5 text-[16px] text-[var(--color-brand-secondary)] truncate">{parishName}</p>
           )}
         </div>
-        <span
-          aria-hidden
-          className="shrink-0 w-14 h-14 rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] flex items-center justify-center text-[20px] font-bold"
-        >
-          {initials}
-        </span>
+        {/* The same photograph the profile card below shows. Two avatars
+            on one screen disagreeing about who you are reads as a bug -
+            and it was one: changing the picture changed the card and left
+            this circle on its initials. */}
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt=""
+            className="shrink-0 w-14 h-14 rounded-full object-cover border border-[var(--color-brand-border)]"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="shrink-0 w-14 h-14 rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] flex items-center justify-center text-[20px] font-bold"
+          >
+            {initials}
+          </span>
+        )}
       </div>
 
       <div className="px-4 pb-4 space-y-4 font-sans">
@@ -115,88 +156,55 @@ export default function MeTab({
             ministry sign-ups, station stamps). Firestore rules already scope
             this list to the signed-in uid (or everything, for an admin), so
             it renders as-is. */}
+        {/* One list, newest first, covering both generations of document
+            in the collection: the new ones with a reference number and a
+            status from the fixed set, and the older rows whose status is
+            free text. MyApplications normalises them rather than this
+            screen deciding which is which. */}
+        {/* Your picture and the name the app calls you. Above the
+            applications, because it is about who you are rather than what
+            you have asked the parish for. */}
+        <EditProfileCard
+          isLoggedIn={isLoggedIn}
+          onNicknameChange={onNicknameChange}
+          onPhotoChange={setPhotoUrl}
+        />
+
+        {/* Two rows rather than two lists. Both of these grow without
+            limit - an application is never removed, a notification
+            arrives on every status change - and inline they turned the
+            one screen that is meant to be "your account" into something
+            you scroll past. The count is the part worth seeing here;
+            the list gets a page. */}
         {isLoggedIn && (
-          <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5 space-y-3">
-            <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans flex items-center gap-1.5">
-              <ClipboardList className="w-4 h-4 text-[var(--color-brand-secondary)]" /> My Application
-            </h4>
-
-            {ministryApplications.length === 0 ? (
-              <p className="text-[15px] text-[var(--color-brand-secondary)]">
-                No ministry application submitted yet. Ministries are under your
-                parish dashboard.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {ministryApplications.map((app) => {
-                  const status = statusPresentation(app.status);
-                  return (
-                    <div
-                      key={app.id}
-                      className="bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] p-3.5 space-y-2"
-                    >
-                      <div className="flex justify-between items-start gap-2">
-                        <h5 className="font-bold text-[var(--color-brand-text)] text-[15px] leading-snug">
-                          {/* Older rows predate the structured fields, so
-                              fall back to the summary rather than showing a
-                              blank line. */}
-                          {app.ministryName ?? app.details}
-                        </h5>
-                        <span
-                          className={`text-sm font-bold px-2 py-0.5 rounded-full border shrink-0 ${status.className}`}
-                        >
-                          {status.dot} {status.label}
-                        </span>
-                      </div>
-
-                      <dl className="text-[15px] space-y-0.5">
-                        {app.parishName && (
-                          <div className="flex gap-2">
-                            <dt className="text-[var(--color-brand-secondary)] w-[7.5rem] shrink-0">Parish</dt>
-                            <dd className="text-[var(--color-brand-text)]">{app.parishName}</dd>
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <dt className="text-[var(--color-brand-secondary)] w-[7.5rem] shrink-0">Date submitted</dt>
-                          <dd className="text-[var(--color-brand-text)]">{app.date}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                  );
-                })}
-
-                <p className="text-[15px] text-[var(--color-brand-secondary)] leading-relaxed">
-                  We will contact you through your registered email regarding your
-                  application.
-                </p>
-              </div>
-            )}
-
-            {/* Sacrament bookings and the rest still belong to the pilgrim
-                and were visible here before, so they stay - under their own
-                heading rather than mixed in with ministry applications,
-                which have their own four statuses. */}
-            {otherApplications.length > 0 && (
-              <div className="pt-3 border-t border-[var(--color-brand-border)] space-y-2.5">
-                <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
-                  Other Submissions
-                </h4>
-                {otherApplications.map((app) => (
-                  <div key={app.id} className="border-b border-[var(--color-brand-card)]/60 pb-2 last:border-0 last:pb-0">
-                    <div className="flex justify-between items-start gap-2">
-                      <h5 className="font-bold text-[var(--color-brand-text)] text-[15px]">{app.type}</h5>
-                      <span className="text-sm font-bold text-[var(--color-brand-secondary)] bg-[var(--color-brand-card)] px-2 py-0.5 rounded-full shrink-0">
-                        {app.status}
-                      </span>
-                    </div>
-                    <p className="text-[15px] text-[var(--color-brand-text)] mt-0.5">{app.details}</p>
-                    <p className="text-sm text-[var(--color-brand-secondary)] mt-0.5">{app.date}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="space-y-2.5">
+            <SummaryRow
+              icon={<ClipboardList className="w-5 h-5" />}
+              label="My Applications"
+              detail={
+                applications.length === 0
+                  ? "Nothing submitted yet"
+                  : `${applications.length} application${applications.length === 1 ? "" : "s"}`
+              }
+              onClick={onOpenApplications}
+            />
+            <SummaryRow
+              icon={<Bell className="w-5 h-5" />}
+              label="Notifications"
+              detail={unreadNotifications > 0
+                ? `${unreadNotifications} unread`
+                : "Nothing new"}
+              badge={unreadNotifications}
+              onClick={onOpenNotifications}
+            />
           </div>
         )}
+
+        {/* Which reminders this phone should actually show. Above the
+            quick links, because it is a setting people come looking for
+            after the first Mass they miss - not something to find under
+            a list of shortcuts. */}
+        {reminders}
 
         {/* Quick links */}
         <div className="space-y-2">
@@ -256,5 +264,39 @@ export default function MeTab({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One line that says how many, and opens the list.
+ *
+ * A chevron and a count, not a preview: a half-shown list invites you to
+ * read it here, which is the thing these rows exist to stop.
+ */
+function SummaryRow({ icon, label, detail, badge, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  detail: string;
+  badge?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 rounded-[22px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] px-5 py-4 text-left"
+    >
+      <span className="shrink-0 text-[var(--color-brand-primary)]">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[16px] font-bold text-[var(--color-brand-text)]">{label}</span>
+        <span className="block text-[14px] text-[var(--color-brand-secondary)]">{detail}</span>
+      </span>
+      {badge ? (
+        <span className="shrink-0 rounded-full bg-[var(--color-brand-primary)] px-2 py-0.5 text-[13px] font-bold text-[var(--color-brand-on-accent)]">
+          {badge}
+        </span>
+      ) : null}
+      <ChevronRight className="w-5 h-5 shrink-0 text-[var(--color-brand-secondary)]" aria-hidden />
+    </button>
   );
 }

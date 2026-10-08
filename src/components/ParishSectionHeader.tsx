@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { findScroller } from "../lib/findScroller";
 import { PARISH_HEADER_FACES, PARISH_HEADER_IMAGES, PARISH_PATRON_IMAGES } from "../data";
 import { parishThemeStyle } from "../lib/parishTheme";
 
@@ -11,7 +12,41 @@ interface ParishSectionHeaderProps {
   blurb?: string;
   /** Sits in the eyebrow, before the words. */
   icon?: ReactNode;
+  /**
+   * Collapses on scroll the way Home's welcome band does: the eyebrow and
+   * blurb leave, the title shrinks and pins. Opt-in, because Ministries and
+   * Sacraments are short pages where a band that moves would only twitch.
+   */
+  collapsing?: boolean;
 }
+
+/**
+ * The element this band actually scrolls inside.
+ *
+ * findScroller looks for App's named .app-scroll first, which is right for
+ * Home - but Ministries, Sacraments and Pray each declare their own
+ * overflow-y-auto, and the content scrolls in THAT while .app-scroll never
+ * moves. A listener on the wrong one reads the same number at every scroll
+ * position, so the band measures a collapse and then never collapses.
+ *
+ * So: nearest ancestor that declares a scroll, whatever its current
+ * content height; only then fall back to the named one.
+ */
+function scrollerFor(el: HTMLElement): HTMLElement | null {
+  let node = el.parentElement;
+  while (node && node !== document.documentElement) {
+    const overflowY = getComputedStyle(node).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+    node = node.parentElement;
+  }
+  return findScroller(el);
+}
+
+/** The title's size once collapsed, over its size at rest. */
+const PINNED_SCALE = 0.72;
+/** Room above and below the title in the collapsed bar. */
+const PINNED_PAD_TOP = 10;
+const PINNED_PAD_BOTTOM = 10;
 
 /**
  * The header on Ministries, Sacraments and the section pages like them.
@@ -34,13 +69,99 @@ export default function ParishSectionHeader({
   title,
   blurb,
   icon,
+  collapsing = false,
 }: ParishSectionHeaderProps) {
+  // Where the patron's face sits in that photograph, as a fraction of its
+  // height. Read before the collapse effect, which needs it to work out how
+  // far to slide the picture.
+  const face = PARISH_HEADER_FACES[routeId];
+
+  const bandRef = useRef<HTMLElement | null>(null);
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+
+  useEffect(() => {
+    if (!collapsing) return;
+    const band = bandRef.current;
+    const titleEl = titleRef.current;
+    if (!band || !titleEl) return;
+
+    const view = scrollerFor(band);
+    if (!view) return;
+
+    let collapse = 0;
+    let ticking = false;
+
+    const measure = () => {
+      // offsetTop, not a rect: the title already carries a transform by the
+      // time this re-runs, and a rect would report the moved, scaled box -
+      // so the maths driving the transform would read its own output.
+      let titleTop = 0;
+      let node: HTMLElement | null = titleEl;
+      while (node && node !== band) {
+        titleTop += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
+      }
+      const titleHeight = titleEl.offsetHeight;
+      const collapsedHeight = PINNED_PAD_TOP + titleHeight * PINNED_SCALE + PINNED_PAD_BOTTOM;
+      const bandHeight = band.offsetHeight;
+      collapse = Math.max(0, bandHeight - collapsedHeight);
+
+      band.style.setProperty("--ps-collapse", `${collapse}px`);
+      band.style.setProperty("--ps-title-dy", `${PINNED_PAD_TOP - titleTop + collapse}px`);
+      band.style.setProperty("--ps-scale-delta", String(1 - PINNED_SCALE));
+
+      // How far to slide the photograph DOWN so the patron's face lands in
+      // the collapsed strip.
+      //
+      // Sticky with a negative top takes the band's TOP off screen, so what
+      // survives is its bottom edge - and an untransformed photograph shows
+      // its own bottom there, which on these frames is a hem. A fixed
+      // parallax was the first attempt and cropped the face off at some
+      // heights and not others, because the right amount depends on how
+      // tall the band is and where the face sits in the picture.
+      //
+      // Clamped to [0, collapse] so the picture still covers the strip:
+      // any further and its own edge would leave bare navy behind it.
+      const faceFraction = face ?? 0.3;
+      const photoDy = Math.min(
+        collapse,
+        Math.max(0, collapse - faceFraction * bandHeight + collapsedHeight / 2),
+      );
+      band.style.setProperty("--ps-photo-dy", `${photoDy}px`);
+    };
+
+    const apply = () => {
+      ticking = false;
+      if (collapse <= 0) {
+        band.style.setProperty("--ps-t", "0");
+        return;
+      }
+      const pushed = view.getBoundingClientRect().top - band.getBoundingClientRect().top;
+      band.style.setProperty("--ps-t", Math.min(1, Math.max(0, pushed / collapse)).toFixed(4));
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    };
+    const remeasure = () => { measure(); apply(); };
+
+    remeasure();
+    view.addEventListener("scroll", onScroll, { passive: true });
+    const resize = new ResizeObserver(remeasure);
+    resize.observe(view);
+    resize.observe(band);
+    return () => {
+      view.removeEventListener("scroll", onScroll);
+      resize.disconnect();
+    };
+  }, [collapsing, routeId, eyebrow, title, blurb, face]);
   const photo = PARISH_HEADER_IMAGES[routeId] ?? PARISH_PATRON_IMAGES[routeId];
 
   // Where the patron's face sits in that photograph, as a fraction of its
   // height. Without it the crop is top-aligned and Mary's face ends up
   // above the band while the band shows her hem.
-  const face = PARISH_HEADER_FACES[routeId];
 
   const style = {
     ...parishThemeStyle(routeId),
@@ -48,7 +169,11 @@ export default function ParishSectionHeader({
   } as CSSProperties;
 
   return (
-    <header className="parish-section" style={style}>
+    <header
+      className={`parish-section${collapsing ? " parish-section--collapsing" : ""}`}
+      style={style}
+      ref={bandRef}
+    >
       {photo && (
         <>
           <div
@@ -68,7 +193,7 @@ export default function ParishSectionHeader({
           {icon}
           {eyebrow}
         </p>
-        <h2 className="parish-section__title">{title}</h2>
+        <h2 className="parish-section__title" ref={titleRef}>{title}</h2>
         {blurb && <p className="parish-section__blurb">{blurb}</p>}
       </div>
     </header>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Map as MapLibreMap, Marker as MapLibreMarker, NavigationControl, LngLatBounds, type GeoJSONSource } from "maplibre-gl";
+import { Map as MapLibreMap, Marker as MapLibreMarker, NavigationControl, LngLatBounds, type GeoJSONSource, type DataDrivenPropertyValueSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { usePresence } from "../context/PresenceContext";
 import { DIOCESE_BOUNDS } from "../lib/project";
@@ -7,8 +7,10 @@ import { haversineMeters, type Coordinates } from "../lib/geo";
 import { formatDistance, formatWalkingMinutes, getWalkingDirections, type WalkingRoute } from "../lib/routing";
 import { searchParishesScored, type SearchableParish } from "../lib/mapSearch";
 import { buildChurchPinElement } from "../lib/mapMarkers";
+import { PARISH_PATRON_IMAGES } from "../data";
 import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
+import { accuracyRadiusExpression } from "../lib/mapAccuracy";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import { Plus } from "lucide-react";
 import { type MapOrientationMode } from "./CompassControl";
@@ -221,6 +223,98 @@ function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute
   }
 }
 
+
+/** Google's location blue, which is what the reference shows. */
+const YOU_BLUE = "#1A73E8";
+
+const ACCURACY_SOURCE = "you-accuracy-src";
+const ACCURACY_FILL = "you-accuracy-fill";
+const ACCURACY_EDGE = "you-accuracy-edge";
+
+/**
+ * The translucent disc around the blue dot, showing how sure the fix is.
+ *
+ * ## Why this is a map layer and not a CSS circle
+ *
+ * The radius is a distance on the ground - "somewhere within 20 metres" -
+ * so it has to grow as you zoom in and shrink as you zoom out, the way the
+ * streets under it do. A div sized in pixels would claim 20 m at one zoom
+ * and 200 m at the next while looking identical, which is worse than
+ * drawing nothing: it would be a confident picture of the wrong thing.
+ *
+ * MapLibre only takes `circle-radius` in pixels, so the metres are
+ * converted in an expression evaluated per frame at the current zoom:
+ *
+ *     pixels = metres / (156543.03392 * cos(latitude) / 2^zoom)
+ *
+ * cos(latitude) is folded in as a constant because the map never spans
+ * enough latitude for it to drift, and MapLibre expressions have no cos().
+ */
+function upsertAccuracyCircle(
+  map: MapLibreMap,
+  position: Coordinates,
+  accuracyMeters: number,
+  colour: string,
+) {
+  const data: GeoJSON.Feature = {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "Point", coordinates: [position.lng, position.lat] },
+  };
+
+  const radius = accuracyRadiusExpression(accuracyMeters, position.lat);
+
+  const existing = map.getSource(ACCURACY_SOURCE) as GeoJSONSource | undefined;
+  if (existing) {
+    existing.setData(data);
+  } else {
+    map.addSource(ACCURACY_SOURCE, { type: "geojson", data });
+  }
+
+  if (map.getLayer(ACCURACY_FILL)) {
+    map.setPaintProperty(ACCURACY_FILL, "circle-radius", radius);
+    map.setPaintProperty(ACCURACY_EDGE, "circle-radius", radius);
+    return;
+  }
+
+  map.addLayer({
+    id: ACCURACY_FILL,
+    type: "circle",
+    source: ACCURACY_SOURCE,
+    paint: {
+      "circle-radius": radius,
+      "circle-color": colour,
+      "circle-opacity": 0.16,
+      // No pitch scaling: the disc is a footprint on the ground, and
+      // letting it shrink with pitch would understate the uncertainty.
+      "circle-pitch-alignment": "map",
+    },
+  });
+
+  // A faint edge. Without it the fill dissolves into a pale basemap and
+  // the disc reads as a smudge rather than as a boundary.
+  map.addLayer({
+    id: ACCURACY_EDGE,
+    type: "circle",
+    source: ACCURACY_SOURCE,
+    paint: {
+      "circle-radius": radius,
+      "circle-color": "rgba(0,0,0,0)",
+      "circle-stroke-color": colour,
+      "circle-stroke-width": 1,
+      "circle-stroke-opacity": 0.35,
+      "circle-pitch-alignment": "map",
+    },
+  });
+}
+
+function removeAccuracyCircle(map: MapLibreMap) {
+  for (const id of [ACCURACY_EDGE, ACCURACY_FILL]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource(ACCURACY_SOURCE)) map.removeSource(ACCURACY_SOURCE);
+}
+
 const TRIP_SOURCE = "trip-line-src";
 const TRIP_LAYER = "trip-line";
 
@@ -300,6 +394,30 @@ function isTileHostError(error: unknown): boolean {
   return message.includes(TILE_HOST) || /Failed to fetch|NetworkError|ERR_/.test(message);
 }
 
+/**
+ * A complaint about the STYLE, not about the map being usable.
+ *
+ * MapLibre validates paint and layout properties and reports anything it
+ * dislikes through the same `error` event it uses for a failed tile
+ * fetch. The two could not be less alike: a malformed `circle-radius`
+ * means one layer draws wrong, while a failed tile fetch means there is
+ * no map. Treating them the same is what sent this screen to the
+ * schematic fallback the moment GPS produced a fix - two validation
+ * messages per update, three updates, and the live map was gone.
+ *
+ * The map keeps rendering through every one of these, so none of them
+ * counts towards falling back.
+ */
+function isNonFatalStyleError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    /may only be used as input to/.test(message) ||
+    /Expected value to be of type/.test(message) ||
+    /Unknown property|does not exist in the set of known/.test(message) ||
+    /^layers?[.[]/.test(message)
+  );
+}
+
 export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
   const { position, accuracyMeters, gpsStatus, simulation } = usePresence();
 
@@ -317,10 +435,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // keeps the same lookup for the same reason.
   const markersRef = useRef<Map<string, MapLibreMarker>>(new Map());
   const youMarkerRef = useRef<MapLibreMarker | null>(null);
-  // The rotating direction cone inside the "you are here" marker, held
-  // directly so heading updates can be written to its style at sensor rate
-  // without re-rendering this component.
-  const youConeRef = useRef<HTMLDivElement | null>(null);
+  // The direction light inside the "you are here" dot, held directly so
+  // the compass can be written to its transform at sensor rate without
+  // re-rendering this component. The sensor fires several times a second;
+  // a setState per reading would re-render the whole map screen.
+  const beamRef = useRef<HTMLSpanElement | null>(null);
   // Where the marker currently *appears*, which lags the latest fix while
   // the ease runs — the start point for the next ease.
   const animatedPositionRef = useRef<Coordinates | null>(null);
@@ -574,10 +693,30 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     // succession fall back even when the individual message doesn't name
     // the tile host. The counter check runs synchronously inside the event
     // handler itself, so it isn't subject to that same starvation risk.
+    // Only failures that make the map UNUSABLE count. A style complaint
+    // does not: the map carries on drawing, and counting those is what
+    // used to throw the whole live map away over a bad paint property.
+    //
+    // The threshold is also higher than it was. A phone on mobile data
+    // drops the odd tile request as a matter of course; three of those in
+    // a session is ordinary, not a reason to give up on the map - and
+    // isTileHostError below still falls back immediately when the tile
+    // host itself is unreachable, which is the case that matters.
     let errorCount = 0;
     map.on("error", e => {
+      const message = e.error instanceof Error ? e.error.message : String(e.error);
+
+      if (isNonFatalStyleError(e.error)) {
+        // Still worth seeing - it means a layer is drawing wrong - but it
+        // is a developer's problem, not a reason to change what the
+        // pilgrim is looking at.
+        console.warn("[map] style problem, map still usable:", message);
+        return;
+      }
+
       errorCount += 1;
-      if (isTileHostError(e.error) || errorCount >= 3) toFallback();
+      console.error(`[map] error ${errorCount}:`, message);
+      if (isTileHostError(e.error) || errorCount >= 8) toFallback();
     });
 
     // A render-loop failure inside MapLibre's own renderer can throw as a
@@ -651,7 +790,13 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       const isLive = parish.status === "live" && Boolean(routeId);
       const displayName = shortLabel(parish.name);
 
-      const el = buildChurchPinElement({ name: displayName, isLive });
+      // The parish's own patron, where one has been photographed. Keyed by
+      // route id because that is what the photo maps use.
+      const el = buildChurchPinElement({
+        name: displayName,
+        isLive,
+        photoUrl: routeId ? PARISH_PATRON_IMAGES[routeId] : undefined,
+      });
       const lngLat: [number, number] = [parish.coordinates.lng, parish.coordinates.lat];
 
       // Tapping a pin opens the React place sheet rather than a MapLibre
@@ -689,9 +834,21 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     if (!position) {
       youMarkerRef.current?.remove();
       youMarkerRef.current = null;
-      youConeRef.current = null;
       animatedPositionRef.current = null;
+      removeAccuracyCircle(map);
       return;
+    }
+
+    // The accuracy disc, under the dot.
+    //
+    // Only drawn when the fix actually reports a radius, and only when
+    // that radius is worth drawing: a sub-metre disc is smaller than the
+    // dot itself, and the simulator reports no accuracy at all. Inventing
+    // a default would be inventing a confidence nobody measured.
+    if (accuracyMeters != null && accuracyMeters > 1) {
+      upsertAccuracyCircle(map, position, accuracyMeters, YOU_BLUE);
+    } else {
+      removeAccuracyCircle(map);
     }
 
     if (!youMarkerRef.current) {
@@ -699,13 +856,25 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       you.className = "dmap-live__marker dmap-live__marker--you";
       you.title = "You are here";
 
-      // The direction cone is a child rather than the marker element
-      // itself, so heading rotation never fights MapLibre's own transform
-      // on the marker (which positions it, and would be overwritten).
-      const cone = document.createElement("div");
-      cone.className = "dmap-live__cone";
-      you.append(cone);
-      youConeRef.current = cone;
+      // Which way the pilgrim is facing.
+      //
+      // This was removed once for being a hard-edged translucent
+      // triangle: at a glance it read as the DOT being a triangle
+      // pointing somewhere, rather than as a dot with a beam. Removing
+      // it went too far - without it there is nothing on the map saying
+      // which way you are facing, which is most of the point of a
+      // compass. It is back as a soft fan that fades out at its far
+      // edge, so the dot still reads as a dot and the light reads as
+      // light. See .dmap-live__beam.
+      //
+      // Hidden until the compass actually produces a bearing. A beam
+      // locked at due north on a phone with no magnetometer is worse
+      // than no beam: it is confidently wrong.
+      const beam = document.createElement("span");
+      beam.className = "dmap-live__beam";
+      beam.setAttribute("aria-hidden", "true");
+      you.appendChild(beam);
+      beamRef.current = beam;
 
       youMarkerRef.current = new MapLibreMarker({ element: you, anchor: "center" })
         .setLngLat([position.lng, position.lat])
@@ -754,28 +923,34 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, position?.lat, position?.lng]);
+  }, [mode, position?.lat, position?.lng, accuracyMeters]);
 
-  // Points the direction cone. Written straight to the element's style
-  // rather than through React, because heading updates arrive at sensor
-  // rate and re-rendering the whole map component on each one would be its
-  // own performance problem.
+  // Point the direction light.
+  //
+  // Written straight to the element's style rather than through state:
+  // the orientation sensor fires several times a second, and a render of
+  // this component per reading would re-run every map effect below it.
   useEffect(() => {
-    const cone = youConeRef.current;
-    if (!cone) return;
+    const beam = beamRef.current;
+    if (!beam) return;
+
     if (heading === null) {
-      // No heading is not the same as "facing north" — an arrow that
-      // confidently points north on a device with no magnetometer is a lie.
-      // Fall back to the plain dot instead.
-      cone.style.opacity = "0";
+      // No compass on this device, or no absolute bearing yet.
+      beam.style.opacity = "0";
       return;
     }
-    cone.style.opacity = "1";
-    // In heading-up mode the map is rotated to match the pilgrim, so the
-    // cone must sit still at the top of the screen; in north-up the map is
-    // fixed and the cone does the turning.
-    cone.style.transform = `rotate(${orientationMode === "heading-up" ? 0 : heading}deg)`;
-  }, [heading, orientationMode]);
+
+    beam.style.opacity = "1";
+    // Minus the map's own bearing, so the beam keeps pointing at true
+    // north-relative heading even when the map itself has been rotated.
+    const mapBearing = mapRef.current?.getBearing() ?? 0;
+    beam.style.transform = `translate(-50%, -100%) rotate(${heading - mapBearing}deg)`;
+  }, [heading]);
+
+
+  // `heading` still drives heading-up mode below, which turns the MAP
+  // rather than drawing an arrow on it.
+
 
   // Heading-up mode: the map turns so the way the pilgrim faces is up.
   //

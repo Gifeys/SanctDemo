@@ -1,56 +1,309 @@
 rules_version = '2';
+
+// Firestore security rules for SanctiWalk.
+//
+// ## Why the checks live here and not in the app
+//
+// Everything below runs on Google's servers, on every request, whatever the
+// client is. The app's own filtering is a convenience for the person using
+// it; it is not a control. Anyone with the project id can talk to this
+// database directly with curl, so a rule that exists only in React is no
+// rule at all.
+//
+// ## Why roles are documents and not custom claims
+//
+// Custom claims are the usual way to carry `role` and `churchId`, and they
+// cost nothing to check. Setting one needs the Admin SDK, which needs Cloud
+// Functions, which needs the Blaze plan - and this project is on Spark. So
+// the role lives in the user's own document and the rules read it with
+// get(). That is still enforced server-side and still unforgeable from the
+// client, because the fields that matter are not writable by the user (see
+// onlyEditableUserFields below). It costs one document read per evaluation,
+// which is the price of staying on the free plan.
+//
+// Moving to Blaze later means changing myRole() and myChurch() to read
+// request.auth.token instead. Nothing else here has to change.
+//
+// ## On field naming
+//
+// Applications key their owner as `uid`, not `applicantId`. That is the
+// field the existing documents already carry and the existing query filters
+// on; renaming it would strand every application already submitted.
+//
+// Deploy with:  npx firebase deploy --only firestore:rules
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // A churchId that cannot collide with a real one, for documents written
+    // before churches existed. Without it, a missing field reads as "" and
+    // an admin whose own churchId was somehow "" would match every orphan.
+    function noChurch() {
+      return '__none__';
+    }
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Administrators are listed in the admins collection, one document per
-    // uid. Membership is granted from the Firebase console, never from the
-    // client, so a user cannot promote themselves.
-    function isAdmin() {
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return isSignedIn() ? me().get('role', 'user') : 'none';
+    }
+
+    function myChurch() {
+      return isSignedIn() ? me().get('churchId', noChurch()) : noChurch();
+    }
+
+    // A church admin acting on their OWN church. Every church-scoped rule
+    // goes through this rather than through the role alone: the role says
+    // what someone is, this says what they may touch. Checking only the role
+    // is exactly how an admin of one parish ends up reading another's
+    // applications.
+    // The cheap comparisons come first on purpose. myRole() and myChurch()
+    // each cost a document read, and a rule request is allowed ten; an
+    // orphaned document or a signed-out caller should cost none of them.
+    function isAdminOf(churchId) {
+      return isSignedIn()
+        && churchId != noChurch()
+        && churchId == myChurch()
+        && myRole() == 'church_admin';
+    }
+
+    // The legacy global administrator, from before churches existed. Kept so
+    // console-granted accounts keep working for the diocese-wide collections,
+    // and deliberately NOT accepted as a substitute for isAdminOf() - a
+    // global flag is the precise thing church isolation has to stop.
+    function isSuperAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // A pilgrim's own profile and devotional progress.
-    match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    // ---------------------------------------------------------------- users
+
+    // The fields a person may change about themselves. Everything outside
+    // this list is set at creation or set by the parish, and letting the
+    // client write any of it is the whole attack: `role` makes you an admin,
+    // `churchId` moves you into someone else's parish, and `phoneVerified` /
+    // `emailVerified` would let you claim a verification you never did.
+    function onlyEditableUserFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly([
+          'fullName', 'nickname', 'phoneNumber', 'photoUrl', 'updatedAt',
+          'preferredLanguage', 'notificationsSeenAt',
+          // The pilgrimage progress the app saves as you walk. Every field
+          // of UserProgress has to be here: the list is exhaustive, so one
+          // missing name does not fail loudly - it silently denies the
+          // write and the check-in is simply never saved.
+          'points', 'steps', 'distanceKm',
+          'completedStations', 'completedRoutes', 'badges'
+        ]);
     }
 
-    // Ministry and sacrament applications carry personal data. A signed-in
-    // pilgrim may submit one and read their own back; only the parish office
-    // may read across applicants or change a status.
-    match /applications/{docId} {
+    match /users/{userId} {
+      // A church admin may read their own parishioners, for the admin user
+      // list. Nobody reads across churches.
+      allow read: if isSignedIn()
+        && (request.auth.uid == userId
+            || isAdminOf(resource.data.get('churchId', noChurch()))
+            || isSuperAdmin());
+
+      // At creation a user may declare which church they joined, but not
+      // that they run it, and not that they are already verified.
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.get('role', 'user') == 'user'
+        && request.resource.data.get('phoneVerified', false) == false;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && onlyEditableUserFields();
+
+      // Profiles are never deleted from the client; an account removal is an
+      // auth operation with records hanging off it.
+      allow delete: if false;
+    }
+
+    // -------------------------------------------------------------- churches
+
+    // Public to read: the signup screen lists churches before anyone has
+    // signed in. Never created or deleted from the client, and `adminUid` is
+    // immutable - that immutability IS the one-admin-per-church rule, since
+    // nothing client-side can assign or reassign it.
+    match /churches/{churchId} {
+      allow read: if true;
+
+      allow update: if isAdminOf(churchId)
+        && request.resource.data.adminUid == resource.data.adminUid
+        && request.resource.data.id == resource.data.id;
+
+      allow create, delete: if false;
+    }
+
+    // ---------------------------------------------------------- applications
+
+    // Sacrament and ministry applications share one collection, with `kind`
+    // separating them, because every query the parish office runs - pending
+    // across the parish, by reference, by date - wants both at once.
+
+    // What an applicant may assert when submitting. `status` is not among
+    // them: a client that could write "approved" could approve its own
+    // baptism.
+    // Ministries and sacraments the parish has closed to new applications.
+    //
+    // Absent document, or absent field, means nothing is closed - which is
+    // the state 29 of the 31 parishes are in, and they must stay open.
+    function closedApplications(churchId) {
+      return exists(/databases/$(database)/documents/parishContent/$(churchId))
+        ? get(/databases/$(database)/documents/parishContent/$(churchId))
+            .data.get('closedApplications', [])
+        : [];
+    }
+
+    function validNewApplication() {
+      return isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.kind in ['sacrament', 'ministry']
+        // The church you belong to is the church you apply to. Read from the
+        // profile rather than trusted from the request, so a crafted
+        // churchId cannot drop an application into another parish's queue.
+        && request.resource.data.churchId == myChurch()
+        && myChurch() != noChurch()
+        // Which ministry or sacrament this is, by id. Required, because the
+        // check below is worthless if a client can leave it out: an
+        // application with no itemId would match nothing in the closed list
+        // and sail through.
+        && request.resource.data.itemId is string
+        && request.resource.data.itemId != ''
+        // Closed means closed. The app greys out the button, but the button
+        // is not the control - anyone can POST here with curl, and a parish
+        // that has shut applications for the choir has shut them.
+        && !(request.resource.data.itemId in closedApplications(myChurch()));
+    }
+
+    // What a reviewer may change: the decision and its audit trail. Not the
+    // applicant, not the church, not the submitted answers.
+    function onlyStatusFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['status', 'adminNote', 'reviewedBy', 'reviewedAt',
+                  'updatedAt', 'history']);
+    }
+
+    match /applications/{applicationId} {
+      allow create: if validNewApplication();
+
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid)
+        || isAdminOf(resource.data.get('churchId', noChurch()))
+        || isSuperAdmin();
+
+      // An applicant cannot edit a submitted application. It is a record the
+      // parish is acting on, and a form that changes under the reviewer is
+      // worse than one that cannot be corrected.
+      allow update: if isAdminOf(resource.data.get('churchId', noChurch()))
+        && onlyStatusFields()
+        && request.resource.data.status in
+             ['pending', 'under_review', 'approved', 'rejected', 'completed'];
+
+      // Withdrawal, not deletion.
+      //
+      // An applicant may take back something the parish has not started
+      // on. Once it is under review, approved, rejected or completed it
+      // is a record of a decision somebody made, and letting the
+      // applicant erase it would take the parish's own work with it -
+      // including the queue entry the office is working from.
+      //
+      // The parish cannot delete either. A rejection that can be made to
+      // disappear is worse for the applicant than one that stands.
+      allow delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // -------------------------------------------------------- notifications
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && (request.resource.data.userId == request.auth.uid
+            || isAdminOf(request.resource.data.get('churchId', noChurch())));
+
+      // The only thing a reader may do to a notification is mark it read.
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['readAt']);
+
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------- activity
+
+    // Sign-ins, station check-ins and comments. These used to be written
+    // into `applications`, which put login records in the queue the parish
+    // works through and forced the application rules to accept rows that
+    // were not applications.
+    //
+    // Append-only by design: a log a client can edit is not a log.
+    match /activity/{entryId} {
       allow create: if isSignedIn()
         && request.resource.data.uid == request.auth.uid;
-      allow read: if isAdmin()
-        || (isSignedIn() && resource.data.uid == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid)
+        || isAdminOf(resource.data.get('churchId', noChurch()))
+        || isSuperAdmin();
+      allow update, delete: if false;
     }
 
-    // Parish bulletins are public to read and parish-only to write.
+    // ------------------------------------------------- diocese-wide content
+
+    // Split per operation rather than one `write`. A delete carries no
+    // request.resource at all, so a rule phrased on the incoming document
+    // can never authorise one - the parish could post an announcement and
+    // then not be able to take it down.
+    //
+    // An update is checked on BOTH sides: the document as it stands and the
+    // document as it would be. Checking only the incoming one would let a
+    // parish claim another parish's announcement by rewriting its churchId.
+    //
+    // Legacy announcements carry no churchId, so they resolve to noChurch()
+    // and only a superadmin can touch them. That is deliberate: nobody can
+    // prove which parish wrote them.
     match /announcements/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isSuperAdmin()
+        || isAdminOf(request.resource.data.get('churchId', noChurch()));
+      allow update: if isSuperAdmin()
+        || (isAdminOf(resource.data.get('churchId', noChurch()))
+            && isAdminOf(request.resource.data.get('churchId', noChurch())));
+      allow delete: if isSuperAdmin()
+        || isAdminOf(resource.data.get('churchId', noChurch()));
     }
 
     // Admin-managed parish content: patron photo, description, Mass times,
     // brand colour. Public to read, because a pilgrim browsing the diocese is
     // not signed in and the home screen must still fill in. Parish-only to
-    // write — Mass times in particular are the one thing in this app someone
-    // could change to send a congregation to a locked church.
+    // write - Mass times in particular are the one thing here someone could
+    // change to send a congregation to a locked church.
     match /parishContent/{parishId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isSuperAdmin() || isAdminOf(parishId);
     }
 
-    // The admin roster is readable by signed-in users so the client can tell
-    // whether to show the portal, but is never writable from the client.
+    // The legacy admin roster. Readable so the client can tell whether to
+    // offer the portal, never writable from the client.
     match /admins/{userId} {
       allow read: if isSignedIn();
       allow write: if false;
+    }
+
+    // Anything not named above is closed. Without this, a collection added
+    // later is world-writable until someone remembers to write a rule for it.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
