@@ -38,6 +38,11 @@ import {
 import { notifyNow } from "./lib/deviceNotifications";
 import { announcementsForParish, publishedOnly } from "./lib/announcements";
 import ReminderSettingsCard from "./components/ReminderSettingsCard";
+import TutorialRunner from "./components/TutorialRunner";
+import SanctiHost from "./components/SanctiHost";
+import { hasSeenTutorial, type TutorialTab } from "./lib/tutorial";
+import { useLanguage } from "./lib/useLanguage";
+import { t } from "./lib/ui";
 import MyApplicationsPage from "./components/MyApplicationsPage";
 import NotificationsPage from "./components/NotificationsPage";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -107,6 +112,42 @@ function ParishTheme({ parishId }: { parishId: string | null }) {
   }, [colour]);
 
   return null;
+}
+
+/**
+ * Sancti needs the pilgrim's position to answer "how far is it", and
+ * App renders PresenceProvider so it cannot read the context itself.
+ * This sits inside the provider and hands it down.
+ */
+function SanctiMount({
+  activeParishId, activeParishName, content, language,
+  onGo, onSelectParish, onWalkTo, onFollowParish,
+}: {
+  activeParishId: string;
+  activeParishName: string;
+  content: import("./lib/parishContent").ParishContent | null;
+  language: "en" | "fil";
+  onGo: (tab: string) => void;
+  onSelectParish: (parishId: string) => void;
+  onWalkTo: (parishId: string) => void;
+  onFollowParish: (parishId: string) => void;
+}) {
+  const { position } = usePresence();
+  return (
+    <SanctiHost
+      tools={{
+        go: onGo,
+        selectParish: onSelectParish,
+        walkTo: onWalkTo,
+        followParish: onFollowParish,
+        activeParishId,
+        activeParishName,
+        content,
+        position,
+        language,
+      }}
+    />
+  );
 }
 
 function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void }) {
@@ -560,12 +601,48 @@ export default function App() {
    * silently replaced every reminder for their own — and glancing back
    * replaced them again.
    */
+  /**
+   * The first-run walkthrough.
+   *
+   * Opened from a lazy initialiser rather than an effect, so it is
+   * decided once on mount. An effect would re-evaluate on re-render and
+   * could reopen the tour under somebody who had just skipped it.
+   */
+  const [tutorialOpen, setTutorialOpen] = useState(() => !hasSeenTutorial());
+
+  /** One reading language for every screen. See lib/language.ts. */
+  const { language, setLanguage } = useLanguage();
+
   const [followedParishes, setFollowedParishes] = useState<string[]>(loadFollowed);
   const remindableIds = useMemo(
     () => remindableParishes(followedParishes, homeParishId),
     [followedParishes, homeParishId],
   );
-  const followedContent = useParishContents(remindableIds);
+  /**
+   * The parish on screen is watched too, not only the followed ones.
+   *
+   * Sancti answers about whatever parish you are looking at, and
+   * subscribing only to the followed set meant it fell back to the
+   * compiled Mass times the moment you asked about a parish you were
+   * merely visiting - quoting times the office may have changed.
+   */
+  const watchedParishIds = useMemo(
+    () => (remindableIds.includes(activeChurchRoute.id)
+      ? remindableIds
+      : [...remindableIds, activeChurchRoute.id]),
+    [remindableIds, activeChurchRoute.id],
+  );
+  const followedContent = useParishContents(watchedParishIds);
+
+  /**
+   * The parish on screen, as the office has it.
+   *
+   * Sancti answers from this rather than from the compiled data, so a
+   * Mass time the office changed this morning is the one it quotes.
+   * Null for a parish nobody has edited, which every answer treats as
+   * "fall back to what shipped" rather than as "no information".
+   */
+  const activeParishContent = followedContent[activeChurchRoute.id] ?? null;
 
   const reminderParishes = useMemo<ParishReminders[]>(
     () => remindableIds.map(id => {
@@ -602,11 +679,28 @@ export default function App() {
   // pilgrim's own - which happens two ways, both deliberate: walking near
   // another parish, or searching for one. Offering "back" while already
   // home would be a button that does nothing.
+  //
+  // "Own" means the profile's parish when signed in and the locally chosen
+  // home parish otherwise. Keying it on the profile alone made the way back
+  // vanish for everyone signed out: myParishId is null until a profile
+  // loads, so a visitor who searched their way to another parish was left
+  // on it with no route home. homeParishId is never null - it is seeded
+  // with firstLiveParishId() on a fresh install - so the button is always
+  // there when it is needed.
+  //
+  // Both are resolved to a ROUTE id before comparing. They are not stored in
+  // the same id space - a home parish may be any of the 31 diocese ids,
+  // while the dashboard always shows one of the two routes - so comparing
+  // them raw made "parish-mary-help-of-christians-parish" look different
+  // from "route-mhcp", and the way back was offered to a pilgrim already
+  // standing in their own parish.
+  const ownParishId = routeForHomeParish(myParishId ?? homeParishId);
+
   const viewingAnotherParish =
-    myParishId !== null && activeChurchRoute.id !== myParishId;
+    ownParishId !== null && activeChurchRoute.id !== ownParishId;
 
   const backToMyParish = () => {
-    if (myParishId) setSelectedChurchId(myParishId);
+    if (ownParishId) setSelectedChurchId(ownParishId);
     setActiveTab("home");
   };
 
@@ -1086,12 +1180,6 @@ export default function App() {
                       parish={activeChurchRoute}
                       firstName={greetingName}
                       announcements={announcements}
-                      followingThisParish={followedParishes.includes(activeChurchRoute.id)}
-                      onToggleFollowParish={
-                        activeChurchRoute.id === homeParishId
-                          ? undefined
-                          : follow => toggleFollowParish(activeChurchRoute.id, follow)
-                      }
                       onNavigate={setActiveTab}
                       onBackToMyParish={viewingAnotherParish ? backToMyParish : undefined}
                       onSelectParish={handleSelectParish}
@@ -1277,6 +1365,9 @@ export default function App() {
                       onOpenAdmin={() => setActiveTab("admin")}
                       onOpenSimulator={() => setIsSimulatorOpen(true)}
                       onOpenSignIn={() => setIsSignInOpen(true)}
+                      onReplayTutorial={() => { setActiveTab("home"); setTutorialOpen(true); }}
+                      language={language}
+                      onLanguageChange={setLanguage}
                       reminders={
                         <ReminderSettingsCard
                           settings={reminders.settings}
@@ -1285,12 +1376,14 @@ export default function App() {
                           enable={reminders.enable}
                           scheduled={reminders.scheduled}
                           supported={reminders.supported}
-                          followed={followedParishes.map(id => ({
-                            id,
-                            name: ROUTES.find(r => r.id === id)
-                              ?.name.replace(" Guide", "").replace(" Tour", "") ?? id,
-                          }))}
-                          onUnfollow={id => toggleFollowParish(id, false)}
+                          otherParishes={ROUTES
+                            .filter(r => r.id !== homeParishId)
+                            .map(r => ({
+                              id: r.id,
+                              name: r.name.replace(" Guide", "").replace(" Tour", ""),
+                              following: followedParishes.includes(r.id),
+                            }))}
+                          onToggleParish={toggleFollowParish}
                         />
                       }
                     />
@@ -1313,6 +1406,24 @@ export default function App() {
                       pilgrim-facing feature; see the sidebar's "Demo Tools"
                       section. */}
                   {activeTab === "pwa-devkit" && <PwaBanner />}
+
+                  {/* Sancti sits above the tab bar, reachable from every
+                      screen - which is the point, since most of what it
+                      does is take you to another one. Hidden while the
+                      camera has the screen: a floating button over a
+                      viewfinder covers the thing being scanned. */}
+                  {activeTab !== "ar" && (
+                    <SanctiMount
+                      activeParishId={activeChurchRoute.id}
+                      activeParishName={activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}
+                      content={activeParishContent}
+                      language={language}
+                      onGo={tab => setActiveTab(tab as typeof activeTab)}
+                      onSelectParish={setSelectedChurchId}
+                      onWalkTo={handleWalkThere}
+                      onFollowParish={id => toggleFollowParish(id, true)}
+                    />
+                  )}
                 </div>
 
                 {/* BOTTOM STICKY PHONE SIM NAVIGATION BAR — five tabs, Scan
@@ -1337,20 +1448,22 @@ export default function App() {
                 >
                   <button
                     onClick={() => setActiveTab("home")}
+                    data-spotlight="tab-home"
                     className={`tab-item ${activeTab === "home" ? "tab-item--on" : ""}`}
                     aria-current={activeTab === "home" ? "page" : undefined}
                   >
                     <Home className="w-5 h-5" />
-                    <span className="text-base font-bold leading-none">Home</span>
+                    <span className="text-base font-bold leading-none">{t("tab.home", language)}</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("navigator")}
+                    data-spotlight="tab-map"
                     className={`tab-item ${activeTab === "navigator" ? "tab-item--on" : ""}`}
                     aria-current={activeTab === "navigator" ? "page" : undefined}
                   >
                     <Map className="w-5 h-5" />
-                    <span className="text-base font-bold leading-none">Map</span>
+                    <span className="text-base font-bold leading-none">{t("tab.map", language)}</span>
                   </button>
 
                   {/* Scan: the app's signature feature, given a raised,
@@ -1359,6 +1472,7 @@ export default function App() {
                       other tab, not an icon-only control. */}
                   <button
                     onClick={() => setActiveTab("ar")}
+                    data-spotlight="tab-scan"
                     className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 -translate-y-3"
                   >
                     <span
@@ -1371,31 +1485,41 @@ export default function App() {
                       <ArIcon className="w-5 h-5" />
                     </span>
                     <span className={`text-base font-bold leading-none ${activeTab === "ar" ? "text-[var(--color-brand-secondary)]" : "text-[var(--color-brand-secondary)]"}`}>
-                      Scan
+                      {t("tab.scan", language)}
                     </span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("rosary")}
+                    data-spotlight="tab-pray"
                     className={`tab-item ${activeTab === "rosary" ? "tab-item--on" : ""}`}
                     aria-current={activeTab === "rosary" ? "page" : undefined}
                   >
                     <BookOpen className="w-5 h-5" />
-                    <span className="text-base font-bold leading-none">Pray</span>
+                    <span className="text-base font-bold leading-none">{t("tab.pray", language)}</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("me")}
+                    data-spotlight="tab-me"
                     className={`tab-item ${activeTab === "me" ? "tab-item--on" : ""}`}
                     aria-current={activeTab === "me" ? "page" : undefined}
                   >
                     <User className="w-5 h-5" />
-                    <span className="text-base font-bold leading-none">Me</span>
+                    <span className="text-base font-bold leading-none">{t("tab.me", language)}</span>
                   </button>
                 </nav>
 
               </div>
             )}
+
+            {/* The walkthrough. Rendered last so its overlay sits above
+                the tab bar it points at. */}
+            <TutorialRunner
+              open={tutorialOpen}
+              onClose={() => setTutorialOpen(false)}
+              onSwitchTab={(tab: TutorialTab) => setActiveTab(tab)}
+            />
 
             <RosarySettingsModal
               isOpen={isRosarySettingsOpen}

@@ -32,6 +32,9 @@ import {
   ScannerHeader, ScannerSheet, ScannerTabs, ScannerReticle, type ScannerMode,
 } from "./ScannerChrome";
 import ArScannerPanel, { type ArStage } from "./ArScannerPanel";
+import { useLanguage } from "../lib/useLanguage";
+import { stationText } from "../lib/contentTranslations";
+import type { Language } from "../lib/language";
 import { withAppKey } from "../lib/appKey";
 
 /**
@@ -111,17 +114,30 @@ const STATUS_COPY: Partial<Record<CameraStatus, { title: string; icon: "warning"
   error: { title: "Camera unavailable", icon: "warning" },
 };
 
-function stationToRecognition(station: Station, source: Recognition["source"] = "manual"): Recognition {
+function stationToRecognition(
+  station: Station,
+  source: Recognition["source"] = "manual",
+  /**
+   * The reader's language. The station text compiled into data.ts is
+   * English only, so a pilgrim reading in Tagalog scanned a statue and
+   * got an English card back - which is the complaint this fixes.
+   *
+   * The history stays as written: it is the parish's own account, and
+   * only the description and the reflection have been translated.
+   */
+  language: Language = "en",
+): Recognition {
+  const words = stationText(station, language);
   const highlights = [
     station.history && `History: ${station.history}`,
-    station.reflection && `Reflection: ${station.reflection}`,
+    words.reflection && `Reflection: ${words.reflection}`,
   ].filter((v): v is string => Boolean(v));
 
   return {
     recognized: true,
     title: station.name,
     category: "Station",
-    summary: station.description,
+    summary: words.description,
     highlights,
     source,
     stationId: station.id,
@@ -207,6 +223,7 @@ export default function ArTour({
     // Leaving the tab with the camera open must put the band back.
     return () => onCameraLiveChange?.(false);
   }, [cameraLive, onCameraLiveChange]);
+  const { language } = useLanguage();
   const stationNames = stations.map((s) => s.name);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Recognition | null>(null);
@@ -371,7 +388,7 @@ export default function ArTour({
   }, [camera, stationNames]);
 
   const pickStation = useCallback((station: Station) => {
-    setResult(stationToRecognition(station));
+    setResult(stationToRecognition(station, "manual", language));
     setSheetOpen(true);
     setPhase("done");
     setPickerOpen(false);
@@ -413,7 +430,7 @@ export default function ArTour({
         const { station, route } = scan.match;
         console.log(`[Scanner] QR matched station "${station.name}" in ${route.id}`);
         setError(null);
-        setResult(stationToRecognition(station, "qr"));
+        setResult(stationToRecognition(station, "qr", language));
         setSheetOpen(true);
         setPhase("done");
         return;
@@ -580,7 +597,7 @@ export default function ArTour({
                       {station.name}
                     </span>
                     <span className="block text-[14px] text-[var(--color-brand-text)]/70 font-sans truncate">
-                      {station.description}
+                      {stationText(station, language).description}
                     </span>
                   </span>
                   <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />

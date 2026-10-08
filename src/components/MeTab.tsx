@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User, Bell, ChevronRight } from "lucide-react";
+import { Church, Settings as SettingsIcon, Footprints, Ruler, Star, Award, ClipboardList, FlaskConical, ShieldCheck, User, Bell, ChevronRight, Compass, Languages } from "lucide-react";
 import { UserProgress } from "../types";
+import { t } from "../lib/ui";
 import { BADGES } from "../data";
 import MyApplications from "./MyApplications";
 import EditProfileCard from "./EditProfileCard";
@@ -41,6 +42,11 @@ interface MeTabProps {
   onOpenSimulator: () => void;
   /** Opens the sign-in screen. */
   onOpenSignIn: () => void;
+  /** Runs the first-time walkthrough again. */
+  onReplayTutorial?: () => void;
+  /** The reading language for the whole app. */
+  language?: "en" | "fil";
+  onLanguageChange?: (language: "en" | "fil") => void;
   /**
    * The reminder settings card, passed in rather than built here.
    *
@@ -76,7 +82,13 @@ export default function MeTab({
   onOpenNotifications,
   unreadNotifications,
   reminders,
+  onReplayTutorial,
+  language,
+  onLanguageChange,
 }: MeTabProps) {
+  // The reader's language. Falls back to English so the component still
+  // renders if a caller has not been updated to pass it.
+  const lang = language ?? "en";
   // The design shows a name and initials. Signed out there is no name to
   // show, so the header says "Pilgrim" rather than an empty avatar — the app
   // works fully without an account and should not imply otherwise.
@@ -164,6 +176,26 @@ export default function MeTab({
         {/* Your picture and the name the app calls you. Above the
             applications, because it is about who you are rather than what
             you have asked the parish for. */}
+        {/* Signing in is the first thing on this screen now. It was
+            four rows down among the settings, so somebody opening Me to
+            sign in had to read past the language, the reminders and the
+            rosary to find it - and signed-out is the state a new
+            pilgrim arrives in. */}
+        <button
+          onClick={isLoggedIn ? onLogout : onOpenSignIn}
+          className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
+        >
+          <User className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+          <span className="flex-1 truncate">
+            {isLoggedIn ? t("me.signOut", lang) : t("me.signIn", lang)}
+          </span>
+          {isLoggedIn && (
+            <span className="text-[14px] font-normal text-[var(--color-brand-secondary)] truncate max-w-[45%]">
+              {userEmail}
+            </span>
+          )}
+        </button>
+
         <EditProfileCard
           isLoggedIn={isLoggedIn}
           onNicknameChange={onNicknameChange}
@@ -190,13 +222,46 @@ export default function MeTab({
             />
             <SummaryRow
               icon={<Bell className="w-5 h-5" />}
-              label="Notifications"
+              label={t("me.notifications", lang)}
               detail={unreadNotifications > 0
-                ? `${unreadNotifications} unread`
-                : "Nothing new"}
+                ? `${unreadNotifications} ${t("me.unread", lang)}`
+                : t("me.nothingNew", lang)}
               badge={unreadNotifications}
               onClick={onOpenNotifications}
             />
+          </div>
+        )}
+
+        {/* One language for everything the app shows.
+            Above the reminders because it changes more of the screen
+            than any other setting here - including the ministry and
+            sacrament descriptions, which were written in whichever
+            language each happened to arrive in. */}
+        {language && onLanguageChange && (
+          <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5">
+            <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
+              <Languages className="w-4 h-4" /> {t("me.language", lang)}
+            </h4>
+            <p className="mb-3 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
+              {t("me.languageHelp", lang)}
+            </p>
+            <div className="flex gap-2">
+              {([["en", "English"], ["fil", "Tagalog"]] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={language === value}
+                  onClick={() => onLanguageChange(value)}
+                  className={`flex-1 rounded-full py-3 text-[15px] font-bold border-[1.5px] transition-colors ${
+                    language === value
+                      ? "bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] border-[var(--color-brand-primary)]"
+                      : "border-[var(--color-brand-border)] text-[var(--color-brand-text)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -206,38 +271,40 @@ export default function MeTab({
             a list of shortcuts. */}
         {reminders}
 
-        {/* Quick links */}
+        {/* Everything else, under one heading. They were a loose stack
+            of rows in the order they happened to be added, which read as
+            a list of leftovers rather than as settings. */}
+        <h4 className="pt-1 text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
+          {t("me.settings", lang)}
+        </h4>
         <div className="space-y-2">
           {/* Sign-in is a row here rather than a whole screen embedded at
               the top of Me. Inline, LoginModal brought its own "Pilgrim
               Profile" header, so Me showed two competing profile headers
               stacked on each other. */}
-          <button
-            onClick={isLoggedIn ? onLogout : onOpenSignIn}
-            className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
-          >
-            <User className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-            <span className="flex-1 truncate">{isLoggedIn ? "Sign out" : "Sign in"}</span>
-            {isLoggedIn && (
-              <span className="text-[14px] font-normal text-[var(--color-brand-secondary)] truncate max-w-[45%]">
-                {userEmail}
-              </span>
-            )}
-          </button>
+          {onReplayTutorial && (
+            <button
+              onClick={onReplayTutorial}
+              className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
+            >
+              <Compass className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
+              <span className="flex-1 truncate">{t("me.replayTutorial", lang)}</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenChangeParish}
             className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
           >
             <Church className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-            <span>Change Parish</span>
+            <span>{t("me.changeParish", lang)}</span>
           </button>
           <button
             onClick={onOpenRosarySettings}
             className="w-full bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] flex items-center gap-3 hover:border-[var(--color-brand-primary)] text-left transition-colors text-[16px] font-semibold text-[var(--color-brand-text)]"
           >
             <SettingsIcon className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
-            <span>Rosary Settings</span>
+            <span>{t("me.rosarySettings", lang)}</span>
           </button>
 
           {/* Moved here from the removed sidebar. The simulator is a demo

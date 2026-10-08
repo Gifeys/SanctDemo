@@ -32,7 +32,12 @@ export interface SeasonAccent {
 }
 
 const ACCENTS: Record<LiturgicalColour, SeasonAccent> = {
-  green: { tint: '#EAF2EC', border: '#BFD6C8', ink: '#1F5A3A' },
+  // Ordinary Time runs for most of the year, so this is the wash the card
+  // wears most days - and at #EAF2EC it read as off-white rather than as a
+  // season. Pulled towards the app's own success green (#4C7A5C) until the
+  // card is recognisably green at a glance, with the ink darkened to keep
+  // body text clear of AA on the firmer wash.
+  green: { tint: '#D8EADE', border: '#9CC6AC', ink: '#17512F' },
   violet: { tint: '#EFEBF6', border: '#D0C5E5', ink: '#4B2A80' },
   white: { tint: '#F6F0E2', border: '#E0D2AE', ink: '#6E5010' },
   red: { tint: '#F7EAEA', border: '#E5C4C4', ink: '#8B1A20' },

@@ -67,7 +67,14 @@ describe("a parish that has written something", () => {
 
   it("one parish's writing does not reach another ministry", () => {
     const content = withContent(MINISTRY.id, { about: "Ours" });
-    expect(resolveMinistry(content, MINISTRIES[1]!.id)!.about).toBe(MINISTRIES[1]!.description);
+    const other = resolveMinistry(content, MINISTRIES[1]!.id)!;
+    expect(other.about).not.toBe("Ours");
+    // Compared against the Tagalog it was written in, by asking for
+    // that language. The default is now English, and the compiled
+    // ministry text is Tagalog — so comparing to the raw description
+    // without saying which language is comparing to a translation.
+    expect(resolveMinistry(content, MINISTRIES[1]!.id, "fil")!.about)
+      .toBe(MINISTRIES[1]!.description);
   });
 });
 

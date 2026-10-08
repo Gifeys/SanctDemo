@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLanguage } from "../lib/useLanguage";
+import { t } from "../lib/ui";
 import { Bell, Church, PartyPopper, CalendarDays, Megaphone, ClipboardList, MapPin } from "lucide-react";
 import { notifyNow } from "../lib/deviceNotifications";
 import { LEAD_CHOICES, type ReminderSettings } from "../lib/reminderSchedule";
@@ -23,7 +25,7 @@ import type { PermissionState } from "../lib/deviceNotifications";
  */
 export default function ReminderSettingsCard({
   settings, update, permission, enable, scheduled, supported,
-  followed = [], onUnfollow,
+  otherParishes = [], onToggleParish,
 }: {
   settings: ReminderSettings;
   update: (patch: Partial<ReminderSettings>) => void;
@@ -32,19 +34,26 @@ export default function ReminderSettingsCard({
   scheduled: number;
   supported: boolean;
   /**
-   * Parishes being reminded about besides the pilgrim's own, as
-   * {id, name}. Their own is always included and is not listed here —
-   * a switch that cannot be turned off is not a switch.
+   * Every parish that can be reminded about, besides the pilgrim's own.
+   *
+   * Their own is always on and is deliberately not in this list — a
+   * switch that cannot be turned off is not a switch.
+   *
+   * This started as a card on the parish's own dashboard, which was
+   * wrong twice over: it put one reminder control on Home while every
+   * other one lived here, and it meant the only way to follow a parish
+   * was to go and look at it first.
    */
-  followed?: Array<{ id: string; name: string }>;
-  onUnfollow?: (parishId: string) => void;
+  otherParishes?: Array<{ id: string; name: string; following: boolean }>;
+  onToggleParish?: (parishId: string, follow: boolean) => void;
 }) {
+  const { language } = useLanguage();
   const [tested, setTested] = useState(false);
 
   return (
     <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5">
       <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
-        <Bell className="w-4 h-4" /> Reminders
+        <Bell className="w-4 h-4" /> {t("rem.title", language)}
       </h4>
 
       {!supported ? (
@@ -72,7 +81,7 @@ export default function ReminderSettingsCard({
               onClick={() => void enable()}
               className="mt-4 w-full rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] py-3 text-[15px] font-bold"
             >
-              Turn on reminders
+              {t("rem.turnOn", language)}
             </button>
           )}
         </>
@@ -86,8 +95,8 @@ export default function ReminderSettingsCard({
 
           <Row
             icon={<Church className="w-4 h-4" />}
-            label="Before Mass"
-            hint="Your parish's Mass times."
+            label={t("rem.beforeMass", language)}
+            hint={t("rem.beforeMassHint", language)}
             on={settings.massReminders}
             onChange={v => update({ massReminders: v })}
           />
@@ -95,7 +104,7 @@ export default function ReminderSettingsCard({
           {settings.massReminders && (
             <div className="mb-4 pl-7">
               <p className="mb-2 text-[14px] font-bold text-[var(--color-brand-secondary)]">
-                How long before?
+                {t("rem.howLongBefore", language)}
               </p>
               <div className="flex flex-wrap gap-2">
                 {LEAD_CHOICES.map(minutes => (
@@ -115,57 +124,54 @@ export default function ReminderSettingsCard({
 
           <Row
             icon={<PartyPopper className="w-4 h-4" />}
-            label="Feast days"
-            hint="The evening before, and on the day."
+            label={t("rem.feastDays", language)}
+            hint={t("rem.feastHint", language)}
             on={settings.feastReminders}
             onChange={v => update({ feastReminders: v })}
           />
           <Row
             icon={<CalendarDays className="w-4 h-4" />}
-            label="Parish events"
+            label={t("rem.events", language)}
             on={settings.eventReminders}
             onChange={v => update({ eventReminders: v })}
           />
           <Row
             icon={<Megaphone className="w-4 h-4" />}
-            label="Parish announcements"
+            label={t("rem.announcements", language)}
             on={settings.announcementReminders}
             onChange={v => update({ announcementReminders: v })}
           />
           <Row
             icon={<ClipboardList className="w-4 h-4" />}
-            label="My applications"
-            hint="When the parish decides on one."
+            label={t("rem.applications", language)}
+            hint={t("rem.applicationsHint", language)}
             on={settings.applicationUpdates}
             onChange={v => update({ applicationUpdates: v })}
             last
           />
 
-          {/* Parishes other than their own. Only when there are some:
-              an empty "Other parishes" heading is a question nobody
-              asked, and the switch that adds one lives on that
-              parish's own screen, where it makes sense. */}
-          {followed.length > 0 && (
+          {/* Parishes besides their own. Always shown when there are
+              any, following or not: this is the only place the choice
+              is offered now, so hiding it until something is already
+              followed would make the feature unreachable. */}
+          {otherParishes.length > 0 && onToggleParish && (
             <div className="mt-4 pt-4 border-t border-[var(--color-brand-border)]">
-              <p className="mb-2 flex items-center gap-1.5 text-[14px] font-bold text-[var(--color-brand-secondary)]">
-                <MapPin className="w-4 h-4" /> Also reminding you about
+              <p className="mb-1 flex items-center gap-1.5 text-[14px] font-bold text-[var(--color-brand-secondary)]">
+                <MapPin className="w-4 h-4" /> {t("rem.otherParishes", language)}
               </p>
-              <ul className="space-y-2">
-                {followed.map(parish => (
-                  <li key={parish.id} className="flex items-center gap-3">
-                    <span className="min-w-0 flex-1 text-[15px] font-semibold text-[var(--color-brand-text)] truncate">
-                      {parish.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onUnfollow?.(parish.id)}
-                      className="text-[14px] font-bold text-[var(--color-brand-error)]"
-                    >
-                      Stop
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <p className="mb-3 text-[13px] leading-relaxed text-[var(--color-brand-secondary)]">
+                {t("rem.otherParishesHint", language)}
+              </p>
+              {otherParishes.map(parish => (
+                <Row
+                  key={parish.id}
+                  icon={<Church className="w-4 h-4" />}
+                  label={parish.name}
+                  on={parish.following}
+                  onChange={next => onToggleParish(parish.id, next)}
+                  last
+                />
+              ))}
             </div>
           )}
 
@@ -187,7 +193,7 @@ export default function ReminderSettingsCard({
             }}
             className="mt-4 w-full rounded-full border-[1.5px] border-[var(--color-brand-border)] py-3 text-[15px] font-bold text-[var(--color-brand-text)]"
           >
-            {tested ? "Sent — check your notifications" : "Send a test reminder"}
+            {tested ? t("rem.testSent", language) : t("rem.test", language)}
           </button>
 
           {/* The honest limit, said once rather than discovered. */}

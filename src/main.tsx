@@ -1,5 +1,6 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import { SpotlightProvider } from './components/Spotlight';
 import {BrowserRouter, Routes, Route} from 'react-router-dom';
 import App from './App.tsx';
 import FinishSignIn from './routes/FinishSignIn.tsx';
@@ -65,7 +66,11 @@ createRoot(document.getElementById('root')!).render(
         {/* Everything else is the app: a catch-all rather than an exact "/"
             so any deep link the pilgrim app already understands still
             reaches it. */}
-        <Route path="*" element={<App />} />
+        {/* The spotlight lives inside the pilgrim app's route only. The
+            parish office has no tutorial and no assistant, and a
+            provider wrapping both would put a portal on the admin's
+            document for no reason. */}
+        <Route path="*" element={<SpotlightProvider><App /></SpotlightProvider>} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

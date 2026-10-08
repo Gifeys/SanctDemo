@@ -9,6 +9,9 @@ import ApplicationForm from "./ApplicationForm";
 import SignInFirst from "./SignInFirst";
 import ItemDetailSections from "./ItemDetailSections";
 import { resolveMinistry } from "../lib/itemContent";
+import { useLanguage } from "../lib/useLanguage";
+import { pick } from "../lib/language";
+import { MINISTRY_DESCRIPTION_EN, bilingualFor } from "../lib/contentTranslations";
 import { submitApplication } from "../lib/applications";
 import { useParishContent } from "../lib/useParishContent";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
@@ -38,6 +41,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   // Parish-scoped, not global: the choir may be full at Mary Help and
   // short-handed at San Roque, and the ministries themselves are shared.
   const managed = useParishContent(parish.id);
+  const { language } = useLanguage();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -219,7 +223,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                   </span>
                   <span className="ministry-card__foot">
                     <Users className="w-5 h-5 text-[var(--color-brand-primary)] shrink-0" />
-                    <span className="ministry-card__hint">{min.description}</span>
+                    <span className="ministry-card__hint">{pick(bilingualFor(min.description, MINISTRY_DESCRIPTION_EN[min.id], "fil"), language)}</span>
                     <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                   </span>
                   {/* On the list too, not only inside. Otherwise the only
@@ -242,7 +246,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
           <div className="space-y-2">
             {(openId ? MINISTRIES.filter(m => m.id === openId) : []).map((min) => {
               const isExpanded = true;
-              const resolved = resolveMinistry(managed, min.id);
+              const resolved = resolveMinistry(managed, min.id, language);
               return (
                 <div
                   key={min.id}

@@ -42,27 +42,11 @@ export default function BulletinRail({ announcements, onNavigate }: BulletinRail
     <section className="bulletin">
       <AnnouncementDeck items={upcoming} now={now} />
 
-      {/* The pair, not a rail. Equal columns, so neither reads as the
-          primary one - a parish's ministries and its sacraments are not
-          ranked against each other. */}
-      <div className="bulletin-pair">
-        <SectionCard
-          icon={<Users className="w-4 h-4" />}
-          label="Ministries"
-          hint="Join a group in this parish."
-          caption={MINISTRIES[0]?.name}
-          imageUrl={MINISTRY_PHOTO}
-          onClick={() => onNavigate("ministries")}
-        />
-        <SectionCard
-          icon={<Sparkles className="w-4 h-4" />}
-          label="Sacraments"
-          hint="Arranged with the parish office."
-          caption={SACRAMENTS[0]?.name}
-          imageUrl={SACRAMENT_PHOTO}
-          onClick={() => onNavigate("sacraments")}
-        />
-      </div>
+      {/* Ministries and Sacraments used to be two photo cards here.
+          They are buttons at the top of Home now, directly under the
+          parish's name, where the four most-asked questions belong -
+          and keeping them here as well would have put each of them on
+          the screen twice. See HomeQuickLinks. */}
     </section>
   );
 }
@@ -201,8 +185,10 @@ function AnnouncementDeck({
  * fold, so the thing the tap revealed is the one thing you cannot see.
  */
 function SectionCard({
-  icon, label, hint, caption, imageUrl, onClick,
+  icon, label, hint, caption, imageUrl, onClick, spotlight,
 }: {
+  /** Name the tutorial and Sancti can point at. */
+  spotlight?: string;
   icon: ReactNode;
   label: string;
   hint: string;
@@ -212,7 +198,12 @@ function SectionCard({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="bulletin-section">
+    <button
+      type="button"
+      onClick={onClick}
+      data-spotlight={spotlight}
+      className="bulletin-section"
+    >
       {imageUrl && (
         <span className="bulletin-section__photo">
           <img src={imageUrl} alt="" loading="lazy" />

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { Bell, ChevronUp } from "lucide-react";
+import { ChevronUp } from "lucide-react";
+import HomeQuickLinks, { type HomeSection } from "./HomeQuickLinks";
+import MinistrySacramentPair from "./MinistrySacramentPair";
+import { useLanguage } from "../lib/useLanguage";
+import { t } from "../lib/ui";
 import { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_HEADER_IMAGES, PARISH_HEADER_FACES } from "../data";
 import BulletinRail from "./BulletinRail";
@@ -29,12 +33,6 @@ interface DashboardProps {
    * pilgrim's own, which is what puts "Back to my parish" on the band.
    */
   onBackToMyParish?: () => void;
-  /**
-   * Whether this parish's Masses are already being reminded about.
-   * Absent on the pilgrim's own parish, which is always on.
-   */
-  followingThisParish?: boolean;
-  onToggleFollowParish?: (follow: boolean) => void;
   /** First name of the signed-in pilgrim; the greeting omits it when absent. */
   firstName?: string;
 }
@@ -64,7 +62,6 @@ export function formatCountdown(target: Date, now: Date): string {
 
 export default function Dashboard({
   parish, announcements, onNavigate, firstName, onOpenSearch, onBackToMyParish,
-  followingThisParish, onToggleFollowParish,
 }: DashboardProps) {
   const parishName = parishDisplayName(parish);
   const [now, setNow] = useState(() => new Date());
@@ -80,6 +77,16 @@ export default function Dashboard({
   // Null for every parish nobody has edited, which is all of them until
   // someone does — and the compiled data in data.ts carries those.
   const managed = useParishContent(parish.id);
+  const { language } = useLanguage();
+
+  /**
+   * Which part of the bulletin is showing.
+   *
+   * Ministries first: it is the one most visitors are looking for, and
+   * it is the only one of the three that is a door rather than a
+   * notice.
+   */
+  const [section, setSection] = useState<HomeSection>("ministries");
   const today = liturgicalDay(now);
 
   // The parish's own words win; the calendar's named feast is the fallback.
@@ -120,45 +127,6 @@ export default function Dashboard({
         now={now}
       />
 
-      {/* Reminders for a parish that is not your own.
-          Offered here, on that parish's own screen, and only when you
-          are away from yours - it is the moment the question makes
-          sense, and it is the one place the answer is unambiguous
-          about WHICH parish is meant. Looking at a parish does not
-          sign you up for anything; this switch does, and nothing else
-          does.
-
-          The caller decides when to pass the handler, and it keys that
-          on the SAME home parish the reminders are built from. Tying
-          it to "Back to my parish" instead looked right and was not:
-          that button keys off the signed-in profile, which is null
-          when signed out, so the switch never appeared for anyone who
-          had not logged in. */}
-      {onToggleFollowParish && (
-        <div className="px-4 pt-3">
-          <label className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] p-4 cursor-pointer">
-            <Bell className="w-5 h-5 shrink-0 text-[var(--color-brand-primary)]" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[16px] font-bold leading-snug text-[var(--color-brand-text)]">
-                Remind me about this parish
-              </span>
-              <span className="block text-[14px] leading-snug text-[var(--color-brand-secondary)]">
-                {followingThisParish
-                  ? `You will be reminded before Mass at ${parishName} as well as your own.`
-                  : `Mass times and feast days here, alongside your own parish's.`}
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              className="availability-switch"
-              aria-label={`Remind me about ${parishName}`}
-              checked={followingThisParish ?? false}
-              onChange={e => onToggleFollowParish(e.target.checked)}
-            />
-          </label>
-        </div>
-      )}
-
       {managed?.description && (
         <div className="px-5 pt-1.5">
           <p className="text-[16px] leading-relaxed text-[var(--color-brand-text)]">
@@ -172,12 +140,76 @@ export default function Dashboard({
           <ChevronUp className="w-6 h-6" />
         </div>
 
+        {/* The whole sheet is the bulletin, so its name goes at the top
+            rather than over one section of it. */}
+        <h2 className="home-sheet__title">{t("home.bulletin", language)}</h2>
+
+        <HomeQuickLinks
+          language={language}
+          active={section}
+          onSelect={setSection}
+        />
+
+        {/* One section at a time, and it fades. Keeping all three on the
+            page is what sent Mass and History below the fold in the
+            first place; swapping them means the answer to the tap is
+            the only thing under the buttons. The key restarts the fade
+            so the change is visible rather than silent. */}
+        <div key={section} className="home-panel">
+        {section === "ministries" && (
+          <section className="home-section">
+            <MinistrySacramentPair language={language} onNavigate={onNavigate} />
+          </section>
+        )}
+
+        {section === "mass" && (
+        <div className="home-motif home-motif--calendar">
+        <div data-spotlight="mass-schedule">
+        <MassScheduleCard
+          routeId={parish.id}
+          now={now}
+        />
+        </div>
+
+        {/* What the day commemorates — the parish's own words if they have
+            written any, otherwise the named solemnity or feast the calendar
+            supplies.
+
+            Shown only when there is something to say. Falling back to the
+            liturgical day NAME printed the Mass card's own title a second
+            time, word for word, which is noise rather than information; on an
+            ordinary Wednesday with no feast the card simply is not there. */}
+        {commemorates && (
+          <div className="mt-3 rounded-[22px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5">
+            <h4 className="text-[19px] font-bold italic text-[var(--color-brand-text)]">
+              {t("home.commemorates", language)}
+            </h4>
+            <p className="mt-1.5 text-[16px] leading-relaxed text-[var(--color-brand-secondary)]">
+              {commemorates}
+            </p>
+          </div>
+        )}
+
+        </div>
+        )}
+
+        {section === "history" && (
+        <div className="home-motif home-motif--cross">
+        <div data-spotlight="church-info">
+        <ChurchHistoryCard
+          routeId={parish.id}
+          parishName={parishName}
+          onOpenHistory={() => onNavigate("history")}
+        />
+        </div>
+        </div>
+        )}
+        </div>
+
+        {/* The parish's standing notices. Not one of the three choices —
+            they are not alternatives to a Mass schedule — so they sit
+            below whatever is chosen and never go away. */}
         <div className="home-motif home-motif--pin">
-        <h2 className="home-section-title">
-          Parish
-          <br />
-          Bulletin
-        </h2>
 
         {/* The bulletin reads top to bottom: the verse, then what the
             parish has announced, then the two ways in. The verse is the
@@ -203,50 +235,6 @@ export default function Dashboard({
 
         </div>
 
-        <div className="home-motif home-motif--calendar">
-        <h2 className="home-section-title">
-          Mass
-          <br />
-          Schedule
-        </h2>
-        <MassScheduleCard
-          routeId={parish.id}
-          now={now}
-        />
-
-        {/* What the day commemorates — the parish's own words if they have
-            written any, otherwise the named solemnity or feast the calendar
-            supplies.
-
-            Shown only when there is something to say. Falling back to the
-            liturgical day NAME printed the Mass card's own title a second
-            time, word for word, which is noise rather than information; on an
-            ordinary Wednesday with no feast the card simply is not there. */}
-        {commemorates && (
-          <div className="mt-3 rounded-[22px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-5">
-            <h4 className="text-[19px] font-bold italic text-[var(--color-brand-text)]">
-              Commemorates
-            </h4>
-            <p className="mt-1.5 text-[16px] leading-relaxed text-[var(--color-brand-secondary)]">
-              {commemorates}
-            </p>
-          </div>
-        )}
-
-        </div>
-
-        <div className="home-motif home-motif--cross">
-        <h2 className="home-section-title">
-          Church
-          <br />
-          History
-        </h2>
-        <ChurchHistoryCard
-          routeId={parish.id}
-          parishName={parishName}
-          onOpenHistory={() => onNavigate("history")}
-        />
-        </div>
 
         {/* The Verse of the Day card now lives on Pray, at the client's
             request. It was the last thing on a long Home scroll, where it

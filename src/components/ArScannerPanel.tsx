@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Check, Pause, Volume2 } from "lucide-react";
 import type { Station } from "../types";
 import { useNarration } from "../lib/useNarration";
+import { useLanguage } from "../lib/useLanguage";
+import { stationText } from "../lib/contentTranslations";
 
 /**
  * The AR half of the scanner.
@@ -114,6 +116,7 @@ function LiveStop({
   onNextStop: () => void;
 }) {
   const narration = useNarration();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   if (!station) {
@@ -128,9 +131,13 @@ function LiveStop({
     );
   }
 
+  // In the reader's language, both on screen and read aloud - the
+  // narration used to speak English at a pilgrim reading Tagalog.
+  const words = stationText(station, language);
+
   // What gets read aloud: what this is, then why it matters. The
   // reflection on its own opens mid-thought.
-  const script = `${station.name}. ${station.description} ${station.reflection}`;
+  const script = `${station.name}. ${words.description} ${words.reflection}`;
 
   return (
     <>
@@ -169,7 +176,7 @@ function LiveStop({
 
           {expanded && (
             <p className="mt-2 text-[13.5px] leading-relaxed text-[rgb(255_255_255_/_0.82)]">
-              {station.description} {station.reflection}
+              {words.description} {words.reflection}
             </p>
           )}
         </div>

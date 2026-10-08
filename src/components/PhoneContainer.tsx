@@ -43,7 +43,14 @@ export default function PhoneContainer({
     // The app, and only the app, edge to edge. No toolbar, no notch, no
     // invented battery percentage, and no viewport switch - a phone cannot
     // usefully be shown "the desktop version" of a layout built for it.
-    return <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0">{children}</div>;
+    return (
+      <div
+        data-app-shell
+        className="flex-1 flex flex-col bg-[var(--color-brand-card)] min-h-0"
+      >
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -129,7 +136,10 @@ export default function PhoneContainer({
             </div>
 
             {/* Virtual App Screen Canvas */}
-            <div className="flex-1 bg-[var(--color-brand-card)] flex flex-col overflow-y-auto relative z-30">
+            <div
+              data-app-shell
+              className="flex-1 bg-[var(--color-brand-card)] flex flex-col overflow-y-auto relative z-30"
+            >
               {children}
             </div>
 
@@ -144,7 +154,7 @@ export default function PhoneContainer({
              navy "SanctiWalk Web View" bar, which is a picture of a web view
              rather than the app actually being responsive. */
           <div className="w-full max-w-[900px] h-[calc(100vh-140px)] min-h-[560px] bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-xl flex flex-col overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto bg-[var(--color-brand-card)] flex flex-col">
+            <div data-app-shell className="flex-1 overflow-y-auto bg-[var(--color-brand-card)] flex flex-col">
               {children}
             </div>
           </div>

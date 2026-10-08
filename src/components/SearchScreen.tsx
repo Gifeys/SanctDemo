@@ -19,6 +19,9 @@ interface DioceseParish {
 
 const PARISHES = (parishData as { parishes: DioceseParish[] }).parishes;
 
+/** The two parishes with a tour, a schedule and a history behind them. */
+const LIVE_IDS = new Set(PARISHES.filter(p => p.status === "live").map(p => p.id));
+
 const RECENT_KEY = "sanctiwalk.recentSearches";
 const MAX_RECENT = 4;
 
@@ -92,11 +95,22 @@ export default function SearchScreen({ onSelectParish, onClose }: SearchScreenPr
       ? searchParishesScored(query, searchable, { origin: position })
       : searchable.map(p => ({ parish: p, score: 0, distanceMeters: null as number | null }));
 
-    if (filter !== "mass-soon") return hits;
+    // The live parishes first, always.
+    //
+    // Without this they sat wherever the alphabet or the GPS put them -
+    // San Roque Cathedral fell past the fold on an unfiltered list, so the
+    // two parishes the app can actually show you were the two hardest to
+    // find in it. The sort is stable, so within each group the scoring and
+    // the distance ordering are untouched.
+    const ranked = [...hits].sort(
+      (a, b) => Number(LIVE_IDS.has(b.parish.id)) - Number(LIVE_IDS.has(a.parish.id)),
+    );
+
+    if (filter !== "mass-soon") return ranked;
 
     // "Mass soon" can only mean something for the parishes whose schedule has
     // actually been collected — two of thirty-one today.
-    return hits.filter(h => {
+    return ranked.filter(h => {
       const routeId = routeIdForParish(h.parish.id);
       const schedule = routeId ? MASS_SCHEDULES[routeId] : undefined;
       if (!schedule?.schedule) return false;

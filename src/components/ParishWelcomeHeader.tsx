@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useLanguage } from "../lib/useLanguage";
+import { t } from "../lib/ui";
 import { ArrowLeft, MapPin, Search } from "lucide-react";
 import { findScroller } from "../lib/findScroller";
 
@@ -99,6 +101,7 @@ export default function ParishWelcomeHeader({
   onBackToMyParish,
   now,
 }: ParishWelcomeHeaderProps) {
+  const { language } = useLanguage();
   const bandRef = useRef<HTMLElement | null>(null);
   const titleRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLDivElement | null>(null);
@@ -264,7 +267,7 @@ export default function ParishWelcomeHeader({
                 className="parish-welcome__back"
               >
                 <ArrowLeft className="w-[15px] h-[15px] shrink-0" aria-hidden />
-                Back to my parish
+                {t("home.backToMyParish", language)}
               </button>
             ) : (
               <span className="parish-welcome__brand">
@@ -282,6 +285,7 @@ export default function ParishWelcomeHeader({
             <button
               type="button"
               onClick={onSearch}
+      data-spotlight="pick-church"
               className="parish-welcome__avatar"
               aria-label="Search parishes"
             >

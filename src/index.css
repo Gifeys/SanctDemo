@@ -4013,3 +4013,621 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   border-radius: 999px;
   background: var(--scan-gild);
 }
+
+/* ------------------------------------------------- Spotlight
+   A hole punched in a dimmed screen, and a card explaining what is in
+   it. Shared by the first-run tutorial and by Sancti, so the assistant
+   pointing something out looks like the same app that showed you round
+   on day one. */
+/* Absolute, inside the app shell - not fixed to the window. On a phone
+   those are the same box; in the browser preview the app sits inside a
+   phone mock, and fixed positioning put the dimming over the whole
+   laptop screen with the card hanging off the side of the mock. */
+.spot {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  /* The overlay itself catches nothing: the hole is the only part that
+     takes a tap, so the element underneath stays visible but inert and
+     nobody half-presses a button through the dimming. */
+  pointer-events: none;
+}
+
+/* The dimming IS this element's shadow, spreading outwards from the
+   hole. One paint, and no hairline seams where four separate panels
+   around the target would meet on fractional pixels. */
+.spot__hole {
+  position: absolute;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgb(8 11 20 / 0.74);
+  /* Just enough edge to read as a cut-out rather than a lighting
+     accident, in the parish gold the scanner already uses to mean
+     "look here". */
+  outline: 2px solid rgb(233 199 124 / 0.85);
+  outline-offset: 0;
+  pointer-events: auto;
+  animation: spot-in 260ms ease-out;
+}
+
+@keyframes spot-in {
+  from { box-shadow: 0 0 0 9999px rgb(8 11 20 / 0); outline-color: rgb(233 199 124 / 0); }
+}
+
+.spot__card {
+  position: absolute;
+  z-index: 1;
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  background: #141a2e;
+  color: #fff;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.5);
+  pointer-events: auto;
+  animation: spot-card-in 240ms ease-out;
+}
+
+@keyframes spot-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot__hole, .spot__card { animation: none; }
+}
+
+/* The little triangle. Rotated square rather than a border triangle, so
+   it inherits the card's own colour and never drifts a shade off it. */
+.spot__arrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #141a2e;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.spot__card--arrow-top .spot__arrow { top: -6px; }
+.spot__card--arrow-bottom .spot__arrow { bottom: -6px; }
+
+.spot__title {
+  margin: 0 0 5px;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.spot__body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.88);
+}
+
+.spot__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.spot__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: auto;
+}
+
+.spot__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  transition: width 200ms ease, background-color 200ms ease;
+}
+
+.spot__dot.is-on {
+  width: 18px;
+  background: #fff;
+}
+
+/* The buttons the tutorial puts in the footer. */
+.spot__btn {
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 700;
+  background: #fff;
+  color: #141a2e;
+}
+
+.spot__btn--quiet {
+  background: transparent;
+  color: rgb(255 255 255 / 0.72);
+  padding-inline: 4px;
+}
+
+.spot__btn:focus-visible,
+.spot__btn--quiet:focus-visible {
+  outline: 2px solid #e9c77c;
+  outline-offset: 2px;
+}
+
+/* The last card of the walkthrough. A plain centred panel rather than
+   another spotlight: there is nothing left to point at. */
+.tut-done {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(8 11 20 / 0.78);
+}
+
+.tut-done__card {
+  width: 100%;
+  max-width: 340px;
+  padding: 26px 22px 22px;
+  border-radius: 24px;
+  background: var(--color-brand-card);
+  text-align: center;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.45);
+}
+
+.tut-done__title {
+  margin: 0;
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.22;
+  color: var(--color-brand-text);
+}
+
+.tut-done__body {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-brand-secondary);
+}
+
+.tut-done__go {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+
+/* ------------------------------------------------- Sancti
+   The assistant: a floating way in, and a sheet over the app.
+
+   Built from the parish's own navy and card colours rather than the
+   grey-and-blue every chat UI wears. The brief asked for it not to look
+   like a generic assistant bolted on, and the quickest way to fail that
+   is to reach for the default chat palette. */
+
+/* ---- the way in ---- */
+.sancti-fab {
+  position: absolute;
+  right: 14px;
+  /* Clear of the tab bar, including the home indicator on a phone that
+     has one. */
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 10px 12px;
+  border-radius: 999px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  box-shadow: 0 8px 22px rgb(16 24 40 / 0.3);
+  transition: transform 150ms ease;
+}
+
+.sancti-fab:active { transform: scale(0.96); }
+
+.sancti-fab img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.sancti-fab__label {
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Narrow phones: the mark alone. The label is the first thing to go
+   when it would otherwise crowd the tab bar underneath. */
+@media (max-width: 340px) {
+  .sancti-fab__label { display: none; }
+  .sancti-fab { padding: 12px; }
+}
+
+/* ---- the sheet ---- */
+.sancti {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sancti__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(8 11 20 / 0.45);
+  animation: sancti-fade 180ms ease-out;
+}
+
+.sancti__sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Tall enough to hold a Mass schedule without scrolling, short enough
+     that the screen underneath is still visibly there. */
+  height: 76%;
+  background: var(--color-brand-card);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -10px 36px rgb(0 0 0 / 0.26);
+  animation: sancti-up 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+
+@keyframes sancti-fade { from { opacity: 0; } }
+@keyframes sancti-up { from { transform: translateY(14%); opacity: 0.4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sancti__scrim, .sancti__sheet { animation: none; }
+}
+
+.sancti__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--color-brand-border);
+}
+
+.sancti__avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-brand-primary);
+}
+
+.sancti__avatar img { width: 21px; height: 21px; object-fit: contain; }
+
+.sancti__who { min-width: 0; flex: 1; }
+
+.sancti__name {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: var(--font-serif, Georgia, serif);
+  color: var(--color-brand-text);
+}
+
+.sancti__sub {
+  display: block;
+  font-size: 13.5px;
+  color: var(--color-brand-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sancti__x {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-brand-secondary);
+}
+
+.sancti__log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---- the empty state, which is where a new pilgrim starts ---- */
+.sancti__greeting {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--color-brand-text);
+}
+
+.sancti__try {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-brand-secondary);
+}
+
+.sancti__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.sancti__chip {
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-border);
+  background: var(--color-brand-card-sunk);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-brand-text);
+  text-align: left;
+}
+
+.sancti__chip:active { transform: scale(0.98); }
+
+/* ---- messages ---- */
+.sancti__row { display: flex; flex-direction: column; gap: 6px; }
+.sancti__row--you { align-items: flex-end; }
+.sancti__row--sancti { align-items: flex-start; }
+
+.sancti__bubble {
+  max-width: 86%;
+  padding: 11px 14px;
+  border-radius: 18px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* The pilgrim in the parish navy, Sancti on the card. The other way
+   round reads as the app talking at you. */
+.sancti__bubble--you {
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  border-bottom-right-radius: 6px;
+}
+
+.sancti__bubble--sancti {
+  background: var(--color-brand-card-sunk);
+  border: 1px solid var(--color-brand-border);
+  color: var(--color-brand-text);
+  border-bottom-left-radius: 6px;
+}
+
+/* A blank line in a schedule is a real gap, not a missing line. */
+.sancti__line:empty { height: 0.5em; }
+
+.sancti__followup {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-primary);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}
+
+/* Three dots, not the word "typing". Nobody is typing. */
+.sancti__thinking { flex-direction: row; gap: 5px; padding: 15px 16px; }
+
+.sancti__thinking span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-brand-secondary);
+  opacity: 0.45;
+  animation: sancti-blink 1.1s ease-in-out infinite;
+}
+
+.sancti__thinking span:nth-child(2) { animation-delay: 0.16s; }
+.sancti__thinking span:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes sancti-blink {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sancti__thinking span { animation: none; }
+}
+
+/* ---- the input ---- */
+.sancti__compose {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-brand-border);
+  background: var(--color-brand-card);
+}
+
+/* 16px minimum, or iOS Safari zooms the page on focus and never zooms
+   back. The same floor the application form uses. */
+.sancti__input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--color-brand-border);
+  background: var(--color-brand-card-sunk);
+  font-size: 16px;
+  color: var(--color-brand-text);
+}
+
+.sancti__input:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 1px;
+}
+
+.sancti__send {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+
+.sancti__send:disabled { opacity: 0.4; }
+
+/* ------------------------------------------------- Home quick links
+   The four things people open Home to find, directly under the parish
+   name. Two columns rather than four: at phone width four would give
+   each label about seven characters, and "Mga Sakramento" is fourteen. */
+/* Three across, in one line, as drawn. Not a scroller: a row that
+   scrolls sideways hides the third button, and the whole reason this
+   row exists is that things below the fold go unnoticed. */
+.quick {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.quick__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 5px 7px;
+  border-radius: 14px;
+  text-align: center;
+  background: var(--color-brand-card);
+  border: 1px solid var(--color-brand-border);
+  transition: border-color 150ms ease, transform 120ms ease;
+}
+
+.quick__btn:active { transform: scale(0.985); }
+
+.quick__btn:hover,
+.quick__btn:focus-visible {
+  border-color: var(--color-brand-primary);
+}
+
+.quick__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--color-brand-card-sunk);
+  color: var(--color-brand-primary);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.quick__label {
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-brand-text);
+  /* The labels carry their own line breaks so "Mass Schedule" always
+     splits the same way, rather than wherever the width happens to
+     land it. */
+  white-space: pre-line;
+  /* Wraps rather than truncating. "Ministeryo at Sakramento" is three
+     words in a third of a phone, and half a word read is worse than
+     two lines. */
+  overflow-wrap: anywhere;
+}
+
+/* Narrow phones: the label wraps rather than truncating. A half-read
+   "Mga Sakrame…" is worse than two lines. */
+/* The chosen one. The parish navy, so it reads as selected rather than
+   merely hovered - these three are a choice, and at any moment exactly
+   one of them is true. */
+.quick__btn.is-on {
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+
+.quick__btn.is-on .quick__label { color: var(--color-brand-on-accent); }
+
+.quick__btn.is-on .quick__icon {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--color-brand-on-accent);
+}
+
+@media (max-width: 340px) {
+  .quick__label { font-size: 10.5px; }
+  .quick__btn { padding: 7px 3px; gap: 4px; }
+}
+
+/* The bulletin's own name, above the chooser.
+   Built on .home-section-title rather than beside it: the heavy
+   uppercase Montserrat is the voice the rest of Home speaks in, and a
+   second, lighter heading here read as a different app. Only the size
+   and the margins differ, because this one sits above a row of buttons
+   rather than above a card. */
+.home-sheet__title {
+  margin: 4px 0 14px;
+  text-align: center;
+  font-family: var(--font-primary);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--home-heading);
+  text-wrap: balance;
+}
+
+/* The chosen section fades in. Keyed on the choice, so changing it
+   restarts the animation and the swap is visible rather than silent. */
+.home-panel {
+  /* Breathing room under the chosen section, before the verse and the
+     announcements that always follow it. The section headings used to
+     provide this with their own 26px top margin; they are gone, so the
+     panel provides it. */
+  margin-bottom: 22px;
+  animation: home-panel-in 260ms ease-out;
+}
+
+/* The first heading inside a chosen section has the chooser directly
+   above it, so it does not need the 26px it carries elsewhere. */
+.home-panel .home-section-title { margin-top: 0; }
+
+@keyframes home-panel-in {
+  from { opacity: 0; transform: translateY(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-panel { animation: none; }
+}
+
+.home-section { margin-top: 0; }
+
+/* The ring that says "this is the part you asked for".
+   Scroll alone is easy to miss - the page moves and the thing you
+   wanted is now somewhere among three others. It fades by itself, so
+   there is nothing to dismiss. */
+.home-flash {
+  border-radius: 22px;
+  animation: home-flash 1.8s ease-out;
+}
+
+@keyframes home-flash {
+  0%   { box-shadow: 0 0 0 0 rgb(233 199 124 / 0); }
+  12%  { box-shadow: 0 0 0 5px rgb(233 199 124 / 0.85); }
+  70%  { box-shadow: 0 0 0 5px rgb(233 199 124 / 0.55); }
+  100% { box-shadow: 0 0 0 0 rgb(233 199 124 / 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-flash { animation: none; box-shadow: 0 0 0 4px rgb(233 199 124 / 0.7); }
+}

@@ -9,6 +9,9 @@ import ApplicationForm from "./ApplicationForm";
 import SignInFirst from "./SignInFirst";
 import ItemDetailSections from "./ItemDetailSections";
 import { resolveSacrament } from "../lib/itemContent";
+import { useLanguage } from "../lib/useLanguage";
+import { pick } from "../lib/language";
+import { SACRAMENT_DESCRIPTION_FIL, bilingualFor } from "../lib/contentTranslations";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
 import AvailabilityBadge from "./AvailabilityBadge";
 
@@ -31,6 +34,7 @@ export default function SacramentsTab({
 
   // Which sacraments this parish is currently taking applications for.
   const managed = useParishContent(parish.id);
+  const { language } = useLanguage();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -139,7 +143,7 @@ export default function SacramentsTab({
                 </span>
                 <span className="ministry-card__foot">
                   <Bookmark className="w-5 h-5 text-[var(--color-brand-primary)] shrink-0" />
-                  <span className="ministry-card__hint">{sac.description}</span>
+                  <span className="ministry-card__hint">{pick(bilingualFor(sac.description, SACRAMENT_DESCRIPTION_FIL[sac.id], "en"), language)}</span>
                   <ChevronRight className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0" />
                 </span>
               </button>
@@ -147,7 +151,7 @@ export default function SacramentsTab({
 
             {(openId ? SACRAMENTS.filter(x => x.id === openId) : []).map((sac) => {
               const isExpanded = true;
-              const resolved = resolveSacrament(managed, sac.id);
+              const resolved = resolveSacrament(managed, sac.id, language);
               return (
                 <div
                   key={sac.id}

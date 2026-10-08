@@ -49,12 +49,22 @@ export default function ParishListRow({ parish, onSelect, selected, distanceMete
       className={`w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-colors ${
         selected
           ? "bg-[var(--color-brand-card-sunk)] border-[var(--color-brand-primary)]"
-          : "bg-[var(--color-brand-card)] border-[var(--color-brand-border)]"
+          : parish.isLive
+            // The two parishes with a tour, a schedule and a history behind
+            // them. In a list of thirty-one they were one badge apart from
+            // thirty rows that open to almost nothing, so the row itself
+            // now carries the difference.
+            ? "bg-[var(--color-brand-card-sunk)] border-[var(--color-brand-primary)] shadow-[0_1px_3px_rgba(16,34,86,0.10)]"
+            : "bg-[var(--color-brand-card)] border-[var(--color-brand-border)]"
       }`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-[16px] font-semibold text-[var(--color-brand-text)] leading-snug">
+          <p
+            className={`text-[16px] leading-snug text-[var(--color-brand-text)] ${
+              parish.isLive ? "font-bold" : "font-semibold"
+            }`}
+          >
             {parish.name}
           </p>
           {parish.isLive && (

@@ -1,5 +1,9 @@
 import type { ParishContent } from "./parishContent";
 import { MINISTRIES, SACRAMENTS } from "../data";
+import { pick, type Language } from "./language";
+import {
+  MINISTRY_DESCRIPTION_EN, SACRAMENT_DESCRIPTION_FIL, bilingualFor,
+} from "./contentTranslations";
 
 /**
  * What a parish has written about one ministry or sacrament.
@@ -81,14 +85,29 @@ function textOrFallback(managed: string | undefined, compiled: string): string {
 export function resolveMinistry(
   content: ParishContent | null | undefined,
   ministryId: string,
+  /**
+   * The reader's language. The compiled ministry descriptions are all
+   * Tagalog, so an English reader got fifteen blocks of Tagalog until
+   * this was threaded through.
+   *
+   * A parish's OWN text is never translated. If the office wrote it,
+   * it is shown as written - guessing at a translation of something a
+   * parish typed this morning is exactly the kind of invention this
+   * codebase refuses everywhere else.
+   */
+  language: Language = "en",
 ): ResolvedItem | null {
   const base = MINISTRIES.find(m => m.id === ministryId);
   if (!base) return null;
   const managed = managedFor(content, ministryId);
+  const described = pick(
+    bilingualFor(base.description, MINISTRY_DESCRIPTION_EN[base.id], "fil"),
+    language,
+  );
   return {
     id: base.id,
     name: base.name,
-    about: textOrFallback(managed.about, base.description),
+    about: textOrFallback(managed.about, described),
     requirements: listOrFallback(managed.requirements, base.requirements),
     schedule: managed.schedule?.trim() ?? "",
     process: managed.process ?? [],
@@ -101,14 +120,20 @@ export function resolveMinistry(
 export function resolveSacrament(
   content: ParishContent | null | undefined,
   sacramentId: string,
+  /** See resolveMinistry. The compiled sacrament text is English only. */
+  language: Language = "en",
 ): ResolvedItem | null {
   const base = SACRAMENTS.find(s => s.id === sacramentId);
   if (!base) return null;
   const managed = managedFor(content, sacramentId);
+  const described = pick(
+    bilingualFor(base.description, SACRAMENT_DESCRIPTION_FIL[base.id], "en"),
+    language,
+  );
   return {
     id: base.id,
     name: base.name,
-    about: textOrFallback(managed.about, base.description),
+    about: textOrFallback(managed.about, described),
     requirements: listOrFallback(managed.requirements, base.requirements),
     // The compiled scheduleDetails is the parish's own line and stays
     // the fallback - a sacrament page with no schedule at all is the
