@@ -23,3 +23,8 @@ tools/
 # failure on this machine. Neither belongs in the repository.
 .vercel
 .vercel-cli
+
+# Bun is not this project's package manager. A bun.lock in the repo
+# makes Vercel install with bun instead of npm.
+bun.lock
+bun.lockb
