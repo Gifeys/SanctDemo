@@ -21,6 +21,93 @@ import type { ResolvedItem } from "./itemContent";
 export const NO_INFORMATION =
   "I don't have that information in SanctiWalk yet. Please check with the parish office for the most accurate information.";
 
+/**
+ * What Sancti offers to open, once it has already answered.
+ *
+ * ## Why the answer comes first and the offer second
+ *
+ * "Where is the map?" used to open the map. The pilgrim got an answer
+ * they did not ask for, delivered as a screen they did not choose, and
+ * lost the conversation to get it. Asking "what time is Mass" and being
+ * thrown at a schedule is the same discourtesy: the times were the
+ * answer, and the screen is at most a follow-up.
+ *
+ * So the reply carries the answer in full and the offer underneath, as
+ * one tap. Saying nothing more is a perfectly good outcome.
+ *
+ * `followUp` is phrased as an INSTRUCTION ("Open the map"), not as
+ * "yes". It is sent back through the same understanding Sancti applies
+ * to anything typed, so the imperative is what makes the second pass
+ * act instead of asking again - and a pilgrim who types "yes" rather
+ * than tapping gets there by the other road.
+ */
+export interface Offer {
+  /** The question Sancti appends to its answer. */
+  question: string;
+  /** The tappable instruction underneath it. */
+  followUp: string;
+}
+
+const OFFERS: Record<string, Offer> = {
+  OPEN_MAP: { question: "Want me to open the map?", followUp: "Open the map" },
+  SHOW_CHURCH_LOCATION: {
+    question: "Want me to open the map and show you the way?",
+    followUp: "Show me on the map",
+  },
+  OPEN_MASS_SCHEDULE: {
+    question: "Want me to open the Mass schedule?",
+    followUp: "Open the Mass schedule",
+  },
+  OPEN_CHURCH_HISTORY: {
+    question: "Want me to open the full history?",
+    followUp: "Open the history",
+  },
+  OPEN_SACRAMENTS: { question: "Want me to open the sacraments?", followUp: "Open the sacraments" },
+  OPEN_BAPTISM: { question: "Want me to open baptism?", followUp: "Open baptism" },
+  OPEN_WEDDING: { question: "Want me to open weddings?", followUp: "Open the wedding page" },
+  OPEN_MINISTRIES: { question: "Want me to open the ministries?", followUp: "Open the ministries" },
+  OPEN_AR: { question: "Want me to open the scanner?", followUp: "Open the scanner" },
+  OPEN_SETTINGS: { question: "Want me to open your settings?", followUp: "Open settings" },
+  OPEN_CHURCH: { question: "Want me to open it?", followUp: "Open it" },
+};
+
+/**
+ * What Sancti says while doing as it was told.
+ *
+ * An instruction gets an acknowledgement, not the answer again. Tapping
+ * "Open the Mass schedule" under a list of Mass times and being handed
+ * the same list a second time reads as not having been heard - and the
+ * schedule itself is already arriving on screen.
+ */
+export function openingLine(action: string): string | null {
+  const offer = OFFERS[action];
+  if (!offer) return null;
+  // "Open the map" -> "Opening the map."
+  return offer.followUp.replace(/^Open/, "Opening").replace(/^Show/, "Showing") + ".";
+}
+
+/** The offer for an action, or null where there is nothing to open. */
+export function offerFor(action: string): Offer | null {
+  return OFFERS[action] ?? null;
+}
+
+/**
+ * An answer with the offer appended.
+ *
+ * A blank line between them, so the offer reads as a separate thought
+ * rather than as the last sentence of the answer.
+ */
+export function withOffer(reply: Reply, offer: Offer): Reply {
+  return { text: `${reply.text}
+
+${offer.question}`, followUp: offer.followUp };
+}
+
+/** What Sancti says when the pilgrim declines. Never a sulk, never a retry. */
+export function declinedAnswer(): Reply {
+  return { text: "No problem. Ask me anything else." };
+}
+
 export interface Reply {
   text: string;
   /** Shown under the message as a tappable follow-up. */

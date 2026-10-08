@@ -55,6 +55,15 @@ export type SanctiAction =
 
 export interface Understanding {
   action: SanctiAction;
+  /**
+   * Whether the pilgrim told Sancti to do it, or asked about it.
+   *
+   * "Open the map" is an instruction. "Where is the map?" is a
+   * question, and answering a question by throwing the pilgrim onto
+   * another screen is how an assistant becomes something people stop
+   * tapping. Same action, different consent.
+   */
+  imperative: boolean;
   /** The parish the sentence named, if it named one. */
   parishId?: string;
   /** For CREATE_REMINDER: the Mass time asked about, as written. */
@@ -198,6 +207,103 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
   },
 ];
 
+/**
+ * Phrases that make a sentence an instruction rather than a question.
+ *
+ * Kept apart from the intent triggers because they are orthogonal: any
+ * intent can arrive either way, and the pilgrim who types "open the mass
+ * schedule" wants exactly what the pilgrim who types "what time is mass"
+ * does NOT want - the screen, now, without being asked.
+ *
+ * "Show me on the map" counts. It names the destination and the verb;
+ * there is nothing left to confirm.
+ */
+const IMPERATIVES = [
+  "open", "show me", "take me", "bring me", "go to", "navigate", "directions",
+  "launch", "start", "let me see", "i want to see", "view",
+  "buksan", "ipakita", "dalhin mo", "punta tayo", "pumunta", "tara",
+  "gusto kong makita", "pakita", "pakibuksan", "sige",
+];
+
+/** Yes, in the languages and spellings people here actually type. */
+const AFFIRMATIVES = [
+  "yes", "yeah", "yep", "yup", "sure", "ok", "okay", "okey", "go", "go ahead",
+  "please", "please do", "do it", "open it", "sige", "oo", "opo", "oo nga",
+  "sige na", "payag", "game", "tara",
+];
+
+/** No. Short, because a refusal usually is. */
+const NEGATIVES = [
+  "no", "nope", "not now", "later", "nah", "cancel", "never mind", "nevermind",
+  "hindi", "ayaw", "ayoko", "wag", "huwag", "mamaya", "hindi muna",
+];
+
+/**
+ * Whether the sentence is telling Sancti to do something.
+ *
+ * Matched on word boundaries, not substrings: "open" inside "opening
+ * hours" is not an instruction, and treating it as one would make
+ * "what are the opening hours" fling the pilgrim at a screen.
+ */
+export function isImperative(text: string): boolean {
+  const hay = normalise(text);
+  return IMPERATIVES.some(phrase => hasPhrase(hay, phrase));
+}
+
+/** True when `phrase` appears in `hay` as whole words. */
+function hasPhrase(hay: string, phrase: string): boolean {
+  const at = hay.indexOf(phrase);
+  if (at === -1) return false;
+  const before = at === 0 ? " " : hay[at - 1];
+  const after = at + phrase.length >= hay.length ? " " : hay[at + phrase.length];
+  return before === " " && after === " ";
+}
+
+/**
+ * A bare yes or no, when Sancti has just asked something.
+ *
+ * Only consulted while an offer is open. Out of that context "no" is
+ * part of a sentence rather than an answer, and reading it as consent -
+ * or as a refusal - would be guessing.
+ *
+ * Returns null for anything that is not plainly one or the other, which
+ * is how "yes but what time" stays a question rather than becoming a
+ * yes to something else.
+ */
+export function readAnswer(text: string): "yes" | "no" | null {
+  const hay = normalise(text).trim();
+  if (!hay) return null;
+  // Whole-sentence match. A yes buried in a longer sentence is that
+  // sentence's business, not an answer to the offer.
+  if (AFFIRMATIVES.includes(hay)) return "yes";
+  if (NEGATIVES.includes(hay)) return "no";
+  return null;
+}
+
+/**
+ * The actions that take the pilgrim off this screen.
+ *
+ * These are the ones that need a yes when the sentence was a question.
+ * Everything else either answers in place or changes nothing the
+ * pilgrim can see, and stopping to ask about those would be a second
+ * tap for nothing.
+ */
+export const NAVIGATING_ACTIONS: readonly SanctiAction[] = [
+  "OPEN_MAP", "OPEN_CHURCH", "OPEN_AR", "OPEN_MASS_SCHEDULE", "OPEN_SACRAMENTS",
+  "OPEN_BAPTISM", "OPEN_WEDDING", "OPEN_MINISTRIES", "OPEN_CHURCH_HISTORY",
+  "OPEN_SETTINGS", "SHOW_CHURCH_LOCATION",
+];
+
+/**
+ * Whether Sancti should offer rather than act.
+ *
+ * An instruction is consent already given. A question is not.
+ */
+export function needsConfirmation(heard: Understanding): boolean {
+  if (heard.imperative) return false;
+  return NAVIGATING_ACTIONS.includes(heard.action);
+}
+
 export interface ParishName {
   id: string;
   /** Every way someone might type it, already normalised. */
@@ -283,7 +389,9 @@ export function findTime(text: string): string | undefined {
  */
 export function understand(text: string, parishes: ParishName[]): Understanding {
   const hay = normalise(text);
-  if (!hay) return { action: "UNKNOWN", score: 0 };
+  if (!hay) return { action: "UNKNOWN", score: 0, imperative: false };
+
+  const imperative = isImperative(hay);
 
   let best: { action: SanctiAction; score: number } = { action: "UNKNOWN", score: 0 };
 
@@ -301,15 +409,15 @@ export function understand(text: string, parishes: ParishName[]): Understanding 
 
   // Naming a parish and nothing else is a request to open it.
   if (best.score < CONFIDENCE_FLOOR && parishId) {
-    return { action: "OPEN_CHURCH", parishId, score: CONFIDENCE_FLOOR };
+    return { action: "OPEN_CHURCH", parishId, score: CONFIDENCE_FLOOR, imperative };
   }
 
-  if (best.score < CONFIDENCE_FLOOR) return { action: "UNKNOWN", score: best.score };
+  if (best.score < CONFIDENCE_FLOOR) return { action: "UNKNOWN", score: best.score, imperative };
 
   // "Tell me about Mary Help" reads as history; "open Mary Help" does
   // not. Both match OPEN_CHURCH's generic openers, so the more specific
   // intent is preferred whenever one also matched.
-  const result: Understanding = { action: best.action, score: best.score };
+  const result: Understanding = { action: best.action, score: best.score, imperative };
   if (parishId) result.parishId = parishId;
   if (best.action === "CREATE_REMINDER") {
     const time = findTime(text);

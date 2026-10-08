@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   understand, findParish, findTime, aliasesFor, normalise,
+  isImperative, needsConfirmation, readAnswer,
   CONFIDENCE_FLOOR, type ParishName,
 } from "./sancti";
 
@@ -218,3 +219,79 @@ describe("Taglish, which is how people here actually type", () => {
     expect(ask("pwede ba mag apply for baptism").action).toBe("OPEN_BAPTISM");
   });
 });
+
+describe('asking before acting', () => {
+  const parishes = [aliasesFor('route-mhcp', 'Mary Help of Christians Parish')]
+
+  it('hears a question as a question', () => {
+    expect(understand('where is the map', parishes).imperative).toBe(false)
+    expect(understand('what time is mass', parishes).imperative).toBe(false)
+    expect(understand('nasaan ang mapa', parishes).imperative).toBe(false)
+  })
+
+  it('hears an instruction as an instruction', () => {
+    expect(understand('open the map', parishes).imperative).toBe(true)
+    expect(understand('take me to mary help', parishes).imperative).toBe(true)
+    expect(understand('buksan ang mapa', parishes).imperative).toBe(true)
+    expect(understand('show me on the map', parishes).imperative).toBe(true)
+  })
+
+  it('does not read a word inside another word as an instruction', () => {
+    // "open" inside "opening hours" would otherwise fling the pilgrim
+    // at a screen for asking what time the office opens.
+    expect(isImperative('what are the opening hours')).toBe(false)
+    expect(isImperative('reopen')).toBe(false)
+  })
+
+  it('offers rather than acts when asked where something is', () => {
+    expect(needsConfirmation(understand('where is the map', parishes))).toBe(true)
+    expect(needsConfirmation(understand('what time is mass', parishes))).toBe(true)
+  })
+
+  it('acts without asking when told to', () => {
+    expect(needsConfirmation(understand('open the map', parishes))).toBe(false)
+    expect(needsConfirmation(understand('take me to mary help', parishes))).toBe(false)
+  })
+
+  it('never stops to ask about something that opens nothing', () => {
+    // A distance is answered in the chat; there is no screen to offer,
+    // and asking would be a tap that leads nowhere.
+    expect(needsConfirmation(understand('how far is mary help', parishes))).toBe(false)
+    expect(needsConfirmation(understand('what can you do', parishes))).toBe(false)
+    expect(needsConfirmation(understand('qwertyuiop', parishes))).toBe(false)
+  })
+
+  it('reads a bare yes, in either language', () => {
+    for (const yes of ['yes', 'Yes', 'oo', 'opo', 'sige', 'ok', 'go ahead']) {
+      expect(readAnswer(yes)).toBe('yes')
+    }
+  })
+
+  it('reads a bare no, in either language', () => {
+    for (const no of ['no', 'hindi', 'ayoko', 'later', 'never mind']) {
+      expect(readAnswer(no)).toBe('no')
+    }
+  })
+
+  it('treats a sentence containing yes as a sentence, not an answer', () => {
+    // "yes but what time" is a new question. Reading the "yes" would
+    // open a screen the pilgrim was still asking about.
+    expect(readAnswer('yes but what time is mass')).toBeNull()
+    expect(readAnswer('no idea where the map is')).toBeNull()
+    expect(readAnswer('')).toBeNull()
+  })
+
+  it('still understands the follow-up chip it offers', () => {
+    // The chip sends an instruction back through the same understanding.
+    // If this broke, tapping the offer would ask the same question again.
+    for (const [action, chip] of [
+      ['OPEN_MAP', 'Open the map'],
+      ['OPEN_MASS_SCHEDULE', 'Open the Mass schedule'],
+      ['SHOW_CHURCH_LOCATION', 'Show me on the map'],
+    ] as const) {
+      const heard = understand(chip, parishes)
+      expect(heard.action).toBe(action)
+      expect(needsConfirmation(heard)).toBe(false)
+    }
+  })
+})

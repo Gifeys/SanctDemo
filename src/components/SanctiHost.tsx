@@ -1,10 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import SanctiSheet, { SanctiButton, type SanctiMessage } from "./SanctiSheet";
 import { useSpotlight } from "./Spotlight";
-import { understand, aliasesFor, type SanctiAction } from "../lib/sancti";
+import {
+  understand, aliasesFor, needsConfirmation, readAnswer, type SanctiAction,
+} from "../lib/sancti";
 import {
   massAnswer, historyAnswer, itemAnswer, distanceAnswer, contactAnswer,
-  reminderAnswer, helpAnswer, unknownAnswer, type Reply,
+  reminderAnswer, helpAnswer, unknownAnswer, offerFor, withOffer, declinedAnswer,
+  openingLine, type Reply,
 } from "../lib/sanctiAnswers";
 import { resolveSacrament, resolveMinistry } from "../lib/itemContent";
 import { isOpenForApplications } from "../lib/availability";
@@ -97,6 +100,15 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
     }, 360);
   }, [spotlight]);
 
+  /**
+   * The thing Sancti has offered to open and is waiting on a yes for.
+   *
+   * A ref rather than state: it is read and written inside `ask`, which
+   * must not be rebuilt between the question and the answer - a new
+   * `ask` identity mid-conversation would lose the offer it is holding.
+   */
+  const pendingRef = useRef<{ action: SanctiAction; parishId?: string } | null>(null);
+
   const act = useCallback((action: SanctiAction, parishId?: string) => {
     const t = toolsRef.current;
     const target = parishId ?? t.activeParishId;
@@ -167,6 +179,32 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
 
     window.setTimeout(() => {
       const t = toolsRef.current;
+
+      // A bare yes or no, when Sancti has an offer open.
+      //
+      // Checked before understanding the sentence, because "open it" and
+      // "sige" carry no intent of their own - they only mean anything as
+      // an answer to what was just asked.
+      const pending = pendingRef.current;
+      if (pending) {
+        const answer = readAnswer(text);
+        if (answer === "yes") {
+          pendingRef.current = null;
+          setThinking(false);
+          act(pending.action, pending.parishId);
+          return;
+        }
+        if (answer === "no") {
+          pendingRef.current = null;
+          setThinking(false);
+          say("sancti", declinedAnswer());
+          return;
+        }
+        // Anything else is a new question, and the offer lapses rather
+        // than waiting around to be answered by an unrelated sentence.
+        pendingRef.current = null;
+      }
+
       const heard = understand(text, PARISH_NAMES);
       const parishId = heard.parishId ?? t.activeParishId;
       const name = parishLabel(parishId);
@@ -207,12 +245,12 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
           break;
         }
         case "OPEN_SACRAMENTS":
-          reply = { text: `Here are the sacraments ${name} offers, with what each one needs.` };
+          reply = { text: `${name} has a page for each sacrament, with what the office needs for it.` };
           break;
         case "OPEN_MINISTRIES": {
           const first = resolveMinistry(t.content, "min-altar-servers", t.language);
           reply = first
-            ? { text: `${name} has lay ministries you can join — I'll show you the list.` }
+            ? { text: `${name} has lay ministries you can join.` }
             : unknownAnswer();
           break;
         }
@@ -228,20 +266,24 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         case "ANSWER_CONTACT":
           reply = contactAnswer(name, resolveSacrament(t.content, "sac-baptism", t.language)?.contact);
           break;
+        // These say WHERE the thing is rather than announcing that
+        // Sancti is about to go there. The offer underneath does the
+        // asking, and a reply that already said "I'll show you" would
+        // be promising something the pilgrim has not agreed to yet.
         case "OPEN_MAP":
-          reply = { text: "The Map is here — I'll show you." };
+          reply = { text: "The map is on the Map tab — every parish in the diocese, with walking directions." };
           break;
         case "SHOW_CHURCH_LOCATION":
-          reply = { text: `Opening the map at ${name}.` };
+          reply = { text: `${name} is on the map, and I can walk you there from where you are.` };
           break;
         case "OPEN_CHURCH":
-          reply = { text: `Here is ${name}.` };
+          reply = { text: `${name} has its own page — Mass times, history and what the office offers.` };
           break;
         case "OPEN_AR":
           reply = { text: "The scanner is on the Scan tab. Point it at a statue, an image or a marker and it will tell you what it is." };
           break;
         case "OPEN_SETTINGS":
-          reply = { text: "Your reminders and account are under Me." };
+          reply = { text: "Your reminders, your profile and your applications are under Me." };
           break;
         case "HELP":
           reply = helpAnswer(name);
@@ -251,7 +293,28 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
       }
 
       setThinking(false);
-      say("sancti", reply);
+
+      // Ask before leaving the screen.
+      //
+      // Sancti used to answer and then navigate, every time: "where is
+      // the map" opened the map, and the pilgrim lost the conversation
+      // to an answer they had not asked to be taken to. A question now
+      // gets its answer in full, with the screen offered underneath as
+      // one tap. An instruction - "open the map" - is consent already
+      // given and still goes straight there.
+      const offer = needsConfirmation(heard) ? offerFor(heard.action) : null;
+      if (offer) {
+        pendingRef.current = { action: heard.action, parishId: heard.parishId };
+        say("sancti", withOffer(reply, offer));
+        return;
+      }
+
+      // Told to, rather than asked: acknowledge and go. Repeating the
+      // full answer under an instruction to open it reads as not having
+      // been heard, and the screen carrying that answer is already on
+      // its way.
+      const opening = heard.imperative ? openingLine(heard.action) : null;
+      say("sancti", opening ? { text: opening } : reply);
 
       // Said first, then done. See the note at the top.
       if (heard.action !== "UNKNOWN" && heard.action !== "HELP") {
