@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList, LayoutDashboard, Megaphone, ToggleLeft, Archive,
-  Church, PartyPopper, CalendarDays, BookOpen,
+  Church, PartyPopper, CalendarDays, BookOpen, BarChart3,
 } from "lucide-react";
 
 /**
@@ -62,6 +62,11 @@ const ITEMS: NavItem[] = [
     to: "/admin/announcements/events",
     label: "Events",
     icon: <CalendarDays className="w-4 h-4" />,
+  },
+  {
+    to: "/admin/analytics",
+    label: "Visitor activity",
+    icon: <BarChart3 className="w-4 h-4" />,
   },
   {
     to: "/admin/content",

@@ -10,6 +10,7 @@ import AdminDashboard from "./AdminDashboard";
 import AdminApplicationDetail from "./AdminApplicationDetail";
 import AdminApplications from "./AdminApplications";
 import AdminAnnouncements from "./AdminAnnouncements";
+import AdminAnalytics from "./AdminAnalytics";
 import AdminAvailability from "./AdminAvailability";
 import AdminMassSchedule from "./AdminMassSchedule";
 import AdminContent from "./AdminContent";
@@ -109,6 +110,7 @@ export default function AdminApp() {
       <Route path="mass-schedule" element={<AdminMassSchedule session={session!} />} />
       <Route path="content" element={<AdminContent session={session!} />} />
       <Route path="availability" element={<AdminAvailability session={session!} />} />
+      <Route path="analytics" element={<AdminAnalytics session={session!} />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
