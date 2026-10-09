@@ -66,6 +66,14 @@ export interface Understanding {
   imperative: boolean;
   /** The parish the sentence named, if it named one. */
   parishId?: string;
+  /**
+   * The individual ministry or sacrament the sentence named.
+   *
+   * "Open the ministries" is a list. "Open Teatro Pilipino" is one
+   * ministry, and taking the pilgrim to a list of fifteen with theirs
+   * somewhere in it is not what they asked for.
+   */
+  itemId?: string;
   /** For CREATE_REMINDER: the Mass time asked about, as written. */
   time?: string;
   /** How sure we are. Below CONFIDENCE_FLOOR the action is UNKNOWN. */
@@ -304,6 +312,154 @@ export function needsConfirmation(heard: Understanding): boolean {
   return NAVIGATING_ACTIONS.includes(heard.action);
 }
 
+/**
+ * One ministry or sacrament, by every name somebody might type for it.
+ *
+ * ## Why aliases rather than the name
+ *
+ * The compiled names are the parish's formal ones - "Ministry of Altar
+ * Servers (MAS)", "Extraordinary Ministers of Holy Communion (EMHC)" -
+ * and nobody types those. People type "altar servers", or "emhc", or
+ * the choir's name with the ministry word left off.
+ */
+export interface NamedItem {
+  id: string;
+  kind: "ministry" | "sacrament";
+  /** Already normalised. Longest match wins. */
+  aliases: string[];
+}
+
+/**
+ * Words that carry no identity.
+ *
+ * Dropping them is what lets "altar servers" find "Ministry of Altar
+ * Servers": the alias becomes the distinctive part, and a sentence
+ * containing those words alone matches it.
+ */
+const GENERIC_WORDS = new Set([
+  "ministry", "ministries", "ministers", "ministeryo", "of", "the", "and",
+  "on", "for", "to", "a", "ng", "sa", "at", "mga",
+]);
+
+/**
+ * The shortest acronym worth matching.
+ *
+ * Three letters collide with real words - "MAS" is Tagalog for "more",
+ * and as an alias it hijacked "mas maaga ba ang misa". Four is long
+ * enough that a collision is somebody actually naming the ministry.
+ */
+const MIN_ACRONYM = 4;
+
+/** Filipino and Pilipino are the same word to everyone who types it. */
+function spellingVariants(text: string): string[] {
+  const swapped = text.replace(/\bfilipino\b/g, "pilipino");
+  const back = text.replace(/\bpilipino\b/g, "filipino");
+  return [...new Set([text, swapped, back])];
+}
+
+/** Every way somebody might name this ministry or sacrament. */
+export function itemAliases(
+  id: string,
+  displayName: string,
+  kind: "ministry" | "sacrament",
+): NamedItem {
+  const full = normalise(displayName);
+  const aliases = new Set<string>();
+
+  // The parenthesised acronym, when it is long enough to be safe.
+  const acronym = /\(([^)]+)\)/.exec(displayName)?.[1];
+  if (acronym && acronym.length >= MIN_ACRONYM) aliases.add(normalise(acronym));
+
+  const withoutAcronym = normalise(displayName.replace(/\([^)]*\)/g, ""));
+  const distinctive = withoutAcronym
+    .split(" ")
+    .filter(word => word && !GENERIC_WORDS.has(word))
+    .join(" ");
+
+  for (const base of [full, withoutAcronym, distinctive]) {
+    for (const variant of spellingVariants(base)) {
+      if (variant.trim()) aliases.add(variant.trim());
+    }
+  }
+
+  return { id, kind, aliases: [...aliases] };
+}
+
+/** Levenshtein distance, capped: anything past `max` is simply "too far". */
+function withinEdits(a: string, b: string, max: number): boolean {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > max) return false;
+
+  let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j++) {
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    previous = current;
+  }
+  return previous[b.length] <= max;
+}
+
+/**
+ * Whether a word of the alias appears in the sentence.
+ *
+ * A single mistyped letter is forgiven on words long enough for that to
+ * be unambiguous - "teatri" for "teatro". Short words are matched
+ * exactly, because at four letters an edit of one turns half the
+ * dictionary into half the rest of it.
+ */
+const MIN_FUZZY = 5;
+
+function wordPresent(word: string, haystack: string[]): boolean {
+  if (haystack.includes(word)) return true;
+  if (word.length < MIN_FUZZY) return false;
+  return haystack.some(token =>
+    token.length >= MIN_FUZZY && withinEdits(word, token, 1));
+}
+
+/**
+ * The ministry or sacrament the sentence names, if it names one.
+ *
+ * Two of the alias's words are enough, and the alias that matches the
+ * most words wins.
+ *
+ * Not all of them, because nobody says the whole name: "Teatro Pilipino
+ * Choir" is asked for as "teatro pilipino", and requiring every word
+ * meant the one ministry anybody names by name was the one Sancti could
+ * not find. Two, because a single shared word - "choir", which six of
+ * these have, or "ministry", which is stripped anyway - identifies
+ * nothing. A one-word alias is an acronym, and those match alone.
+ */
+const MIN_ALIAS_WORDS = 2;
+
+export function findNamedItem(
+  text: string,
+  items: NamedItem[],
+): NamedItem | undefined {
+  const tokens = normalise(text).split(" ").filter(Boolean);
+  if (tokens.length === 0) return undefined;
+
+  let best: { item: NamedItem; matched: number } | null = null;
+
+  for (const item of items) {
+    for (const alias of item.aliases) {
+      const words = alias.split(" ").filter(Boolean);
+      if (words.length === 0) continue;
+
+      const matched = words.filter(word => wordPresent(word, tokens)).length;
+      if (matched < Math.min(MIN_ALIAS_WORDS, words.length)) continue;
+      if (!best || matched > best.matched) best = { item, matched };
+    }
+  }
+
+  return best?.item;
+}
+
 export interface ParishName {
   id: string;
   /** Every way someone might type it, already normalised. */
@@ -387,7 +543,11 @@ export function findTime(text: string): string | undefined {
  * count, so a three-word match beats a one-word match that happens to
  * sit inside it.
  */
-export function understand(text: string, parishes: ParishName[]): Understanding {
+export function understand(
+  text: string,
+  parishes: ParishName[],
+  items: NamedItem[] = [],
+): Understanding {
   const hay = normalise(text);
   if (!hay) return { action: "UNKNOWN", score: 0, imperative: false };
 
@@ -406,6 +566,25 @@ export function understand(text: string, parishes: ParishName[]): Understanding 
   }
 
   const parishId = findParish(hay, parishes);
+
+  // A named ministry or sacrament outranks everything.
+  //
+  // "Open Teatro Pilipino" matched OPEN_MINISTRIES on the word
+  // "ministry" and nothing else, so it opened a list of fifteen with
+  // the pilgrim's somewhere in it. Naming one is a request for that
+  // one, and it is a stronger signal than any generic trigger - which
+  // is why it is checked before the score floor rather than after.
+  const named = findNamedItem(hay, items);
+  if (named) {
+    const result: Understanding = {
+      action: named.kind === "ministry" ? "OPEN_MINISTRIES" : "OPEN_SACRAMENTS",
+      itemId: named.id,
+      score: CONFIDENCE_FLOOR + 1,
+      imperative,
+    };
+    if (parishId) result.parishId = parishId;
+    return result;
+  }
 
   // Naming a parish and nothing else is a request to open it.
   if (best.score < CONFIDENCE_FLOOR && parishId) {

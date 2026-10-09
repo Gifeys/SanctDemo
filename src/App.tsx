@@ -122,7 +122,7 @@ function ParishTheme({ parishId }: { parishId: string | null }) {
  */
 function SanctiMount({
   activeParishId, activeParishName, content, language,
-  onGo, onShowHomeSection, onSelectParish, onWalkTo, onFollowParish,
+  onGo, onShowHomeSection, onOpenItem, onSelectParish, onWalkTo, onFollowParish,
 }: {
   activeParishId: string;
   activeParishName: string;
@@ -130,6 +130,7 @@ function SanctiMount({
   language: "en" | "fil";
   onGo: (tab: string) => void;
   onShowHomeSection: (section: HomeSection) => void;
+  onOpenItem: (tab: "ministries" | "sacraments", itemId: string) => void;
   onSelectParish: (parishId: string) => void;
   onWalkTo: (parishId: string) => void;
   onFollowParish: (parishId: string) => void;
@@ -140,6 +141,7 @@ function SanctiMount({
       tools={{
         go: onGo,
         showHomeSection: onShowHomeSection,
+        openItem: onOpenItem,
         selectParish: onSelectParish,
         walkTo: onWalkTo,
         followParish: onFollowParish,
@@ -218,6 +220,14 @@ export default function App() {
    */
   const [homeSectionRequest, setHomeSectionRequest] =
     useState<{ section: HomeSection; id: number } | null>(null);
+  /** A request to open one named ministry or sacrament. See itemRequest. */
+  const [itemRequest, setItemRequest] = useState<
+    { tab: "ministries" | "sacraments"; itemId: string; id: number } | null
+  >(null);
+  const openItem = useCallback((tab: "ministries" | "sacraments", itemId: string) => {
+    setItemRequest(prev => ({ tab, itemId, id: (prev?.id ?? 0) + 1 }));
+  }, []);
+
   const showHomeSection = useCallback((section: HomeSection) => {
     setHomeSectionRequest(prev => ({ section, id: (prev?.id ?? 0) + 1 }));
   }, []);
@@ -1270,6 +1280,7 @@ export default function App() {
                   {activeTab === "ministries" && (
                     <MinistriesTab
                       parish={activeChurchRoute}
+                      openRequest={itemRequest?.tab === "ministries" ? itemRequest : undefined}
                       onAddApplication={handleAddApplication}
                       uid={uid}
                       userEmail={userEmail}
@@ -1436,6 +1447,7 @@ export default function App() {
                       language={language}
                       onGo={tab => setActiveTab(tab as typeof activeTab)}
                       onShowHomeSection={showHomeSection}
+                      onOpenItem={openItem}
                       onSelectParish={setSelectedChurchId}
                       onWalkTo={handleWalkThere}
                       onFollowParish={id => toggleFollowParish(id, true)}

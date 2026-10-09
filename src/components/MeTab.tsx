@@ -5,6 +5,7 @@ import { t } from "../lib/ui";
 import { BADGES } from "../data";
 import MyApplications from "./MyApplications";
 import EditProfileCard from "./EditProfileCard";
+import SettingDisclosure from "./SettingDisclosure";
 import { auth } from "../lib/firebase";
 import { getProfile } from "../lib/userProfile";
 import NotificationsCard from "./NotificationsCard";
@@ -232,45 +233,6 @@ export default function MeTab({
           </div>
         )}
 
-        {/* One language for everything the app shows.
-            Above the reminders because it changes more of the screen
-            than any other setting here - including the ministry and
-            sacrament descriptions, which were written in whichever
-            language each happened to arrive in. */}
-        {language && onLanguageChange && (
-          <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5">
-            <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
-              <Languages className="w-4 h-4" /> {t("me.language", lang)}
-            </h4>
-            <p className="mb-3 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
-              {t("me.languageHelp", lang)}
-            </p>
-            <div className="flex gap-2">
-              {([["en", "English"], ["fil", "Tagalog"]] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={language === value}
-                  onClick={() => onLanguageChange(value)}
-                  className={`flex-1 rounded-full py-3 text-[15px] font-bold border-[1.5px] transition-colors ${
-                    language === value
-                      ? "bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] border-[var(--color-brand-primary)]"
-                      : "border-[var(--color-brand-border)] text-[var(--color-brand-text)]"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Which reminders this phone should actually show. Above the
-            quick links, because it is a setting people come looking for
-            after the first Mass they miss - not something to find under
-            a list of shortcuts. */}
-        {reminders}
-
         {/* Everything else, under one heading. They were a loose stack
             of rows in the order they happened to be added, which read as
             a list of leftovers rather than as settings. */}
@@ -278,6 +240,53 @@ export default function MeTab({
           {t("me.settings", lang)}
         </h4>
         <div className="space-y-2">
+          {/* Language and Reminders fold.
+              Both were printed open above this heading: two paragraphs,
+              a pair of language buttons and seven reminder switches,
+              stacked over the settings a pilgrim actually came for. They
+              are rows now, like everything else on the tab, and what you
+              tapped is the only thing open. */}
+          {language && onLanguageChange && (
+            <SettingDisclosure
+              icon={<Languages className="w-4 h-4" />}
+              label={t("me.language", lang)}
+              bare
+            >
+              <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5">
+                <p className="mb-3 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
+                  {t("me.languageHelp", lang)}
+                </p>
+                <div className="flex gap-2">
+                  {([["en", "English"], ["fil", "Tagalog"]] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={language === value}
+                      onClick={() => onLanguageChange(value)}
+                      className={`flex-1 rounded-full py-3 text-[15px] font-bold border-[1.5px] transition-colors ${
+                        language === value
+                          ? "bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] border-[var(--color-brand-primary)]"
+                          : "border-[var(--color-brand-border)] text-[var(--color-brand-text)]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </SettingDisclosure>
+          )}
+
+          {reminders && (
+            <SettingDisclosure
+              icon={<Bell className="w-4 h-4" />}
+              label={t("rem.title", lang)}
+              bare
+            >
+              {reminders}
+            </SettingDisclosure>
+          )}
+
           {/* Sign-in is a row here rather than a whole screen embedded at
               the top of Me. Inline, LoginModal brought its own "Pilgrim
               Profile" header, so Me showed two competing profile headers

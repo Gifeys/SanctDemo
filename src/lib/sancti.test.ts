@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   understand, findParish, findTime, aliasesFor, normalise,
-  isImperative, needsConfirmation, readAnswer,
+  isImperative, needsConfirmation, readAnswer, itemAliases, findNamedItem,
   CONFIDENCE_FLOOR, type ParishName,
 } from "./sancti";
 
@@ -293,5 +293,71 @@ describe('asking before acting', () => {
       expect(heard.action).toBe(action)
       expect(needsConfirmation(heard)).toBe(false)
     }
+  })
+})
+
+describe('naming a ministry or sacrament directly', () => {
+  const ITEMS = [
+    itemAliases('min-choir-teatro', 'Teatro Pilipino Choir', 'ministry'),
+    itemAliases('min-altar-servers', 'Ministry of Altar Servers (MAS)', 'ministry'),
+    itemAliases('min-emhc', 'Extraordinary Ministers of Holy Communion (EMHC)', 'ministry'),
+    itemAliases('min-youth', 'Ministry on Youth Affairs', 'ministry'),
+  ]
+
+  it('finds a ministry named in full', () => {
+    expect(findNamedItem('open teatro pilipino choir', ITEMS)?.id)
+      .toBe('min-choir-teatro')
+  })
+
+  it('finds it by the distinctive words alone', () => {
+    // Nobody types "Ministry of Altar Servers (MAS)" into a chat box.
+    expect(findNamedItem('i want to join altar servers', ITEMS)?.id)
+      .toBe('min-altar-servers')
+  })
+
+  it('accepts Filipino spelt with an f', () => {
+    // Pilipino and Filipino are the same word to everyone who types it.
+    expect(findNamedItem('open teatro filipino', ITEMS)?.id)
+      .toBe('min-choir-teatro')
+  })
+
+  it('forgives a single mistyped letter', () => {
+    expect(findNamedItem('open teatri filipino ministry', ITEMS)?.id)
+      .toBe('min-choir-teatro')
+  })
+
+  it('finds a ministry by a long acronym', () => {
+    expect(findNamedItem('what is emhc', ITEMS)?.id).toBe('min-emhc')
+  })
+
+  it('does not match a short acronym that is also a word', () => {
+    // "mas" is Tagalog for "more". As an alias for the altar servers it
+    // would hijack "mas maaga ba ang misa".
+    expect(findNamedItem('mas maaga ba ang misa', ITEMS)).toBeUndefined()
+  })
+
+  it('names nothing when nothing is named', () => {
+    expect(findNamedItem('what time is mass', ITEMS)).toBeUndefined()
+    expect(findNamedItem('', ITEMS)).toBeUndefined()
+  })
+
+  it('understands a named ministry as a request to open it', () => {
+    const heard = understand('open teatro filipino', PARISHES, ITEMS)
+    expect(heard.action).toBe('OPEN_MINISTRIES')
+    expect(heard.itemId).toBe('min-choir-teatro')
+    expect(heard.imperative).toBe(true)
+  })
+
+  it('offers rather than opens when the ministry is only asked about', () => {
+    const heard = understand('what is the teatro pilipino choir', PARISHES, ITEMS)
+    expect(heard.action).toBe('OPEN_MINISTRIES')
+    expect(heard.itemId).toBe('min-choir-teatro')
+    expect(needsConfirmation(heard)).toBe(true)
+  })
+
+  it('still answers the generic question with no item', () => {
+    const heard = understand('what ministries are there', PARISHES, ITEMS)
+    expect(heard.action).toBe('OPEN_MINISTRIES')
+    expect(heard.itemId).toBeUndefined()
   })
 })

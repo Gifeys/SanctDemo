@@ -2,17 +2,19 @@ import { useCallback, useRef, useState } from "react";
 import SanctiSheet, { SanctiButton, type SanctiMessage } from "./SanctiSheet";
 import { useSpotlight } from "./Spotlight";
 import {
-  understand, aliasesFor, needsConfirmation, readAnswer, type SanctiAction,
+  understand, aliasesFor, itemAliases, needsConfirmation, readAnswer,
+  type SanctiAction,
 } from "../lib/sancti";
 import {
   massAnswer, historyAnswer, itemAnswer, distanceAnswer, contactAnswer,
-  reminderAnswer, helpAnswer, unknownAnswer, offerFor, withOffer, declinedAnswer,
+  reminderAnswer, helpAnswer, unknownAnswer, offerFor, offerForItem, withOffer,
+  declinedAnswer,
   openingLine, type Reply,
 } from "../lib/sanctiAnswers";
 import { resolveSacrament, resolveMinistry } from "../lib/itemContent";
 import { isOpenForApplications } from "../lib/availability";
 import { haversineMeters, type Coordinates } from "../lib/geo";
-import { ROUTES, MASS_SCHEDULES } from "../data";
+import { ROUTES, MASS_SCHEDULES, MINISTRIES, SACRAMENTS } from "../data";
 import { parishHistoryLede } from "./ChurchHistory";
 import type { ParishContent } from "../lib/parishContent";
 import type { Language } from "../lib/language";
@@ -46,6 +48,8 @@ export interface SanctiTools {
    * not the same as showing the thing on Home that was asked for.
    */
   showHomeSection: (section: "ministries" | "mass" | "history") => void;
+  /** Open one named ministry or sacrament, rather than the list of them. */
+  openItem: (tab: "ministries" | "sacraments", itemId: string) => void;
   /** Make this parish the one on screen. */
   selectParish: (parishId: string) => void;
   /** Open the map focused on a parish. */
@@ -69,6 +73,18 @@ export interface SanctiTools {
 }
 
 const PARISH_NAMES = ROUTES.map(r => aliasesFor(r.id, r.name));
+
+/**
+ * Every ministry and sacrament, by name.
+ *
+ * Built once. These are the same fifteen ministries and five sacraments
+ * at both parishes - the parish decides which are open, not which
+ * exist - so the list does not depend on which parish is on screen.
+ */
+const ITEM_NAMES = [
+  ...MINISTRIES.map(m => itemAliases(m.id, m.name, "ministry")),
+  ...SACRAMENTS.map(s => itemAliases(s.id, s.name, "sacrament")),
+];
 
 function parishLabel(parishId: string): string {
   const route = ROUTES.find(r => r.id === parishId);
@@ -114,9 +130,9 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
    * must not be rebuilt between the question and the answer - a new
    * `ask` identity mid-conversation would lose the offer it is holding.
    */
-  const pendingRef = useRef<{ action: SanctiAction; parishId?: string } | null>(null);
+  const pendingRef = useRef<{ action: SanctiAction; parishId?: string; itemId?: string } | null>(null);
 
-  const act = useCallback((action: SanctiAction, parishId?: string) => {
+  const act = useCallback((action: SanctiAction, parishId?: string, itemId?: string) => {
     const t = toolsRef.current;
     const target = parishId ?? t.activeParishId;
 
@@ -161,10 +177,15 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
       case "OPEN_SACRAMENTS":
       case "OPEN_BAPTISM":
       case "OPEN_WEDDING":
+        // Named one, opened to that one. Landing the pilgrim on a list
+        // with the thing they named somewhere inside it is not opening
+        // what they asked for.
+        if (itemId) t.openItem("sacraments", itemId);
         t.go("sacraments");
         setOpen(false);
         break;
       case "OPEN_MINISTRIES":
+        if (itemId) t.openItem("ministries", itemId);
         t.go("ministries");
         setOpen(false);
         break;
@@ -208,7 +229,7 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         if (answer === "yes") {
           pendingRef.current = null;
           setThinking(false);
-          act(pending.action, pending.parishId);
+          act(pending.action, pending.parishId, pending.itemId);
           return;
         }
         if (answer === "no") {
@@ -222,7 +243,7 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         pendingRef.current = null;
       }
 
-      const heard = understand(text, PARISH_NAMES);
+      const heard = understand(text, PARISH_NAMES, ITEM_NAMES);
       const parishId = heard.parishId ?? t.activeParishId;
       const name = parishLabel(parishId);
 
@@ -319,9 +340,23 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
       // gets its answer in full, with the screen offered underneath as
       // one tap. An instruction - "open the map" - is consent already
       // given and still goes straight there.
-      const offer = needsConfirmation(heard) ? offerFor(heard.action) : null;
+      // A named ministry or sacrament is offered BY NAME. "Want me to
+      // open the ministries?" is the wrong question to ask somebody who
+      // just typed the name of one - and naming it back is how they can
+      // tell Sancti understood which, especially after a misspelling.
+      const namedItem = heard.itemId
+        ? (resolveMinistry(t.content, heard.itemId, t.language)
+          ?? resolveSacrament(t.content, heard.itemId, t.language))
+        : null;
+      if (namedItem) reply = itemAnswer(namedItem, isOpenForApplications(t.content, heard.itemId!));
+
+      const offer = !needsConfirmation(heard)
+        ? null
+        : namedItem
+          ? offerForItem(namedItem.name)
+          : offerFor(heard.action);
       if (offer) {
-        pendingRef.current = { action: heard.action, parishId: heard.parishId };
+        pendingRef.current = { action: heard.action, parishId: heard.parishId, itemId: heard.itemId };
         say("sancti", withOffer(reply, offer));
         return;
       }
@@ -335,7 +370,7 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
 
       // Said first, then done. See the note at the top.
       if (heard.action !== "UNKNOWN" && heard.action !== "HELP") {
-        window.setTimeout(() => act(heard.action, heard.parishId), 620);
+        window.setTimeout(() => act(heard.action, heard.parishId, heard.itemId), 620);
       }
     }, 420);
   }, [say, act]);

@@ -31,13 +31,6 @@ const SECTIONS: Array<{
   label: { en: string; fil: string };
 }> = [
   {
-    id: "ministries",
-    icon: <Users className="w-[17px] h-[17px]" />,
-    // One button for both: they sit side by side and a visitor who is
-    // not sure which word covers their errand should not have to guess.
-    label: { en: "Ministry &\nSacraments", fil: "Ministeryo at\nSakramento" },
-  },
-  {
     id: "mass",
     icon: <Church className="w-[17px] h-[17px]" />,
     label: { en: "Mass\nSchedule", fil: "Oras ng\nMisa" },
@@ -46,6 +39,13 @@ const SECTIONS: Array<{
     id: "history",
     icon: <BookOpen className="w-[17px] h-[17px]" />,
     label: { en: "History", fil: "Kasaysayan" },
+  },
+  {
+    id: "ministries",
+    icon: <Users className="w-[17px] h-[17px]" />,
+    // One button for both: they sit side by side and a visitor who is
+    // not sure which word covers their errand should not have to guess.
+    label: { en: "Ministry &\nSacraments", fil: "Ministeryo at\nSakramento" },
   },
 ];
 

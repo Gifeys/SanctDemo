@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ParishSectionHeader from "./ParishSectionHeader";
 import { MINISTRIES, MINISTRY_IMAGES } from "../data";
 import { searchMinistries, suggestionsFor } from "../lib/ministrySearch";
@@ -25,6 +25,16 @@ interface MinistriesTabProps {
   /** Their account email. The form never asks for what the account knows. */
   userEmail: string;
   onOpenSignIn: () => void;
+  /**
+   * A request from outside to open one ministry to its own screen.
+   *
+   * Sancti sets this when a pilgrim names a ministry: "open Teatro
+   * Pilipino" should open Teatro Pilipino, not a list of fifteen with
+   * it somewhere inside. The id makes a repeat request its own event -
+   * ask twice with a look at the list in between and a bare itemId
+   * would be unchanged and the second ask would do nothing.
+   */
+  openRequest?: { itemId: string; id: number };
 }
 
 /**
@@ -34,7 +44,7 @@ interface MinistriesTabProps {
  */
 const PLACEHOLDER_MINISTRY = "/parish/placeholder-photo.svg";
 
-export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn }: MinistriesTabProps) {
+export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn, openRequest }: MinistriesTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
 
   // Which ministries this parish is currently taking applications for.
@@ -51,6 +61,12 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// the screen, and conflating those is what made the old page a list of
   /// rows that grew downwards while you read them.
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // Seeds the local state rather than replacing it, so the back button
+  // and the list still work after Sancti has opened something.
+  useEffect(() => {
+    if (openRequest) setOpenId(openRequest.itemId);
+  }, [openRequest?.id, openRequest?.itemId]);
 
   /// What has been typed into the search box. Fifteen ministries is more
   /// than anyone scrolls through looking for one they half-remember the

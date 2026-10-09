@@ -86,6 +86,18 @@ export function openingLine(action: string): string | null {
   return offer.followUp.replace(/^Open/, "Opening").replace(/^Show/, "Showing") + ".";
 }
 
+/**
+ * The offer for one named thing, rather than for the list it is in.
+ *
+ * "Want me to open the ministries?" is the wrong question to ask
+ * somebody who just typed the name of a ministry. They did not ask for
+ * the list; naming theirs back to them is also how they can tell Sancti
+ * understood which one they meant - particularly when they misspelt it.
+ */
+export function offerForItem(name: string): Offer {
+  return { question: `Want me to open ${name}?`, followUp: `Open ${name}` };
+}
+
 /** The offer for an action, or null where there is nothing to open. */
 export function offerFor(action: string): Offer | null {
   return OFFERS[action] ?? null;
