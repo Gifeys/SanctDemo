@@ -3426,16 +3426,24 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    Scrolls sideways on a phone rather than wrapping to three ragged rows.
    The parish office is used on a desktop most of the time, but a priest
    checking applications on a phone should not meet a broken header. */
+/* Wraps, rather than scrolling sideways with the scrollbar hidden.
+ *
+ * Ten chips come to about 1390px. In the office's 900px column that put
+ * four of them past the right edge - Events, Visitor activity, What
+ * people read and Archive - and `scrollbar-width: none` removed the one
+ * clue that there was anything to scroll to. The parish could not reach
+ * its own content editor or its archive, and nobody could see why.
+ *
+ * Wrapping costs a second row on a wide screen and three on a phone,
+ * which is the correct price for every section of the office being
+ * visible at once. */
 .admin-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
   padding-bottom: 2px;
   margin-bottom: 18px;
 }
-
-.admin-nav::-webkit-scrollbar { display: none; }
 
 .admin-nav__item {
   display: inline-flex;
