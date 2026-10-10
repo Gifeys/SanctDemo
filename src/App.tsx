@@ -1022,6 +1022,7 @@ export default function App() {
             isLoggedIn={isLoggedIn}
             userEmail={userEmail}
             isAdmin={isAdmin}
+            activeParishId={activeChurchRoute.id}
             onLoginSuccess={(email, adminFlag) => {
               handleLoginSuccess(email, adminFlag);
               setIsSignInOpen(false);
