@@ -1024,7 +1024,7 @@ header {
     <div class="body-serif" id="prayer-text"></div>
     <div id="voice-track"><div id="voice-fill"></div></div>
     <div id="footline"><span id="foot-left"></span><span id="foot-right"></span></div>
-    <div id="tap-hint">Tap anywhere to continue</div>
+    <div id="tap-hint">Tap to continue · tap the left edge to go back</div>
   </div>
 
   <div id="tapzone"></div>
@@ -1136,7 +1136,7 @@ const P = {
       music:"Background Music", musicOn:"On", musicOff:"Off",
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
-      hint:"Tap anywhere to continue",
+      hint:"Tap to continue · tap the left edge to go back",
       decade:d=>"Decade " + d + " of 5",
       mysteryOf:n=>"Mystery " + n + " of 5",
       bead:(n,t)=>"Bead " + n + " of " + t,
@@ -1203,7 +1203,7 @@ const P = {
       music:"Musikang Panlikod", musicOn:"Naka-on", musicOff:"Naka-off",
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
-      hint:"I-tap kahit saan upang magpatuloy",
+      hint:"I-tap upang magpatuloy · kaliwa upang bumalik",
       decade:d=>"Dekada " + d + " ng 5",
       mysteryOf:n=>"Misteryo " + n + " ng 5",
       bead:(n,t)=>"Butil " + n + " ng " + t,
@@ -2279,7 +2279,36 @@ function advance() {
   render();
 }
 
-function onTap() {
+/* A step backwards.
+ *
+ * Mirrors advance(), including the guard against a double fire - a
+ * phone reports a tap twice often enough that without it one touch
+ * skipped two prayers.
+ *
+ * At the first prayer it does nothing rather than wrapping to the end.
+ * Somebody tapping back at the Sign of the Cross has reached the
+ * beginning, and dropping them into the closing prayers would be the
+ * least expected thing the app could do. */
+function goBack() {
+  if (advancing) return;
+  if (S.idx <= 0) return;
+  advancing = true;
+  setTimeout(function () { advancing = false; }, 260);
+
+  S.idx--;
+  saveProgress();
+  render();
+}
+
+/* How much of the width goes back rather than forward.
+ *
+ * Not half. Forward is what nearly every tap means, and the hint has
+ * told people for months to tap anywhere - so the back zone is a strip
+ * at the left edge, wide enough to hit with a thumb and narrow enough
+ * that somebody tapping the middle of a prayer still moves on. */
+var BACK_ZONE = 0.28;
+
+function onTap(ev) {
   if (!S.started) return;
   if (el.finish.classList.contains("show")) return;
 
@@ -2288,6 +2317,15 @@ function onTap() {
     S.hintDone = true;
     store.set("rosary.hintDone", "1");
     el.hint.classList.add("gone");
+  }
+
+  /* No event means the tap came from somewhere with no position of its
+     own - the prayer text, or the voice. Those mean "continue". */
+  if (ev && typeof ev.clientX === "number") {
+    var box = el.tapzone.getBoundingClientRect();
+    if (box.width > 0 && (ev.clientX - box.left) / box.width < BACK_ZONE) {
+      return goBack();
+    }
   }
   advance();
 }
@@ -2910,7 +2948,12 @@ el.prayerText.addEventListener("click", function (e) { e.stopPropagation(); onTa
 document.addEventListener("keydown", function (e) {
   if (!S.started) return;
   if (e.key === " " || e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); onTap(); }
-  if (e.key === "ArrowLeft" && S.idx > 0) { S.idx--; render(); }
+  /* Through goBack rather than touching S.idx directly, so the arrow
+     key and the left edge of the screen do exactly the same thing:
+     both guard against a double fire, and both save the place. Moving
+     the index here by hand lost the progress of anyone who closed the
+     app after stepping back. */
+  if (e.key === "ArrowLeft") { e.preventDefault(); goBack(); }
 });
 
 el.begin.addEventListener("click", begin);
