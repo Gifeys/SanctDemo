@@ -115,8 +115,10 @@ function LiveStop({
   onEndTour: () => void;
   onNextStop: () => void;
 }) {
-  const narration = useNarration();
   const { language } = useLanguage();
+  // The reader's language reaches the voice too, not only the screen.
+  // Filipino text read by an English voice is unintelligible.
+  const narration = useNarration(language);
   const [expanded, setExpanded] = useState(false);
 
   if (!station) {

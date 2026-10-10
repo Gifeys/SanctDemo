@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { currentEngine, speakAloud, stopAloud, type Engine } from "./speech";
+import type { Language } from "./language";
 
 /**
  * Reading a station's words aloud.
@@ -28,38 +30,47 @@ export interface Narration {
   supported: boolean;
 }
 
-export function useNarration(): Narration {
+export function useNarration(language: Language = "en"): Narration {
   const [speaking, setSpeaking] = useState(false);
-  const supported = typeof window !== "undefined" && "speechSynthesis" in window;
 
-  // So the cleanup below can stop a reading without re-running on every
-  // state change.
+  // Read once per mount rather than on every render. On the phone this
+  // is always "native"; in a browser it depends on whether any voice is
+  // installed, which is not knowable before the page has loaded.
+  const [engine, setEngine] = useState<Engine>(() => currentEngine());
+
+  useEffect(() => {
+    if (engine !== "none" || typeof window === "undefined") return;
+    // Chrome populates its voice list asynchronously, so a "none" read
+    // at mount can be wrong. One recheck when the list arrives is
+    // enough; without it the first visitor to a cold page gets no
+    // narration button at all.
+    const recheck = () => setEngine(currentEngine());
+    window.speechSynthesis?.addEventListener?.("voiceschanged", recheck);
+    return () => {
+      window.speechSynthesis?.removeEventListener?.("voiceschanged", recheck);
+    };
+  }, [engine]);
+
+  const supported = engine !== "none";
+
   const speakingRef = useRef(false);
   speakingRef.current = speaking;
 
   const stop = useCallback(() => {
-    if (!supported) return;
-    window.speechSynthesis.cancel();
+    void stopAloud();
     setSpeaking(false);
-  }, [supported]);
+  }, []);
 
   const speak = useCallback(
     (text: string) => {
       if (!supported || !text.trim()) return;
-      // Cancel first: queueing a second utterance makes the pilgrim wait
-      // out the previous station before hearing this one.
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      // A shade under natural pace. The default rattles through a
-      // reflection in a way that is hard to pray along with.
-      utterance.rate = 0.95;
-      utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => setSpeaking(false);
-      window.speechSynthesis.speak(utterance);
       setSpeaking(true);
+      // The promise resolves when the engine has finished reading, which
+      // is how the button knows to go back to "play" - the native plugin
+      // has no onend event to listen for.
+      void speakAloud(text, language).finally(() => setSpeaking(false));
     },
-    [supported],
+    [supported, language],
   );
 
   const toggle = useCallback(
@@ -74,11 +85,7 @@ export function useNarration(): Narration {
   // Baptismal Font while the pilgrim is back on Home is the kind of bug
   // people close the app over.
   useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
+    return () => { void stopAloud(); };
   }, []);
 
   return { speak, stop, toggle, speaking, supported };
