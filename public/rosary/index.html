@@ -700,6 +700,65 @@ header {
 /* Whole-screen tap target, sits under the controls */
 #tapzone { position: absolute; inset: 0; z-index: 12; cursor: pointer; }
 
+/* The tap guide.
+ *
+ * Shown at the start of every rosary rather than once ever. The small
+ * hint under the prayer goes away after three taps and never comes
+ * back, so from the second session on nothing said the left edge went
+ * back - and a rosary is something people pray weeks apart.
+ *
+ * Two small marks at the edges, not two shaded halves. The first
+ * version dimmed each side and left a hard seam down the middle of a
+ * painting; what is behind this is a devotional image, and a grey
+ * band ruled across it reads as damage to it. A mark at each edge says
+ * the same thing and leaves the picture alone.
+ *
+ * pointer-events: none so the first tap goes through to the prayer.
+ * Being taught where to tap should not cost a tap. */
+#tap-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 13;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+#tap-guide.show { opacity: 1; }
+
+.tap-guide__side {
+  position: absolute;
+  /* Placed by showTapGuide(), just above the prayer panel. A fixed
+     percentage put the marks on top of the words on a short screen:
+     the panel's height depends on the length of the prayer, and the
+     Apostles' Creed is many times the Sign of the Cross. */
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(8, 10, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.tap-guide__side--back { left: 14px; }
+.tap-guide__side--next { right: 14px; }
+
+.tap-guide__arrow { font-size: 19px; line-height: 1; opacity: 0.95; }
+.tap-guide__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #tap-guide { transition-duration: 1ms; }
+}
+
 /* ========================= START SCREEN ======================== */
 :root {
   --navy:       #151B53;
@@ -1028,6 +1087,20 @@ header {
   </div>
 
   <div id="tapzone"></div>
+
+  <!-- Shown at the start of every rosary, over the tap zone, naming
+       what the two sides of the screen do. See showTapGuide(). -->
+  <div id="tap-guide" aria-hidden="true">
+    <div class="tap-guide__side tap-guide__side--back">
+      <span class="tap-guide__arrow">&#8592;</span>
+      <span class="tap-guide__label" id="tap-guide-back">Back</span>
+    </div>
+    <div class="tap-guide__side tap-guide__side--next">
+      <span class="tap-guide__arrow">&#8594;</span>
+      <span class="tap-guide__label" id="tap-guide-next">Continue</span>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <!-- Start -->
@@ -1137,6 +1210,7 @@ const P = {
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
       hint:"Tap to continue · tap the left edge to go back",
+      guideBack:"Back", guideNext:"Continue",
       decade:d=>"Decade " + d + " of 5",
       mysteryOf:n=>"Mystery " + n + " of 5",
       bead:(n,t)=>"Bead " + n + " of " + t,
@@ -1204,6 +1278,7 @@ const P = {
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
       hint:"I-tap upang magpatuloy · kaliwa upang bumalik",
+      guideBack:"Bumalik", guideNext:"Magpatuloy",
       decade:d=>"Dekada " + d + " ng 5",
       mysteryOf:n=>"Misteryo " + n + " ng 5",
       bead:(n,t)=>"Butil " + n + " ng " + t,
@@ -2312,6 +2387,8 @@ function onTap(ev) {
   if (!S.started) return;
   if (el.finish.classList.contains("show")) return;
 
+  hideTapGuide();
+
   S.taps++;
   if (!S.hintDone && S.taps >= 3) {
     S.hintDone = true;
@@ -3018,6 +3095,58 @@ window.addEventListener("orientationchange", function () { setTimeout(onViewport
 /* ==================================================================
    BEGIN
    ================================================================== */
+/* How long the guide stays before fading.
+ *
+ * Long enough to read two words, short enough that it is gone before
+ * anyone has finished the Sign of the Cross. It also goes on the first
+ * tap, so the pilgrim who already knows never waits for it. */
+var TAP_GUIDE_MS = 2600;
+var tapGuideTimer = null;
+
+function hideTapGuide() {
+  if (tapGuideTimer) { clearTimeout(tapGuideTimer); tapGuideTimer = null; }
+  var guide = document.getElementById("tap-guide");
+  if (guide) guide.classList.remove("show");
+}
+
+/* Names the two sides of the screen, at the start of every rosary.
+ *
+ * Every time, not once ever. The hint under the prayer disappears
+ * after three taps and is remembered for good, so from the second
+ * session nothing said the left edge went back - and people pray the
+ * rosary weeks apart. */
+function showTapGuide() {
+  var guide = document.getElementById("tap-guide");
+  if (!guide) return;
+  /* P is keyed en/tl. Falling back rather than indexing blind: a
+     missing pack threw here and took the whole screen down with it. */
+  var L = P[S.lang] || P.en;
+  var back = document.getElementById("tap-guide-back");
+  var next = document.getElementById("tap-guide-next");
+  if (back) back.textContent = L.ui.guideBack;
+  if (next) next.textContent = L.ui.guideNext;
+
+  /* Sit them in the gap above the prayer, measured rather than
+     guessed. The panel grows with the length of the prayer, so a
+     percentage that clears the Sign of the Cross lands on top of the
+     Creed. */
+  var reading = document.getElementById("reading");
+  var host = guide.getBoundingClientRect();
+  var sides = guide.querySelectorAll(".tap-guide__side");
+  if (reading && host.height > 0) {
+    var gapBottom = reading.getBoundingClientRect().top - host.top;
+    for (var i = 0; i < sides.length; i++) {
+      var h = sides[i].offsetHeight || 54;
+      // 14px of air above the text, and never off the top of the screen.
+      sides[i].style.top = Math.max(12, gapBottom - h - 14) + "px";
+    }
+  }
+
+  guide.classList.add("show");
+  if (tapGuideTimer) clearTimeout(tapGuideTimer);
+  tapGuideTimer = setTimeout(hideTapGuide, TAP_GUIDE_MS);
+}
+
 function begin() {
   S.seq = buildSequence(S.set, S.lang);
   S.idx = 0;
@@ -3032,7 +3161,7 @@ function begin() {
   if (S.voiceWanted) startVoice();   // and the gesture that unlocks the mic
   keepAwake();
 
-  requestAnimationFrame(function () { fitRosary(); render(); });
+  requestAnimationFrame(function () { fitRosary(); render(); showTapGuide(); });
 }
 
 /* ==================================================================
