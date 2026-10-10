@@ -4590,6 +4590,18 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   font-weight: 700;
   line-height: 1.2;
   color: var(--color-brand-text);
+  /* Two lines' worth of room, whether the label uses them or not.
+     "History" is one word where the other two are two, so its button
+     ended 21px of empty space tall against their 7px - three buttons
+     side by side, one of them visibly hollow at the bottom. Reserving
+     the height here and centring the text in it keeps the three
+     identical, and keeps them identical in Tagalog too, where the word
+     lengths are different again. em rather than lh: the latter is not
+     safe to assume in an Android WebView. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4em;
   /* The labels carry their own line breaks so "Mass Schedule" always
      splits the same way, rather than wherever the width happens to
      land it. */
