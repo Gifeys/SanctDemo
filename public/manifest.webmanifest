@@ -1,0 +1,33 @@
+{
+  "name": "SanctiWalk — Diocese of Kalookan",
+  "short_name": "SanctiWalk",
+  "description": "A tour guide to the parishes of the Diocese of Kalookan: Mass schedules, walking directions, church history, and the stations of each church.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F5F0",
+  "theme_color": "#102256",
+  "lang": "en",
+  "categories": ["travel", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "/ui/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/ui/sanctiwalk-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ui/sanctiwalk-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

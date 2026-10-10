@@ -7,6 +7,7 @@ import FinishSignIn from './routes/FinishSignIn.tsx';
 import SignUpFlow from './routes/SignUpFlow.tsx';
 import AdminApp from './admin/AdminApp.tsx';
 import './index.css';
+import { registerServiceWorker } from './lib/registerServiceWorker';
 
 /**
  * Uncaught errors, with their stack, into the Android log.
@@ -75,3 +76,7 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// Makes the web build installable on a home screen, and openable
+// inside a church with no signal. A no-op in the APK and in dev.
+registerServiceWorker();

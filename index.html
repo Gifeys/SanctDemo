@@ -10,6 +10,25 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" href="/ui/sanctiwalk-icon-512.png" />
     <link rel="apple-touch-icon" href="/ui/apple-touch-icon.png" />
+
+    <!-- Installable on a home screen, which on an iPhone is the only way
+         to get SanctiWalk at all: there is no iOS build, because
+         compiling one needs Xcode on macOS. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#102256" />
+
+    <!-- iOS reads none of the manifest's display fields. These three are
+         Safari's own equivalents, and without them "Add to Home Screen"
+         produces a bookmark that opens in the browser with its address
+         bar, rather than something that looks like an app. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SanctiWalk" />
+    <!-- black-translucent lets the parish band run under the status bar,
+         which is what viewport-fit=cover above is for. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="description" content="A tour guide to the parishes of the Diocese of Kalookan: Mass schedules, walking directions, church history and the stations of each church." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
