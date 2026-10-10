@@ -40,6 +40,22 @@ const config: CapacitorConfig = {
     allowMixedContent: LAN_TEST,
   },
 
+  plugins: {
+    FirebaseAuthentication: {
+      // Only the Google account picker is wanted from the native side.
+      // The credential it returns is signed into the JavaScript SDK by
+      // src/lib/googleAuth.ts, and that is the SDK every Firestore rule
+      // reads. Letting the plugin sign in natively as well would leave
+      // two sessions that can disagree about who is signed in.
+      skipNativeAuth: true,
+      // Without this the Google SDK is not loaded on Android at all and
+      // the picker never opens. The web client id it needs comes from
+      // google-services.json, as R.string.default_web_client_id, so
+      // there is nothing to paste here.
+      providers: ['google.com'],
+    },
+  },
+
   server: {
     androidScheme: 'https',
     // Android has refused cleartext traffic by default since API 28, on top

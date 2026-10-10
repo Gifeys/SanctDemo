@@ -63,6 +63,33 @@ different key needs that key's fingerprints registered too, or Google
 sign-in works in testing and fails for everybody who installs the
 release.
 
+## Where the web client id goes
+
+Nowhere. The console shows one under **Web SDK configuration** once the
+provider is enabled, and it is tempting to paste it somewhere.
+
+It is already in `google-services.json`, and the google-services Gradle
+plugin turns it into `R.string.default_web_client_id`, which is the
+string the authentication plugin reads. Pasting it into the code as
+well would be a second copy that can go stale.
+
+What *is* configured, in `capacitor.config.ts`:
+
+```ts
+plugins: {
+  FirebaseAuthentication: {
+    skipNativeAuth: true,
+    providers: ['google.com'],
+  },
+},
+```
+
+`providers` is not optional. Without it the Google SDK is not loaded on
+Android and the account picker never opens. `skipNativeAuth: true`
+keeps a single session: the plugin returns a credential, and
+`src/lib/googleAuth.ts` signs that into the JavaScript SDK, which is
+the SDK every Firestore rule reads.
+
 ## 4. Rebuild
 
 ```bash
