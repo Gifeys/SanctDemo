@@ -1,15 +1,41 @@
-import type { CSSProperties } from "react";
+import React, { type CSSProperties } from "react";
 import HistoryQuiz from "./HistoryQuiz";
 import { ArrowLeft } from "lucide-react";
 import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
+import { useLanguage } from "../lib/useLanguage";
 import { parishTheme } from "../lib/parishTheme";
+import { MHCP_HISTORY } from "../data/mhcpHistory";
+
+/** The heading the parish's own Filipino account starts at. */
+const FIRST_OWN_SECTION = MHCP_HISTORY[0]?.heading ?? "";
+
+/**
+ * A photograph from the parish's own record, with what the parish
+ * called it.
+ *
+ * `srcs` is a list because some captions cover a set - "Ilan sa mga
+ * Lumang Larawan ng Iba't Ibang Samahan" names three photographs at
+ * once, and splitting them would invent three captions the parish did
+ * not write.
+ *
+ * `caption` is optional. Two of the photographs in the parish's
+ * document carry none, and naming the people in them from the
+ * surrounding text would be a guess printed under a face.
+ */
+export interface ParishFigure {
+  srcs: string[];
+  caption?: string;
+  /** Where the parish got it: the souvenir programme, a photographer. */
+  source: string;
+}
 
 export interface ParishHistorySection {
   /** Sits above the paragraphs in small caps, as "OUR HISTORY" does. */
   heading: string;
   paragraphs: string[];
+  figures?: ParishFigure[];
 }
 
 interface ParishHistoryContent {
@@ -37,6 +63,10 @@ const PARISH_HISTORY: Record<string, ParishHistoryContent> = {
           "Venerated highly within the Salesian family of St. John Bosco, her image depicts her holding the Child Jesus with both arms open, inviting the faithful to surrender their cares, seek grace, and find victory over life's daily storms through Christ.",
         ],
       },
+      // The parish's own full account, in its own words and its own
+      // language, after the two compiled sections above. See
+      // data/mhcpHistory.ts.
+      ...MHCP_HISTORY,
     ],
   },
   "route-src": {
@@ -170,6 +200,7 @@ interface ChurchHistoryProps {
  * devotional history, and the parish name is on every screen that leads here.
  */
 export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
+  const { language } = useLanguage();
   const managed = useParishContent(parish.id);
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
 
@@ -239,14 +270,56 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
 
           {sections.length > 0 ? (
             sections.map(section => (
-              <section key={section.heading} className="parish-history__section">
+              <React.Fragment key={section.heading}>
+              {/* Said once, at the point the parish's own words begin.
+                  Ten sections of Filipino arriving with no explanation
+                  would read to an English reader as a translation the
+                  app had failed to do, rather than as the parish's own
+                  record left as the parish wrote it. */}
+              {section.heading === FIRST_OWN_SECTION && (
+                <p className="parish-history__language-note">
+                  {language === "fil"
+                    ? "Ang sumusunod ay ang buong kasaysayan na isinulat mismo ng parokya."
+                    : "What follows is the parish's own full history, published in Filipino. It is shown as the parish wrote it rather than translated."}
+                </p>
+              )}
+              <section className="parish-history__section">
                 <h2 className="parish-history__eyebrow">{section.heading}</h2>
                 {section.paragraphs.map(paragraph => (
                   <p key={paragraph.slice(0, 48)} className="parish-history__paragraph">
                     {paragraph}
                   </p>
                 ))}
+
+                {section.figures?.map(figure => (
+                  <figure key={figure.srcs[0]} className="parish-figure">
+                    <div
+                      className={`parish-figure__frame${
+                        figure.srcs.length > 1 ? " is-set" : ""}`}
+                    >
+                      {figure.srcs.map(src => (
+                        <img
+                          key={src}
+                          src={src}
+                          /* The caption is directly beneath and says the
+                             same thing, so repeating it here would have a
+                             screen reader read every photograph twice. */
+                          alt=""
+                          loading="lazy"
+                          className="parish-figure__img"
+                        />
+                      ))}
+                    </div>
+                    <figcaption className="parish-figure__caption">
+                      {figure.caption && <span>{figure.caption}</span>}
+                      <span className="parish-figure__source">
+                        Sanggunian: {figure.source}
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
               </section>
+              </React.Fragment>
             ))
           ) : (
             // No compiled text, and nothing written by the parish. Inventing

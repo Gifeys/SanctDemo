@@ -2006,6 +2006,72 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 .parish-history__paragraph:last-child { margin-bottom: 0; }
 
+/* ── Photographs in the parish history ───────────────────────────────────
+   These are scans from a souvenir programme and prints from the 1950s
+   onwards: low contrast, paper grain, some of them creased. They are
+   given a light mount rather than being dropped straight onto the dark
+   band, because a faded sepia print on near-black reads as a stain. */
+.parish-figure {
+  margin: 18px 0 22px;
+}
+
+.parish-figure__frame {
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.9);
+  padding: 7px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.3);
+}
+
+/* A caption covering several photographs sets them side by side, which
+   is how the parish's own document has them. */
+.parish-figure__frame.is-set {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 6px;
+}
+
+.parish-figure__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.parish-figure__caption {
+  display: block;
+  margin-top: 9px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.84);
+  text-align: center;
+}
+
+/* The attribution, quieter than the caption but never dropped: these
+   photographs belong to the souvenir programme and to the people who
+   took them, and the parish credited each one. */
+.parish-figure__source {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* Says, once, that what follows is the parish's own Filipino text. An
+   English reader meeting ten sections of Filipino with no explanation
+   would reasonably think the app had failed to translate them. */
+.parish-history__language-note {
+  margin: 26px 0 4px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.82);
+}
+
 /* ── Test Sancti Knowledge ────────────────────────────────────────────────
    Five questions at the foot of the history, on the same dark parish
    band the prose sits on. Deliberately quieter than the history above
