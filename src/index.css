@@ -2109,6 +2109,29 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   color: #F2C14E;
 }
 
+/* The way in. Outlined rather than solid: the white Submit button
+   below is the page's one emphatic action, and two filled buttons in
+   the same section would compete for it. */
+.history-quiz__start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.history-quiz__start:hover {
+  background: rgb(255 255 255 / 0.2);
+  border-color: rgb(255 255 255 / 0.7);
+}
+
 .history-quiz__submit,
 .history-quiz__again {
   display: inline-flex;

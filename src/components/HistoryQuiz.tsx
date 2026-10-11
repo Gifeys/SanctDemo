@@ -28,6 +28,16 @@ import { gradeQuiz, quizFor, unanswered, type QuizItem } from "../lib/historyQui
  */
 export default function HistoryQuiz({ routeId }: { routeId: string }) {
   const quiz = useMemo(() => quizFor(routeId), [routeId]);
+  /**
+   * Closed until asked for.
+   *
+   * Five questions printed open under the history made the page end in
+   * a test rather than in its history, and pushed the last of the
+   * prose a long way up the screen. Closed, the section is one line
+   * and a button, and the reader decides whether the page ends in a
+   * quiz.
+   */
+  const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [missing, setMissing] = useState<number[]>([]);
@@ -63,6 +73,8 @@ export default function HistoryQuiz({ routeId }: { routeId: string }) {
     setAnswers([]);
     setSubmitted(false);
     setMissing([]);
+    // Stays open. Asking to try again and being handed the button
+    // again would be a tap for nothing.
   }
 
   return (
@@ -75,7 +87,18 @@ export default function HistoryQuiz({ routeId }: { routeId: string }) {
         this page.
       </p>
 
-      {quiz.map((item, qi) => (
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={false}
+          className="history-quiz__start"
+        >
+          Start the quiz
+        </button>
+      )}
+
+      {open && quiz.map((item, qi) => (
         <Question
           key={item.question}
           item={item}
@@ -88,7 +111,7 @@ export default function HistoryQuiz({ routeId }: { routeId: string }) {
         />
       ))}
 
-      {!submitted && (
+      {open && !submitted && (
         <>
           {missing.length > 0 && (
             <p role="alert" className="history-quiz__missing">
@@ -103,7 +126,7 @@ export default function HistoryQuiz({ routeId }: { routeId: string }) {
         </>
       )}
 
-      {submitted && result && (
+      {open && submitted && result && (
         <div className="history-quiz__result" role="status">
           <p className="history-quiz__score">
             {result.score} out of {result.total}
