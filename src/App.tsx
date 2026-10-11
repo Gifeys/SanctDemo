@@ -124,6 +124,7 @@ function ParishTheme({ parishId }: { parishId: string | null }) {
 function SanctiMount({
   activeParishId, activeParishName, content, language,
   onGo, onShowHomeSection, onOpenItem, onSelectParish, onWalkTo, onFollowParish,
+  onReplayTutorial, onSetLanguage,
 }: {
   activeParishId: string;
   activeParishName: string;
@@ -132,6 +133,8 @@ function SanctiMount({
   onGo: (tab: string) => void;
   onShowHomeSection: (section: HomeSection) => void;
   onOpenItem: (tab: "ministries" | "sacraments", itemId: string) => void;
+  onReplayTutorial: () => void;
+  onSetLanguage: (language: "en" | "fil") => void;
   onSelectParish: (parishId: string) => void;
   onWalkTo: (parishId: string) => void;
   onFollowParish: (parishId: string) => void;
@@ -143,6 +146,8 @@ function SanctiMount({
         go: onGo,
         showHomeSection: onShowHomeSection,
         openItem: onOpenItem,
+        replayTutorial: onReplayTutorial,
+        setLanguage: onSetLanguage,
         selectParish: onSelectParish,
         walkTo: onWalkTo,
         followParish: onFollowParish,
@@ -1467,6 +1472,8 @@ export default function App() {
                       onGo={tab => setActiveTab(tab as typeof activeTab)}
                       onShowHomeSection={showHomeSection}
                       onOpenItem={openItem}
+                      onReplayTutorial={() => { setActiveTab("home"); setTutorialOpen(true); }}
+                      onSetLanguage={setLanguage}
                       onSelectParish={setSelectedChurchId}
                       onWalkTo={handleWalkThere}
                       onFollowParish={id => toggleFollowParish(id, true)}

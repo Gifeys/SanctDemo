@@ -46,29 +46,65 @@ export interface Offer {
   question: string;
   /** The tappable instruction underneath it. */
   followUp: string;
+  /**
+   * What Sancti says while doing it.
+   *
+   * Written out rather than derived from `followUp`. Turning "Open the
+   * map" into "Opening the map" by swapping the verb works until the
+   * instruction contains a pronoun: "Show me on the map" became
+   * "Showing me on the map", which is Sancti talking about itself.
+   */
+  acting: string;
 }
 
 const OFFERS: Record<string, Offer> = {
-  OPEN_MAP: { question: "Want me to open the map?", followUp: "Open the map" },
+  OPEN_MAP: {
+    question: "Want me to open the map?", followUp: "Open the map",
+    acting: "Opening the map.",
+  },
   SHOW_CHURCH_LOCATION: {
     question: "Want me to open the map and show you the way?",
     followUp: "Show me on the map",
+    acting: "Showing you on the map.",
   },
   OPEN_MASS_SCHEDULE: {
     question: "Want me to open the Mass schedule?",
     followUp: "Open the Mass schedule",
+    acting: "Opening the Mass schedule.",
   },
   OPEN_CHURCH_HISTORY: {
     question: "Want me to open the full history?",
     followUp: "Open the history",
+    acting: "Opening the history.",
   },
-  OPEN_SACRAMENTS: { question: "Want me to open the sacraments?", followUp: "Open the sacraments" },
-  OPEN_BAPTISM: { question: "Want me to open baptism?", followUp: "Open baptism" },
-  OPEN_WEDDING: { question: "Want me to open weddings?", followUp: "Open the wedding page" },
-  OPEN_MINISTRIES: { question: "Want me to open the ministries?", followUp: "Open the ministries" },
-  OPEN_AR: { question: "Want me to open the scanner?", followUp: "Open the scanner" },
-  OPEN_SETTINGS: { question: "Want me to open your settings?", followUp: "Open settings" },
-  OPEN_CHURCH: { question: "Want me to open it?", followUp: "Open it" },
+  OPEN_SACRAMENTS: {
+    question: "Want me to open the sacraments?", followUp: "Open the sacraments",
+    acting: "Opening the sacraments.",
+  },
+  OPEN_BAPTISM: {
+    question: "Want me to open baptism?", followUp: "Open baptism",
+    acting: "Opening baptism.",
+  },
+  OPEN_WEDDING: {
+    question: "Want me to open weddings?", followUp: "Open the wedding page",
+    acting: "Opening the wedding page.",
+  },
+  OPEN_MINISTRIES: {
+    question: "Want me to open the ministries?", followUp: "Open the ministries",
+    acting: "Opening the ministries.",
+  },
+  OPEN_AR: {
+    question: "Want me to open the scanner?", followUp: "Open the scanner",
+    acting: "Opening the scanner.",
+  },
+  OPEN_SETTINGS: {
+    question: "Want me to open your settings?", followUp: "Open settings",
+    acting: "Opening your settings.",
+  },
+  OPEN_CHURCH: {
+    question: "Want me to open it?", followUp: "Open it",
+    acting: "Opening it.",
+  },
 };
 
 /**
@@ -80,10 +116,7 @@ const OFFERS: Record<string, Offer> = {
  * schedule itself is already arriving on screen.
  */
 export function openingLine(action: string): string | null {
-  const offer = OFFERS[action];
-  if (!offer) return null;
-  // "Open the map" -> "Opening the map."
-  return offer.followUp.replace(/^Open/, "Opening").replace(/^Show/, "Showing") + ".";
+  return OFFERS[action]?.acting ?? null;
 }
 
 /**
@@ -95,7 +128,11 @@ export function openingLine(action: string): string | null {
  * understood which one they meant - particularly when they misspelt it.
  */
 export function offerForItem(name: string): Offer {
-  return { question: `Want me to open ${name}?`, followUp: `Open ${name}` };
+  return {
+    question: `Want me to open ${name}?`,
+    followUp: `Open ${name}`,
+    acting: `Opening ${name}.`,
+  };
 }
 
 /** The offer for an action, or null where there is nothing to open. */

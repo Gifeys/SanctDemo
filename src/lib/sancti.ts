@@ -47,6 +47,8 @@ export type SanctiAction =
   | "OPEN_CHURCH_HISTORY"
   | "OPEN_SETTINGS"
   | "CREATE_REMINDER"
+  | "REPLAY_TUTORIAL"
+  | "CHANGE_LANGUAGE"
   | "SHOW_CHURCH_LOCATION"
   | "ANSWER_DISTANCE"
   | "ANSWER_CONTACT"
@@ -76,6 +78,13 @@ export interface Understanding {
   itemId?: string;
   /** For CREATE_REMINDER: the Mass time asked about, as written. */
   time?: string;
+  /**
+   * For CHANGE_LANGUAGE: the language the sentence named, if it named
+   * one. Absent means "change the language" with no target, which is a
+   * question rather than an instruction - switching the whole app to a
+   * language nobody asked for is not a reasonable guess.
+   */
+  language?: "en" | "fil";
   /** How sure we are. Below CONFIDENCE_FLOOR the action is UNKNOWN. */
   score: number;
 }
@@ -185,6 +194,10 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
   {
     action: "OPEN_MAP",
     phrases: ["map", "mapa", "where is the map", "open the map", "show the map",
+      // "show me the map" used to lose to OPEN_CHURCH's generic "show
+      // me", which is two words against one and outscored the "map"
+      // that says what is actually wanted.
+      "show me the map", "take me to the map",
       "nasaan ang map", "nasaan ang mapa", "buksan ang mapa"],
   },
   {
@@ -192,6 +205,30 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
     phrases: [
       "contact", "phone number", "email", "parish office", "call the parish",
       "office hours",
+    ],
+  },
+  {
+    action: "REPLAY_TUTORIAL",
+    phrases: [
+      "show me around", "show me around again", "tour of the app", "app tour",
+      "tutorial", "walkthrough", "walk me through", "guide me through",
+      "how do i use the app", "how to use the app", "show me how",
+      "ipakita mo sa akin ang app", "paano gamitin ang app", "turuan mo ako",
+      "gabayan mo ako", "paano ito gamitin",
+    ],
+  },
+  {
+    action: "CHANGE_LANGUAGE",
+    phrases: [
+      "change the language", "change language", "switch language",
+      "language setting", "language settings", "where is the language",
+      "set the language", "change to english", "change to tagalog",
+      "change to filipino", "in english", "in tagalog", "language",
+      "palitan ang wika", "palitan ang language", "wika", "gawing tagalog",
+      "gawing english", "saan ang wika",
+      "i want english", "i want tagalog", "i want filipino",
+      "english please", "tagalog please", "use english", "use tagalog",
+      "read in english", "read in tagalog",
     ],
   },
   {
@@ -300,6 +337,10 @@ export const NAVIGATING_ACTIONS: readonly SanctiAction[] = [
   "OPEN_MAP", "OPEN_CHURCH", "OPEN_AR", "OPEN_MASS_SCHEDULE", "OPEN_SACRAMENTS",
   "OPEN_BAPTISM", "OPEN_WEDDING", "OPEN_MINISTRIES", "OPEN_CHURCH_HISTORY",
   "OPEN_SETTINGS", "SHOW_CHURCH_LOCATION",
+  // REPLAY_TUTORIAL and CHANGE_LANGUAGE are deliberately absent. Asking
+  // to be shown around IS the instruction, and a tutorial that stopped
+  // to ask whether you wanted the tutorial would be absurd. A language
+  // change is one tap to undo and visible the instant it happens.
 ];
 
 /**
@@ -322,6 +363,20 @@ export function needsConfirmation(heard: Understanding): boolean {
  * and nobody types those. People type "altar servers", or "emhc", or
  * the choir's name with the ministry word left off.
  */
+/**
+ * The language a sentence asked for, if it asked for one.
+ *
+ * Only consulted for CHANGE_LANGUAGE. Elsewhere the word "Tagalog" is
+ * part of a question, not a setting - and a pilgrim asking "may misa
+ * ba sa Tagalog" is asking about a Mass, not about the interface.
+ */
+export function findLanguage(text: string): "en" | "fil" | undefined {
+  const hay = normalise(text);
+  if (/\b(tagalog|filipino|pilipino|wika)\b/.test(hay)) return "fil";
+  if (/\b(english|ingles|inglis)\b/.test(hay)) return "en";
+  return undefined;
+}
+
 export interface NamedItem {
   id: string;
   kind: "ministry" | "sacrament";
@@ -601,6 +656,10 @@ export function understand(
   if (best.action === "CREATE_REMINDER") {
     const time = findTime(text);
     if (time) result.time = time;
+  }
+  if (best.action === "CHANGE_LANGUAGE") {
+    const language = findLanguage(text);
+    if (language) result.language = language;
   }
   return result;
 }

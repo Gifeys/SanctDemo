@@ -50,6 +50,10 @@ export interface SanctiTools {
   showHomeSection: (section: "ministries" | "mass" | "history") => void;
   /** Open one named ministry or sacrament, rather than the list of them. */
   openItem: (tab: "ministries" | "sacraments", itemId: string) => void;
+  /** Run the walkthrough again, from the start. */
+  replayTutorial: () => void;
+  /** Switch the reading language for the whole app. */
+  setLanguage: (language: "en" | "fil") => void;
   /** Make this parish the one on screen. */
   selectParish: (parishId: string) => void;
   /** Open the map focused on a parish. */
@@ -130,9 +134,16 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
    * must not be rebuilt between the question and the answer - a new
    * `ask` identity mid-conversation would lose the offer it is holding.
    */
-  const pendingRef = useRef<{ action: SanctiAction; parishId?: string; itemId?: string } | null>(null);
+  const pendingRef = useRef<{
+    action: SanctiAction; parishId?: string; itemId?: string; language?: "en" | "fil";
+  } | null>(null);
 
-  const act = useCallback((action: SanctiAction, parishId?: string, itemId?: string) => {
+  const act = useCallback((
+    action: SanctiAction,
+    parishId?: string,
+    itemId?: string,
+    language?: "en" | "fil",
+  ) => {
     const t = toolsRef.current;
     const target = parishId ?? t.activeParishId;
 
@@ -193,6 +204,19 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         t.go("me");
         point("tab-me", "Reminders, your profile and your applications live here.");
         break;
+      case "REPLAY_TUTORIAL":
+        // Closes the sheet first: the walkthrough points at the tab bar
+        // and the sheet is sitting on top of it.
+        setOpen(false);
+        window.setTimeout(() => t.replayTutorial(), 260);
+        break;
+      case "CHANGE_LANGUAGE":
+        // Only when the pilgrim named one. "Change the language" with
+        // no target is answered in the chat instead - switching the
+        // whole app to a language nobody asked for is not a guess worth
+        // making.
+        if (language) t.setLanguage(language);
+        break;
       case "CREATE_REMINDER":
         // Following the parish is what actually schedules the alarms;
         // the pilgrim's own parish is always followed already.
@@ -229,7 +253,7 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         if (answer === "yes") {
           pendingRef.current = null;
           setThinking(false);
-          act(pending.action, pending.parishId, pending.itemId);
+          act(pending.action, pending.parishId, pending.itemId, pending.language);
           return;
         }
         if (answer === "no") {
@@ -320,6 +344,23 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         case "OPEN_AR":
           reply = { text: "The scanner is on the Scan tab. Point it at a statue, an image or a marker and it will tell you what it is." };
           break;
+        case "REPLAY_TUTORIAL":
+          reply = { text: "I'll show you around. It takes about a minute, and you can stop at any point." };
+          break;
+        case "CHANGE_LANGUAGE":
+          reply = heard.language
+            ? {
+              text: heard.language === "fil"
+                ? "Sige — nakalipat na sa Tagalog ang buong app."
+                : "Done — the whole app is in English now.",
+            }
+            : {
+              // No language named. Rather than guess, say where the
+              // setting is and what it covers.
+              text: "You can read SanctiWalk in English or Tagalog. The setting is in Me, under Language, and it changes everything including the station and ministry descriptions. Tell me which you want and I'll switch it.",
+              followUp: "Change to Tagalog",
+            };
+          break;
         case "OPEN_SETTINGS":
           reply = { text: "Your reminders, your profile and your applications are under Me." };
           break;
@@ -356,7 +397,10 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
           ? offerForItem(namedItem.name)
           : offerFor(heard.action);
       if (offer) {
-        pendingRef.current = { action: heard.action, parishId: heard.parishId, itemId: heard.itemId };
+        pendingRef.current = {
+          action: heard.action, parishId: heard.parishId,
+          itemId: heard.itemId, language: heard.language,
+        };
         say("sancti", withOffer(reply, offer));
         return;
       }
@@ -370,7 +414,7 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
 
       // Said first, then done. See the note at the top.
       if (heard.action !== "UNKNOWN" && heard.action !== "HELP") {
-        window.setTimeout(() => act(heard.action, heard.parishId, heard.itemId), 620);
+        window.setTimeout(() => act(heard.action, heard.parishId, heard.itemId, heard.language), 620);
       }
     }, 420);
   }, [say, act]);

@@ -361,3 +361,65 @@ describe('naming a ministry or sacrament directly', () => {
     expect(heard.itemId).toBeUndefined()
   })
 })
+
+describe('showing somebody around again', () => {
+  it('hears a request for the walkthrough', () => {
+    for (const said of [
+      'show me around again', 'show me around', 'tutorial',
+      'give me a tour of the app', 'walk me through the app',
+      'ipakita mo sa akin ang app', 'paano gamitin ang app',
+    ]) {
+      expect(ask(said).action).toBe('REPLAY_TUTORIAL')
+    }
+  })
+
+  it('does not hijack a question about what Sancti can do', () => {
+    // HELP answers that in the chat. Launching a walkthrough over it
+    // would be answering a different question.
+    expect(ask('what can you do').action).toBe('HELP')
+    expect(ask('who are you').action).toBe('HELP')
+  })
+
+  it('does not hijack a request to be shown a place', () => {
+    expect(ask('show me the map').action).toBe('OPEN_MAP')
+    expect(ask('show me on the map').action).toBe('SHOW_CHURCH_LOCATION')
+  })
+})
+
+describe('changing the language', () => {
+  it('hears a request to change it', () => {
+    for (const said of [
+      'change the language', 'where is the language setting',
+      'palitan ang wika', 'language',
+    ]) {
+      expect(ask(said).action).toBe('CHANGE_LANGUAGE')
+    }
+  })
+
+  it('hears which language was asked for', () => {
+    expect(ask('change to tagalog').language).toBe('fil')
+    expect(ask('i want filipino').language).toBe('fil')
+    expect(ask('gawing tagalog').language).toBe('fil')
+    expect(ask('change to english').language).toBe('en')
+    expect(ask('english please').language).toBe('en')
+  })
+
+  it('leaves the language unset when none was named', () => {
+    // "Change the language" names no target, so Sancti must ask rather
+    // than pick one and switch the whole app under them.
+    expect(ask('change the language').language).toBeUndefined()
+  })
+
+  it('acts at once when a language is named, and asks when it is not', () => {
+    // Naming the language IS the instruction; there is nothing left to
+    // confirm. Without one there is, so it offers.
+    expect(needsConfirmation(ask('change to tagalog'))).toBe(false)
+    expect(needsConfirmation(ask('change the language'))).toBe(false)
+  })
+
+  it('does not mistake a Tagalog question for a request to switch', () => {
+    // People ask in Tagalog all the time; that is not a settings change.
+    expect(ask('anong oras ang misa').action).toBe('OPEN_MASS_SCHEDULE')
+    expect(ask('saan ang simbahan').action).not.toBe('CHANGE_LANGUAGE')
+  })
+})
