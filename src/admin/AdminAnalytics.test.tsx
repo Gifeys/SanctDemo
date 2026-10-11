@@ -15,17 +15,23 @@ import type { ActivityEntry } from "../lib/analytics";
  * the screen does with a parish's activity, not whether the rules would
  * hand it over. The rules have their own suite.
  */
+/**
+ * The screen reads three collections now - activity, visits and users -
+ * so the mock has to keep one handler per collection. A single shared
+ * handler sent every collection's rows to whichever subscription
+ * happened to register last.
+ */
 const h = vi.hoisted(() => ({
-  handler: { current: null as ((snap: unknown) => void) | null },
+  handlers: {} as Record<string, (snap: unknown) => void>,
 }));
 
 vi.mock("firebase/firestore", () => ({
-  collection: vi.fn(() => ({})),
-  query: vi.fn(() => ({})),
+  collection: vi.fn((_db: unknown, name: string) => ({ name })),
+  query: vi.fn((ref: { name: string }) => ref),
   where: vi.fn(() => ({})),
-  onSnapshot: (_q: unknown, next: (snap: unknown) => void) => {
-    h.handler.current = next;
-    return () => { h.handler.current = null; };
+  onSnapshot: (q: { name: string }, next: (snap: unknown) => void) => {
+    h.handlers[q.name] = next;
+    return () => { delete h.handlers[q.name]; };
   },
 }));
 vi.mock("../lib/firebase", () => ({ db: {}, auth: { currentUser: { uid: "adminA" } } }));
@@ -40,8 +46,15 @@ const SESSION = {
   church: { id: "route-mhcp", name: "Mary Help of Christians Parish" },
 } as unknown as AdminSession;
 
-function deliver(entries: ActivityEntry[]) {
-  h.handler.current?.({ docs: entries.map(e => ({ data: () => e })) });
+function send(name: string, rows: unknown[]) {
+  h.handlers[name]?.({ docs: rows.map(r => ({ data: () => r })) });
+}
+
+/** Activity rows, plus empty visits and users unless a test says otherwise. */
+function deliver(entries: ActivityEntry[], visits: unknown[] = [], users: unknown[] = []) {
+  send("activity", entries);
+  send("visits", visits);
+  send("users", users);
 }
 
 function entry(over: Partial<ActivityEntry> = {}): ActivityEntry {
@@ -63,7 +76,7 @@ function show() {
   );
 }
 
-beforeEach(() => { h.handler.current = null; });
+beforeEach(() => { for (const k of Object.keys(h.handlers)) delete h.handlers[k]; });
 
 describe("AdminAnalytics", () => {
   it("says nothing is recorded rather than drawing zeros", async () => {
@@ -71,7 +84,9 @@ describe("AdminAnalytics", () => {
     // not measuring", and the parish would read it as the first.
     show();
     deliver([]);
-    expect(await screen.findByText(/nothing recorded yet/i)).toBeTruthy();
+    // "Nothing recorded yet" is now also the visits panel's empty text,
+    // so this asks for the station one specifically.
+    expect(await screen.findByText(/Activity appears here once pilgrims/i)).toBeTruthy();
   });
 
   it("counts distinct people, not events", async () => {
@@ -100,7 +115,7 @@ describe("AdminAnalytics", () => {
 
   it("surfaces an error from the database rather than an empty page", async () => {
     show();
-    await waitFor(() => expect(h.handler.current).not.toBeNull());
+    await waitFor(() => expect(Object.keys(h.handlers).length).toBeGreaterThan(0));
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -112,5 +127,55 @@ describe("AdminAnalytics", () => {
 
     await screen.findByText("distinct signed-in visitors");
     expect(screen.queryByText(/pilgrim-uid-7777/)).toBeNull();
+  });
+
+  it("counts registered pilgrims and leaves administrators out", async () => {
+    // An administrator is not one of the parish's users, and counting
+    // them would inflate a figure the parish reports.
+    show();
+    deliver([], [], [
+      { role: "user" }, { role: "user" }, { role: "church_admin" },
+    ]);
+    const tile = (await screen.findByText(/pilgrims with an account/i)).parentElement!;
+    expect(within(tile).getByText("2")).toBeTruthy();
+  });
+
+  it("counts only those seen in the last fifteen minutes", async () => {
+    const now = Date.now();
+    show();
+    deliver([], [], [
+      { role: "user", lastActiveAt: new Date(now - 60_000).toISOString() },
+      { role: "user", lastActiveAt: new Date(now - 60 * 60_000).toISOString() },
+      { role: "user" },
+    ]);
+    const tile = (await screen.findByText(/in the last 15 minutes/i)).parentElement!;
+    expect(within(tile).getByText("1")).toBeTruthy();
+  });
+
+  it("separates estimated visits from the people who made them", async () => {
+    show();
+    deliver([], [
+      { uid: "a", churchId: "route-mhcp", at: new Date().toISOString() },
+      { uid: "a", churchId: "route-mhcp", at: new Date().toISOString() },
+      { uid: "b", churchId: "route-mhcp", at: new Date().toISOString() },
+    ], []);
+    const visits = (await screen.findByText(/geolocation-detected/i)).parentElement!;
+    expect(within(visits).getByText("3")).toBeTruthy();
+    const visitors = screen.getByText(/distinct people behind/i).parentElement!;
+    expect(within(visitors).getByText("2")).toBeTruthy();
+  });
+
+  it("calls the figure estimated and says it is not proof of entry", async () => {
+    // The one claim this feature must never make.
+    show();
+    deliver([], [{ uid: "a", churchId: "route-mhcp", at: new Date().toISOString() }], []);
+    expect(await screen.findByText(/proximity and not proof of entry/i)).toBeTruthy();
+  });
+
+  it("names the parish rather than its route id", async () => {
+    show();
+    deliver([], [{ uid: "a", churchId: "route-mhcp", at: new Date().toISOString() }], []);
+    await screen.findByText(/visits by parish/i);
+    expect(screen.queryByText("route-mhcp")).toBeNull();
   });
 });

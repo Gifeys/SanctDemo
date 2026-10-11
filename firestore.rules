@@ -94,6 +94,10 @@ service cloud.firestore {
         .hasOnly([
           'fullName', 'nickname', 'phoneNumber', 'photoUrl', 'updatedAt',
           'preferredLanguage', 'notificationsSeenAt',
+          // The activity heartbeat. Without it in this list the write is
+          // silently denied and the dashboard shows nobody as active -
+          // which is exactly how the station check-in was lost once.
+          'lastActiveAt',
           // The pilgrimage progress the app saves as you walk. Every field
           // of UserProgress has to be here: the list is exhaustive, so one
           // missing name does not fail loudly - it silently denies the
@@ -255,6 +259,43 @@ service cloud.firestore {
       allow read: if (isSignedIn() && resource.data.uid == request.auth.uid)
         || isAdminOf(resource.data.get('churchId', noChurch()))
         || isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    // ------------------------------------------------------------- visits
+
+    // Estimated church visits, for the parish dashboard.
+    //
+    // A visit says only that a signed-in pilgrim was inside a parish's
+    // geofence at a time. No coordinates, no track, nothing that could
+    // reconstruct where somebody went.
+    //
+    // Written by the pilgrim's own device, so the rule's job is to stop
+    // it being written on anybody else's behalf, stop it naming a
+    // church that does not exist, and stop it carrying more than the
+    // three fields the dashboard counts. A client that could add a
+    // field here could add a location to it.
+    //
+    // Nothing may edit or delete a visit. An admin who could rewrite
+    // them could manufacture a parish's attendance.
+    match /visits/{visitId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.churchId is string
+        && request.resource.data.churchId != ''
+        && exists(/databases/$(database)/documents/churches/$(request.resource.data.churchId))
+        && request.resource.data.keys().hasOnly(['uid', 'churchId', 'at', 'createdAt'])
+        // The server's clock, not the handset's. A device with a wrong
+        // date cannot backdate or postdate its way into another period.
+        && request.resource.data.createdAt == request.time;
+
+      // A pilgrim may read their own; an admin may read their parish's.
+      // Nobody reads across parishes.
+      allow read: if isSignedIn()
+        && (resource.data.uid == request.auth.uid
+            || isAdminOf(resource.data.get('churchId', noChurch()))
+            || isSuperAdmin());
+
       allow update, delete: if false;
     }
 

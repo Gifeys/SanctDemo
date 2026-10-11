@@ -28,6 +28,7 @@ import CustomDioceseMap from "./components/CustomDioceseMap";
 // Firebase imports
 import { auth, db } from "./lib/firebase";
 import { logActivity } from "./lib/activityLog";
+import { recordChurchVisit, touchActivity } from "./lib/recordVisit";
 import { getProfile } from "./lib/userProfile";
 import { watchNotifications, unreadCount } from "./lib/notifications";
 import { useReminders } from "./lib/useReminders";
@@ -161,6 +162,14 @@ function PresenceParishSync({ onArrive }: { onArrive: (parishId: string) => void
   useEffect(() => {
     if (presence.mode === "present" && presence.parishId) {
       onArrive(presence.parishId);
+      // The parish's own count of estimated visits.
+      //
+      // Hung off the presence transition rather than off a new
+      // geofence: presence.ts has already decided the pilgrim is
+      // inside the parish's radius AND has stayed past the dwell
+      // gate, which is the hard half of the problem and is already
+      // under test. recordChurchVisit only deduplicates and writes.
+      void recordChurchVisit(presence.parishId);
     }
   }, [presence.mode, presence.parishId, onArrive]);
 
@@ -280,6 +289,14 @@ export default function App() {
     }
     return "home";
   });
+
+  // Tells the parish dashboard somebody is using the app.
+  //
+  // Driven by the tab, which is the coarsest signal that means "still
+  // here" - and throttled inside touchActivity to one write per five
+  // minutes, so a long visit costs a handful of writes rather than one
+  // per screen. Firestore on the free plan is billed by the document.
+  useEffect(() => { void touchActivity(); }, [activeTab]);
 
   useEffect(() => {
     try {
@@ -870,6 +887,7 @@ export default function App() {
     // into the applications collection, which put login records in the
     // queue the parish office works through.
     void logActivity("sign_in", `Signed in as ${adminFlag ? "admin" : "pilgrim"}`);
+    void touchActivity();
 
     if (adminFlag) {
       setActiveTab("admin");

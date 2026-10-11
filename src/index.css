@@ -2006,6 +2006,146 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 .parish-history__paragraph:last-child { margin-bottom: 0; }
 
+/* ── Test Sancti Knowledge ────────────────────────────────────────────────
+   Five questions at the foot of the history, on the same dark parish
+   band the prose sits on. Deliberately quieter than the history above
+   it: this is a way of looking back at what was read, not the reason
+   the page exists. */
+.history-quiz {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid rgb(255 255 255 / 0.18);
+}
+
+.history-quiz__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgb(6 12 38 / 0.4);
+}
+
+.history-quiz__lede {
+  margin: 0 0 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.72);
+}
+
+.history-quiz__q { margin-bottom: 20px; }
+/* Named when Submit finds it blank, so the reader is not left hunting. */
+.history-quiz__q.is-flagged {
+  border-left: 3px solid #F2C14E;
+  padding-left: 11px;
+  margin-left: -14px;
+}
+
+.history-quiz__question {
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.95);
+}
+.history-quiz__number { opacity: 0.6; }
+
+.history-quiz__options { display: grid; gap: 7px; }
+
+.history-quiz__option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 13px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.07);
+  color: rgb(255 255 255 / 0.92);
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.history-quiz__option:hover:not(:disabled) { border-color: rgb(255 255 255 / 0.45); }
+.history-quiz__option.is-picked {
+  background: rgb(255 255 255 / 0.17);
+  border-color: rgb(255 255 255 / 0.6);
+}
+/* After submission: the right answer is always marked, whether or not
+   it was the one chosen. Showing only the reader's mistake teaches
+   nothing. */
+.history-quiz__option.is-answer {
+  background: rgb(76 158 108 / 0.30);
+  border-color: #7FD6A0;
+}
+.history-quiz__option.is-wrong {
+  background: rgb(190 78 78 / 0.26);
+  border-color: #E79A9A;
+}
+.history-quiz__option:disabled { cursor: default; }
+
+.history-quiz__mark {
+  display: inline-flex;
+  width: 17px;
+  flex-shrink: 0;
+}
+
+.history-quiz__explain {
+  margin: 9px 0 0;
+  padding-left: 11px;
+  border-left: 2px solid rgb(255 255 255 / 0.3);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.78);
+}
+.history-quiz__explain.is-right { border-left-color: #7FD6A0; }
+
+.history-quiz__missing {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #F2C14E;
+}
+
+.history-quiz__submit,
+.history-quiz__again {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 999px;
+  border: 0;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+  color: var(--color-brand-primary);
+}
+.history-quiz__again {
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / 0.4);
+}
+
+.history-quiz__result { margin-top: 18px; text-align: center; }
+.history-quiz__score {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 30px;
+  color: #fff;
+}
+.history-quiz__verdict {
+  margin: 4px 0 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.76);
+}
+
 /* ── The Church History card on Home ──────────────────────────────────────
    The card's own type, so it matches the history page it opens: the same
    italic Georgia for the patron's name, and a "LEARN MORE" centred under

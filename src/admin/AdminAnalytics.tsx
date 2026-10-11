@@ -10,6 +10,10 @@ import {
   formatHour, summariseActivity,
   type ActivityEntry, type AnalyticsSummary,
 } from "../lib/analytics";
+import {
+  ACTIVE_WINDOW_MS, countActive, summariseVisits,
+  type VisitDoc, type VisitSummary,
+} from "../lib/visits";
 
 /**
  * What the parish's visitors did, as opposed to what they asked for.
@@ -41,6 +45,13 @@ import {
 /** How far back the figures go. A fortnight covers two Sundays. */
 const WINDOW_DAYS = 14;
 
+/**
+ * The radius quoted in the honesty note, read from the parish's own
+ * record rather than written here twice. presence.ts is what actually
+ * decides; this only has to describe it accurately.
+ */
+const GEOFENCE_M = ROUTES.find(r => r.geofenceRadius)?.geofenceRadius ?? 100;
+
 export default function AdminAnalytics({ session }: { session: AdminSession }) {
   const [entries, setEntries] = useState<ActivityEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +71,48 @@ export default function AdminAnalytics({ session }: { session: AdminSession }) {
   const summary = useMemo<AnalyticsSummary | null>(
     () => (entries === null ? null : summariseActivity(entries, new Date(), WINDOW_DAYS)),
     [entries],
+  );
+
+  // Estimated visits and the parish's own users.
+  //
+  // Both filtered on churchId here AND in the rules, like every other
+  // admin screen: the filter makes it correct, the rule makes it safe.
+  const [visits, setVisits] = useState<VisitDoc[] | null>(null);
+  const [people, setPeople] = useState<{ role?: string; lastActiveAt?: string }[] | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, "visits"), where("churchId", "==", churchId));
+    return onSnapshot(
+      q,
+      snap => setVisits(snap.docs.map(d => d.data() as VisitDoc)),
+      err => setError(err.message),
+    );
+  }, [churchId]);
+
+  useEffect(() => {
+    const q = query(collection(db, "users"), where("churchId", "==", churchId));
+    return onSnapshot(
+      q,
+      snap => setPeople(snap.docs.map(d => d.data() as { role?: string; lastActiveAt?: string })),
+      err => setError(err.message),
+    );
+  }, [churchId]);
+
+  const visitSummary = useMemo<VisitSummary | null>(
+    () => (visits === null ? null : summariseVisits(visits, WINDOW_DAYS, new Date())),
+    [visits],
+  );
+
+  /** Ordinary pilgrims. An administrator is not one of the parish's users. */
+  const registered = useMemo(
+    () => (people === null ? null : people.filter(p => (p.role ?? "user") === "user").length),
+    [people],
+  );
+
+  const activeNow = useMemo(
+    () => (people === null ? null
+      : countActive(people.filter(p => (p.role ?? "user") === "user"), new Date())),
+    [people],
   );
 
   const stationName = useStationNames(churchId);
@@ -92,6 +145,76 @@ export default function AdminAnalytics({ session }: { session: AdminSession }) {
           <div className="py-12 text-center">
             <Loader2 className="mx-auto w-6 h-6 animate-spin text-[var(--color-brand-primary)]" />
           </div>
+        )}
+
+        {/* The four figures the parish asked for, above everything
+            else. A parish opens this to ask "how many", and the station
+            breakdown below answers a different question. */}
+        {visitSummary !== null && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <Figure label="Registered users" value={registered ?? "—"}
+                      hint="pilgrims with an account at this parish" />
+              <Figure label="Estimated visits" value={visitSummary.total}
+                      hint="geolocation-detected, all time" />
+              <Figure label="Active users" value={activeNow ?? "—"}
+                      hint={`in the last ${Math.round(ACTIVE_WINDOW_MS / 60000)} minutes`} />
+              <Figure label="Visitors" value={visitSummary.visitors}
+                      hint="distinct people behind those visits" />
+            </div>
+
+            <Panel
+              title={`Estimated visits, last ${WINDOW_DAYS} days`}
+              note="Counted when a signed-in pilgrim's device reports it is within this parish's geofence."
+            >
+              {visitSummary.total === 0 ? (
+                <p className="text-[15px] text-[var(--color-brand-secondary)]">
+                  No visits recorded yet. A visit appears here when a
+                  signed-in pilgrim arrives at the parish with location
+                  turned on.
+                </p>
+              ) : (
+                <Bars
+                  data={visitSummary.daily.map(d => ({
+                    key: d.date,
+                    label: d.date.slice(8),
+                    value: d.count,
+                  }))}
+                />
+              )}
+            </Panel>
+
+            <Panel
+              title="Visits by parish"
+              note="You see your own parish only. The security rules refuse another parish's records, which is why this list is not diocese-wide."
+            >
+              {visitSummary.byChurch.length === 0 ? (
+                <p className="text-[15px] text-[var(--color-brand-secondary)]">
+                  Nothing recorded yet.
+                </p>
+              ) : (
+                <Rows
+                  data={visitSummary.byChurch.map(c => ({
+                    key: c.churchId,
+                    label: parishLabel(c.churchId),
+                    value: c.count,
+                  }))}
+                />
+              )}
+            </Panel>
+
+            <p className="mb-6 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+              <strong>Estimated</strong> is the operative word. A visit is
+              recorded when a phone reports being within {GEOFENCE_M} metres
+              of this parish, which is proximity and not proof of entry:
+              somebody passing on the street counts, and satellite accuracy
+              in a built-up area is often worse than that radius. Only
+              signed-in pilgrims are counted, and the same person is counted
+              once per parish every two hours. No location is stored — a
+              record holds the parish, the time, and an account identifier,
+              and nothing else.
+            </p>
+          </>
         )}
 
         {summary !== null && summary.totalEvents === 0 && (
@@ -213,6 +336,12 @@ export default function AdminAnalytics({ session }: { session: AdminSession }) {
  * The log stores an id. "st-altar-mayor" on a report to a parish priest
  * is not an answer to "which part of my church do people stop at".
  */
+/** The parish's own name, rather than its id, in the breakdown. */
+function parishLabel(churchId: string): string {
+  const route = ROUTES.find(r => r.id === churchId);
+  return route ? route.name.replace(" Guide", "").replace(" Tour", "") : churchId;
+}
+
 function useStationNames(churchId: string): (id: string) => string {
   return useMemo(() => {
     const route = ROUTES.find(r => r.id === churchId);

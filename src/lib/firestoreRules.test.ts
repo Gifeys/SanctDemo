@@ -6,7 +6,9 @@ import {
   assertSucceeds,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, serverTimestamp,
+} from "firebase/firestore";
 import { beforeAll, afterAll, beforeEach, describe, it } from "vitest";
 
 /**
@@ -125,6 +127,7 @@ beforeEach(async () => {
 });
 
 const as = (uid: string) => env.authenticatedContext(uid).firestore();
+const unauthed = () => env.unauthenticatedContext().firestore();
 
 describe("church isolation", () => {
   it("an admin reads their own church's application", async () => {
@@ -689,5 +692,85 @@ describe("notifying the parish", () => {
         createdAt: new Date().toISOString(), readAt: null,
       }),
     );
+  });
+});
+
+describe("estimated church visits", () => {
+  const visit = (over: Record<string, unknown> = {}) => ({
+    uid: USER_A,
+    churchId: CHURCH_A,
+    at: "2026-10-11T02:00:00.000Z",
+    createdAt: serverTimestamp(),
+    ...over,
+  });
+
+  it("a pilgrim may record their own visit", async () => {
+    await assertSucceeds(addDoc(collection(as(USER_A), "visits"), visit()));
+  });
+
+  it("nobody may record a visit as somebody else", async () => {
+    // Otherwise one device could manufacture a congregation.
+    await assertFails(addDoc(collection(as(USER_A), "visits"), visit({ uid: USER_B })));
+  });
+
+  it("a signed-out visitor records nothing", async () => {
+    await assertFails(addDoc(collection(unauthed(), "visits"), visit()));
+  });
+
+  it("a visit must name a church that exists", async () => {
+    await assertFails(addDoc(collection(as(USER_A), "visits"), visit({ churchId: "not-a-church" })));
+    await assertFails(addDoc(collection(as(USER_A), "visits"), visit({ churchId: "" })));
+  });
+
+  it("a visit may not carry anything beyond the three fields", async () => {
+    // The point of the rule: a client that can add a field here can add
+    // a coordinate, and the whole privacy claim of this feature rests on
+    // no location ever being stored.
+    await assertFails(addDoc(collection(as(USER_A), "visits"),
+      visit({ lat: 14.65, lng: 120.97 })));
+  });
+
+  it("a visit may not be backdated by the handset", async () => {
+    // createdAt must be the server's clock.
+    await assertFails(addDoc(collection(as(USER_A), "visits"),
+      visit({ createdAt: new Date("2020-01-01T00:00:00.000Z") })));
+  });
+
+  it("an admin reads their own parish's visits and not another's", async () => {
+    await env.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, "visits", "vA"), { uid: USER_A, churchId: CHURCH_A, at: "x" });
+      await setDoc(doc(db, "visits", "vB"), { uid: USER_B, churchId: CHURCH_B, at: "x" });
+    });
+    await assertSucceeds(getDoc(doc(as(ADMIN_A), "visits", "vA")));
+    await assertFails(getDoc(doc(as(ADMIN_A), "visits", "vB")));
+  });
+
+  it("nobody may rewrite or delete a visit", async () => {
+    // An admin who could edit these could invent their parish's numbers.
+    await env.withSecurityRulesDisabled(async ctx => {
+      await setDoc(doc(ctx.firestore(), "visits", "vA"),
+        { uid: USER_A, churchId: CHURCH_A, at: "x" });
+    });
+    await assertFails(updateDoc(doc(as(ADMIN_A), "visits", "vA"), { churchId: CHURCH_B }));
+    await assertFails(deleteDoc(doc(as(ADMIN_A), "visits", "vA")));
+    await assertFails(deleteDoc(doc(as(USER_A), "visits", "vA")));
+  });
+});
+
+describe("the activity heartbeat", () => {
+  it("a pilgrim may mark themselves active", async () => {
+    await assertSucceeds(updateDoc(doc(as(USER_A), "users", USER_A),
+      { lastActiveAt: new Date().toISOString() }));
+  });
+
+  it("nobody may mark somebody else active", async () => {
+    await assertFails(updateDoc(doc(as(USER_B), "users", USER_A),
+      { lastActiveAt: new Date().toISOString() }));
+  });
+
+  it("the heartbeat may not smuggle a role change alongside it", async () => {
+    await assertFails(updateDoc(doc(as(USER_A), "users", USER_A),
+      { lastActiveAt: new Date().toISOString(), role: "church_admin" }));
   });
 });

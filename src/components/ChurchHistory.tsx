@@ -1,11 +1,12 @@
 import type { CSSProperties } from "react";
+import HistoryQuiz from "./HistoryQuiz";
 import { ArrowLeft } from "lucide-react";
 import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { parishTheme } from "../lib/parishTheme";
 
-interface ParishHistorySection {
+export interface ParishHistorySection {
   /** Sits above the paragraphs in small caps, as "OUR HISTORY" does. */
   heading: string;
   paragraphs: string[];
@@ -69,6 +70,19 @@ const PARISH_HISTORY: Record<string, ParishHistoryContent> = {
  * alone, so both parishes with a real compiled history showed "not been
  * written up yet" and no way through to the history they already had.
  */
+/**
+ * A parish's compiled history, for anything that has to read it rather
+ * than render it.
+ *
+ * Exported for the quiz's test, which asserts that every correct answer
+ * really is a sentence on this page. Without that check a question
+ * could drift away from the history it claims to be about, or be
+ * invented outright - which is the one thing this feature must not do.
+ */
+export function parishHistorySections(routeId: string): ParishHistorySection[] {
+  return PARISH_HISTORY[routeId]?.sections ?? [];
+}
+
 export function hasParishHistory(routeId: string, managedBody?: string | null): boolean {
   return Boolean(managedBody?.trim()) || (PARISH_HISTORY[routeId]?.sections.length ?? 0) > 0;
 }
@@ -246,6 +260,11 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
               </p>
             </section>
           )}
+
+          {/* At the very bottom, after the history has been read. See
+              HistoryQuiz: it renders nothing for a parish whose
+              history is not written up. */}
+          <HistoryQuiz routeId={parish.id} />
         </div>
       </article>
     </div>
