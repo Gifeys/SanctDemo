@@ -5,11 +5,12 @@ import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { useLanguage } from "../lib/useLanguage";
+import { pick, type Bilingual, type Language } from "../lib/language";
 import { parishTheme } from "../lib/parishTheme";
 import { MHCP_HISTORY } from "../data/mhcpHistory";
 
 /** The heading the parish's own Filipino account starts at. */
-const FIRST_OWN_SECTION = MHCP_HISTORY[0]?.heading ?? "";
+const FIRST_OWN_SECTION = pick(MHCP_HISTORY[0]?.heading, "fil");
 
 /**
  * A photograph from the parish's own record, with what the parish
@@ -26,15 +27,21 @@ const FIRST_OWN_SECTION = MHCP_HISTORY[0]?.heading ?? "";
  */
 export interface ParishFigure {
   srcs: string[];
-  caption?: string;
+  caption?: Bilingual | string;
   /** Where the parish got it: the souvenir programme, a photographer. */
   source: string;
 }
 
 export interface ParishHistorySection {
-  /** Sits above the paragraphs in small caps, as "OUR HISTORY" does. */
-  heading: string;
-  paragraphs: string[];
+  /**
+   * Sits above the paragraphs in small caps, as "OUR HISTORY" does.
+   *
+   * A plain string where only one language exists - the compiled
+   * English sections and San Roque's - and a pair where the parish's
+   * own text has been translated. `pick` takes either.
+   */
+  heading: Bilingual | string;
+  paragraphs: (Bilingual | string)[];
   figures?: ParishFigure[];
 }
 
@@ -117,9 +124,17 @@ export function hasParishHistory(routeId: string, managedBody?: string | null): 
   return Boolean(managedBody?.trim()) || (PARISH_HISTORY[routeId]?.sections.length ?? 0) > 0;
 }
 
-/** The opening of a parish's compiled history, for the card that links to it. */
-export function parishHistoryLede(routeId: string): string | undefined {
-  return PARISH_HISTORY[routeId]?.sections[0]?.paragraphs[0];
+/**
+ * The opening of a parish's compiled history, for the card that links
+ * to it. Takes the reader's language, since a parish's own sections
+ * now carry both.
+ */
+export function parishHistoryLede(
+  routeId: string,
+  language: Language = "en",
+): string | undefined {
+  const first = PARISH_HISTORY[routeId]?.sections[0]?.paragraphs[0];
+  return first === undefined ? undefined : pick(first, language);
 }
 
 
@@ -270,26 +285,31 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
 
           {sections.length > 0 ? (
             sections.map(section => (
-              <React.Fragment key={section.heading}>
+              <React.Fragment key={pick(section.heading, "fil")}>
               {/* Said once, at the point the parish's own words begin.
                   Ten sections of Filipino arriving with no explanation
                   would read to an English reader as a translation the
                   app had failed to do, rather than as the parish's own
                   record left as the parish wrote it. */}
-              {section.heading === FIRST_OWN_SECTION && (
+              {pick(section.heading, "fil") === FIRST_OWN_SECTION && (
                 <p className="parish-history__language-note">
                   {language === "fil"
                     ? "Ang sumusunod ay ang buong kasaysayan na isinulat mismo ng parokya."
-                    : "What follows is the parish's own full history, published in Filipino. It is shown as the parish wrote it rather than translated."}
+                    : "What follows is the parish's own history, written in Filipino and translated here for readers. The Filipino is the original; where the two differ, the parish's own words are the ones that stand."}
                 </p>
               )}
               <section className="parish-history__section">
-                <h2 className="parish-history__eyebrow">{section.heading}</h2>
-                {section.paragraphs.map(paragraph => (
-                  <p key={paragraph.slice(0, 48)} className="parish-history__paragraph">
-                    {paragraph}
-                  </p>
-                ))}
+                <h2 className="parish-history__eyebrow">
+                  {pick(section.heading, language)}
+                </h2>
+                {section.paragraphs.map(paragraph => {
+                  const text = pick(paragraph, language);
+                  return (
+                    <p key={text.slice(0, 48)} className="parish-history__paragraph">
+                      {text}
+                    </p>
+                  );
+                })}
 
                 {section.figures?.map(figure => (
                   <figure key={figure.srcs[0]} className="parish-figure">
@@ -311,7 +331,7 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
                       ))}
                     </div>
                     <figcaption className="parish-figure__caption">
-                      {figure.caption && <span>{figure.caption}</span>}
+                      {figure.caption && <span>{pick(figure.caption, language)}</span>}
                       <span className="parish-figure__source">
                         Sanggunian: {figure.source}
                       </span>
