@@ -73,6 +73,17 @@ const STRINGS = {
   "me.rosarySettings": { en: "Rosary Settings", fil: "Setting ng Rosaryo" },
   "me.replayTutorial": { en: "Show me around again", fil: "Ipakita muli ang gabay" },
   "me.helpAndGuide": { en: "Help & guide", fil: "Tulong at gabay" },
+  "me.simulator": { en: "Simulator mode", fil: "Simulator mode" },
+  "me.simulatorOn": { en: "On", fil: "Naka-on" },
+  "me.simulatorOff": { en: "Off", fil: "Naka-off" },
+  "me.simulatorOnHelp": {
+    en: "On. The app behaves as it will for a visitor: the AR tour opens only inside the parish. The scanner still works anywhere.",
+    fil: "Naka-on. Kumikilos ang app gaya ng para sa bisita: bubukas lang ang AR tour sa loob ng parokya. Gumagana pa rin ang scanner kahit saan.",
+  },
+  "me.simulatorOffHelp": {
+    en: "Off. Everything is reachable from anywhere, for testing away from the churches.",
+    fil: "Naka-off. Maaabot ang lahat kahit saan, para sa pagsubok na malayo sa mga simbahan.",
+  },
 
   // ---- reminders ----
   "rem.title": { en: "Reminders", fil: "Mga Paalala" },

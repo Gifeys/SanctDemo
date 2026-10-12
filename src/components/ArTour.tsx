@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   WifiOff,
   QrCode,
+  MapPin,
 } from "lucide-react";
 import { useCamera, captureFailed, type CameraStatus, type CaptureFailure } from "../lib/useCamera";
 import { useQrScanner } from "../lib/useQrScanner";
@@ -27,6 +28,9 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
   "route-src": "/parish/san-roque-church.jpg",
 };
 import { arAvailability, arTourUrl } from "../lib/arApp";
+import { arAccess } from "../lib/simulatorMode";
+import { useSimulatorMode } from "../lib/useSimulatorMode";
+import { usePresence } from "../context/PresenceContext";
 import { apiUrl } from "../lib/apiBase";
 import {
   ScannerHeader, ScannerSheet, ScannerTabs, ScannerReticle, type ScannerMode,
@@ -144,25 +148,6 @@ function stationToRecognition(
   };
 }
 
-function ArTourLaunch({ parishId }: { parishId?: string }) {
-  const availability = arAvailability(
-    typeof navigator === "undefined" ? "" : navigator.userAgent,
-  );
-
-  if (availability.kind !== "ready") {
-    return (
-      <p className="text-[14px] leading-relaxed text-[var(--color-brand-secondary)] px-1 font-sans">
-        {availability.reason}
-      </p>
-    );
-  }
-
-  return (
-    <a href={arTourUrl(parishId ?? "route-mhcp")} className="scan-card__action scan-card__action--ghost">
-      <Sparkles className="w-4 h-4" /> Tour now
-    </a>
-  );
-}
 
 export default function ArTour({
   stations = [], parishId, parishName = "your parish", onClose, onCameraLiveChange,
@@ -188,8 +173,6 @@ export default function ArTour({
   // rather than the software's. The patron fronts the museum because the
   // museum is largely its statues; the church interior fronts the scanner
   // because that is what the camera will be pointed at.
-  const museumImage =
-    PARISH_PATRON_IMAGES[parishId ?? ""] ?? PARISH_HEADER_IMAGES[parishId ?? ""] ?? PLACEHOLDER_PHOTO;
   // The scanner's picture is the church, not the patron: the patron already
   // fronts the museum card directly above, and two photographs of the same
   // statue made the two choices look like one thing listed twice.
@@ -240,6 +223,17 @@ export default function ArTour({
    * two screens with a duplicate camera between them.
    */
   const [mode, setMode] = useState<ScannerMode>("ai");
+
+  // Whether the AR tour may open here. Three facts decide it and the
+  // component already holds two of them; see lib/simulatorMode.ts for
+  // why the switch exists and which way round it reads.
+  const { simulatorMode } = useSimulatorMode();
+  const { presence } = usePresence();
+  const arGate = arAccess({
+    simulatorMode,
+    atParish: presence.mode === "present",
+    android: arAvailability(navigator.userAgent).kind === "ready",
+  });
   const [arStage, setArStage] = useState<ArStage>("find");
   const [arStop, setArStop] = useState(0);
   const [arError, setArError] = useState<string | null>(null);
@@ -626,21 +620,12 @@ export default function ArTour({
               front of you - and the old screen buried the first under a
               link beneath the second. */}
 
-          <section className="scan-card">
-            <span className="scan-card__media">
-              <img src={museumImage} alt="" loading="lazy" />
-              <span className="scan-card__scrim" aria-hidden />
-              <span className="scan-card__title">AR Museum</span>
-            </span>
-            <div className="scan-card__body">
-              <p className="scan-card__blurb">
-                Walk the parish's own statues and history, placed where they
-                stand in the church.
-              </p>
-              <ArTourLaunch parishId={parishId} />
-            </div>
-          </section>
-
+          {/* The "AR Museum" card stood here. It opened the same
+              companion application the scanner's own AR tab opens, so
+              the screen offered one thing twice - and the card could not
+              say whether the tour would actually open, because it did
+              not know where the pilgrim was. The AR tab does, and says
+              so. */}
           <section className="scan-card">
             <span className="scan-card__media">
               <img src={scannerImage} alt="" loading="lazy" />
@@ -881,6 +866,22 @@ export default function ArTour({
                     : "Tap to identify. The parish code is read automatically."}
               </p>
             </>
+          ) : !arGate.allowed ? (
+            /* The AR tour cannot open here, and the panel below would
+               offer a button that does nothing. The notice says which
+               of the two reasons it is, and both are things the pilgrim
+               can act on: change phone, or come to the parish. */
+            <div className="scan-gate" role="status">
+              <span className="scan-gate__icon" aria-hidden>
+                <MapPin className="w-5 h-5" />
+              </span>
+              <p className="scan-gate__title">
+                {arGate.reason === "device"
+                  ? "Not available on this phone"
+                  : "Open this at the parish"}
+              </p>
+              <p className="scan-gate__body">{arGate.message}</p>
+            </div>
           ) : (
             <ArScannerPanel
               stage={arStage}

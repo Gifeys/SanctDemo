@@ -49,6 +49,15 @@ interface MeTabProps {
   language?: "en" | "fil";
   onLanguageChange?: (language: "en" | "fil") => void;
   /**
+   * Whether the app is behaving as it will for a visitor.
+   *
+   * On, the AR tour opens only inside a parish. Off, everything is
+   * reachable from anywhere, which is how the app is tested away from
+   * the churches. See lib/simulatorMode.ts.
+   */
+  simulatorMode?: boolean;
+  onSimulatorModeChange?: (on: boolean) => void;
+  /**
    * The reminder settings card, passed in rather than built here.
    *
    * It needs the parish's Mass schedule and announcements, which this
@@ -86,6 +95,8 @@ export default function MeTab({
   onReplayTutorial,
   language,
   onLanguageChange,
+  simulatorMode = false,
+  onSimulatorModeChange,
 }: MeTabProps) {
   // The reader's language. Falls back to English so the component still
   // renders if a caller has not been updated to pass it.
@@ -276,6 +287,46 @@ export default function MeTab({
               </div>
             </SettingDisclosure>
           )}
+
+          {/* Simulator mode.
+              The labels say what each position DOES, because the name
+              alone is ambiguous: "simulator on" could reasonably mean
+              either "pretend to be a visitor" or "pretend to be at the
+              church". One of those locks the AR tour and the other
+              unlocks it, so the row spells it out rather than leaving
+              the reader to guess from a word. */}
+          <SettingDisclosure
+            icon={<FlaskConical className="w-4 h-4" />}
+            label={t("me.simulator", lang)}
+            bare
+          >
+            <div className="bg-[var(--color-brand-card-sunk)] rounded-[22px] border border-[var(--color-brand-border)] p-5">
+              <p className="mb-3 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
+                {simulatorMode
+                  ? t("me.simulatorOnHelp", lang)
+                  : t("me.simulatorOffHelp", lang)}
+              </p>
+              <div className="flex gap-2">
+                {([[false, t("me.simulatorOff", lang)], [true, t("me.simulatorOn", lang)]] as const).map(
+                  ([value, label]) => (
+                    <button
+                      key={String(value)}
+                      type="button"
+                      aria-pressed={simulatorMode === value}
+                      onClick={() => onSimulatorModeChange?.(value)}
+                      className={`flex-1 rounded-full py-3 text-[15px] font-bold border-[1.5px] transition-colors ${
+                        simulatorMode === value
+                          ? "bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] border-[var(--color-brand-primary)]"
+                          : "border-[var(--color-brand-border)] text-[var(--color-brand-text)]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+          </SettingDisclosure>
 
           {reminders && (
             <SettingDisclosure

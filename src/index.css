@@ -2011,6 +2011,46 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    onwards: low contrast, paper grain, some of them creased. They are
    given a light mount rather than being dropped straight onto the dark
    band, because a faded sepia print on near-black reads as a stain. */
+/* The AR tab, when the tour cannot open here.
+   Sits in the scanner sheet over the live camera, so it is a panel
+   rather than a page: dark, legible on whatever the camera happens to
+   be pointed at, and the same shape as the AR panel it replaces. */
+.scan-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 7px;
+  padding: 18px 20px 20px;
+}
+
+.scan-gate__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.13);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  color: #fff;
+}
+
+.scan-gate__title {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.scan-gate__body {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.78);
+}
+
 .parish-figure {
   margin: 18px 0 22px;
 }

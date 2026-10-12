@@ -13,7 +13,6 @@ import MeTab from "./components/MeTab";
 import ChurchHistory from "./components/ChurchHistory";
 import MassSchedule from "./components/MassSchedule";
 import MinistriesTab from "./components/MinistriesTab";
-import ParishSectionHeader from "./components/ParishSectionHeader";
 import SacramentsTab from "./components/SacramentsTab";
 import ArTour from "./components/ArTour";
 import PilgrimQuiz from "./components/PilgrimQuiz";
@@ -44,6 +43,7 @@ import TutorialRunner from "./components/TutorialRunner";
 import SanctiHost from "./components/SanctiHost";
 import { hasSeenTutorial, type TutorialTab } from "./lib/tutorial";
 import { useLanguage } from "./lib/useLanguage";
+import { useSimulatorMode } from "./lib/useSimulatorMode";
 import { t } from "./lib/ui";
 import MyApplicationsPage from "./components/MyApplicationsPage";
 import NotificationsPage from "./components/NotificationsPage";
@@ -659,6 +659,9 @@ export default function App() {
 
   /** One reading language for every screen. See lib/language.ts. */
   const { language, setLanguage } = useLanguage();
+  // Whether the app is behaving as it will for a visitor. See
+  // lib/simulatorMode.ts; the Me screen explains both positions.
+  const { simulatorMode, setSimulatorMode } = useSimulatorMode();
 
   const [followedParishes, setFollowedParishes] = useState<string[]>(loadFollowed);
   const remindableIds = useMemo(
@@ -1350,17 +1353,12 @@ export default function App() {
                           started. The banner then cleared, the band came
                           back, and it began again. The scanner could never
                           stay open for more than a frame. */}
-                      {!scanCameraLive && (
-                        <ParishSectionHeader
-                          key="ar-band"
-                          routeId={activeChurchRoute.id}
-                          eyebrow="Explore in Augmented Reality"
-                          title="AR Walk"
-                          blurb="Point your camera at the marker to begin, then at each station as you walk."
-                          icon={<Sparkles className="w-3.5 h-3.5" />}
-                          collapsing
-                        />
-                      )}
+                      {/* The "Explore in Augmented Reality / AR Walk"
+                          band that used to sit here is gone. The AR tour
+                          has its own application with its own opening
+                          screen, so this was a title for a thing that
+                          titles itself, above a card that duplicated the
+                          scanner's own AR tab. */}
                       <ArTour
                         key="ar-tour"
                         stations={activeChurchRoute.stations}
@@ -1419,6 +1417,8 @@ export default function App() {
                       onReplayTutorial={() => { setActiveTab("home"); setTutorialOpen(true); }}
                       language={language}
                       onLanguageChange={setLanguage}
+                      simulatorMode={simulatorMode}
+                      onSimulatorModeChange={setSimulatorMode}
                       reminders={
                         <ReminderSettingsCard
                           settings={reminders.settings}
