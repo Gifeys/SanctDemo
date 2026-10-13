@@ -16,13 +16,18 @@ import { stationText } from "../lib/contentTranslations";
  * three honest answers to "can I do this right now": you are not at a
  * marker yet, I am reading one, the tour is running.
  *
- * ## Why confirming the marker is a tap and not a detection
+ * ## Why it no longer asks the pilgrim to find the marker first
  *
- * The marker is read by the Unity app, not by this WebView, so the page
- * genuinely cannot tell whether the pilgrim is standing in front of one.
- * Rather than pretend, it asks. A button the pilgrim presses when they
- * can see the marker is honest about where the knowledge lives, and it
- * is one tap either way.
+ * It used to: "I can see the marker", pressed before the handover. That
+ * made the pilgrim do the marker step twice, because the AR app opens on
+ * its own marker screen and reads the sheet itself - so the honest
+ * answer to "are you at a marker" was always "the next app will tell
+ * you". Two screens asking the same question, and the first one could
+ * only guess.
+ *
+ * So this is now a door, not a checkpoint: it says what is about to
+ * happen and opens the tour. Finding the marker belongs to the app that
+ * can actually see it.
  */
 
 export type ArStage = "find" | "reading" | "live";
@@ -53,7 +58,7 @@ export default function ArScannerPanel({
   if (stage === "find") {
     return (
       <div className="scan-panel">
-        <h3 className="scan-panel__title">Only at the marker</h3>
+        <h3 className="scan-panel__title">AR Museum tour</h3>
         {error ? (
           // Replaces the instruction rather than sitting under it. Being
           // told what to do next matters more than being told again what
@@ -63,12 +68,13 @@ export default function ArScannerPanel({
           </p>
         ) : (
           <p className="scan-panel__body">
-            The AR tour runs from a printed SanctiWalk marker. Find the one beside
-            the station, then point your camera at it.
+            Walk the church and hear each statue, altar and image tell its own
+            story. The tour opens in the SanctiWalk AR app and starts by reading
+            the printed marker.
           </p>
         )}
         <button type="button" onClick={onFoundMarker} className="scan-action">
-          <Check className="w-4 h-4" /> I can see the marker
+          <Check className="w-4 h-4" /> Open AR tour
         </button>
       </div>
     );
@@ -77,9 +83,9 @@ export default function ArScannerPanel({
   if (stage === "reading") {
     return (
       <div className="scan-panel">
-        <h3 className="scan-panel__title">Reading the marker</h3>
-        <div className="scan-progress" role="progressbar" aria-label="Reading the marker" />
-        <p className="scan-caption">Hold steady. Opening the AR tour for {parishName}.</p>
+        <h3 className="scan-panel__title">Opening the AR tour</h3>
+        <div className="scan-progress" role="progressbar" aria-label="Opening the AR tour" />
+        <p className="scan-caption">Starting the AR app for {parishName}.</p>
       </div>
     );
   }

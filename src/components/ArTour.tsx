@@ -27,6 +27,7 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
   "route-mhcp": "/parish/mary-help-history.jpg",
   "route-src": "/parish/san-roque-church.jpg",
 };
+import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
 import { arAccess } from "../lib/simulatorMode";
 import { useSimulatorMode } from "../lib/useSimulatorMode";
@@ -232,7 +233,7 @@ export default function ArTour({
   const arGate = arAccess({
     simulatorMode,
     atParish: presence.mode === "present",
-    android: arAvailability(navigator.userAgent).kind === "ready",
+    android: arAvailability(navigator.userAgent, Capacitor.getPlatform()).kind === "ready",
   });
   const [arStage, setArStage] = useState<ArStage>("find");
   const [arStop, setArStop] = useState(0);
@@ -725,7 +726,7 @@ export default function ArTour({
         // the subtitle down over the viewfinder.
         : { title: "Point at a statue or marker", sub: "The AI scanner names it and tells you about it" }
       : arStage === "find"
-        ? { title: "Find the SanctiWalk marker", sub: "The AR tour opens only at a marker — look for one beside the station" }
+        ? { title: "AR Museum", sub: "Opens the SanctiWalk AR app, which reads the printed marker for you" }
         : arStage === "reading"
           ? { title: "Hold the marker in the frame", sub: "Keep steady while it is read" }
           : { title: arStation?.name ?? "AR tour running", sub: "Follow the markers around the church" };
@@ -806,16 +807,6 @@ export default function ArTour({
           in AR it frames the marker while it is read. */}
       {!sheetOpen && !(mode === "ar" && arStage === "find") && (
         <ScannerReticle tight={busy || (mode === "ar" && arStage === "reading")} />
-      )}
-
-      {/* What to look for, when the pilgrim is not at a marker yet. */}
-      {!sheetOpen && mode === "ar" && arStage === "find" && (
-        <div className="scan-marker">
-          <span className="scan-marker__tile">
-            <img src="/ui/sanctiwalk-icon-512.png" alt="" />
-          </span>
-          <span className="scan-marker__label">SanctiWalk marker</span>
-        </div>
       )}
 
       {!sheetOpen && mode === "ar" && arStage === "live" && (

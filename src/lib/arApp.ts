@@ -27,7 +27,29 @@ export type ArAvailability =
  * yet. Offering the button on an iPhone would open nothing and look broken,
  * so it says why instead.
  */
-export function arAvailability(userAgent: string): ArAvailability {
+export function arAvailability(
+  userAgent: string,
+  /**
+   * Capacitor's own answer, when there is one: 'android', 'ios' or 'web'.
+   *
+   * The user agent is a guess at what the device is, and inside the
+   * Android WebView it is a guess that can be wrong - a shell that
+   * trims or rewrites it leaves no 'android' to find, and SanctiWalk
+   * then tells somebody holding an Android phone that their Android
+   * phone cannot run the Android app. Capacitor is not guessing: it
+   * knows which shell it is running in. The user agent stays as the
+   * fallback for the browser, where there is no Capacitor.
+   */
+  platform?: string,
+): ArAvailability {
+  if (platform === 'android') return { kind: 'ready' }
+  if (platform === 'ios') {
+    return {
+      kind: 'ios',
+      reason: 'The AR tour is an Android app for now. An iPhone version needs a Mac to build.',
+    }
+  }
+
   const ua = userAgent.toLowerCase()
 
   if (/iphone|ipad|ipod/.test(ua)) {

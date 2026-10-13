@@ -86,3 +86,26 @@ describe('arLaunchParish', () => {
     expect(arTourUrl(id)).toBe(`${AR_APP_SCHEME}://tour?church=route-mhcp-preview`)
   })
 })
+
+describe('arAvailability with a platform from Capacitor', () => {
+  it('trusts the native shell over the user agent', () => {
+    // The WebView's user agent can arrive without "android" in it, and
+    // the app then tells somebody holding an Android phone that their
+    // Android phone cannot run the Android app. Capacitor knows.
+    expect(arAvailability('some rewritten ua', 'android').kind).toBe('ready')
+  })
+
+  it('still refuses an iPhone the shell reports', () => {
+    expect(arAvailability('some rewritten ua', 'ios').kind).toBe('ios')
+  })
+
+  it('falls back to the user agent in a plain browser', () => {
+    expect(arAvailability(ANDROID, 'web').kind).toBe('ready')
+    expect(arAvailability(DESKTOP, 'web').kind).toBe('desktop')
+  })
+
+  it('is unchanged when no platform is given', () => {
+    expect(arAvailability(ANDROID).kind).toBe('ready')
+    expect(arAvailability(IPHONE).kind).toBe('ios')
+  })
+})
