@@ -805,16 +805,7 @@ export default function ArTour({
 
       {/* The target. In AI mode it frames whatever is being pointed at;
           in AR it frames the marker while it is read. */}
-      {!sheetOpen && !(mode === "ar" && arStage === "find") && (
-        <ScannerReticle tight={busy || (mode === "ar" && arStage === "reading")} />
-      )}
-
-      {!sheetOpen && mode === "ar" && arStage === "live" && (
-        <span className="scan-chip">
-          <span className="scan-chip__dot" aria-hidden />
-          AR tour running
-        </span>
-      )}
+      {!sheetOpen && mode !== "ar" && <ScannerReticle tight={busy} />}
 
       {/* Status pill */}
       {/* Status pill */}
@@ -885,11 +876,6 @@ export default function ArTour({
               stage={arStage}
               error={arError}
               onFoundMarker={startAr}
-              onEndTour={() => { setArStage("find"); setArStop(0); }}
-              onNextStop={() => setArStop(i => (i + 1) % Math.max(stations.length, 1))}
-              station={arStation}
-              stopNumber={arStop + 1}
-              stopCount={stations.length}
               parishName={parishName}
             />
           )}
