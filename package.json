@@ -59,6 +59,7 @@
     "firebase-tools": "^15.30.2",
     "jsdom": "^30.0.1",
     "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.13.0",
     "qrcode": "^1.5.4",
     "selfsigned": "^5.5.0",
     "tailwindcss": "^4.1.14",

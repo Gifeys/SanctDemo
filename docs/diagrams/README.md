@@ -64,3 +64,44 @@ model stored a name and a message. The real one is reviewed, approved
 or rejected with a note, keeps an audit trail, and notifies the
 applicant — which is the parish's actual daily work and the reason the
 dashboard leads with it.
+
+## Screenshots of the actual UI
+
+The hand-drawn wireframes (figures 9–11) say what each screen is *for*.
+These say what each screen *is*. Both are useful in a paper, and only
+one of them can go out of date without anybody noticing, which is why
+these are captured rather than drawn.
+
+| # | File | Figure |
+|---|------|--------|
+| 12 | `12-ui-app.png` | Pilgrim screens, captured from the running app |
+| 13 | `13-ui-phone.png` | Screens only the handset can show (camera, signed-in) |
+| 14 | `14-ui-admin.png` | The admin portal, captured from the handset |
+
+Regenerate:
+
+```
+node tools/capture-ui.mjs          # needs the dev server on :3000
+bash tools/capture-phone.sh        # needs the handset on USB
+python tools/make-ui-sheets.py     # composes docs/ui/*.png into sheets
+```
+
+Individual screenshots live in `docs/ui/`, so a single screen can be
+dropped into the paper on its own.
+
+### Why three sources and not one
+
+`capture-ui.mjs` drives the real application in Edge at 390×844. It
+covers most of the app, but it cannot cover all of it honestly:
+
+- **No camera.** The Scan tab in a desktop browser only ever renders its
+  failure state. A screenshot of that, captioned "the scanner", would be
+  a lie.
+- **Nobody signed in.** My Applications and Notifications do not exist
+  until somebody has signed in and applied.
+- **No administrator.** The admin portal appears only for a parish
+  administrator, and shows nothing worth printing without real parish
+  data behind it.
+
+Those come off the Infinix, which has the camera, the account and the
+parish's own records.
