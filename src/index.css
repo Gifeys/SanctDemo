@@ -4551,6 +4551,30 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 .sancti-fab:active { transform: scale(0.96); }
 
+/* Pushed aside: the mark alone, half off the edge, so the bulletin
+   underneath is readable. Still a full-height target, because the
+   thing it must never stop being is tappable. */
+.sancti-fab--tucked {
+  padding: 10px;
+  gap: 0;
+  right: -14px;
+  opacity: 0.82;
+  transition: transform 150ms ease, padding 180ms ease, right 180ms ease,
+              opacity 180ms ease;
+}
+
+.sancti-fab--tucked .sancti-fab__label {
+  display: none;
+}
+
+/* The drag is a horizontal gesture on a button, so the browser must not
+   claim it for scrolling first. */
+.sancti-fab { touch-action: pan-y; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sancti-fab, .sancti-fab--tucked { transition: none; }
+}
+
 .sancti-fab img {
   width: 22px;
   height: 22px;

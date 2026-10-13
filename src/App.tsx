@@ -1462,8 +1462,11 @@ export default function App() {
                       screen - which is the point, since most of what it
                       does is take you to another one. Hidden while the
                       camera has the screen: a floating button over a
-                      viewfinder covers the thing being scanned. */}
-                  {activeTab !== "ar" && (
+                      viewfinder covers the thing being scanned. Hidden
+                      over the sign-in sheet too - that screen has one
+                      job, and an assistant that cannot help with it was
+                      sitting on top of the form. */}
+                  {activeTab !== "ar" && !isSignInOpen && (
                     <SanctiMount
                       activeParishId={activeChurchRoute.id}
                       activeParishName={activeChurchRoute.name.replace(" Guide", "").replace(" Tour", "")}

@@ -158,6 +158,13 @@ export default function SanctiSheet({
   );
 }
 
+/** Where the tucked/untucked choice is remembered. */
+const TUCK_KEY = "sanctiwalk.sanctiTucked";
+
+function loadTucked(): boolean {
+  try { return localStorage.getItem(TUCK_KEY) === "1"; } catch { return false; }
+}
+
 /**
  * The way in: a floating button above the tab bar.
  *
@@ -165,17 +172,66 @@ export default function SanctiSheet({
  * places, which means it has to be reachable from the place you are
  * stuck on — and because a sixth tab would have pushed five labels
  * into truncating.
+ *
+ * ## Why it can be pushed aside
+ *
+ * A pill that says "Ask Sancti" is wide, and it floats over the bottom
+ * right of every screen — which on Home is where the bulletin's own
+ * announcements sit. Sancti was covering the parish's notices, and a
+ * helper that hides the thing you opened the app to read is worse than
+ * no helper.
+ *
+ * Dragging it sideways tucks it to a small mark at the edge; dragging
+ * the other way brings the label back. Either way it stays one tap
+ * from open, so getting it out of the way never costs you access to
+ * it. The choice is remembered, because somebody who moved it once
+ * meant it.
+ *
+ * Tap and drag are told apart by distance, not by timing: under eight
+ * pixels of travel is a tap, which is forgiving of the thumb-roll that
+ * every real tap on a phone has in it.
  */
 export function SanctiButton({ onClick }: { onClick: () => void }) {
   const { language } = useLanguage();
+  const [tucked, setTucked] = useState(loadTucked);
+  const drag = useRef<{ x: number; moved: boolean } | null>(null);
+
+  function remember(next: boolean) {
+    setTucked(next);
+    try { localStorage.setItem(TUCK_KEY, next ? "1" : "0"); } catch { /* private mode */ }
+  }
+
+  const DRAG_THRESHOLD = 8;
 
   return (
     <button
       type="button"
-      onClick={onClick}
+      onPointerDown={e => {
+        drag.current = { x: e.clientX, moved: false };
+        // Captured, or a quick swipe stops reporting the moment the
+        // finger leaves the pill - which on a small target is most of
+        // them, and the gesture would simply not work.
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older webview */ }
+      }}
+      onPointerMove={e => {
+        if (!drag.current) return;
+        const dx = e.clientX - drag.current.x;
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        drag.current.moved = true;
+        // Rightwards pushes it away, leftwards pulls it back: the
+        // direction matches where it goes.
+        remember(dx > 0);
+      }}
+      onPointerUp={() => {
+        const wasDrag = drag.current?.moved ?? false;
+        drag.current = null;
+        if (!wasDrag) onClick();
+      }}
+      onPointerCancel={() => { drag.current = null; }}
       data-spotlight="sancti-button"
-      className="sancti-fab"
+      className={`sancti-fab${tucked ? " sancti-fab--tucked" : ""}`}
       aria-label={t("sancti.ask", language)}
+      aria-expanded={!tucked}
     >
       <img src="/ui/sanctiwalk-mark-white.png" alt="" aria-hidden />
       <span className="sancti-fab__label">{t("sancti.ask", language)}</span>
