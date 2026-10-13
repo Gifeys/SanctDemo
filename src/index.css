@@ -4557,8 +4557,8 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .sancti-fab--tucked {
   padding: 10px;
   gap: 0;
-  right: -14px;
-  opacity: 0.82;
+  right: 6px;
+  opacity: 0.9;
   transition: transform 150ms ease, padding 180ms ease, right 180ms ease,
               opacity 180ms ease;
 }

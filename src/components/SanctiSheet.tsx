@@ -181,11 +181,16 @@ function loadTucked(): boolean {
  * helper that hides the thing you opened the app to read is worse than
  * no helper.
  *
- * Dragging it sideways tucks it to a small mark at the edge; dragging
- * the other way brings the label back. Either way it stays one tap
- * from open, so getting it out of the way never costs you access to
- * it. The choice is remembered, because somebody who moved it once
- * meant it.
+ * Dragging it sideways tucks it to a small mark at the edge, and the
+ * choice is remembered because somebody who moved it once meant it.
+ *
+ * Tucked, a tap OPENS IT BACK OUT rather than opening Sancti. A bare
+ * mark at the edge of the screen does not say "Ask Sancti" to anybody
+ * who has not been told, and a control nobody recognises that jumps
+ * straight into a chat is worse than one that is merely small. So the
+ * first tap brings the words back and the second one asks. Nothing is
+ * ever more than two taps away, and the thing you tap always says what
+ * it is before it does anything.
  *
  * Tap and drag are told apart by distance, not by timing: under eight
  * pixels of travel is a tap, which is forgiving of the thumb-roll that
@@ -225,13 +230,17 @@ export function SanctiButton({ onClick }: { onClick: () => void }) {
       onPointerUp={() => {
         const wasDrag = drag.current?.moved ?? false;
         drag.current = null;
-        if (!wasDrag) onClick();
+        if (wasDrag) return;
+        // Tucked: the tap is "show me what this is", not "open it".
+        if (tucked) remember(false);
+        else onClick();
       }}
       onPointerCancel={() => { drag.current = null; }}
       data-spotlight="sancti-button"
       className={`sancti-fab${tucked ? " sancti-fab--tucked" : ""}`}
       aria-label={t("sancti.ask", language)}
       aria-expanded={!tucked}
+      title={t("sancti.ask", language)}
     >
       <img src="/ui/sanctiwalk-mark-white.png" alt="" aria-hidden />
       <span className="sancti-fab__label">{t("sancti.ask", language)}</span>
