@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, Sparkles } from "lucide-react";
-import { MINISTRIES, SACRAMENTS } from "../data";
 import { formatWhen, upcomingAnnouncements, type AnnouncementDoc } from "../lib/announcements";
 
 /**

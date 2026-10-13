@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { MINISTRIES, SACRAMENTS } from "../data";
+import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
 import {
@@ -32,6 +32,9 @@ import type { AdminSession } from "./AdminApp";
 export default function AdminContent({ session }: { session: AdminSession }) {
   const churchId = session.profile.churchId;
   const managed = useParishContent(churchId);
+
+  // This parish's ministries, not every parish's.
+  const parishMinistries = ministriesForParish(churchId);
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -95,7 +98,7 @@ export default function AdminContent({ session }: { session: AdminSession }) {
         </Group>
 
         <Group title="Ministries">
-          {MINISTRIES.map(m => (
+          {parishMinistries.map(m => (
             <Item
               key={m.id}
               id={m.id}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ParishSectionHeader from "./ParishSectionHeader";
-import { MINISTRIES, MINISTRY_IMAGES } from "../data";
+import { MINISTRY_IMAGES, ministriesForParish } from "../data";
 import { searchMinistries, suggestionsFor } from "../lib/ministrySearch";
 import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Route } from "../types";
@@ -73,8 +73,12 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// name of.
   const [query, setQuery] = useState("");
 
-  const matches = searchMinistries(MINISTRIES, query);
-  const suggestions = suggestionsFor(MINISTRIES);
+  // This parish's ministries, not the app's. The list used to be the
+  // same fifteen everywhere, which offered a pilgrim at San Roque
+  // groups the cathedral had never been asked about.
+  const ministries = ministriesForParish(parish?.id);
+  const matches = searchMinistries(ministries, query);
+  const suggestions = suggestionsFor(ministries);
 
   /// Which ministry's application screen is open, or null.
   ///
@@ -90,7 +94,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   const [submittedMinistry, setSubmittedMinistry] = useState<string>("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const applyingTo = MINISTRIES.find(m => m.id === applyingToId) ?? null;
+  const applyingTo = ministries.find(m => m.id === applyingToId) ?? null;
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -152,7 +156,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
         >
           <Info className="w-4 h-4 text-[var(--color-brand-secondary)] shrink-0 mt-0.5" />
           <p className="text-[15px] text-[var(--color-brand-text)] font-sans leading-snug">
-            These ministries are offered diocese-wide. Applying below will route your application to <strong>{parishName}</strong>, your current parish.
+            These are the ministries of <strong>{parishName}</strong>. Applying below sends your application to that parish office.
           </p>
         </div>
 
@@ -166,7 +170,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                 Available Ministries
               </h3>
               <span className="text-[14px] text-[var(--color-brand-secondary)] shrink-0 tabular-nums">
-                {query.trim() ? `${matches.length} of ${MINISTRIES.length}` : MINISTRIES.length}
+                {query.trim() ? `${matches.length} of ${ministries.length}` : ministries.length}
               </span>
             </div>
 
@@ -260,7 +264,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
             nothing else on the page to collapse against. */}
         <div className="space-y-2.5">
           <div className="space-y-2">
-            {(openId ? MINISTRIES.filter(m => m.id === openId) : []).map((min) => {
+            {(openId ? ministries.filter(m => m.id === openId) : []).map((min) => {
               const isExpanded = true;
               const resolved = resolveMinistry(managed, min.id, language);
               return (

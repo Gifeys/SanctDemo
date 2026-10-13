@@ -236,11 +236,45 @@ export const MINISTRIES: Ministry[] = [
  * parish's own, or the placeholder. A christening photo from some other
  * parish captioned "Holy Baptism" would read as this parish's christening.
  */
+/**
+ * Which ministries each parish actually has.
+ *
+ * MINISTRIES below is Mary Help of Christians' own list, supplied by
+ * that parish. It was being shown for every parish in the app, so a
+ * pilgrim at San Roque was offered fifteen groups the cathedral had
+ * never been asked about, and could apply to them - the application
+ * would arrive at a parish with no such ministry to receive it.
+ *
+ * A parish appears here only once it has told us what it runs. San
+ * Roque has confirmed its altar servers and nothing else yet, so that
+ * is all it lists. A parish not in this table lists nothing, which is
+ * the honest answer to "what ministries does it have" when nobody has
+ * asked it: better an empty list that says so than fifteen borrowed
+ * from somebody else.
+ */
+const PARISH_MINISTRY_IDS: Record<string, string[] | "all"> = {
+  "route-mhcp": "all",
+  "route-src": ["min-altar-servers"],
+};
+
+/** The ministries this parish runs, in the order they are listed. */
+export function ministriesForParish(parishId: string | undefined): Ministry[] {
+  const allowed = PARISH_MINISTRY_IDS[parishId ?? ""];
+  if (allowed === "all") return MINISTRIES;
+  if (!allowed) return [];
+  return MINISTRIES.filter(m => allowed.includes(m.id));
+}
+
+/** True when the parish has told us its ministries at all. */
+export function parishHasConfirmedMinistries(parishId: string | undefined): boolean {
+  return PARISH_MINISTRY_IDS[parishId ?? ""] !== undefined;
+}
+
 export const SACRAMENT_IMAGES: Record<string, string> = {
   "sac-baptism": "/parish/sacraments-christening.jpg",
   "sac-confirmation": "/sacraments/sac-confirmation.jpg",
   "sac-matrimony": "/sacraments/sac-matrimony.jpg",
-  "sac-eucharist": "/sacraments/sac-eucharist.jpg",
+  "sac-eucharist": "/parish/mass-gospel.jpg",
   "sac-confession": "/sacraments/sac-confession.jpg",
 };
 

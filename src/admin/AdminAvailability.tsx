@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { MINISTRIES, SACRAMENTS } from "../data";
+import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
 import { closedIds, isOpenForApplications, withAvailability } from "../lib/availability";
@@ -29,6 +29,9 @@ export default function AdminAvailability({ session }: { session: AdminSession }
   const churchId = session.profile.churchId;
   const managed = useParishContent(churchId);
 
+  // This parish's ministries, not every parish's.
+  const parishMinistries = ministriesForParish(churchId);
+
   // Which row is mid-save, so only that switch shows a spinner. A single
   // page-wide "saving" flag made every row flicker when one was pressed.
   const [saving, setSaving] = useState<string | null>(null);
@@ -50,7 +53,7 @@ export default function AdminAvailability({ session }: { session: AdminSession }
     }
   }
 
-  const ministriesOpen = MINISTRIES.filter(m => isOpenForApplications(managed, m.id)).length;
+  const ministriesOpen = parishMinistries.filter(m => isOpenForApplications(managed, m.id)).length;
   const sacramentsOpen = SACRAMENTS.filter(s => isOpenForApplications(managed, s.id)).length;
 
   return (
@@ -75,9 +78,9 @@ export default function AdminAvailability({ session }: { session: AdminSession }
 
         <Group
           title="Ministries"
-          summary={`${ministriesOpen} of ${MINISTRIES.length} accepting applications`}
+          summary={`${ministriesOpen} of ${parishMinistries.length} accepting applications`}
         >
-          {MINISTRIES.map(m => (
+          {parishMinistries.map(m => (
             <Row
               key={m.id}
               name={m.name}

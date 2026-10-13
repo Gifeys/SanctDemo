@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Church, Sparkles, Users } from "lucide-react";
 import { db } from "../lib/firebase";
-import { MINISTRIES, SACRAMENTS } from "../data";
+import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { summarise } from "../lib/availability";
 import { availableTimes } from "../lib/schedule";
@@ -41,7 +41,7 @@ export default function ParishStatus({ churchId }: { churchId: string }) {
     );
   }, [churchId]);
 
-  const ministries = summarise(managed, MINISTRIES.map(m => m.id));
+  const parishMinistries = summarise(managed, ministriesForParish(churchId).map(m => m.id));
   const sacraments = summarise(managed, SACRAMENTS.map(s => s.id));
 
   const schedule = managed?.massSchedule ?? [];
@@ -65,8 +65,8 @@ export default function ParishStatus({ churchId }: { churchId: string }) {
           icon={<Users className="w-4 h-4" />}
           label="Ministries"
           onClick={() => navigate("/admin/availability")}
-          good={`${ministries.open} accepting applications`}
-          bad={ministries.closed > 0 ? `${ministries.closed} not available` : null}
+          good={`${parishMinistries.open} accepting applications`}
+          bad={parishMinistries.closed > 0 ? `${parishMinistries.closed} not available` : null}
         />
         <Card
           icon={<Sparkles className="w-4 h-4" />}
