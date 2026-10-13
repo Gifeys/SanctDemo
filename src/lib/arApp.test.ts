@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { arAvailability, arTourUrl, AR_APP_SCHEME } from './arApp'
+import {
+  arAvailability,
+  arLaunchParish,
+  arTourUrl,
+  AR_APP_SCHEME,
+  AR_SALA_PREVIEW,
+} from './arApp'
 
 const ANDROID =
   'Mozilla/5.0 (Linux; Android 15; Infinix X6852) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Mobile Safari/537.36'
@@ -46,5 +52,37 @@ describe('arAvailability', () => {
   // the behaviour is known rather than discovered later.
   it('does not offer the link on an unrecognised platform', () => {
     expect(arAvailability('some unknown agent').kind).toBe('desktop')
+  })
+})
+
+describe('arLaunchParish', () => {
+  const mhcp = 'route-mhcp'
+
+  it('opens the sala when testing away from a parish', () => {
+    // The proponents' own case: simulator off, at home. Handing over the
+    // real parish here localizes against a church that is kilometres
+    // away, which is what made Start AR look broken at the desk.
+    expect(arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: false }))
+      .toBe(AR_SALA_PREVIEW)
+  })
+
+  it('opens the real parish when standing in it, simulator off', () => {
+    expect(arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: true }))
+      .toBe(mhcp)
+  })
+
+  it('never substitutes the sala once the simulator is on', () => {
+    // Simulator on is the visitor's build. A pilgrim must never be shown
+    // somebody's living room, and arAccess has already held the launch
+    // back unless they are at the parish.
+    for (const atParish of [true, false]) {
+      expect(arLaunchParish({ parishId: mhcp, simulatorMode: true, atParish }))
+        .toBe(mhcp)
+    }
+  })
+
+  it('carries the chosen parish into the URL', () => {
+    const id = arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: false })
+    expect(arTourUrl(id)).toBe(`${AR_APP_SCHEME}://tour?church=route-mhcp-preview`)
   })
 })

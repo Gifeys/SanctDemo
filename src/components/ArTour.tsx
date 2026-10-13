@@ -27,7 +27,7 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
   "route-mhcp": "/parish/mary-help-history.jpg",
   "route-src": "/parish/san-roque-church.jpg",
 };
-import { arAvailability, arTourUrl } from "../lib/arApp";
+import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
 import { arAccess } from "../lib/simulatorMode";
 import { useSimulatorMode } from "../lib/useSimulatorMode";
 import { usePresence } from "../context/PresenceContext";
@@ -741,7 +741,14 @@ export default function ArTour({
     window.setTimeout(() => {
       const left = () => document.visibilityState === "hidden";
 
-      window.location.href = arTourUrl(parishId ?? "route-mhcp");
+      // Which parish, not just which URL: away from a church with the
+      // simulator off this hands over the sala instead, so Start AR
+      // opens a room the phone can actually localize in.
+      window.location.href = arTourUrl(arLaunchParish({
+        parishId: parishId ?? "route-mhcp",
+        simulatorMode,
+        atParish: presence.mode === "present",
+      }));
 
       /*
        * Nothing happens when the AR app is not installed.
