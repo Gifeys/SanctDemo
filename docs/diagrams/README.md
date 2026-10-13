@@ -105,3 +105,19 @@ covers most of the app, but it cannot cover all of it honestly:
 
 Those come off the Infinix, which has the camera, the account and the
 parish's own records.
+
+## The whole set as one document
+
+```
+python tools/build-docs.py
+```
+
+writes both of these to `docs/`, one figure per landscape page with its
+number and caption:
+
+- `SanctiWalk-System-Diagrams.pdf` — for printing or emailing
+- `SanctiWalk-System-Diagrams.docx` — for pasting into the paper
+
+It picks up whatever is in `docs/diagrams`, so regenerating a figure and
+re-running is the whole update. A figure that has not been built yet is
+skipped and named, rather than leaving a gap nobody notices.
