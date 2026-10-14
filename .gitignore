@@ -29,3 +29,4 @@ tools/
 bun.lock
 bun.lockb
 tools/bin/
+docs/ui/_docx/
