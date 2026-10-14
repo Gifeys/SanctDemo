@@ -116,7 +116,12 @@ app.use("/api", (req, res, next) => {
   if (typeof origin === "string" && isAllowedOrigin(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-SanctiWalk-Key");
+    // Authorization belongs here because every scan now carries a
+    // Firebase ID token. Leaving it out does not fail loudly: the
+    // preflight is refused, the browser discards a response the server
+    // happily produced, and the app reports "could not reach the
+    // server" for a request the log shows arriving and being answered.
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-SanctiWalk-Key");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "86400");
   }

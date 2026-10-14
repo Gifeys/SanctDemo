@@ -341,6 +341,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // The scanner's daily allowance, one document per user per parish
+    // per day.
+    //
+    // Closed to clients in both directions, which is the whole point of
+    // it. The server writes these with the Admin SDK, which bypasses
+    // these rules; a client that could write here could grant itself
+    // scans, and one that could read another user's could count their
+    // visits. The app never touches this collection - it asks the
+    // server, which is the only thing that may be trusted about a
+    // number the server enforces.
+    match /scanQuotas/{quotaId} {
+      allow read, write: if false;
+    }
+
     // Anything not named above is closed. Without this, a collection added
     // later is world-writable until someone remembers to write a rule for it.
     match /{document=**} {

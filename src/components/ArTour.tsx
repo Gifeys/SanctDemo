@@ -30,6 +30,7 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
 import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
 import { idToken } from "../lib/idToken";
+import { SCANS_PER_PARISH_PER_DAY } from "../lib/scanQuota";
 import { useAuthUid } from "../lib/useAuthUid";
 import { arAccess } from "../lib/simulatorMode";
 import { useSimulatorMode } from "../lib/useSimulatorMode";
@@ -893,12 +894,19 @@ export default function ArTour({
                 <span className={`scan-shutter__core${busy ? " is-busy" : ""}`} />
               </button>
 
+              {/* The allowance is this person's at this parish, so the
+                  caption says whose and where rather than implying one
+                  shared pot. Signed out there is no allowance to report,
+                  and saying so here is kinder than letting them tap and
+                  be refused. */}
               <p className="scan-caption">
-                {budget && budget.remaining === 0
-                  ? "No scans left today — the allowance resets tomorrow."
-                  : budget
-                    ? `Tap to identify. ${budget.remaining} of ${budget.limit} scans left today.`
-                    : "Tap to identify. The parish code is read automatically."}
+                {!signedIn
+                  ? `Sign in to use the AI scanner — ${SCANS_PER_PARISH_PER_DAY} scans a day at ${parishName}.`
+                  : budget && budget.remaining === 0
+                    ? `No scans left for ${parishName} today. The count resets at midnight UTC.`
+                    : budget
+                      ? `Tap to identify. ${budget.remaining} of ${budget.limit} scans left here today.`
+                      : "Tap to identify. The parish code is read automatically."}
               </p>
             </>
           ) : !arGate.allowed ? (

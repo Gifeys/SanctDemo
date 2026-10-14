@@ -28,3 +28,4 @@ tools/
 # makes Vercel install with bun instead of npm.
 bun.lock
 bun.lockb
+tools/bin/
