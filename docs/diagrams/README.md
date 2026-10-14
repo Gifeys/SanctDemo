@@ -121,3 +121,20 @@ number and caption:
 It picks up whatever is in `docs/diagrams`, so regenerating a figure and
 re-running is the whole update. A figure that has not been built yet is
 skipped and named, rather than leaving a gap nobody notices.
+
+## The screens as a reviewable PDF
+
+```
+node tools/capture-ui.mjs      # needs the dev server on :3000
+bash tools/capture-phone.sh    # needs the handset on USB
+python tools/blur-pii.py       # ALWAYS run after a handset capture
+python tools/build-wireframe-pdf.py
+```
+
+`docs/SanctiWalk-App-Screens.pdf` — every screen, two to a page, in the
+order the app is walked. Small enough to send.
+
+`blur-pii.py` is not optional. The Me screen is captured from a real
+signed-in account and carries a real name and email; the capture
+overwrites the file each time, so the blur has to be re-applied after
+every recapture or the next PDF leaks it again.
