@@ -29,6 +29,8 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
 };
 import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
+import { idToken } from "../lib/idToken";
+import { useAuthUid } from "../lib/useAuthUid";
 import { arAccess } from "../lib/simulatorMode";
 import { useSimulatorMode } from "../lib/useSimulatorMode";
 import { usePresence } from "../context/PresenceContext";
@@ -102,11 +104,20 @@ interface Recognition {
  */
 const SCAN_TIMEOUT_MS = 45000;
 
-/** The server's shared daily recognition allowance — see /api/identify. */
+/**
+ * This visitor's allowance at this parish today — see /api/identify.
+ *
+ * It used to be shared: the server counted against the caller's IP, so
+ * everyone on a church's Wi-Fi drew from one pot of twenty. It is per
+ * account and per parish now, which is why the token below travels with
+ * every scan.
+ */
 interface ScanBudget {
   limit: number;
   used: number;
   remaining: number;
+  day?: string;
+  parishId?: string;
 }
 
 type Phase = "idle" | "scanning" | "done";
@@ -216,6 +227,10 @@ export default function ArTour({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [budget, setBudget] = useState<ScanBudget | null>(null);
 
+  // The allowance belongs to an account, so the counter has to follow
+  // signing in and out rather than being read once at mount.
+  const signedIn = useAuthUid() !== null;
+
   /**
    * Which scanner is showing, and how far the AR one has got.
    *
@@ -239,21 +254,38 @@ export default function ArTour({
   const [arStop, setArStop] = useState(0);
   const [arError, setArError] = useState<string | null>(null);
 
-  // Fetched once so the remaining count is visible before anyone spends one.
-  // Failure is silent: the counter just doesn't appear, rather than blocking
-  // a scan over a number that is only informational.
+  // Fetched so the remaining count is visible before anyone spends one.
+  // Failure is silent: the counter just doesn't appear, rather than
+  // blocking a scan over a number that is only informational.
+  //
+  // Re-run when the parish or the signed-in user changes, because the
+  // allowance belongs to that pair and not to the device.
   useEffect(() => {
     let live = true;
-    void fetch(apiUrl("/api/identify/budget"), { headers: withAppKey() })
-      .then(r => (r.ok ? r.json() : null))
-      .then(b => {
+    const parish = parishId ?? "route-mhcp";
+
+    void (async () => {
+      const token = await idToken();
+      if (!token) {
+        if (live) setBudget(null);
+        return;
+      }
+      try {
+        const r = await fetch(
+          `${apiUrl("/api/identify/budget")}?parishId=${encodeURIComponent(parish)}`,
+          { headers: withAppKey({ Authorization: `Bearer ${token}` }) },
+        );
+        const b = r.ok ? await r.json() : null;
         if (live && b) setBudget(b);
-      })
-      .catch(() => {});
+      } catch {
+        /* informational only */
+      }
+    })();
+
     return () => {
       live = false;
     };
-  }, []);
+  }, [parishId, signedIn]);
 
   const scan = useCallback(async () => {
     const capture = camera.captureFrame();
@@ -306,14 +338,28 @@ export default function ArTour({
     const timeout = window.setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
 
     try {
+      // The token is what makes the allowance this person's rather than
+      // this Wi-Fi's. Without one the server answers 401 and says so.
+      const token = await idToken();
+      if (!token) {
+        setError("Sign in to use the AI scanner. Your 20 daily scans are counted against your account.");
+        setPhase("idle");
+        window.clearTimeout(timeout);
+        return;
+      }
+
       const response = await fetch(apiUrl("/api/identify"), {
         method: "POST",
-        headers: withAppKey({ "Content-Type": "application/json" }),
+        headers: withAppKey({
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        }),
         signal: controller.signal,
         body: JSON.stringify({
           imageBase64: frame.base64,
           mimeType: frame.mimeType,
           candidates: stationNames,
+          parishId: parishId ?? "route-mhcp",
         }),
       });
 

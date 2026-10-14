@@ -8,6 +8,10 @@ import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { ATTEMPT_TIMEOUT_MS, askWithRetry, isModelBusy, isTimeout, retryPlan } from "./src/lib/modelRetry";
+import { isScannableParish, spentMessage, type ScanBudget } from "./src/lib/scanQuota";
+import {
+  initQuotaStore, quotaStoreReady, readBudget, refundScan, spendScan, uidFromToken,
+} from "./src/lib/scanQuotaStore";
 
 dotenv.config();
 
@@ -37,6 +41,18 @@ async function getOrCreateCert(): Promise<{ key: string; cert: string }> {
   // Dynamic import: `selfsigned` is a devDependency, only ever touched when a
   // developer opts into HTTPS locally — a production install must not need it.
   const selfsigned = await import("selfsigned");
+  // Started here rather than lazily on the first scan, so a missing or
+  // malformed service account is visible in the deploy log instead of
+  // surfacing as a failed scan in front of a visitor.
+  if (initQuotaStore()) {
+    console.log("[Quota] Firebase Admin ready — scans counted per user, per parish");
+  } else {
+    console.warn(
+      "[Quota] FIREBASE_SERVICE_ACCOUNT not set — scans will NOT be counted. "
+      + "Set it on the host before anyone else can reach this server.",
+    );
+  }
+
   const lanIps = getLanIps();
   const altNames: Array<{ type: 2 | 7; value?: string; ip?: string }> = [
     { type: 2, value: "localhost" }, // DNS
@@ -197,44 +213,77 @@ function requireAppKey(req: express.Request, res: express.Response): boolean {
 }
 
 /**
- * Per-IP daily cap.
+ * The daily allowance, per signed-in user and per parish.
  *
- * This was one global counter in memory: 20 scans per day for the entire
- * world, which meant a single user - or one bot finding the public URL -
- * could exhaust everybody's allowance, including during a live defence. It
- * also reset on every restart, and free hosts restart constantly.
+ * This used to count against the caller's IP address, which is not a
+ * person. Everyone on a church's Wi-Fi shared one address and therefore
+ * one allowance, so the first visitor through the door could spend the
+ * whole room's; step outside onto mobile data and you became somebody
+ * new with a fresh twenty. Both halves were wrong.
  *
- * Still in memory, so a restart still forgives everyone. That is a deliberate
- * trade: a database for rate limiting is disproportionate here, and the
- * failure mode is generous rather than dangerous.
+ * It is counted against the Firebase account now, in Firestore, with
+ * the read and the write in one transaction so two requests racing
+ * cannot both be told they were the last one. The rules themselves live
+ * in src/lib/scanQuota.ts, which the app imports too, so what the
+ * screen promises and what the server enforces cannot drift apart.
+ *
+ * The consequence for a visitor is real and worth stating: scanning now
+ * requires signing in. Everything else in SanctiWalk still works
+ * signed-out.
  */
-const DAILY_SCAN_LIMIT = Number(process.env.DAILY_SCAN_LIMIT) || 20;
-let scanDay = "";
-const scansByIp = new Map<string, number>();
-
 function clientIp(req: express.Request): string {
-  // Render and similar put the real address in x-forwarded-for; req.ip would
-  // otherwise be the load balancer, making the cap global again by accident.
+  // Render puts the real address in x-forwarded-for; req.ip would be the
+  // load balancer. Only used for logging now.
   const forwarded = req.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
   return req.ip || "unknown";
 }
 
-function scanBudget(req?: express.Request): { limit: number; used: number; remaining: number } {
-  const today = new Date().toISOString().slice(0, 10);
-  if (scanDay !== today) {
-    scanDay = today;
-    scansByIp.clear();
+/**
+ * The signed-in user behind a request, or null after answering 401.
+ *
+ * The uid comes from a token Google's keys verify, never from the body,
+ * so a client cannot claim to be somebody else or invent a fresh
+ * identity per scan.
+ */
+async function requireUser(
+  req: express.Request,
+  res: express.Response,
+): Promise<string | null> {
+  if (!quotaStoreReady()) {
+    // Deployed without credentials. Say so rather than silently handing
+    // out an uncounted allowance to anyone who finds the URL.
+    console.warn("[Quota] Admin SDK unavailable — scanner is running uncounted");
+    return "anonymous";
   }
 
-  const ip = req ? clientIp(req) : "unknown";
-  const used = scansByIp.get(ip) ?? 0;
-  return { limit: DAILY_SCAN_LIMIT, used, remaining: Math.max(0, DAILY_SCAN_LIMIT - used) };
+  const uid = await uidFromToken(req.get("authorization"));
+  if (uid) return uid;
+
+  res.status(401).json({
+    error: "Sign in to use the AI scanner. Your daily scans are counted against your account.",
+    code: "sign_in_required",
+  });
+  return null;
 }
 
-function recordScan(req: express.Request): void {
-  const ip = clientIp(req);
-  scansByIp.set(ip, (scansByIp.get(ip) ?? 0) + 1);
+/** A parish's name, for messages a visitor reads. */
+function parishName(parishId: string): string {
+  return parishId === "route-src"
+    ? "San Roque Cathedral Parish"
+    : "Mary Help of Christians Parish";
+}
+
+/** The parish a request is for, or null after answering 400. */
+function requireParish(req: express.Request, res: express.Response): string | null {
+  const parishId = (req.body?.parishId ?? req.query?.parishId) as unknown;
+  if (isScannableParish(parishId)) return parishId;
+
+  res.status(400).json({
+    error: "The scanner needs to know which parish you are visiting.",
+    code: "parish_required",
+  });
+  return null;
 }
 
 /** Open-ended recognition, used when there is no station shortlist. */
@@ -398,6 +447,36 @@ app.post("/api/generate-walk", async (req, res) => {
 app.post("/api/identify", async (req, res) => {
   if (!requireAppKey(req, res)) return;
 
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+  const parishId = requireParish(req, res);
+  if (!parishId) return;
+
+  // Reserved here, before the model is asked. Checking first and
+  // charging afterwards lets a client that aborts mid-request scan for
+  // ever; the refund below covers the failures that are genuinely ours.
+  let spent = false;
+  let budget: ScanBudget;
+
+  try {
+    const attempt = await spendScan(uid, parishId);
+    budget = attempt.budget;
+    if (!attempt.allowed) {
+      return res.status(429).json({
+        error: spentMessage(parishName(parishId)),
+        code: "daily_limit",
+        budget,
+      });
+    }
+    spent = true;
+  } catch (err) {
+    console.error("[Quota] could not reserve a scan:", (err as Error).message);
+    return res.status(503).json({
+      error: "The scanner could not check your remaining scans. Please try again.",
+      code: "quota_unavailable",
+    });
+  }
+
   try {
     const { imageBase64, mimeType, candidates } = req.body ?? {};
 
@@ -415,15 +494,6 @@ app.post("/api/identify", async (req, res) => {
     // Base64 is 4 chars per 3 bytes, so this is the decoded size.
     const imageBytes = Math.round(imageBase64.length * 0.75);
     console.log(`[Scanner] API request: ${(imageBytes / 1024).toFixed(0)} KB image, model ${VISION_MODEL}`);
-
-    const budget = scanBudget(req);
-    if (budget.remaining <= 0) {
-      return res.status(429).json({
-        error: `All ${budget.limit} recognitions for today have been used. The counter resets tomorrow.`,
-        code: "daily_limit",
-        budget,
-      });
-    }
 
     const shortlist: string[] = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
 
@@ -532,7 +602,6 @@ app.post("/api/identify", async (req, res) => {
       },
     });
 
-    recordScan(req);
     const startedAt = Date.now();
     // Retry sequencing lives in src/lib/modelRetry.ts, where it is unit
     // tested — the behaviour that matters (three tries, then a different
@@ -570,17 +639,18 @@ app.post("/api/identify", async (req, res) => {
     // two of the day's twenty recognitions on every miss.
     if (!shortlist.length) delete result.matchedStation;
 
-    return res.json({ ...result, budget: scanBudget(req) });
+    return res.json({ ...result, budget });
   } catch (error: any) {
     const message = String(error?.message ?? error);
 
     // The free tier allows a small number of requests per model per day. Say so
     // plainly rather than surfacing a raw stack trace to a pilgrim.
     if (message.includes("429") || message.toUpperCase().includes("RESOURCE_EXHAUSTED")) {
+      if (spent) await refundScan(uid, parishId);
       return res.status(429).json({
-        error: "Daily recognition limit reached. Please try again tomorrow.",
+        error: "The recognition service is busy. Please try again in a little while.",
         code: "quota_exhausted",
-        budget: scanBudget(req),
+        budget: await readBudget(uid, parishId),
       });
     }
 
@@ -588,6 +658,13 @@ app.post("/api/identify", async (req, res) => {
     // act on. An API key problem in particular is a configuration fault, not
     // something a pilgrim can fix by trying again, so it says so.
     console.error("[Scanner] Scanner error:", message);
+
+    // Everything below is the server, the key or the model failing - none
+    // of it is the visitor's doing, so they get the scan back. A
+    // photograph the model simply could not name is NOT refunded: that is
+    // a real recognition, and refunding it would make the allowance
+    // unlimited for anyone pointing the camera at a wall.
+    if (spent) await refundScan(uid, parishId);
 
     if (/API key|API_KEY|PERMISSION_DENIED|UNAUTHENTICATED/i.test(message)) {
       return res.status(500).json({
@@ -633,9 +710,13 @@ app.get("/api/health", (_req, res) => {
 
 // Lets the scanner show what is left before anyone spends one. Guarded:
 // how much Gemini quota is left is nobody else's business.
-app.get("/api/identify/budget", (req, res) => {
+app.get("/api/identify/budget", async (req, res) => {
   if (!requireAppKey(req, res)) return;
-  res.json(scanBudget(req));
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+  const parishId = requireParish(req, res);
+  if (!parishId) return;
+  res.json(await readBudget(uid, parishId));
 });
 
 // Check if SMTP is configured for real email sending
