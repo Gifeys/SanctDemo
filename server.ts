@@ -8,7 +8,7 @@ import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { ATTEMPT_TIMEOUT_MS, askWithRetry, isModelBusy, isTimeout, retryPlan } from "./src/lib/modelRetry";
-import { isScannableParish, spentMessage, type ScanBudget } from "./src/lib/scanQuota";
+import { emptyBudget, isScannableParish, spentMessage, type ScanBudget } from "./src/lib/scanQuota";
 import {
   initQuotaStore, quotaStoreReady, readBudget, refundScan, spendScan, uidFromToken,
 } from "./src/lib/scanQuotaStore";
@@ -41,18 +41,6 @@ async function getOrCreateCert(): Promise<{ key: string; cert: string }> {
   // Dynamic import: `selfsigned` is a devDependency, only ever touched when a
   // developer opts into HTTPS locally — a production install must not need it.
   const selfsigned = await import("selfsigned");
-  // Started here rather than lazily on the first scan, so a missing or
-  // malformed service account is visible in the deploy log instead of
-  // surfacing as a failed scan in front of a visitor.
-  if (initQuotaStore()) {
-    console.log("[Quota] Firebase Admin ready — scans counted per user, per parish");
-  } else {
-    console.warn(
-      "[Quota] FIREBASE_SERVICE_ACCOUNT not set — scans will NOT be counted. "
-      + "Set it on the host before anyone else can reach this server.",
-    );
-  }
-
   const lanIps = getLanIps();
   const altNames: Array<{ type: 2 | 7; value?: string; ip?: string }> = [
     { type: 2, value: "localhost" }, // DNS
@@ -240,6 +228,41 @@ function clientIp(req: express.Request): string {
 }
 
 /**
+ * Lets a developer run the scanner with no Firebase credentials.
+ *
+ * Off unless asked for, and refused outright in production so it can
+ * never be the thing that makes a deployed server unlimited. Even when
+ * on, the backstop below keeps a hard per-IP ceiling, because "my
+ * laptop" and "reachable from the internet" are not always as different
+ * as the person running it believes.
+ */
+const UNCOUNTED_OK =
+  process.env.ALLOW_UNCOUNTED_SCANS === "1" && process.env.NODE_ENV !== "production";
+
+const DEV_BACKSTOP_LIMIT = Number(process.env.DEV_SCAN_LIMIT) || 40;
+let devBackstopDay = "";
+const devBackstopByIp = new Map<string, number>();
+
+function devBackstopAllows(req: express.Request, res: express.Response): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  if (devBackstopDay !== today) {
+    devBackstopDay = today;
+    devBackstopByIp.clear();
+  }
+  const ip = clientIp(req);
+  const used = devBackstopByIp.get(ip) ?? 0;
+  if (used >= DEV_BACKSTOP_LIMIT) {
+    res.status(429).json({
+      error: "This development server's scan ceiling is spent. Restart it, or configure Firebase.",
+      code: "daily_limit",
+    });
+    return false;
+  }
+  devBackstopByIp.set(ip, used + 1);
+  return true;
+}
+
+/**
  * The signed-in user behind a request, or null after answering 401.
  *
  * The uid comes from a token Google's keys verify, never from the body,
@@ -251,10 +274,25 @@ async function requireUser(
   res: express.Response,
 ): Promise<string | null> {
   if (!quotaStoreReady()) {
-    // Deployed without credentials. Say so rather than silently handing
-    // out an uncounted allowance to anyone who finds the URL.
-    console.warn("[Quota] Admin SDK unavailable — scanner is running uncounted");
-    return "anonymous";
+    // Fail CLOSED. The first version returned a shared "anonymous" uid
+    // here, which meant a deploy that simply forgot
+    // FIREBASE_SERVICE_ACCOUNT served an unlimited, unauthenticated
+    // scanner to anyone who found the URL - and the per-IP cap that
+    // used to bound that had just been removed. A missing environment
+    // variable is the likeliest mistake of the whole deployment, so it
+    // has to be the safe one.
+    //
+    // Local development opts out explicitly, and production may not:
+    // see UNCOUNTED_OK.
+    if (!UNCOUNTED_OK) {
+      res.status(503).json({
+        error: "The scanner is not available right now. Please try again later.",
+        code: "quota_unavailable",
+      });
+      return null;
+    }
+    if (!devBackstopAllows(req, res)) return null;
+    return `dev:${clientIp(req)}`;
   }
 
   const uid = await uidFromToken(req.get("authorization"));
@@ -459,7 +497,14 @@ app.post("/api/identify", async (req, res) => {
   let budget: ScanBudget;
 
   try {
-    const attempt = await spendScan(uid, parishId);
+    const attempt = quotaStoreReady()
+      ? await spendScan(uid, parishId)
+      // The development path, and only reachable through it, because
+      // requireUser has already answered 503 for everybody else. There
+      // is no store to count in, so the per-IP ceiling it already
+      // charged is what bounds this.
+      : { allowed: true, budget: emptyBudget(parishId) };
+
     budget = attempt.budget;
     if (!attempt.allowed) {
       return res.status(429).json({
@@ -468,7 +513,7 @@ app.post("/api/identify", async (req, res) => {
         budget,
       });
     }
-    spent = true;
+    spent = quotaStoreReady();
   } catch (err) {
     console.error("[Quota] could not reserve a scan:", (err as Error).message);
     return res.status(503).json({
@@ -798,6 +843,24 @@ async function start() {
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
+  }
+
+  // Unconditional, and at real startup rather than inside the local
+  // HTTPS helper where the first version of this hid - on Render that
+  // helper never runs, so the store was never initialised and every
+  // request would have taken the unavailable path.
+  if (initQuotaStore()) {
+    console.log("[Quota] Firebase Admin ready — scans counted per user, per parish");
+  } else if (UNCOUNTED_OK) {
+    console.warn(
+      `[Quota] No Firebase credentials. ALLOW_UNCOUNTED_SCANS is on, so scanning works `
+      + `with a ${DEV_BACKSTOP_LIMIT}/day per-IP ceiling. Never do this in production.`,
+    );
+  } else {
+    console.error(
+      "[Quota] FIREBASE_SERVICE_ACCOUNT is not set — the scanner will answer 503. "
+      + "Set it on the host, or set ALLOW_UNCOUNTED_SCANS=1 for local development.",
+    );
   }
 
   const lanIps = getLanIps();

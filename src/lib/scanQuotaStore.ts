@@ -123,11 +123,12 @@ export interface SpendResult {
 export async function spendScan(uid: string, parishId: string): Promise<SpendResult> {
   const day = utcDay()
   if (!quotaStoreReady()) {
-    // No credentials configured. Refusing every scan would take the
-    // feature away over a deployment mistake, so it is allowed and the
-    // log says loudly why the count will be wrong.
-    console.warn('[Quota] no Admin credentials — allowing the scan uncounted')
-    return { allowed: true, budget: budgetFrom(0, parishId, day) }
+    // Fail closed. This used to allow the scan and log a warning, which
+    // made a forgotten environment variable into an unlimited public
+    // scanner. Callers must not reach here - requireUser answers 503
+    // first - so this is the belt to that braces, and it throws rather
+    // than quietly returning a budget nobody is counting.
+    throw new Error('scan quota store is not configured')
   }
 
   const ref = getFirestore().collection(COLLECTION).doc(scanQuotaDocId(uid, parishId, day))
