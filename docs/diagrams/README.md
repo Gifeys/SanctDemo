@@ -138,3 +138,18 @@ order the app is walked. Small enough to send.
 signed-in account and carries a real name and email; the capture
 overwrites the file each time, so the blur has to be re-applied after
 every recapture or the next PDF leaks it again.
+
+## The wireframes as a reviewable PDF
+
+```
+python tools/diagrams_wire.py          # rebuild the sheets
+python tools/build-wireframes-pdf.py   # cut them into pages
+```
+
+`docs/SanctiWalk-Wireframes.pdf` — all 24 wireframes, two to a page:
+15 user screens, the 4 admin sections, and the 5 AR screens.
+
+It cuts the grid sheets back into their cells rather than re-rendering,
+so the geometry here has to match `sheet()` in `diagrams_wire.py`. If
+they drift apart the script refuses to crop rather than quietly
+producing pictures of the wrong rectangles.
