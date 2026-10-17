@@ -4003,7 +4003,9 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   right: 8px;
   bottom: 8px;
   z-index: 4;
-  padding: 12px 14px 16px;
+  /* Tightened. This panel was covering a third of the viewfinder,
+     which is the one thing the screen is for. */
+  padding: 9px 12px 11px;
   border-radius: 26px;
   background: var(--scan-sheet);
   border: 1px solid var(--scan-line);
@@ -4024,7 +4026,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 .scan-tab {
-  padding: 9px 10px;
+  padding: 7px 10px;
   border-radius: 999px;
   font-size: 14.5px;
   font-weight: 600;
@@ -4081,9 +4083,9 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 /* ---- the shutter ---- */
 .scan-shutter {
-  width: 72px;
-  height: 72px;
-  margin: 14px auto 0;
+  width: 56px;
+  height: 56px;
+  margin: 9px auto 0;
   display: grid;
   place-items: center;
   border-radius: 999px;
@@ -4095,8 +4097,8 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .scan-shutter:disabled { opacity: 0.55; }
 
 .scan-shutter__core {
-  width: 54px;
-  height: 54px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   background: #fff;
   transition: width 260ms ease, height 260ms ease, background-color 260ms ease;
@@ -4109,10 +4111,10 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 .scan-caption {
-  margin: 10px 0 0;
+  margin: 7px 0 0;
   text-align: center;
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 12.5px;
+  line-height: 1.35;
   color: var(--scan-dim);
 }
 
@@ -4989,4 +4991,91 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 @media (prefers-reduced-motion: reduce) {
   .home-flash { animation: none; box-shadow: 0 0 0 4px rgb(233 199 124 / 0.7); }
+}
+
+
+/* ---- Preview: the feature, recorded ---- */
+
+/* On the sheet's right edge rather than in the column of controls:
+   it is not part of scanning, and a full-width button there would
+   read as another step in it. */
+.scan-preview-btn {
+  position: absolute;
+  /* ABOVE the sheet, not inside it. Sitting in the top-right corner
+     put it straight on top of the "AR Scanner" tab label, because the
+     switch is the first thing in the sheet and spans its full width. */
+  bottom: calc(100% + 8px);
+  right: 2px;
+  z-index: 5;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--scan-ink);
+  /* Opaque: it floats over the camera now, not over the panel. */
+  background: var(--scan-sheet);
+  border: 1px solid var(--scan-line);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+}
+
+.scan-preview-btn:active { transform: scale(0.96); }
+
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(4 7 14 / 0.86);
+  backdrop-filter: blur(6px);
+}
+
+.preview-box {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #0b1220;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.55);
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.preview-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.preview-close {
+  height: 30px;
+  width: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.preview-video {
+  display: block;
+  width: 100%;
+  max-height: 62vh;
+  background: #000;
+}
+
+.preview-note {
+  margin: 0;
+  padding: 9px 12px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 0.62);
 }

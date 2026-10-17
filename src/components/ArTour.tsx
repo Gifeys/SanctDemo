@@ -29,6 +29,7 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
 };
 import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
+import PreviewVideo from "./PreviewVideo";
 import { idToken } from "../lib/idToken";
 import { SCANS_PER_PARISH_PER_DAY } from "../lib/scanQuota";
 import { useAuthUid } from "../lib/useAuthUid";
@@ -225,6 +226,11 @@ export default function ArTour({
   const [result, setResult] = useState<Recognition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // The feature, recorded. Shown when it cannot be demonstrated
+  // live - during a Mass, or to a survey respondent who is not
+  // standing in the church.
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [budget, setBudget] = useState<ScanBudget | null>(null);
 
@@ -408,7 +414,11 @@ export default function ArTour({
           `${data.matchedStation === false ? ", not a listed station" : ""})`,
       );
       setResult({ ...(data as Omit<Recognition, "source">), source: "ai" });
-      setSheetOpen(true);
+      // Deliberately NOT opening the full card. A scan used to
+      // cover the whole screen with text the moment it returned,
+      // which buries the thing the camera is pointed at. The name
+      // lands in the slim bar below and a tap opens the rest.
+      setSheetOpen(false);
       setPhase("done");
     } catch (err) {
       console.error("[Scanner] Scanner error:", err);
@@ -731,8 +741,8 @@ export default function ArTour({
               className="w-full flex items-center justify-between gap-2 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] text-[var(--color-brand-text)] rounded-2xl py-3 px-4 font-sans active:scale-[0.98] transition-transform"
             >
               <span className="min-w-0 text-left">
-                <span className="block text-[14px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
-                  Last result
+                <span className="block text-[12.5px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
+                  Tap to read
                 </span>
                 <span className="block text-[15px] font-bold truncate">{result.title}</span>
               </span>
@@ -871,6 +881,14 @@ export default function ArTour({
       {/* The sheet: the switch, and whatever the chosen scanner needs. */}
       {!sheetOpen && (
         <ScannerSheet>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="scan-preview-btn"
+            aria-label={`Watch how the ${mode === "ar" ? "AR tour" : "AI Scanner"} works`}
+          >
+            Preview
+          </button>
           <ScannerTabs
             mode={mode}
             onChange={next => {
@@ -934,6 +952,14 @@ export default function ArTour({
             />
           )}
         </ScannerSheet>
+      )}
+
+      {previewOpen && (
+        <PreviewVideo
+          src={mode === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
+          title={mode === "ar" ? "AR Museum tour" : "AI Scanner"}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
 
       {/* Information card */}
