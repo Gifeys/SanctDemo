@@ -423,3 +423,63 @@ describe('changing the language', () => {
     expect(ask('saan ang simbahan').action).not.toBe('CHANGE_LANGUAGE')
   })
 })
+
+describe("conversational context", () => {
+  const prior = { action: "OPEN_MASS_SCHEDULE" as const, parishId: "route-src" };
+
+  it("carries the subject into a follow-up fragment", () => {
+    // Nobody repeats the whole question. "What about tomorrow?" after
+    // asking about Mass is still about Mass, and scored nothing before.
+    const heard = understand("what about tomorrow?", PARISHES, [], prior);
+    expect(heard.action).toBe("OPEN_MASS_SCHEDULE");
+    expect(heard.parishId).toBe("route-src");
+  });
+
+  it("carries the parish into a question that names none", () => {
+    const heard = understand("what time is mass?", PARISHES, [], { action: "OPEN_CHURCH", parishId: "route-src" });
+    expect(heard.action).toBe("OPEN_MASS_SCHEDULE");
+    expect(heard.parishId).toBe("route-src");
+  });
+
+  it("lets the sentence's own parish beat the remembered one", () => {
+    // Requirement 4: if the user changes parish, the context changes.
+    const heard = understand("what time is mass at mary help?", PARISHES, [], prior);
+    expect(heard.parishId).toBe("route-mhcp");
+  });
+
+  it("does not treat a fresh question as a continuation", () => {
+    // "What about the map?" is a fragment, but it carries its own
+    // intent; answering it with Mass times would be worse than useless.
+    const heard = understand("what about the map?", PARISHES, [], prior);
+    expect(heard.action).toBe("OPEN_MAP");
+  });
+
+  it("still admits ignorance when there is nothing to carry", () => {
+    expect(understand("what about tomorrow?", PARISHES, []).action).toBe("UNKNOWN");
+    expect(
+      understand("what about tomorrow?", PARISHES, [], { action: "UNKNOWN" }).action,
+    ).toBe("UNKNOWN");
+  });
+
+  it("does not inherit across a long sentence that stands on its own", () => {
+    // "there" is ordinary English inside a real sentence; only a
+    // fragment is a follow-up.
+    const heard = understand(
+      "is there anything i should know before i visit a catholic church",
+      PARISHES, [], prior,
+    );
+    expect(heard.action).not.toBe("OPEN_MASS_SCHEDULE");
+  });
+
+  it("understands a Tagalog follow-up", () => {
+    const heard = understand("bukas?", PARISHES, [], prior);
+    expect(heard.action).toBe("OPEN_MASS_SCHEDULE");
+  });
+
+  it("an inherited parish does not re-open the church", () => {
+    // The bug this ordering exists to prevent: with a remembered
+    // parish, every fragment used to come back as "open that church".
+    const heard = understand("what about tomorrow?", PARISHES, [], prior);
+    expect(heard.action).not.toBe("OPEN_CHURCH");
+  });
+});

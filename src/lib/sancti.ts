@@ -598,10 +598,61 @@ export function findTime(text: string): string | undefined {
  * count, so a three-word match beats a one-word match that happens to
  * sit inside it.
  */
+/**
+ * What the last exchange was about.
+ *
+ * Sancti had no memory at all: every sentence was understood from
+ * scratch, so "what about tomorrow?" scored nothing and came back as
+ * "I did not understand". The fragment is not a failure of phrasing,
+ * it is how people speak once a subject is already on the table.
+ */
+export interface PriorTurn {
+  action: SanctiAction;
+  parishId?: string;
+  itemId?: string;
+}
+
+/**
+ * Sentences that continue the last question instead of starting one.
+ *
+ * Kept deliberately tight. A follow-up inherits the previous intent
+ * wholesale, so a loose matcher here would answer an unrelated question
+ * with the previous topic - a worse failure than admitting it did not
+ * understand. Bilingual, like every other trigger in this file.
+ */
+const FOLLOW_UP = [
+  "what about", "how about", "and tomorrow", "what time tomorrow",
+  "tomorrow", "bukas", "kahapon", "yesterday", "next week", "sa susunod",
+  "paano papunta", "how do i get there", "how to get there", "get there",
+  "doon", "dun", "that one", "it", "there",
+];
+
+/**
+ * Whether this sentence is a continuation rather than a new question.
+ *
+ * Requires a prior turn AND a short sentence. "There" inside a long
+ * sentence is ordinary English; "there?" on its own is a follow-up.
+ */
+export function isFollowUp(text: string, prior?: PriorTurn): boolean {
+  if (!prior || prior.action === "UNKNOWN") return false;
+  const hay = normalise(text);
+  if (!hay) return false;
+  // Six words is a fragment. Beyond that the sentence is carrying
+  // enough of its own meaning to be understood on its own terms.
+  if (hay.split(" ").length > 6) return false;
+  return FOLLOW_UP.some(f => hay.includes(f));
+}
+
 export function understand(
   text: string,
   parishes: ParishName[],
   items: NamedItem[] = [],
+  /**
+   * The previous exchange, when there was one. Only ever used to fill
+   * a blank - a sentence that names its own parish or intent is always
+   * taken at its word.
+   */
+  prior?: PriorTurn,
 ): Understanding {
   const hay = normalise(text);
   if (!hay) return { action: "UNKNOWN", score: 0, imperative: false };
@@ -620,7 +671,11 @@ export function understand(
     if (score > best.score) best = { action, score };
   }
 
-  const parishId = findParish(hay, parishes);
+  // The sentence's own parish always wins; the previous one fills a
+  // blank. "What time is Mass?" after asking about San Roque means San
+  // Roque, which is the whole of requirement 4.
+  const namedHere = findParish(hay, parishes);
+  const parishId = namedHere ?? prior?.parishId;
 
   // A named ministry or sacrament outranks everything.
   //
@@ -641,9 +696,29 @@ export function understand(
     return result;
   }
 
-  // Naming a parish and nothing else is a request to open it.
-  if (best.score < CONFIDENCE_FLOOR && parishId) {
-    return { action: "OPEN_CHURCH", parishId, score: CONFIDENCE_FLOOR, imperative };
+  // A fragment continuing the last question. Checked only after every
+  // real trigger has had its chance, so "what about the map?" is still
+  // understood as the map rather than as more of the previous topic.
+  if (best.score < CONFIDENCE_FLOOR && isFollowUp(text, prior)) {
+    const carried: Understanding = {
+      action: prior!.action,
+      score: CONFIDENCE_FLOOR,
+      imperative,
+    };
+    if (parishId) carried.parishId = parishId;
+    if (prior!.itemId) carried.itemId = prior!.itemId;
+    if (prior!.action === "CREATE_REMINDER") {
+      const time = findTime(text);
+      if (time) carried.time = time;
+    }
+    return carried;
+  }
+
+  // Naming a parish and nothing else is a request to open it. Only a
+  // parish named in THIS sentence: an inherited one means the pilgrim
+  // is still asking about it, not asking to open it again.
+  if (best.score < CONFIDENCE_FLOOR && namedHere) {
+    return { action: "OPEN_CHURCH", parishId: namedHere, score: CONFIDENCE_FLOOR, imperative };
   }
 
   if (best.score < CONFIDENCE_FLOOR) return { action: "UNKNOWN", score: best.score, imperative };

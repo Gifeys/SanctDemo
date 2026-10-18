@@ -9,6 +9,9 @@ import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { ATTEMPT_TIMEOUT_MS, askWithRetry, isModelBusy, isTimeout, retryPlan } from "./src/lib/modelRetry";
 import { emptyBudget, isScannableParish, spentMessage, type ScanBudget } from "./src/lib/scanQuota";
+import { readParishContent } from "./src/lib/parishContentStore";
+import { groundingBlock, isGap, itemFacts, massFact, type Fact, type Gap } from "./src/lib/sanctiGrounding";
+import { MASS_SCHEDULES } from "./src/data";
 import {
   initQuotaStore, quotaStoreReady, readBudget, refundScan, spendScan, uidFromToken,
 } from "./src/lib/scanQuotaStore";
@@ -756,6 +759,153 @@ app.post("/api/identify", async (req, res) => {
 // there is nothing here worth guarding.
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+/**
+ * Ask Sancti, grounded in the parish's own records.
+ *
+ * ## Why the model never answers alone
+ *
+ * A language model asked "what time is Mass at San Roque" will answer.
+ * It will produce a time, in the right format, with no sign that it was
+ * invented - which for the one question a pilgrim acts on by leaving
+ * the house at a particular hour is the worst possible failure. So the
+ * model is never the source of a fact here. Every parish fact is read
+ * from Firestore first, handed over as a VERIFIED FACTS block, and the
+ * model's only job is to put it into a sentence in the pilgrim's own
+ * language.
+ *
+ * Gaps are passed in as explicitly as facts. A model given only facts
+ * fills a silence, and what it fills it with is a plausible Mass time;
+ * told in writing that the schedule is not published, saying so becomes
+ * the expected answer rather than a failure to answer.
+ *
+ * ## Why failure is a clean 503
+ *
+ * The client keeps its on-device matcher and falls back to it whenever
+ * this endpoint cannot help. An assistant whose first act is to fail at
+ * a dead URL is worse than no assistant, which is the reason Sancti was
+ * built on-device in the first place; that guarantee is kept by saying
+ * so clearly rather than by returning something invented.
+ */
+const ASK_SYSTEM_INSTRUCTION = [
+  "You are Sancti, a warm and respectful guide inside the SanctiWalk app for the Diocese of Kalookan.",
+  "",
+  "ABSOLUTE RULES:",
+  "1. Parish facts - Mass times, schedules, requirements, contact details, fees, policies, events - may ONLY come from the VERIFIED FACTS block. Never infer, estimate or recall them.",
+  "2. If something is listed under NOT AVAILABLE, say plainly that it is not published in the app and suggest contacting the parish office. Never fill the gap.",
+  "3. If a fact is marked as SanctiWalk app data rather than the parish office, say it is the app's information and may not be the parish's latest.",
+  "4. If a parish fact is old, mention when the parish last updated it.",
+  "5. General Catholic teaching, prayers, the Rosary, the meaning of sacraments and traditions you may answer from your own knowledge - but label it as general Catholic guidance, kept separate from this parish's own information.",
+  "6. Never invent a parish's history, a saint's connection to it, a phone number, a price, or an event date.",
+  "7. Never claim a parish offers a service unless the VERIFIED FACTS say so.",
+  "8. Never mention buttons, screens or features that were not named in the context you were given.",
+  "",
+  "STYLE: answer the question first, in two or three sentences, then any useful detail. Reply in the language the user wrote in - English or Filipino. Warm, plain, never preachy.",
+].join("\n");
+
+app.post("/api/ask", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+  if (!question) return res.status(400).json({ error: "Missing question." });
+  // A guard, not a limit on curiosity: the grounding block and the
+  // recent conversation share a context window with it.
+  if (question.length > 600) return res.status(400).json({ error: "Question is too long." });
+
+  const parishId = typeof req.body?.parishId === "string" ? req.body.parishId : "";
+  const parishName =
+    typeof req.body?.parishName === "string" && req.body.parishName.trim()
+      ? req.body.parishName.trim()
+      : "this parish";
+
+  try {
+    const ai = getAi();
+
+    // Retrieval first. Everything the answer may assert is gathered
+    // here, from the parish's own document where it has one.
+    const content = parishId ? await readParishContent(parishId) : null;
+    const facts: Fact[] = [];
+    const gaps: Gap[] = [];
+
+    if (parishId) {
+      const mass = massFact(content, MASS_SCHEDULES[parishId]?.schedule);
+      if (isGap(mass)) gaps.push(mass); else facts.push(mass);
+
+      if (content?.description?.trim()) {
+        facts.push({ topic: "description", value: content.description.trim(), source: "parish", updatedAt: content.updatedAt });
+      }
+      if (content?.historyBody?.trim()) {
+        facts.push({ topic: "history", value: content.historyBody.trim(), source: "parish", updatedAt: content.updatedAt });
+      } else {
+        gaps.push({ topic: "history", reason: "This parish has not published its history in the app." });
+      }
+
+      // Only the sacraments and ministries the question actually reaches
+      // for. Sending all of them would crowd the window and bury the one
+      // fact the pilgrim asked about.
+      const asked = question.toLowerCase();
+      const TOPICS: Array<[string, string, string[]]> = [
+        ["sac-baptism", "Baptism", ["bapti", "binyag", "christen"]],
+        ["sac-wedding", "Wedding", ["wedding", "marriage", "kasal", "ikakasal"]],
+        ["sac-confirmation", "Confirmation", ["confirmation", "kumpil"]],
+        ["sac-eucharist", "Holy Communion", ["communion", "eucharist", "komunyon"]],
+        ["min-choir", "Choir", ["choir", "koro", "sing"]],
+        ["min-altar-servers", "Altar Servers", ["altar server", "sakristan", "acolyte"]],
+      ];
+      for (const [id, label, words] of TOPICS) {
+        if (!words.some(w => asked.includes(w))) continue;
+        const { facts: f, gaps: g } = itemFacts(content, id, label);
+        facts.push(...f);
+        gaps.push(...g);
+      }
+    }
+
+    const context = parishId
+      ? groundingBlock({ parishId, parishName, facts, gaps })
+      : [
+          "NO PARISH SELECTED.",
+          "You have no verified parish information for this question.",
+          "If the question needs parish-specific facts, ask which parish they mean instead of guessing.",
+        ].join("\n");
+
+    // Recent turns only, and only as plain text, so the model can
+    // resolve "what about tomorrow" without the whole session.
+    const history = Array.isArray(req.body?.history) ? req.body.history.slice(-6) : [];
+    const transcript = history
+      .filter((m: unknown) => typeof (m as { text?: unknown })?.text === "string")
+      .map((m: { role?: string; text: string }) => (m.role === "sancti" ? "Sancti: " : "User: ") + m.text)
+      .join("\n");
+
+    const prompt = [
+      context,
+      transcript ? "\nRECENT CONVERSATION:\n" + transcript : "",
+      "\nUSER QUESTION: " + question,
+    ].join("\n");
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: { systemInstruction: ASK_SYSTEM_INSTRUCTION, temperature: 0.2 },
+    });
+
+    const answer = (response.text ?? "").trim();
+    if (!answer) return res.status(502).json({ error: "The assistant did not answer." });
+
+    res.json({
+      answer,
+      grounded: facts.length > 0,
+      // So the UI can say where this came from without re-deriving it.
+      sources: facts.map(f => ({ topic: f.topic, source: f.source, updatedAt: f.updatedAt ?? null })),
+      gaps: gaps.map(g => g.topic),
+    });
+  } catch (err) {
+    // Never a fabricated fallback answer: the client has a real
+    // on-device assistant to fall back to, and it is better than a
+    // guess dressed up as a reply.
+    console.warn("[Sancti] ask failed:", (err as Error).message);
+    res.status(503).json({ error: "The assistant is unavailable." });
+  }
 });
 
 // Lets the scanner show what is left before anyone spends one. Guarded:

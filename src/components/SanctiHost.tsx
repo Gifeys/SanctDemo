@@ -3,7 +3,7 @@ import SanctiSheet, { SanctiButton, type SanctiMessage } from "./SanctiSheet";
 import { useSpotlight } from "./Spotlight";
 import {
   understand, aliasesFor, itemAliases, needsConfirmation, readAnswer,
-  type SanctiAction,
+  type SanctiAction, type PriorTurn,
 } from "../lib/sancti";
 import {
   massAnswer, historyAnswer, itemAnswer, distanceAnswer, contactAnswer,
@@ -17,6 +17,7 @@ import { haversineMeters, type Coordinates } from "../lib/geo";
 import { ROUTES, MASS_SCHEDULES, MINISTRIES, SACRAMENTS } from "../data";
 import { parishHistoryLede } from "./ChurchHistory";
 import type { ParishContent } from "../lib/parishContent";
+import { askSancti } from "../lib/askSancti";
 import type { Language } from "../lib/language";
 
 /**
@@ -99,6 +100,15 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
   const spotlight = useSpotlight();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<SanctiMessage[]>([]);
+  /**
+   * The transcript, for the model's benefit only.
+   *
+   * A ref beside the state because `ask` must keep a stable identity -
+   * it holds a pending offer across a turn, and rebuilding it whenever
+   * a message arrives would drop that offer mid-conversation.
+   */
+  const messagesRef = useRef<SanctiMessage[]>([]);
+  messagesRef.current = messages;
   const [thinking, setThinking] = useState(false);
 
   const toolsRef = useRef(tools);
@@ -134,6 +144,13 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
    * must not be rebuilt between the question and the answer - a new
    * `ask` identity mid-conversation would lose the offer it is holding.
    */
+  /**
+   * What the last exchange was about, so a fragment can continue it.
+   * A ref, not state: it is read on the next message rather than
+   * rendered, and re-rendering the chat to remember a topic would
+   * repaint the whole sheet for nothing visible.
+   */
+  const priorRef = useRef<PriorTurn | undefined>(undefined);
   const pendingRef = useRef<{
     action: SanctiAction; parishId?: string; itemId?: string; language?: "en" | "fil";
   } | null>(null);
@@ -239,7 +256,10 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
     say("you", text);
     setThinking(true);
 
-    window.setTimeout(() => {
+    // Async only for the one branch that reaches the network; every
+    // other answer is still produced synchronously inside this tick.
+    // askSancti never throws, so there is nothing here to catch.
+    window.setTimeout(async () => {
       const t = toolsRef.current;
 
       // A bare yes or no, when Sancti has an offer open.
@@ -267,7 +287,19 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         pendingRef.current = null;
       }
 
-      const heard = understand(text, PARISH_NAMES, ITEM_NAMES);
+      const heard = understand(text, PARISH_NAMES, ITEM_NAMES, priorRef.current);
+
+      // Remembered before the answer is built, so a reply that throws
+      // still leaves the conversation somewhere sensible. Only an
+      // understood turn becomes context: carrying UNKNOWN forward would
+      // let one confusing sentence poison every fragment after it.
+      if (heard.action !== "UNKNOWN") {
+        priorRef.current = {
+          action: heard.action,
+          ...(heard.parishId ? { parishId: heard.parishId } : {}),
+          ...(heard.itemId ? { itemId: heard.itemId } : {}),
+        };
+      }
       const parishId = heard.parishId ?? t.activeParishId;
       const name = parishLabel(parishId);
 
@@ -367,8 +399,30 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         case "HELP":
           reply = helpAnswer(name);
           break;
-        default:
-          reply = unknownAnswer();
+        default: {
+          /*
+           * The one case worth sending to the model.
+           *
+           * Everything above is a question SanctiWalk can answer from
+           * its own data, instantly and with no signal - and routing
+           * those through a network call would make a working feature
+           * slower and less reliable to no end. What lands here is the
+           * question the matcher could not place, which until now got
+           * the same shrug however reasonable it was. That shrug is
+           * what made Sancti feel generic.
+           *
+           * The model sees only facts retrieved from the parish's own
+           * records, server-side; it is never asked to recall a Mass
+           * time. If it cannot be reached, the shrug is still there.
+           */
+          const aiReply = await askSancti({
+            question: text,
+            parishId,
+            parishName: name,
+            history: messagesRef.current.slice(-6).map(m => ({ role: m.from, text: m.text })),
+          });
+          reply = aiReply ? { text: aiReply.answer } : unknownAnswer();
+        }
       }
 
       setThinking(false);
