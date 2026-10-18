@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Loader2,
   ListChecks,
+  PlayCircle,
   ChevronRight,
   ChevronLeft,
   WifiOff,
@@ -230,7 +231,10 @@ export default function ArTour({
   // The feature, recorded. Shown when it cannot be demonstrated
   // live - during a Mass, or to a survey respondent who is not
   // standing in the church.
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Which clip is playing, if any. Not a boolean: the no-camera
+  // screen offers both recordings side by side, and there the scanner
+  // has no current mode to borrow from.
+  const [previewFor, setPreviewFor] = useState<"ar" | "ai" | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [budget, setBudget] = useState<ScanBudget | null>(null);
 
@@ -752,6 +756,36 @@ export default function ArTour({
               permission the app cannot force open on an insecure origin, so
               offer the same station information another way rather than
               leaving a dead end. */}
+          {/* Without a camera the scanner cannot be shown by doing it,
+              and the AI/AR switch lives inside the camera view - so from
+              here both the AR museum and the AI scanner were simply
+              missing, which reads as the AR scanner being broken. The
+              recordings are the one thing that still works on a laptop,
+              at a survey table, or behind a denied permission, so they
+              are offered here rather than only past the gate. */}
+          <section className="scan-card scan-card--previews">
+            <div className="scan-card__body">
+              <p className="scan-card__blurb">See how it works</p>
+              <p className="scan-card__note">
+                Short recordings of both scanners. No camera needed.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewFor("ai")}
+                className="scan-card__action"
+              >
+                <PlayCircle className="w-4 h-4" /> Preview AI Scanner
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewFor("ar")}
+                className="scan-card__action scan-card__action--ghost"
+              >
+                <PlayCircle className="w-4 h-4" /> Preview AR Museum
+              </button>
+            </div>
+          </section>
+
           {showManualFallback && (
             <button
               onClick={() => setPickerOpen(true)}
@@ -761,6 +795,14 @@ export default function ArTour({
             </button>
           )}
         </div>
+
+        {previewFor && (
+          <PreviewVideo
+            src={previewFor === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
+            title={previewFor === "ar" ? "AR Museum tour" : "AI Scanner"}
+            onClose={() => setPreviewFor(null)}
+          />
+        )}
       </div>
     );
   }
@@ -881,7 +923,7 @@ export default function ArTour({
         <ScannerSheet>
           <button
             type="button"
-            onClick={() => setPreviewOpen(true)}
+            onClick={() => setPreviewFor(mode)}
             className="scan-preview-btn"
             aria-label={`Watch how the ${mode === "ar" ? "AR tour" : "AI Scanner"} works`}
           >
@@ -952,11 +994,11 @@ export default function ArTour({
         </ScannerSheet>
       )}
 
-      {previewOpen && (
+      {previewFor && (
         <PreviewVideo
-          src={mode === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
-          title={mode === "ar" ? "AR Museum tour" : "AI Scanner"}
-          onClose={() => setPreviewOpen(false)}
+          src={previewFor === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
+          title={previewFor === "ar" ? "AR Museum tour" : "AI Scanner"}
+          onClose={() => setPreviewFor(null)}
         />
       )}
 
