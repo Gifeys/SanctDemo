@@ -2010,6 +2010,53 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   text-shadow: 0 3px 16px rgb(6 12 38 / 0.45);
 }
 
+/* The listen control, directly under the title.
+   Outlined rather than filled: it sits on the patron's photograph, and a
+   solid pill there reads as a second, competing subject. It goes solid
+   while speaking, which is the only state worth shouting about. */
+.parish-history__listen {
+  margin: 14px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border-radius: 999px;
+  border: 1.5px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+.parish-history__listen:hover { background: rgb(255 255 255 / 0.18); }
+.parish-history__listen:active { transform: scale(0.985); }
+.parish-history__listen[aria-pressed="true"] {
+  background: #fff;
+  border-color: #fff;
+  color: var(--color-brand-text);
+}
+.parish-history__listen:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* How long the reading takes, so a tap is an informed one. Quieter than
+   the verb beside it: it is a caveat, not the action. */
+.parish-history__listen-time {
+  font-weight: 600;
+  opacity: 0.72;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parish-history__listen { transition: none; }
+  .parish-history__listen:active { transform: none; }
+}
+
 .parish-history__section { margin-top: 26px; }
 .parish-history__section:first-of-type { margin-top: 14px; }
 

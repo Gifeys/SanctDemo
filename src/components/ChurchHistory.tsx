@@ -1,6 +1,6 @@
 import React, { type CSSProperties } from "react";
 import HistoryQuiz from "./HistoryQuiz";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
@@ -8,6 +8,8 @@ import { useLanguage } from "../lib/useLanguage";
 import { pick, type Bilingual, type Language } from "../lib/language";
 import { parishTheme } from "../lib/parishTheme";
 import { MHCP_HISTORY } from "../data/mhcpHistory";
+import { useNarration } from "../lib/useNarration";
+import { historyScript, spokenLength } from "../lib/historyNarration";
 
 /** The heading the parish's own Filipino account starts at. */
 const FIRST_OWN_SECTION = pick(MHCP_HISTORY[0]?.heading, "fil");
@@ -244,6 +246,31 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
       ]
     : PARISH_HISTORY[parish.id]?.sections ?? [];
 
+  /*
+   * The history, read aloud.
+   *
+   * The same voice the rest of SanctiWalk uses - native text-to-speech
+   * on the phone, the browser's own on a laptop - asking for fil-PH or
+   * en-US to match the language on screen. It reads the language the
+   * reader is looking at, never a fixed one: a Filipino page narrated
+   * in English would be the app talking over the parish.
+   *
+   * The engine is not everywhere. A browser with no installed voice
+   * reports none, and `supported` is false there, so the control is
+   * absent rather than present and dead.
+   */
+  const narration = useNarration(language);
+  const script = historyScript(title, sections, language);
+  const length = spokenLength(script, language);
+
+  // Switching language mid-sentence would leave the previous language
+  // playing under the new text. Stopping is the honest reaction; the
+  // reader can tap again and hear it in the language they just chose.
+  const stopNarration = narration.stop;
+  React.useEffect(() => {
+    stopNarration();
+  }, [language, stopNarration]);
+
   const style = {
     "--ph-top": accent.top,
     "--ph-bottom": accent.bottom,
@@ -282,6 +309,37 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
 
         <div className="parish-history__body">
           <h1 className="parish-history__title">{title}</h1>
+
+          {/* Directly under the title, where someone decides whether to
+              read or to listen - not floating over the photograph, which
+              is where a media control goes when it belongs to the image
+              rather than to the words. */}
+          {narration.supported && script && (
+            <button
+              type="button"
+              onClick={() => narration.toggle(script)}
+              className="parish-history__listen"
+              aria-pressed={narration.speaking}
+              aria-label={
+                narration.speaking
+                  ? "Stop reading this history aloud"
+                  : `Read this history aloud${length ? `, ${length}` : ""}`
+              }
+            >
+              {narration.speaking ? (
+                <>
+                  <VolumeX className="w-4 h-4" aria-hidden />
+                  <span>{language === "fil" ? "Ihinto" : "Stop"}</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4" aria-hidden />
+                  <span>{language === "fil" ? "Pakinggan" : "Listen"}</span>
+                  {length && <span className="parish-history__listen-time">{length}</span>}
+                </>
+              )}
+            </button>
+          )}
 
           {sections.length > 0 ? (
             sections.map(section => (

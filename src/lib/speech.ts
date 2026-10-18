@@ -118,7 +118,32 @@ export async function speakAloud(text: string, language: Language): Promise<void
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = speechLocale(language)
   utterance.rate = RATE
-  window.speechSynthesis.speak(utterance)
+
+  // Resolve when the voice actually stops, not when it starts.
+  //
+  // `speechSynthesis.speak` is fire-and-forget: it returns the instant
+  // the utterance is queued. Callers await this to know when to put a
+  // speaker button back to "play", so returning early told them the
+  // reading had finished before a word of it was spoken - the button
+  // flipped straight back and a second tap started a second voice over
+  // the first instead of stopping it. The native branch above already
+  // resolves on completion; this makes the web branch keep the same
+  // promise.
+  //
+  // `cancel()` fires `end` too, so stopping resolves this as well.
+  await new Promise<void>(resolve => {
+    let settled = false
+    const done = () => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+    utterance.onend = done
+    // An engine that fails mid-sentence must not leave the caller
+    // waiting forever on a promise that will never settle.
+    utterance.onerror = done
+    window.speechSynthesis.speak(utterance)
+  })
 }
 
 export async function stopAloud(): Promise<void> {
