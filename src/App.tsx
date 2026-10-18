@@ -57,6 +57,7 @@ import { tabForParishSelection } from "./lib/parishSelection";
 import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
+import { useMassScheduleNotice } from "./lib/useMassScheduleNotice";
 import { useParishContent } from "./lib/useParishContent";
 import { checkParishColour, readableTextOn, parseHex } from "./lib/contrast";
 
@@ -745,6 +746,18 @@ export default function App() {
   // from "route-mhcp", and the way back was offered to a pilgrim already
   // standing in their own parish.
   const ownParishId = routeForHomeParish(myParishId ?? homeParishId);
+
+  // The Mass schedule is the one thing in the app somebody acts on
+  // physically: they read it, then they leave the house at a certain
+  // time. When the parish moves a Mass, anyone who checked last week
+  // is now wrong and nothing on a screen they are not looking at will
+  // say so. Home parish only - a notification about a church somebody
+  // browsed once is spam.
+  useMassScheduleNotice(
+    ownParishId,
+    ROUTES.find(r => r.id === ownParishId)?.name.replace(" Guide", "").replace(" Tour", "")
+      ?? "Your parish",
+  );
 
   const viewingAnotherParish =
     ownParishId !== null && activeChurchRoute.id !== ownParishId;
