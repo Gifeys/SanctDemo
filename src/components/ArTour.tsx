@@ -273,14 +273,10 @@ export default function ArTour({
 
     void (async () => {
       const token = await idToken();
-      if (!token) {
-        if (live) setBudget(null);
-        return;
-      }
       try {
         const r = await fetch(
           `${apiUrl("/api/identify/budget")}?parishId=${encodeURIComponent(parish)}`,
-          { headers: withAppKey({ Authorization: `Bearer ${token}` }) },
+          { headers: withAppKey(token ? { Authorization: `Bearer ${token}` } : {}) },
         );
         const b = r.ok ? await r.json() : null;
         if (live && b) setBudget(b);
@@ -345,21 +341,23 @@ export default function ArTour({
     const timeout = window.setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
 
     try {
-      // The token is what makes the allowance this person's rather than
-      // this Wi-Fi's. Without one the server answers 401 and says so.
+      // The token is what makes the allowance this person's rather
+      // than this Wi-Fi's — but whether one is REQUIRED is the
+      // server's decision, not this component's.
+      //
+      // It used to refuse to send without one, which duplicated the
+      // server's policy in the client and got it wrong: a development
+      // server running uncounted does not want a token, and the
+      // scanner was dead on localhost for want of a sign-in nobody
+      // was going to check. The server answers 401 when it does want
+      // one, and that answer is handled below.
       const token = await idToken();
-      if (!token) {
-        setError("Sign in to use the AI scanner. Your 20 daily scans are counted against your account.");
-        setPhase("idle");
-        window.clearTimeout(timeout);
-        return;
-      }
 
       const response = await fetch(apiUrl("/api/identify"), {
         method: "POST",
         headers: withAppKey({
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         }),
         signal: controller.signal,
         body: JSON.stringify({
