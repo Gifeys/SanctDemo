@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPROACH_ZOOM,
   BEARING_EPSILON_DEG,
+  CRUISE_ZOOM,
   FOLLOW_OFFSET_Y,
   FOLLOW_PITCH,
   FOLLOW_ZOOM,
   followCamera,
   needsCameraMove,
   POSITION_EPSILON_M,
+  needsZoomChange,
   shouldFollow,
+  TURN_FAR_M,
+  TURN_NEAR_M,
+  zoomForTurn,
   type CameraState,
 } from './followCamera'
 
@@ -107,5 +113,55 @@ describe('shouldFollow', () => {
 
   it('never drives the camera when navigation is not running', () => {
     expect(shouldFollow(false, false)).toBe(false)
+  })
+})
+
+describe('zoomForTurn', () => {
+  it('closes in when the turn is on top of you', () => {
+    // The moment the two candidate streets are metres apart is exactly
+    // when they need to be far apart on screen.
+    expect(zoomForTurn(10)).toBe(APPROACH_ZOOM)
+    expect(zoomForTurn(TURN_NEAR_M)).toBe(APPROACH_ZOOM)
+  })
+
+  it('pulls back on open road, to show where you are going', () => {
+    expect(zoomForTurn(600)).toBe(CRUISE_ZOOM)
+    expect(zoomForTurn(TURN_FAR_M)).toBe(CRUISE_ZOOM)
+  })
+
+  it('moves between the two without a step change', () => {
+    // A jump in zoom reads as the map lurching, and it would land just as
+    // the walker is looking for a street sign.
+    const mid = zoomForTurn((TURN_NEAR_M + TURN_FAR_M) / 2)
+    expect(mid).toBeLessThan(APPROACH_ZOOM)
+    expect(mid).toBeGreaterThan(CRUISE_ZOOM)
+  })
+
+  it('tightens monotonically as the turn approaches', () => {
+    const far = zoomForTurn(240)
+    const nearer = zoomForTurn(120)
+    const nearest = zoomForTurn(60)
+    expect(nearer).toBeGreaterThan(far)
+    expect(nearest).toBeGreaterThan(nearer)
+  })
+
+  it('keeps the plain follow zoom when nothing is being approached', () => {
+    // No active guidance is not the same as a turn infinitely far away:
+    // dropping to CRUISE_ZOOM there would zoom the map out the instant
+    // navigation ended.
+    expect(zoomForTurn(null)).toBe(FOLLOW_ZOOM)
+    expect(zoomForTurn(Number.NaN)).toBe(FOLLOW_ZOOM)
+  })
+})
+
+describe('needsZoomChange', () => {
+  it('ignores the jitter of a recomputed zoom', () => {
+    // zoomForTurn returns a slightly different number on every GPS fix;
+    // acting on each one makes the map breathe while standing still.
+    expect(needsZoomChange(17.5, 17.55)).toBe(false)
+  })
+
+  it('acts on a real approach', () => {
+    expect(needsZoomChange(CRUISE_ZOOM, APPROACH_ZOOM)).toBe(true)
   })
 })

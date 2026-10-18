@@ -12,7 +12,8 @@ import MapPlaceSheet from "./MapPlaceSheet";
 import { shortestAngleDelta } from "../lib/heading";
 import { accuracyRadiusExpression } from "../lib/mapAccuracy";
 import {
-  FOLLOW_DURATION_MS, FOLLOW_ZOOM, followCamera, needsCameraMove, shouldFollow,
+  FOLLOW_DURATION_MS, FOLLOW_ZOOM, followCamera, needsCameraMove, needsZoomChange,
+  shouldFollow, zoomForTurn,
 } from "../lib/followCamera";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
 import { Plus } from "lucide-react";
@@ -482,9 +483,30 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // route: a route is a line on the map, navigation is a live session that
   // follows the pilgrim and reroutes.
   const [navigatingTo, setNavigatingTo] = useState<{ id: string; name: string; coordinates: Coordinates } | null>(null);
+  /**
+   * Distance to the next manoeuvre, reported by the navigation overlay.
+   * A ref rather than state: it changes on every GPS fix and only the
+   * camera reads it, so re-rendering the whole map for it would be a
+   * repaint per fix for nothing visible.
+   */
+  const metersToTurnRef = useRef<number | null>(null);
   // True once the camera has closed in for the current navigation session, so
   // a reroute mid-walk does not yank it back.
   const didZoomForNavRef = useRef(false);
+  /**
+   * Set once the walker pinches the map themselves. Automatic zoom stands
+   * down from then on, the same bargain `userPannedRef` strikes for
+   * panning: being overruled a second after you pinched out to see the
+   * rest of the route is the complaint either way. Recentring clears it.
+   */
+  const userZoomedRef = useRef(false);
+  /**
+   * Whether the map is currently turned off north or tilted. Drives the
+   * north-up control's visibility: a "reset the view" button on a view
+   * that is already reset is a button that does nothing, and on this map
+   * that is the normal state.
+   */
+  const [viewRotated, setViewRotated] = useState(false);
   /**
    * True once the walker has dragged the map during a navigation session.
    *
@@ -696,6 +718,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     // `movestart`: the camera's own easeTo fires movestart too, so listening
     // for that would have the map stop following itself on the first fix.
     map.on("dragstart", () => { userPannedRef.current = true; });
+    // Only a real gesture. Guard on originalEvent, or the camera's own
+    // easeTo below would register as the walker zooming and switch
+    // automatic zoom off on the first fix.
+    map.on("zoomstart", e => { if ((e as { originalEvent?: unknown }).originalEvent) userZoomedRef.current = true; });
+    const syncRotated = () => setViewRotated(Math.abs(map.getBearing()) > 1 || map.getPitch() > 1);
+    map.on("rotate", syncRotated);
+    map.on("pitch", syncRotated);
+    map.on("moveend", syncRotated);
 
     // Tapping the map itself dismisses the place sheet. Pin taps stop
     // propagation, so this only ever fires on empty map.
@@ -1016,7 +1046,17 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     // The walker's own zoom is kept. Pinching out to see the rest of the
     // route and being overruled a second later is the same complaint as
     // being dragged back after a pan.
-    const zoom = didZoomForNavRef.current ? current.zoom : FOLLOW_ZOOM;
+    // Closer as a turn arrives, wider on open road - the behaviour the
+    // Waze reference shows. Only after the initial fit, and only while
+    // the walker has not taken the zoom over themselves.
+    const target = userZoomedRef.current
+      ? current.zoom
+      : didZoomForNavRef.current
+        ? zoomForTurn(metersToTurnRef.current)
+        : FOLLOW_ZOOM;
+    // zoomForTurn returns a slightly different number on every fix; acting
+    // on each one makes the map breathe in and out while standing still.
+    const zoom = needsZoomChange(current.zoom, target) ? target : current.zoom;
 
     map.easeTo({
       ...followCamera(position, heading, current.bearing, zoom),
@@ -1035,6 +1075,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
 
     if (navigatingTo) return;
     userPannedRef.current = false;
+    userZoomedRef.current = false;
     const map = mapRef.current;
     if (!map) return;
     if (map.getPitch() > 0.5 || Math.abs(map.getBearing()) > 0.5) {
@@ -1056,6 +1097,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     const map = mapRef.current;
     if (mode !== "live" || !map) return;
 
+    // Not while navigating. The follow camera deliberately turns the map
+    // course-up so a route that bends left on screen means a left turn in
+    // the street; this effect re-runs on every heading update, so without
+    // this guard the two fought each other - followCamera eased toward the
+    // walker's bearing and was snapped back to north a frame later, for as
+    // long as the walk lasted.
+    if (navigatingTo) return;
+
     if (orientationMode === "north-up") {
       if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 });
       return;
@@ -1067,7 +1116,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     // between updates, which is what keeps the rotation from stepping.
     if (Math.abs(shortestAngleDelta(map.getBearing(), heading)) < MAP_BEARING_EPSILON) return;
     map.easeTo({ bearing: heading, duration: 300, easing: t => t });
-  }, [mode, heading, orientationMode]);
+  }, [mode, heading, orientationMode, navigatingTo]);
 
   // No route is drawn automatically. Directions appear only when the pilgrim
   // asks for them from a parish's popup — the same contract as Google Maps or
@@ -1137,6 +1186,9 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     // stays on screen while the instruction card covers everything else.
     if (navigatingTo) {
       userPannedRef.current = false;
+      // Recentring is the walker asking for the guided camera back, zoom
+      // included, not just the position.
+      userZoomedRef.current = false;
       map.easeTo({
         ...followCamera(position, heading, map.getBearing(), Math.max(map.getZoom(), FOLLOW_ZOOM)),
         duration: 600,
@@ -1509,6 +1561,30 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
           Recentre
         </button>
 
+        {/* Back to the plain north-up, flat view.
+            Navigation turns and tilts the map on purpose, and MapLibre
+            lets a two-finger twist do the same by accident; either way the
+            way out should not be "rotate it back by hand until it looks
+            straight". Shown only when there is something to undo. */}
+        {viewRotated && (
+          <button
+            type="button"
+            className="dmap-live__northup"
+            onClick={() => {
+              const map = mapRef.current;
+              if (!map) return;
+              // Also stops the follow camera re-tilting a frame later: north-up
+              // is a request for the plain map, not for one frame of it.
+              userPannedRef.current = true;
+              map.easeTo({ bearing: 0, pitch: 0, duration: 450 });
+            }}
+            title="Face the map north and remove the tilt"
+            aria-label="Reset the map to north-up"
+          >
+            North up
+          </button>
+        )}
+
         {/* Not while navigating: it sits in the top strip under the turn
             instruction, and Stop already clears the route. Two ways to undo
             the same thing, one of them half-hidden. */}
@@ -1562,6 +1638,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               });
               setNavigatingTo(null);
             }}
+            onProgress={meters => { metersToTurnRef.current = meters; }}
             onRoute={route => {
               // Redraw on every reroute, so the line on the map is always the
               // route currently being followed rather than the original one.

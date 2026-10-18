@@ -18,6 +18,13 @@ interface NavigationOverlayProps {
   onStop: () => void;
   /** Called whenever a route is (re)calculated, so the map can draw it. */
   onRoute?: (route: WalkingRoute) => void;
+  /**
+   * Called on every fix with how far the next turn is, so the camera can
+   * close in on it. Null once there is no live guidance - routing,
+   * arrived, or stopped - which the map reads as "no turn to approach"
+   * rather than "a turn very far away".
+   */
+  onProgress?: (metersToManeuver: number | null) => void;
 }
 
 type Phase = "routing" | "navigating" | "rerouting" | "arrived" | "no-route";
@@ -41,8 +48,14 @@ export default function NavigationOverlay({
   destinationName,
   onStop,
   onRoute,
+  onProgress,
 }: NavigationOverlayProps) {
   const { position } = usePresence();
+
+  // Held in a ref so a parent that re-creates this callback inline does
+  // not re-run the per-fix effect below on every render.
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
   const [route, setRoute] = useState<WalkingRoute | null>(null);
   const [phase, setPhase] = useState<Phase>("routing");
   const [progress, setProgress] = useState<NavigationProgress | null>(null);
@@ -98,6 +111,7 @@ export default function NavigationOverlay({
     const next = progressAlong(position, route.steps, destination, stepIndexRef.current);
     stepIndexRef.current = next.stepIndex;
     setProgress(next);
+    onProgressRef.current?.(next.arrived ? null : next.metersToManeuver);
 
     if (next.arrived) {
       setPhase("arrived");

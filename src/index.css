@@ -278,6 +278,30 @@
   outline-offset: 2px;
 }
 
+/* The north-up control shares the recentre pill's shape and column, sitting
+   directly beneath it. Quieter of the two: recentring is the thing you reach
+   for mid-walk, resetting the view is the thing you reach for once. */
+.dmap-live__northup {
+  position: absolute;
+  top: 130px;
+  right: 8px;
+  z-index: 5;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-brand-text) 18%, transparent);
+  background: color-mix(in srgb, var(--color-brand-card) 92%, transparent);
+  color: var(--color-brand-text);
+  cursor: pointer;
+}
+.dmap-live__northup:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+}
+/* Follows the recentre pill down when the turn card takes the top strip. */
+.dmap-live[data-navigating="true"] .dmap-live__northup { top: 234px; }
+
 /* Honest status for the you-are-here marker — sits directly under the
    recentre control, in the same right-hand margin. A real GPS fix states
    its own reported accuracy radius rather than a bare, over-precise dot; a

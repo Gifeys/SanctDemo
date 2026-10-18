@@ -135,3 +135,56 @@ export const FOLLOW_DURATION_MS = 800
 export function shouldFollow(navigating: boolean, userPanned: boolean): boolean {
   return navigating && !userPanned
 }
+
+/**
+ * How close the camera gets as a turn arrives, and how far it pulls back
+ * on open road.
+ *
+ * A fixed zoom is wrong at both ends of a walk. Held at 17.5 the long
+ * straight stretch between two corners shows almost nothing of the road
+ * ahead, so the next instruction arrives with no warning; and at the
+ * corner itself the two streets you are choosing between are a few pixels
+ * apart. Waze and Google Maps both close in on a manoeuvre and open out
+ * between them, which is the behaviour being matched here.
+ */
+export const APPROACH_ZOOM = 18.4
+
+/** Pulled back between turns, to show more of the road ahead. */
+export const CRUISE_ZOOM = 16.6
+
+/** At or inside this, the camera is fully closed in on the turn. */
+export const TURN_NEAR_M = 45
+
+/** Beyond this, the turn is far enough away to be cruising. */
+export const TURN_FAR_M = 260
+
+/**
+ * The zoom for a walker `metersToManeuver` from their next turn.
+ *
+ * Interpolated rather than switched between two values: a step change in
+ * zoom reads as the map jumping, and the jump would land exactly when the
+ * walker is looking for a street sign. Null - no active guidance, so no
+ * turn to approach - keeps the plain follow zoom.
+ */
+export function zoomForTurn(metersToManeuver: number | null): number {
+  if (metersToManeuver === null || !Number.isFinite(metersToManeuver)) return FOLLOW_ZOOM
+  if (metersToManeuver <= TURN_NEAR_M) return APPROACH_ZOOM
+  if (metersToManeuver >= TURN_FAR_M) return CRUISE_ZOOM
+
+  const t = (metersToManeuver - TURN_NEAR_M) / (TURN_FAR_M - TURN_NEAR_M)
+  return APPROACH_ZOOM + (CRUISE_ZOOM - APPROACH_ZOOM) * t
+}
+
+/**
+ * Whether a zoom change is worth issuing.
+ *
+ * The same reasoning as needsCameraMove: zoomForTurn returns a slightly
+ * different number on every GPS fix, and re-easing the camera for a
+ * hundredth of a zoom level restarts the animation and makes the map
+ * breathe in and out while the walker stands still.
+ */
+export const ZOOM_EPSILON = 0.15
+
+export function needsZoomChange(currentZoom: number, targetZoom: number): boolean {
+  return Math.abs(currentZoom - targetZoom) >= ZOOM_EPSILON
+}
