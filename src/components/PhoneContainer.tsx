@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Smartphone, Monitor, Wifi, WifiOff, Battery, ArrowLeft } from "lucide-react";
+import { Smartphone, Monitor, Wifi, WifiOff, Battery } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDeviceSurface } from "../lib/displayMode";
 
@@ -62,31 +62,38 @@ export default function PhoneContainer({
     // why it read as a website rather than as the product on a laptop. The
     // writing has not been thrown away; it belongs in the defense document,
     // not wrapped around the running app.
-    <div id="phone-container" className="flex flex-col items-center gap-4 w-full px-4 py-6">
+    <div id="phone-container" className="app-stage">
+      {/* The same masthead the landing page wears.
+
+          Before this, a visitor who pressed "Open full screen" landed on
+          a bare mockup floating on white, with a viewport switch where
+          the branding had been. It read as a different product, which is
+          exactly the confusion this removes: one logo, one nav, one
+          background, whichever of the two pages you are on.
+
+          The logo is the way back. A wordmark that returns you to the
+          front page is a convention every site already taught the
+          visitor, and it does the job the separate back button was
+          doing less tidily. */}
+      <header className="app-stage__bar">
+        <Link to="/" aria-label="Back to the SanctiWalk home page">
+          <img
+            className="app-stage__logo"
+            src="/ui/sanctiwalk-lockup-navy.png"
+            alt="SanctiWalk"
+            width={170}
+          />
+        </Link>
+        <nav className="app-stage__nav">
+          <Link to="/">About</Link>
+          <a href="/get/">Download</a>
+        </nav>
+      </header>
+
       {/* The viewport switch, and nothing else. Two buttons plus the offline
           simulation, which is a real test of the service worker rather than
           promotional copy. */}
       <div className="flex items-center gap-2 flex-wrap justify-center">
-        {/* The way out.
-
-            This branch only renders on a desk, and on a desk the root of
-            the site is the page explaining SanctiWalk - so there is
-            always somewhere to go back to. Without this, "Open full
-            screen" on that page was a one-way door: the app filled the
-            window and the only way back was the browser's own button,
-            which does nothing for somebody who opened /app directly.
-
-            A phone never sees this. The branch above returns before
-            here, and on a phone the root IS the app, so "back" would
-            mean nothing. */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 py-1.5 px-4 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[15px] font-semibold text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden />
-          About SanctiWalk
-        </Link>
-
         <div className="flex items-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-1">
           <button
             id="btn-toggle-mobile"

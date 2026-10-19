@@ -4117,6 +4117,49 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 /* ===================================================================
+   THE APP ON A DESK
+   What /app looks like on a laptop. Shares the landing page's
+   masthead and background on purpose: a visitor pressing "Open full
+   screen" should not feel they have left the site. One logo, one nav,
+   one background, whichever page they are on.
+   =================================================================== */
+.app-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0 0 28px;
+  background: var(--color-brand-bg);
+}
+
+/* Full bleed, unlike the content below it, so the masthead reads as the
+   page's own rather than as a card sitting on it. */
+.app-stage__bar {
+  width: 100%;
+  max-width: 1180px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px clamp(16px, 4vw, 40px);
+}
+.app-stage__logo { height: auto; width: clamp(140px, 15vw, 170px); display: block; }
+
+.app-stage__nav {
+  display: flex;
+  gap: clamp(14px, 2.4vw, 30px);
+  font-size: 15px;
+  font-weight: 600;
+}
+.app-stage__nav a {
+  color: var(--color-brand-secondary);
+  text-decoration: none;
+}
+.app-stage__nav a:hover { color: var(--color-brand-primary); }
+
+/* ===================================================================
    THE LANDING PAGE
    What a laptop sees at the root. See src/components/RootGate.tsx for
    why a phone sees something else.
