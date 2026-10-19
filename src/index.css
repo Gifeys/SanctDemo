@@ -4086,6 +4086,269 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 /* ---- the sheet ---- */
+/* The two ways out of the AR gate on a phone that cannot run the tour.
+   Without these the notice was a dead end - it named the problem and
+   offered nothing to do about it. */
+.scan-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.scan-gate__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-primary);
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.scan-gate__btn--quiet {
+  background: transparent;
+  color: var(--color-brand-primary);
+}
+
+/* ===================================================================
+   THE LANDING PAGE
+   What a laptop sees at the root. See src/components/RootGate.tsx for
+   why a phone sees something else.
+
+   The app's own tokens throughout - Montserrat, the navy, the warm
+   paper. A promotional page in a different palette reads as a different
+   product that happens to share a logo.
+   =================================================================== */
+.lp {
+  min-height: 100vh;
+  background: var(--color-brand-bg);
+  color: var(--color-brand-text);
+  font-family: var(--font-primary);
+}
+
+/* The white panel the hero sits on, floating on the warm page. */
+.lp__panel {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px clamp(20px, 4vw, 44px) clamp(28px, 4vw, 48px);
+  background: var(--color-brand-card);
+  border-radius: 0 0 36px 36px;
+  box-shadow: 0 18px 50px rgb(20 23 31 / 0.06);
+}
+
+.lp__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: clamp(24px, 4vw, 52px);
+}
+.lp__logo { height: auto; width: clamp(150px, 16vw, 190px); }
+
+.lp__nav {
+  display: flex;
+  gap: clamp(16px, 2.5vw, 34px);
+  font-size: 15px;
+  font-weight: 600;
+}
+.lp__nav a {
+  color: var(--color-brand-secondary);
+  text-decoration: none;
+}
+.lp__nav a:hover { color: var(--color-brand-primary); }
+
+/* Copy on the left, the phone on the right - the composition from the
+   reference. Collapses to one column on a tablet, where side by side
+   would leave the headline three words wide. */
+.lp__hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .lp__hero { grid-template-columns: 1fr; }
+  .lp__shot { order: -1; }
+}
+
+.lp__headline {
+  margin: 0;
+  font-size: clamp(38px, 5.4vw, 66px);
+  font-weight: 800;
+  line-height: 1.03;
+  letter-spacing: -0.025em;
+}
+
+.lp__lede {
+  margin: 20px 0 0;
+  max-width: 34em;
+  font-size: clamp(15.5px, 1.5vw, 17.5px);
+  line-height: 1.62;
+  color: var(--color-brand-secondary);
+}
+
+.lp__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.lp__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 15px 26px;
+  border-radius: 999px;
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1.5px solid var(--color-brand-primary);
+  transition: transform 120ms ease, filter 140ms ease;
+}
+.lp__cta:hover { filter: brightness(1.08); }
+.lp__cta:active { transform: scale(0.99); }
+
+/* The second action is real, not a ghost of the first: downloading the
+   APK is a different decision, not a lesser version of exploring. */
+.lp__cta--quiet {
+  background: transparent;
+  color: var(--color-brand-primary);
+}
+.lp__cta--quiet:hover { background: var(--color-brand-card-sunk); filter: none; }
+
+.lp__footnote {
+  margin: 16px 0 0;
+  font-family: var(--font-mono-label);
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  color: var(--color-brand-secondary);
+}
+
+/* ---------------------------------------------------------- the phone
+   A frame around a real screenshot. Deliberately a plain rounded
+   rectangle rather than a drawn handset with a notch and a camera
+   bump: the picture inside is the product, and a detailed bezel around
+   it is the page admiring its own illustration. */
+.lp__shot { display: flex; justify-content: center; }
+
+.lp__phone {
+  position: relative;
+  padding: 11px;
+  border-radius: 34px;
+  background: var(--color-brand-primary);
+  box-shadow: 0 26px 60px rgb(28 44 86 / 0.26);
+}
+/* The running app. A fixed pixel width, not a fluid one: the app
+   inside decides it is on a phone from its own innerWidth, and that
+   decision must not flicker as the page is resized. 300x640 is a
+   small-but-real handset. */
+.lp__phone-screen {
+  display: block;
+  width: 300px;
+  height: 640px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--color-brand-card);
+}
+@media (max-width: 420px) {
+  .lp__phone-screen { width: 272px; height: 580px; }
+}
+
+.lp__shot-note {
+  margin: 12px 0 0;
+  text-align: center;
+  font-family: var(--font-mono-label);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+.lp__shot { flex-direction: column; align-items: center; }
+
+/* ------------------------------------------------------------- band */
+.lp__band {
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+  padding: clamp(44px, 6vw, 76px) 20px;
+}
+.lp__bandinner { max-width: 1060px; margin: 0 auto; }
+
+.lp__bandtitle {
+  margin: 0 0 clamp(22px, 3vw, 40px);
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lp__grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(20px, 3vw, 36px);
+}
+.lp__grid dt {
+  font-size: 17.5px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.lp__grid dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.62;
+  color: rgb(255 255 255 / 0.82);
+}
+
+/* ---------------------------------------------------------- closing */
+.lp__closing {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(44px, 6vw, 76px) 20px clamp(30px, 4vw, 48px);
+  text-align: center;
+}
+.lp__closing h2 {
+  margin: 0 0 16px;
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.lp__closing p {
+  margin: 0 auto 14px;
+  max-width: 54ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--color-brand-secondary);
+}
+.lp__closingnote {
+  font-size: 15px !important;
+  font-style: italic;
+}
+.lp__closing .lp__cta { margin-top: 12px; }
+
+.lp__foot {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 56px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-brand-secondary);
+}
+.lp__foot a { color: var(--color-brand-primary); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp__cta { transition: none; }
+  .lp__cta:active { transform: none; }
+}
+
 /* ===================================================================
    THE ADMIN BOARD
    A grid of doors, shown above the nav on the dashboard. See

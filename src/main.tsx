@@ -6,6 +6,8 @@ import App from './App.tsx';
 import FinishSignIn from './routes/FinishSignIn.tsx';
 import SignUpFlow from './routes/SignUpFlow.tsx';
 import AdminApp from './admin/AdminApp.tsx';
+import RootGate from './components/RootGate.tsx';
+import Landing from './components/Landing.tsx';
 import './index.css';
 import { registerServiceWorker } from './lib/registerServiceWorker';
 
@@ -64,9 +66,28 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/signup" element={<SignUpFlow />} />
         <Route path="/finish-sign-in" element={<FinishSignIn />} />
         <Route path="/admin/*" element={<AdminApp />} />
+
+        {/* The root is two different things.
+            A phone gets the app, because somebody on a phone came to use
+            it. A laptop gets the page explaining it, because somebody on
+            a laptop is deciding whether to look. RootGate renders rather
+            than redirects, so the address stays "/" - which matters,
+            because that is the PWA's start_url and the service worker's
+            cached shell. */}
+        <Route path="/" element={<RootGate />} />
+
+        {/* The app, unconditionally. Where "Explore SanctiWalk" goes, and
+            the way a laptop reaches the app at all. */}
+        <Route path="/app" element={<SpotlightProvider><App /></SpotlightProvider>} />
+
+        {/* The promotional page, unconditionally - so it can be linked to
+            from a poster or a post and still be readable on a phone. */}
+        <Route path="/welcome" element={<Landing />} />
+
         {/* Everything else is the app: a catch-all rather than an exact "/"
             so any deep link the pilgrim app already understands still
-            reaches it. */}
+            reaches it. The printed station posters encode /s/<CODE>, and
+            they land here. */}
         {/* The spotlight lives inside the pilgrim app's route only. The
             parish office has no tutorial and no assistant, and a
             provider wrapping both would put a portal on the admin's

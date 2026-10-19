@@ -9,6 +9,7 @@ import {
   Loader2,
   ListChecks,
   PlayCircle,
+  Download,
   ChevronRight,
   ChevronLeft,
   WifiOff,
@@ -1141,6 +1142,31 @@ export default function ArTour({
                   : "Open this at the parish"}
               </p>
               <p className="scan-gate__body">{arGate.message}</p>
+
+              {/* A dead end is what this was: the notice said the phone
+                  could not run the tour and stopped there. Both of these
+                  are real and already in the build - the recording the
+                  AR preview button plays is the same file the Preview
+                  control uses, and the download page is the one that
+                  carries the install steps. Shown only for the device
+                  reason: somebody standing in the wrong place needs to
+                  move, not to download anything. */}
+              {arGate.reason === "device" && (
+                <div className="scan-gate__actions">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFor("ar")}
+                    className="scan-gate__btn"
+                  >
+                    <PlayCircle className="w-4 h-4" aria-hidden />
+                    Watch AR preview
+                  </button>
+                  <a href="/get/" className="scan-gate__btn scan-gate__btn--quiet">
+                    <Download className="w-4 h-4" aria-hidden />
+                    Get the Android app
+                  </a>
+                </div>
+              )}
             </div>
           ) : (
             <ArScannerPanel
