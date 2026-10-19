@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "702425581563",
+    "project_id": "sanctiwalk-49bfd",
+    "storage_bucket": "sanctiwalk-49bfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:702425581563:android:8975c5970c346941222d5e",
+        "android_client_info": {
+          "package_name": "ph.edu.sti.sanctiwalk"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "702425581563-fse6p3hf0gksu4innamv5khqt8u7567h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ph.edu.sti.sanctiwalk",
+            "certificate_hash": "7afe2f3c82a4adb8711ff4e2147f41cdaaa01cdb"
+          }
+        },
+        {
+          "client_id": "702425581563-fa06lac2h03brjblrqfi8c7g1a75ertg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTf6QAigL14MOQCWblkbYIFjjiABLWaVQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "702425581563-fa06lac2h03brjblrqfi8c7g1a75ertg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
