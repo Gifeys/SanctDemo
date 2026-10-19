@@ -136,7 +136,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
       <ParishSectionHeader
         routeId={parish.id}
         eyebrow="Serve and Volunteer"

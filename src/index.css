@@ -1833,6 +1833,24 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   overflow-x: clip;
 }
 
+/* Clearance for the raised Scan button.
+   The Scan tab is lifted 12px above the bar (-translate-y-3 in App.tsx),
+   so its circle sticks up out of the bar and into the scrolling content.
+   Anything that comes to rest in that band is covered and cannot be
+   tapped - measured on Home, where it sat on top of the "Show less"
+   control, and on Ministries, where it sat on a ministry in the list.
+
+   The padding is on the scrollers rather than the bar because the bar
+   cannot grow: the circle is positioned relative to it, so making the
+   bar taller moves the circle up with it and the overlap travels along.
+   Reserving the band at the end of the content is what actually keeps
+   the last item clear. 16px: the 12px overhang plus a little daylight,
+   so a control is not merely clear of the circle but readably so. */
+.app-scroll,
+.scroll-safe {
+  padding-bottom: 16px;
+}
+
 @media (pointer: coarse) {
   .app-scroll {
     scrollbar-width: none;
@@ -4806,7 +4824,14 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   object-fit: contain;
 }
 
+/* The label is a passenger on the button, not a target of its own, and
+   it is wide. Over the map it came to rest on the OpenStreetMap
+   attribution link and swallowed the tap - and that link is not
+   decoration, it is the credit the tile licence requires to be
+   reachable. The button itself still takes the press; only the text
+   stops intercepting it. */
 .sancti-fab__label {
+  pointer-events: none;
   font-size: 14.5px;
   font-weight: 700;
   white-space: nowrap;

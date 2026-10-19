@@ -57,7 +57,7 @@ export default function MassSchedule({ parish }: MassScheduleProps) {
   const photoAlt = parishPhotoAlt(parish.id, parishName);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
       {/* Page Header */}
       <div className="bg-[var(--color-brand-primary)] text-white p-5 pt-6 rounded-b-[2rem] shadow-sm relative overflow-hidden shrink-0 border-b border-[var(--color-brand-border)]">
         <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4">

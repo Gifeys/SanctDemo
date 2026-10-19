@@ -124,7 +124,7 @@ export default function MeTab({
     .join("") || "P";
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
 
       <div className="px-5 pt-6 pb-4 flex items-center gap-4">
         <div className="flex-1 min-w-0">

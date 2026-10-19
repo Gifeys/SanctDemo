@@ -57,7 +57,7 @@ export default function MyApplicationsPage({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[var(--color-brand-card)]">
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto scroll-safe bg-[var(--color-brand-card)]">
       <div className="px-5 pt-5 pb-3">
         <button
           onClick={onBack}
