@@ -9,6 +9,7 @@ import { signOutNow } from "../lib/authFlow";
 import type { AdminSession } from "./AdminApp";
 import { isArchived } from "../lib/applicationFilters";
 import ParishStatus from "./ParishStatus";
+import AdminTiles from "./AdminTiles";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
 
 /**
@@ -108,6 +109,10 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
       </header>
 
       <main className="px-4 py-5 max-w-[900px] mx-auto">
+        {/* The whole office at a glance, for somebody arriving. The nav
+            below is for moving around once you know the place. */}
+        <AdminTiles parishName={session.church?.name ?? "Parish"} />
+
         <AdminNav />
 
         {error && (

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Get SanctiWalk</title>
+<meta name="description" content="SanctiWalk — a guide to the parishes of the Diocese of Kalookan. Mass times, church history, and an AI guide, on your phone." />
+<meta name="theme-color" content="#1C2C56" />
+<link rel="icon" href="/favicon.ico" />
+
+<!-- The app's own faces. Montserrat everywhere, DM Mono for small
+     labels - the same pair index.html loads, so the page and the thing
+     it hands you are set in one voice. preconnect because this is the
+     only blocking request on the page. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Open Graph, so a link pasted into Messenger shows the app rather than a bare URL. -->
+<meta property="og:title" content="Get SanctiWalk" />
+<meta property="og:description" content="Mass times, church history and a guide to every station — for the parishes of the Diocese of Kalookan." />
+<meta property="og:image" content="/ui/sanctiwalk-icon-512.png" />
+<meta property="og:type" content="website" />
+
+<style>
+  /* The app's own palette, so the page and the thing it hands you are
+     recognisably one object. Warm paper rather than white: SanctiWalk is
+     read inside churches, and a white screen in a dim nave is a torch. */
+  :root {
+    --paper:   #E7E4DD;
+    --card:    #FAF8F4;
+    --ink:     #14171F;
+    --muted:   #63666D;
+    --navy:    #1C2C56;
+    --hair:    #DED9D0;
+
+    --font:    "Montserrat", ui-sans-serif, system-ui, sans-serif;
+    --mono:    "DM Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 16px 64px;
+  }
+
+  /* ---------------------------------------------------------- masthead */
+  /* The name is set from the brand lockup rather than typed, so the
+     spacing and the mark are exactly the ones in brand/. Typing
+     "SanctiWalk" in Montserrat would be close, and close is what makes
+     a logo look wrong. The <h1> keeps the text for screen readers and
+     for search. */
+  h1 { margin: 0; text-align: center; }
+  h1 img {
+    display: block;
+    width: min(330px, 76vw);
+    height: auto;
+    margin: 0 auto;
+  }
+  h1 span {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .standfirst {
+    margin: 14px auto 0;
+    max-width: 30em;
+    text-align: center;
+    font-size: clamp(16px, 2.4vw, 18.5px);
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  /* ------------------------------------------------------------- the QR
+     The largest thing on the page, deliberately. At a presentation this
+     page is on a projector and its whole job is to get the app onto the
+     phones in the room; everything else is a caption to that. */
+  .getbox {
+    margin: 34px auto 0;
+    max-width: 440px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 28px;
+    padding: 26px 24px 24px;
+    text-align: center;
+  }
+
+  .qr {
+    width: min(260px, 64vw);
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .qr-caption {
+    margin: 14px 0 0;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    margin-top: 18px;
+    padding: 15px 22px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font: inherit;
+    font-size: 16.5px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .cta:active { transform: scale(0.99); }
+  /* display:inline-flex above beats the [hidden] attribute's own
+     display:none, so an Android-only button showed on every desktop.
+     The attribute has to win. */
+  .cta[hidden] { display: none; }
+
+  .cta--quiet {
+    background: transparent;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+    margin-top: 10px;
+  }
+
+  .sub {
+    margin: 12px 0 0;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  /* ---------------------------------------------------- what it does
+     Not three identical cards. Each line is a sentence with its own
+     weight, separated by a rule - closer to a page from a missal than to
+     a pricing table, which is the register this belongs in. */
+  .does {
+    margin: 48px auto 0;
+    max-width: 620px;
+  }
+  .does h2 {
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .does dl { margin: 18px 0 0; }
+  .does dt {
+    font-size: 17px;
+    font-weight: 700;
+    padding-top: 16px;
+    border-top: 1px solid var(--hair);
+  }
+  .does dd {
+    margin: 5px 0 0;
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  /* ------------------------------------------------------------ needs */
+  .needs {
+    margin: 44px auto 0;
+    max-width: 620px;
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 20px;
+    padding: 20px 22px;
+  }
+  /* DM Mono for the small label, which is what the app uses for the
+     same job - a caption that is a signpost, not prose. */
+  .needs h3 {
+    margin: 0 0 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .needs ul { margin: 0; padding-left: 20px; }
+  .needs li {
+    font-size: 15px;
+    line-height: 1.65;
+    margin-bottom: 6px;
+  }
+
+  footer {
+    margin: 48px auto 0;
+    max-width: 620px;
+    text-align: center;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  footer a { color: var(--navy); }
+
+  /* The page is read on a phone held in a church, and on a projector in a
+     bright room. Nothing here inverts for dark mode on purpose: the warm
+     paper IS the brand, and a dark variant would stop matching the app. */
+  @media (prefers-reduced-motion: reduce) {
+    .cta:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>
+    <img src="/ui/sanctiwalk-lockup-navy.png" alt="" />
+    <span>SanctiWalk</span>
+  </h1>
+
+  <p class="standfirst">
+    A guide to the parishes of the Diocese of Kalookan. Mass times, the story of
+    each church, and an answer when you are standing in front of something and
+    wondering what it is.
+  </p>
+
+  <section class="getbox">
+    <!-- Generated by scripts/generate-landing-qr.mjs. SVG, not PNG: this gets
+         projected and printed, and a raster QR resamples into mush. -->
+    <img class="qr" src="/get/qr.svg" alt="QR code linking to this page" />
+
+    <p class="qr-caption" id="qr-caption">Point your phone camera here</p>
+
+    <a class="cta" id="primary" href="#">Open SanctiWalk</a>
+    <a class="cta cta--quiet" id="secondary" href="#" hidden>Download for Android</a>
+
+    <p class="sub" id="note"></p>
+  </section>
+
+  <section class="does">
+    <h2>What it does</h2>
+    <dl>
+      <dt>Tells you when Mass is</dt>
+      <dd>
+        Kept current by the parish office itself, not by us. When they change a
+        time, it changes on your phone.
+      </dd>
+
+      <dt>Explains what you are looking at</dt>
+      <dd>
+        Point the camera at a statue, an altar or an image and it will name it
+        and tell you who they were. Twenty a day, free.
+      </dd>
+
+      <dt>Reads the church's history aloud</dt>
+      <dd>
+        In English or Filipino, so you can listen while you walk rather than
+        read with your head down.
+      </dd>
+
+      <dt>Prays the Rosary with you</dt>
+      <dd>
+        All four sets of mysteries, in both languages, with a guided voice if
+        you want one. Works with no signal.
+      </dd>
+
+      <dt>Walks you there</dt>
+      <dd>
+        Real street directions to any parish in the diocese, following roads
+        rather than drawing a line across the map.
+      </dd>
+    </dl>
+  </section>
+
+  <section class="needs">
+    <h3>Before you install</h3>
+    <ul>
+      <li><strong>Android:</strong> everything works, including the AR tour.</li>
+      <li><strong>iPhone:</strong> use the web version. It does everything except the AR tour, which needs Android.</li>
+      <li><strong>The AR tour</strong> is a separate app and needs a phone that supports Google ARCore.</li>
+      <li><strong>Mass times, history and the Rosary</strong> work without a signal. The camera scanner needs internet.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>
+      Built as a capstone project for STI College, in consultation with
+      Mary Help of Christians Parish and San Roque Cathedral Parish.
+    </p>
+    <p>
+      <a href="https://github.com/Gifeys/SanctDemo">Source code</a>
+    </p>
+  </footer>
+
+</main>
+
+<script>
+/*
+ * Which button to show.
+ *
+ * The page cannot install anything by itself, so the one useful thing it
+ * can do is stop offering the wrong thing: an APK to an iPhone, or a
+ * download button to somebody sitting at a laptop who needs the QR.
+ *
+ * Deliberately not clever. User-agent sniffing is a guess, so every
+ * device still gets the web app as the primary action - the one thing
+ * that works everywhere - and Android merely gets the APK offered as
+ * well. Guessing wrong therefore costs a visitor nothing.
+ */
+(function () {
+  var APP_URL = 'https://sanct-demo-vxzb.vercel.app';
+  // The APK is ~69 MB, too large to keep in the repository, so it lives on
+  // GitHub Releases. Until a release is published this link lands on the
+  // releases page rather than a file - which is honest, and better than a
+  // button that downloads nothing.
+  var APK_URL = 'https://github.com/Gifeys/SanctDemo/releases/latest';
+
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var isPhone = isAndroid || isIOS;
+
+  var primary = document.getElementById('primary');
+  var secondary = document.getElementById('secondary');
+  var note = document.getElementById('note');
+  var caption = document.getElementById('qr-caption');
+
+  primary.href = APP_URL;
+
+  if (isAndroid) {
+    secondary.hidden = false;
+    secondary.href = APK_URL;
+    note.textContent =
+      'The installed app adds the AR tour and works offline. Android will warn you ' +
+      'about installing outside the Play Store — that warning is normal for a ' +
+      'student project.';
+  } else if (isIOS) {
+    note.textContent =
+      'On iPhone, open the link then tap Share › Add to Home Screen to use it ' +
+      'like an app. The AR tour is Android only.';
+  } else {
+    note.textContent =
+      'You are on a computer. Scan the code above with your phone camera to open ' +
+      'this page there.';
+  }
+
+  if (!isPhone) {
+    caption.textContent = 'Scan this with your phone camera';
+  }
+})();
+</script>
+</body>
+</html>

@@ -66,6 +66,12 @@ self.addEventListener('activate', event => {
 function neverCache(url) {
   return (
     url.pathname.startsWith('/api/') ||
+    // The download page is a separate, static page that happens to live
+    // on the same origin. Without this the navigate branch below would
+    // cache IT as the app shell, and the app would open to the download
+    // page the next time it was offline.
+    url.pathname === '/get' ||
+    url.pathname.startsWith('/get/') ||
     // Firebase, Google sign-in and the map's tiles and routing all have
     // their own freshness rules and none of them want ours.
     url.hostname.endsWith('googleapis.com') ||
