@@ -14,6 +14,8 @@ import {
   WifiOff,
   QrCode,
   MapPin,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useCamera, captureFailed, type CameraStatus, type CaptureFailure } from "../lib/useCamera";
 import { useQrScanner } from "../lib/useQrScanner";
@@ -31,6 +33,8 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
 import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
 import PreviewVideo from "./PreviewVideo";
+import { useNarration } from "../lib/useNarration";
+import { scanScript } from "../lib/scanNarration";
 import { idToken } from "../lib/idToken";
 import { SCANS_PER_PARISH_PER_DAY } from "../lib/scanQuota";
 import { useAuthUid } from "../lib/useAuthUid";
@@ -248,6 +252,20 @@ export default function ArTour({
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  /*
+   * The result, read aloud.
+   *
+   * The same voice the history page uses - the phone's own
+   * text-to-speech in the app, the browser's on a laptop, asking for
+   * fil-PH or en-US to match the language on screen.
+   *
+   * This is the screen that needs it most. The others are read sitting
+   * down; a scan result is read standing in front of a statue, often in
+   * poor light, by somebody who would rather be looking at the statue
+   * than at the phone.
+   */
+  const narration = useNarration(language);
+
   // The feature, recorded. Shown when it cannot be demonstrated
   // live - during a Mass, or to a survey respondent who is not
   // standing in the church.
@@ -461,6 +479,14 @@ export default function ArTour({
     }
   }, [camera, stationNames]);
 
+  // A voice still describing the last statue while the pilgrim has
+  // closed the card and walked on is the kind of bug people close an
+  // app over. Closing the card, or scanning something new, silences it.
+  const stopNarration = narration.stop;
+  useEffect(() => {
+    if (!sheetOpen) stopNarration();
+  }, [sheetOpen, result?.title, stopNarration]);
+
   const pickStation = useCallback((station: Station) => {
     setResult(stationToRecognition(station, "manual", language));
     setSheetOpen(true);
@@ -579,7 +605,38 @@ export default function ArTour({
                 />
               )}
 
-              <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
+              {/* Read it aloud. Above the text rather than buried under it:
+                somebody who wants to listen rather than read should not
+                have to read to the bottom to find out they could have
+                listened. Absent when no voice is installed, and absent
+                when there is too little to be worth hearing. */}
+            {narration.supported && scanScript(result, language) && (
+              <button
+                type="button"
+                onClick={() => narration.toggle(scanScript(result, language))}
+                className="scan-listen"
+                aria-pressed={narration.speaking}
+                aria-label={
+                  narration.speaking
+                    ? "Stop reading this aloud"
+                    : `Read about ${result.title} aloud`
+                }
+              >
+                {narration.speaking ? (
+                  <>
+                    <VolumeX className="w-4 h-4" aria-hidden />
+                    <span>{language === "fil" ? "Ihinto" : "Stop"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4" aria-hidden />
+                    <span>{language === "fil" ? "Pakinggan" : "Listen"}</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
             {/* Who they were. Kept visually distinct from the summary above
                 it, because the two answer different questions and come from
@@ -1157,6 +1214,37 @@ export default function ArTour({
                 className="mb-4 w-full h-40 object-cover rounded-2xl border border-[var(--color-brand-border)]"
                 loading="lazy"
               />
+            )}
+
+            {/* Read it aloud. Above the text rather than buried under it:
+                somebody who wants to listen rather than read should not
+                have to read to the bottom to find out they could have
+                listened. Absent when no voice is installed, and absent
+                when there is too little to be worth hearing. */}
+            {narration.supported && scanScript(result, language) && (
+              <button
+                type="button"
+                onClick={() => narration.toggle(scanScript(result, language))}
+                className="scan-listen"
+                aria-pressed={narration.speaking}
+                aria-label={
+                  narration.speaking
+                    ? "Stop reading this aloud"
+                    : `Read about ${result.title} aloud`
+                }
+              >
+                {narration.speaking ? (
+                  <>
+                    <VolumeX className="w-4 h-4" aria-hidden />
+                    <span>{language === "fil" ? "Ihinto" : "Stop"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4" aria-hidden />
+                    <span>{language === "fil" ? "Pakinggan" : "Listen"}</span>
+                  </>
+                )}
+              </button>
             )}
 
             <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>

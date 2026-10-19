@@ -4126,6 +4126,39 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    Set in a tinted panel rather than run on as another paragraph: the two
    are different kinds of knowing, and the card should not let a reader
    mistake the Church's general record for this parish's own. */
+/* Read-aloud control on the scan card. Sits above the text, because
+   somebody who would rather listen than read should not have to read to
+   the bottom to discover they could have listened. */
+.scan-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-primary);
+  background: transparent;
+  color: var(--color-brand-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, transform 120ms ease;
+}
+.scan-listen:active { transform: scale(0.985); }
+.scan-listen[aria-pressed="true"] {
+  background: var(--color-brand-primary);
+  color: var(--color-brand-on-accent);
+}
+.scan-listen:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-listen { transition: none; }
+  .scan-listen:active { transform: none; }
+}
+
 .saint-note {
   margin-top: 16px;
   padding: 13px 14px 12px;

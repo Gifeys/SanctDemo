@@ -943,6 +943,17 @@ header {
   margin: 0 0 8px;
 }
 
+/* The caveat under a setting. Quieter than the label above it and set
+   in sentence case, because it is a sentence - the guided voice has a
+   consequence (the microphone goes off) that a pilgrim should read
+   before switching it on, not discover mid-decade. */
+.rs-note {
+  font-family: 'Poppins', sans-serif; font-weight: 400;
+  font-size: 12.5px; line-height: 1.5;
+  color: rgba(255,255,255,.58);
+  margin: 8px 0 0;
+}
+
 .rs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .rs-grid-2 { grid-template-columns: 1fr 1fr; }
 .rs-wide { grid-column: 1 / -1; }
@@ -1169,6 +1180,19 @@ header {
             <button type="button" data-music="off" id="rs-music-off"></button>
           </div>
         </div>
+
+        <!-- Guided voice: the app prays each part aloud as it appears.
+             Off by default. Somebody who opens the Rosary to pray does
+             not expect a voice to start without being asked, and in a
+             church that is worse than unhelpful. -->
+        <div class="rs-section" id="rs-guide-section">
+          <div class="rs-label" id="rs-guide-label"></div>
+          <div class="rs-grid rs-grid-2" id="rs-guide-group">
+            <button type="button" data-guide="on" id="rs-guide-on"></button>
+            <button type="button" data-guide="off" id="rs-guide-off"></button>
+          </div>
+          <div class="rs-note" id="rs-guide-note"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1207,6 +1231,8 @@ const P = {
     ui: {
       mystery:"Mysteries", language:"Language", begin:"Begin", again:"Thanks be to God",
       music:"Background Music", musicOn:"On", musicOff:"Off",
+      guide:"Guided Voice", guideOn:"On", guideOff:"Off",
+      guideNote:"Reads each prayer aloud as it appears. Turns off the microphone, because the app would otherwise hear its own voice and light the beads by itself.",
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
       hint:"Tap to continue · tap the left edge to go back",
@@ -1275,6 +1301,8 @@ const P = {
     ui: {
       mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Salamat sa Diyos",
       music:"Musikang Panlikod", musicOn:"Naka-on", musicOff:"Naka-off",
+      guide:"Gabay na Boses", guideOn:"Naka-on", guideOff:"Naka-off",
+      guideNote:"Binabasa nang malakas ang bawat panalangin. Isinasara nito ang mikropono, dahil kung hindi ay maririnig ng app ang sarili nitong boses.",
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
       hint:"I-tap upang magpatuloy · kaliwa upang bumalik",
@@ -1906,6 +1934,8 @@ const S = {
   seq: [], idx: 0,
   started: false,
   voiceWanted: true, voiceLive: false,
+  // Guided narration. Off unless the pilgrim has asked for it before.
+  guideOn: store.get("rosary.guide") === "1",
   hintDone: store.get("rosary.hintDone") === "1",
   taps: 0,
   wakeLock: null
@@ -1932,6 +1962,9 @@ const el = {
   rsLangGroup:$("rs-lang-group"), rsMysteryGroup:$("rs-mystery-group"),
   rsMusicGroup:$("rs-music-group"), rsMusicLabel:$("rs-music-label"),
   rsMusicOn:$("rs-music-on"), rsMusicOff:$("rs-music-off"),
+  rsGuideSection:$("rs-guide-section"), rsGuideLabel:$("rs-guide-label"),
+  rsGuideGroup:$("rs-guide-group"), rsGuideNote:$("rs-guide-note"),
+  rsGuideOn:$("rs-guide-on"), rsGuideOff:$("rs-guide-off"),
   ambientMusic:$("ambient-music"),
   finish:$("finish"), finTitle:$("fin-title"), finBody:$("fin-body"), finAgain:$("fin-again")
 };
@@ -2337,6 +2370,10 @@ function render() {
   // The rosary is deliberately NOT re-fitted here. The stage is a fixed
   // height, so its size is settled once on load and on resize only.
   resetVoiceForStep();
+
+  // Read this step aloud, if the pilgrim asked for a guide. Last, so the
+  // voice starts once the screen it is describing is actually up.
+  narrateStep(step);
 }
 
 /* ==================================================================
@@ -2545,6 +2582,85 @@ function handleMicError(err) {
   else                                                             toast(L.ui.micDenied);
   S.voiceWanted = false;
   syncMicButton();
+}
+
+/* ==================================================================
+   GUIDED NARRATION
+
+   The app praying each part aloud as it appears, for somebody who
+   cannot read the screen comfortably - poor light, small text, or
+   simply praying with their eyes closed, which is the ordinary way.
+
+   ## Why this cannot be on at the same time as the microphone
+
+   The microphone here listens to the pilgrim pray and lights each word
+   as it is said. If the app speaks while that is running, the phone
+   hears its OWN voice, matches it against the prayer, and walks itself
+   through the whole Rosary while nobody says a word. The two are
+   therefore mutually exclusive: turning the guide on turns the
+   listening off, and the settings note says so rather than leaving a
+   pilgrim to discover their beads moving by themselves.
+
+   ## Why the same voice as the rest of the app
+
+   fil-PH or en-US, chosen by the Rosary's own language setting through
+   langTag() - the same tag the recogniser already uses, so the prayer
+   is heard in the language it is shown in.
+   ================================================================== */
+const Narrator = {
+  supported: typeof window !== "undefined"
+    && "speechSynthesis" in window
+    && typeof SpeechSynthesisUtterance === "function",
+  speaking: false
+};
+
+function narratorStop() {
+  if (!Narrator.supported) return;
+  Narrator.speaking = false;
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+}
+
+/* Reads one step: its name, then the prayer itself.
+ *
+ * The name is spoken first and closed with a full stop so the voice
+ * drops before the prayer begins - without it "Hail Mary Hail Mary full
+ * of grace" runs together and the heading is lost inside the prayer. */
+function narrateStep(step) {
+  if (!Narrator.supported || !S.guideOn || !step) return;
+  narratorStop();
+
+  const body = step.kind === "mystery" && step.announce
+    ? step.announce + ". " + step.text
+    : step.text;
+  const name = (step.name || "").trim();
+  const text = (name ? name.replace(/[.\s]+$/, "") + ". " : "") + (body || "");
+  if (!text.trim()) return;
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = langTag();
+  // A shade under natural pace. The default rattles through a prayer,
+  // which is the one kind of text nobody wants hurried.
+  u.rate = 0.9;
+  u.onend = function () { Narrator.speaking = false; };
+  u.onerror = function () { Narrator.speaking = false; };
+  Narrator.speaking = true;
+  try { window.speechSynthesis.speak(u); } catch (e) { Narrator.speaking = false; }
+}
+
+/* Applies the guide setting, including its effect on the microphone. */
+function setGuide(on) {
+  S.guideOn = !!on;
+  store.set("rosary.guide", S.guideOn ? "1" : "0");
+
+  if (S.guideOn) {
+    // Mutually exclusive with listening - see the note above.
+    S.voiceWanted = false;
+    if (typeof stopVoice === "function") stopVoice();
+    if (S.started) narrateStep(S.seq[S.idx]);
+  } else {
+    narratorStop();
+  }
+  if (typeof syncMicButton === "function") syncMicButton();
 }
 
 /* ==================================================================
@@ -2874,6 +2990,22 @@ function paintSettingsPanel() {
     el.rsMusicOn.classList.toggle("sel", S.musicOn);
     el.rsMusicOff.classList.toggle("sel", !S.musicOn);
   }
+
+  // Hidden entirely where the device has no speech engine, rather than
+  // offered and then silent.
+  if (el.rsGuideSection) {
+    if (!Narrator.supported) {
+      el.rsGuideSection.style.display = "none";
+    } else {
+      el.rsGuideSection.style.display = "";
+      el.rsGuideLabel.textContent = P[S.lang].ui.guide;
+      el.rsGuideOn.textContent = P[S.lang].ui.guideOn;
+      el.rsGuideOff.textContent = P[S.lang].ui.guideOff;
+      el.rsGuideNote.textContent = P[S.lang].ui.guideNote;
+      el.rsGuideOn.classList.toggle("sel", S.guideOn);
+      el.rsGuideOff.classList.toggle("sel", !S.guideOn);
+    }
+  }
 }
 
 /**
@@ -2979,6 +3111,18 @@ if (el.rsMusicGroup) {
     const next = { language: langToPref(S.lang), mysterySet: S.mysterySet, music: b.dataset.music };
     saveRosarySettings(next);
     applyRosarySettingsToState(next);
+    paintSettingsPanel();
+  });
+}
+
+// The guided voice is kept out of saveRosarySettings deliberately: that
+// object is shared with the app shell, which knows nothing about this
+// setting, and a key it does not understand would be dropped on its next
+// write. setGuide persists it on its own.
+if (el.rsGuideGroup) {
+  el.rsGuideGroup.addEventListener("click", function (e) {
+    const b = e.target.closest("button"); if (!b) return;
+    setGuide(b.dataset.guide === "on");
     paintSettingsPanel();
   });
 }
