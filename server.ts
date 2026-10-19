@@ -343,6 +343,12 @@ const OPEN_INSTRUCTION = [
   "",
   "Do not invent parish-specific history, dates, donors, or names. If you do",
   "not know, describe what is visible instead.",
+  "",
+  "If the subject depicts a saint, a blessed, or Our Lady under a title, also",
+  "fill saintName and aboutSaint, and - only when you are certain - feastDay",
+  "and patronage. Someone standing in front of a statue can already see the",
+  "statue; what they cannot see is who it is of. Leave feastDay and patronage",
+  "empty rather than guessing.",
 ].join("\n");
 
 let aiClient: GoogleGenAI | null = null;
@@ -580,6 +586,14 @@ app.post("/api/identify", async (req, res) => {
           "Only state facts you can see in the image or that are common knowledge",
           "about the subject. Do not invent parish-specific history, dates, donors,",
           "or names — if you do not know, say what is visible instead.",
+          "",
+          "If the subject depicts a saint, a blessed, or Our Lady under a title,",
+          "also fill saintName, aboutSaint, and - only when you are certain -",
+          "feastDay and patronage. `summary` explains what you saw; `aboutSaint`",
+          "says who they were. Someone standing in front of a statue can already",
+          "see the statue, so a description of it teaches them nothing. Leave",
+          "feastDay and patronage empty rather than guessing: a wrong feast day",
+          "sends somebody to church on the wrong morning.",
         ].join("\n")
       : OPEN_INSTRUCTION;
 
@@ -648,6 +662,26 @@ app.post("/api/identify", async (req, res) => {
               type: Type.BOOLEAN,
               description:
                 "True when the subject is one of the listed stations. False when it was identified but is not on the list. Ignored when no list was given.",
+            },
+            saintName: {
+              type: Type.STRING,
+              description:
+                "When the subject depicts a saint, blessed, or Our Lady under a title, their full common English name, e.g. 'Saint Francis of Assisi' or 'Our Lady of Perpetual Help'. Empty string when the subject is not a holy figure.",
+            },
+            feastDay: {
+              type: Type.STRING,
+              description:
+                "That saint's feast day in the Roman calendar, e.g. 'October 4'. Leave EMPTY if you are not certain - a wrong feast day sends someone to church on the wrong morning. Never guess.",
+            },
+            patronage: {
+              type: Type.STRING,
+              description:
+                "What they are the patron of, in a few words, e.g. 'animals, ecology and merchants'. Leave EMPTY if unsure. Never guess.",
+            },
+            aboutSaint: {
+              type: Type.STRING,
+              description:
+                "3-5 sentences on who this saint actually was and why they are venerated: when and where they lived, what they are known for, and what their usual emblems mean. This is general Catholic knowledge about the person, NOT a description of the object in the photo - the pilgrim can already see the object. Write it in your own words. Empty string when the subject is not a holy figure.",
             },
           },
           required: ["recognized", "title", "category", "confidence", "summary", "highlights"],

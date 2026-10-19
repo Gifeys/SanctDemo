@@ -4068,6 +4068,125 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 /* ---- the sheet ---- */
+/* The answer, collapsed, at the top of the scanner sheet.
+   The name only: a full card the instant the scan returns buries the
+   thing the camera is pointed at, so the rest waits for a tap. */
+.scan-result-peek {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  /* Above the switch; the sheet's own padding does the rest. */
+  margin: 0 0 9px;
+  padding: 10px 13px;
+  border-radius: 16px;
+  border: 1px solid var(--color-brand-border);
+  background: color-mix(in srgb, var(--color-brand-card) 92%, transparent);
+  color: var(--color-brand-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+.scan-result-peek:active { transform: scale(0.985); }
+.scan-result-peek:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.scan-result-peek__text { min-width: 0; }
+
+.scan-result-peek__label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+
+/* One line. A long title wrapping to two would start eating the
+   viewfinder, which is what the collapsed state exists to protect. */
+.scan-result-peek__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-result-peek { transition: none; }
+  .scan-result-peek:active { transform: none; }
+}
+
+/* Who the saint was, under what the camera saw.
+   Set in a tinted panel rather than run on as another paragraph: the two
+   are different kinds of knowing, and the card should not let a reader
+   mistake the Church's general record for this parish's own. */
+.saint-note {
+  margin-top: 16px;
+  padding: 13px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--color-brand-border);
+  background: color-mix(in srgb, var(--color-brand-accent) 7%, transparent);
+}
+
+.saint-note__head {
+  margin: 0 0 9px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+
+/* Feast day and patronage read as a short reference block, not prose -
+   they are the two things somebody might act on or repeat. */
+.saint-note__facts {
+  margin: 0 0 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.saint-note__fact { min-width: 0; }
+.saint-note__fact dt {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-brand-secondary);
+}
+.saint-note__fact dd {
+  margin: 1px 0 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--color-brand-text);
+}
+
+.saint-note__body {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-brand-text);
+}
+
+/* Quiet, but present on every card that carries it. */
+.saint-note__source {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-brand-secondary);
+}
+.saint-note__link {
+  color: var(--color-brand-primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .scan-sheet {
   position: absolute;
   left: 8px;

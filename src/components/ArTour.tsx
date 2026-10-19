@@ -91,6 +91,26 @@ interface Recognition {
    *  station's photograph and offer the next stop on the tour — the AI path
    *  has no station behind it, so it carries no id. */
   stationId?: string;
+
+  /* Who the subject is, when it depicts a saint, a blessed, or Our Lady
+   * under a title.
+   *
+   * `summary` answers "why do you think that" - it describes the object,
+   * which is the honest way to let somebody check the identification
+   * against what is in front of them. But a person standing before a
+   * statue can already see the statue. What they cannot see is who it is
+   * of, and that is the thing worth learning. These carry it.
+   *
+   * General Catholic knowledge, not parish record, and labelled as such
+   * on the card: the same line this app draws everywhere else between
+   * what a parish has verified and what is simply true of the Church.
+   * feastDay and patronage are left empty by the model rather than
+   * guessed - a wrong feast day sends somebody to church on the wrong
+   * morning. */
+  saintName?: string;
+  feastDay?: string;
+  patronage?: string;
+  aboutSaint?: string;
 }
 
 /**
@@ -561,6 +581,53 @@ export default function ArTour({
 
               <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
 
+            {/* Who they were. Kept visually distinct from the summary above
+                it, because the two answer different questions and come from
+                different kinds of knowing: the summary is what the camera
+                saw, this is what the Church remembers. */}
+            {result.aboutSaint?.trim() && (
+              <section className="saint-note">
+                <h4 className="saint-note__head">
+                  About {result.saintName?.trim() || "this saint"}
+                </h4>
+
+                {(result.feastDay?.trim() || result.patronage?.trim()) && (
+                  <dl className="saint-note__facts">
+                    {result.feastDay?.trim() && (
+                      <div className="saint-note__fact">
+                        <dt>Feast day</dt>
+                        <dd>{result.feastDay}</dd>
+                      </div>
+                    )}
+                    {result.patronage?.trim() && (
+                      <div className="saint-note__fact">
+                        <dt>Patron of</dt>
+                        <dd>{result.patronage}</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+
+                <p className="saint-note__body">{result.aboutSaint}</p>
+
+                {/* Said plainly, for the same reason Ask Sancti says it: this
+                    is the Church's general record, not something this parish
+                    has checked and published. The link goes out rather than
+                    the text coming in - that site's writing is its own. */}
+                <p className="saint-note__source">
+                  General Catholic information, not parish record.{" "}
+                  <a
+                    href="https://mycatholic.life/saints/"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="saint-note__link"
+                  >
+                    Read more at My Catholic Life
+                  </a>
+                </p>
+              </section>
+            )}
+
               {result.highlights.length > 0 && (
                 <ul className="mt-4 space-y-2">
                   {result.highlights.map((fact) => (
@@ -918,9 +985,44 @@ export default function ArTour({
       )}
 
 
+      {/* What the scan found, before it takes over the screen.
+          A result is deliberately shown collapsed first - the name only,
+          over the live camera - because a full card the instant the answer
+          lands buries the thing the camera is pointed at. That was the
+          intent; what was missing is this bar. The collapsed state existed
+          only on the no-camera fallback screen, so in the camera view a
+          successful scan set a result that nothing rendered: the scan was
+          spent, the answer arrived, and the screen showed nothing. */}
       {/* The sheet: the switch, and whatever the chosen scanner needs. */}
       {!sheetOpen && (
         <ScannerSheet>
+          {/* What the scan found, before it takes over the screen.
+              A result is deliberately shown collapsed first - the name
+              only - because a full card the instant the answer lands
+              buries the thing the camera is pointed at. That was always
+              the intent; the bar itself was missing. It existed only on
+              the no-camera fallback screen, so in the camera view a
+              successful scan set a result that nothing rendered: the
+              scan was spent, the answer came back, and the screen showed
+              nothing at all.
+
+              Inside the sheet rather than floating above it, so it needs
+              no hand-measured offset to clear the tabs. */}
+          {result && (
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="scan-result-peek"
+              aria-label={`Read about ${result.title}`}
+            >
+              <span className="scan-result-peek__text">
+                <span className="scan-result-peek__label">Tap to read</span>
+                <span className="scan-result-peek__title">{result.title}</span>
+              </span>
+              <ChevronRight className="w-4 h-4 shrink-0" aria-hidden />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setPreviewFor(mode)}
@@ -1058,6 +1160,53 @@ export default function ArTour({
             )}
 
             <p className="text-[15px] text-[var(--color-brand-text)] leading-relaxed font-sans">{result.summary}</p>
+
+            {/* Who they were. Kept visually distinct from the summary above
+                it, because the two answer different questions and come from
+                different kinds of knowing: the summary is what the camera
+                saw, this is what the Church remembers. */}
+            {result.aboutSaint?.trim() && (
+              <section className="saint-note">
+                <h4 className="saint-note__head">
+                  About {result.saintName?.trim() || "this saint"}
+                </h4>
+
+                {(result.feastDay?.trim() || result.patronage?.trim()) && (
+                  <dl className="saint-note__facts">
+                    {result.feastDay?.trim() && (
+                      <div className="saint-note__fact">
+                        <dt>Feast day</dt>
+                        <dd>{result.feastDay}</dd>
+                      </div>
+                    )}
+                    {result.patronage?.trim() && (
+                      <div className="saint-note__fact">
+                        <dt>Patron of</dt>
+                        <dd>{result.patronage}</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+
+                <p className="saint-note__body">{result.aboutSaint}</p>
+
+                {/* Said plainly, for the same reason Ask Sancti says it: this
+                    is the Church's general record, not something this parish
+                    has checked and published. The link goes out rather than
+                    the text coming in - that site's writing is its own. */}
+                <p className="saint-note__source">
+                  General Catholic information, not parish record.{" "}
+                  <a
+                    href="https://mycatholic.life/saints/"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="saint-note__link"
+                  >
+                    Read more at My Catholic Life
+                  </a>
+                </p>
+              </section>
+            )}
 
             {result.highlights?.length > 0 && (
               <ul className="mt-4 space-y-2">
