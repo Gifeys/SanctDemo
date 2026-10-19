@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Smartphone, Monitor, Wifi, WifiOff, Battery } from "lucide-react";
+import { Smartphone, Monitor, Wifi, WifiOff, Battery, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useDeviceSurface } from "../lib/displayMode";
 
 interface PhoneContainerProps {
@@ -66,6 +67,26 @@ export default function PhoneContainer({
           simulation, which is a real test of the service worker rather than
           promotional copy. */}
       <div className="flex items-center gap-2 flex-wrap justify-center">
+        {/* The way out.
+
+            This branch only renders on a desk, and on a desk the root of
+            the site is the page explaining SanctiWalk - so there is
+            always somewhere to go back to. Without this, "Open full
+            screen" on that page was a one-way door: the app filled the
+            window and the only way back was the browser's own button,
+            which does nothing for somebody who opened /app directly.
+
+            A phone never sees this. The branch above returns before
+            here, and on a phone the root IS the app, so "back" would
+            mean nothing. */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 py-1.5 px-4 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[15px] font-semibold text-[var(--color-brand-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden />
+          About SanctiWalk
+        </Link>
+
         <div className="flex items-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-1">
           <button
             id="btn-toggle-mobile"
