@@ -3,27 +3,26 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Get SanctiWalk</title>
-<meta name="description" content="SanctiWalk — a guide to the parishes of the Diocese of Kalookan. Mass times, church history, and an AI guide, on your phone." />
+<title>Download SanctiWalk</title>
+<meta name="description" content="SanctiWalk for Android — a guide to the parishes of the Diocese of Kalookan. Mass times, church history, an AI guide and the Rosary." />
 <meta name="theme-color" content="#1C2C56" />
 <link rel="icon" href="/favicon.ico" />
 
 <!-- The app's own faces. Montserrat everywhere, DM Mono for small
      labels - the same pair index.html loads, so the page and the thing
-     it hands you are set in one voice. preconnect because this is the
-     only blocking request on the page. -->
+     it hands you are set in one voice. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-<!-- Open Graph, so a link pasted into Messenger shows the app rather than a bare URL. -->
-<meta property="og:title" content="Get SanctiWalk" />
+<!-- So a link pasted into Messenger shows the app rather than a bare URL. -->
+<meta property="og:title" content="Download SanctiWalk" />
 <meta property="og:description" content="Mass times, church history and a guide to every station — for the parishes of the Diocese of Kalookan." />
 <meta property="og:image" content="/ui/sanctiwalk-icon-512.png" />
 <meta property="og:type" content="website" />
 
 <style>
-  /* The app's own palette, so the page and the thing it hands you are
+  /* The app's palette, so the page and the thing it hands you are
      recognisably one object. Warm paper rather than white: SanctiWalk is
      read inside churches, and a white screen in a dim nave is a torch. */
   :root {
@@ -48,31 +47,18 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .wrap {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 40px 16px 64px;
-  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 38px 16px 64px; }
 
-  /* ---------------------------------------------------------- masthead */
-  /* The name is set from the brand lockup rather than typed, so the
+  /* ---------------------------------------------------------- masthead
+     The name is set from the brand lockup rather than typed, so the
      spacing and the mark are exactly the ones in brand/. Typing
      "SanctiWalk" in Montserrat would be close, and close is what makes
-     a logo look wrong. The <h1> keeps the text for screen readers and
-     for search. */
+     a logo look wrong. */
   h1 { margin: 0; text-align: center; }
-  h1 img {
-    display: block;
-    width: min(330px, 76vw);
-    height: auto;
-    margin: 0 auto;
-  }
+  h1 img { display: block; width: min(320px, 74vw); height: auto; margin: 0 auto; }
   h1 span {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   }
 
   .standfirst {
@@ -84,87 +70,132 @@
     color: var(--muted);
   }
 
-  /* ------------------------------------------------------------- the QR
-     The largest thing on the page, deliberately. At a presentation this
-     page is on a projector and its whole job is to get the app onto the
-     phones in the room; everything else is a caption to that. */
-  .getbox {
-    margin: 34px auto 0;
-    max-width: 440px;
+  /* ------------------------------------------------------- the download
+     The page has one job and this is it. Everything below is either a
+     reason to press it or an instruction for afterwards. */
+  .download {
+    margin: 30px auto 0;
+    max-width: 480px;
     background: var(--card);
     border: 1px solid var(--hair);
-    border-radius: 28px;
-    padding: 26px 24px 24px;
+    border-radius: 26px;
+    padding: 24px 22px 20px;
     text-align: center;
   }
 
-  .qr {
-    width: min(260px, 64vw);
-    height: auto;
-    display: block;
-    margin: 0 auto;
-  }
-
-  .qr-caption {
-    margin: 14px 0 0;
-    font-size: 14.5px;
-    line-height: 1.5;
-    color: var(--muted);
-  }
-
   .cta {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 10px;
     width: 100%;
-    margin-top: 18px;
-    padding: 15px 22px;
+    padding: 17px 22px;
     border: 0;
     border-radius: 999px;
     background: var(--navy);
     color: #fff;
     font: inherit;
-    font-size: 16.5px;
+    font-size: 17px;
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;
   }
   .cta:active { transform: scale(0.99); }
-  /* display:inline-flex above beats the [hidden] attribute's own
-     display:none, so an Android-only button showed on every desktop.
-     The attribute has to win. */
-  .cta[hidden] { display: none; }
 
-  .cta--quiet {
-    background: transparent;
+  /* Version and weight, in the label face the app uses for small facts.
+     Someone on parish wifi deserves to know it is 66 MB before they
+     start, not after. */
+  .meta {
+    margin: 11px 0 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .alt {
+    display: inline-block;
+    margin: 14px 0 0;
+    font-size: 14.5px;
+    font-weight: 600;
     color: var(--navy);
-    border: 1.5px solid var(--navy);
-    margin-top: 10px;
   }
 
   .sub {
-    margin: 12px 0 0;
+    margin: 10px 0 0;
     font-size: 13.5px;
     line-height: 1.55;
     color: var(--muted);
   }
 
-  /* ---------------------------------------------------- what it does
-     Not three identical cards. Each line is a sentence with its own
-     weight, separated by a rule - closer to a page from a missal than to
-     a pricing table, which is the register this belongs in. */
-  .does {
-    margin: 48px auto 0;
-    max-width: 620px;
-  }
-  .does h2 {
-    margin: 0 0 4px;
-    font-size: 26px;
+  /* ------------------------------------------------------------- steps
+     Numbered, because this genuinely is a sequence - and because step 2
+     is where people stop. */
+  .steps { margin: 44px auto 0; max-width: 620px; }
+  .steps h2, .does h2, .shots h2 {
+    margin: 0 0 16px;
+    font-size: 25px;
     font-weight: 800;
     letter-spacing: -0.01em;
   }
-  .does dl { margin: 18px 0 0; }
+  .steps ol { margin: 0; padding-left: 0; list-style: none; counter-reset: s; }
+  .steps li {
+    position: relative;
+    counter-increment: s;
+    padding: 0 0 18px 46px;
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .steps li::before {
+    content: counter(s);
+    position: absolute;
+    left: 0; top: -2px;
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  .steps strong { font-weight: 700; }
+
+  /* ----------------------------------------------------------- screens
+     Real captures, not mockups. A scroller rather than a grid: four
+     phones side by side at this width would be too small to read. */
+  .shots { margin: 46px auto 0; }
+  .shots .rail {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 2px 2px 14px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .shots figure {
+    margin: 0;
+    flex: 0 0 auto;
+    width: 190px;
+    scroll-snap-align: start;
+  }
+  .shots img {
+    width: 190px;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    border: 1px solid var(--hair);
+    background: var(--card);
+  }
+  .shots figcaption {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ------------------------------------------------------ what it does */
+  .does { margin: 46px auto 0; max-width: 620px; }
+  .does dl { margin: 0; }
   .does dt {
     font-size: 17px;
     font-weight: 700;
@@ -187,8 +218,6 @@
     border-radius: 20px;
     padding: 20px 22px;
   }
-  /* DM Mono for the small label, which is what the app uses for the
-     same job - a caption that is a signpost, not prose. */
   .needs h3 {
     margin: 0 0 10px;
     font-family: var(--mono);
@@ -199,14 +228,10 @@
     color: var(--muted);
   }
   .needs ul { margin: 0; padding-left: 20px; }
-  .needs li {
-    font-size: 15px;
-    line-height: 1.65;
-    margin-bottom: 6px;
-  }
+  .needs li { font-size: 15px; line-height: 1.65; margin-bottom: 6px; }
 
   footer {
-    margin: 48px auto 0;
+    margin: 46px auto 0;
     max-width: 620px;
     text-align: center;
     font-size: 13.5px;
@@ -215,9 +240,6 @@
   }
   footer a { color: var(--navy); }
 
-  /* The page is read on a phone held in a church, and on a projector in a
-     bright room. Nothing here inverts for dark mode on purpose: the warm
-     paper IS the brand, and a dark variant would stop matching the app. */
   @media (prefers-reduced-motion: reduce) {
     .cta:active { transform: none; }
   }
@@ -237,17 +259,61 @@
     wondering what it is.
   </p>
 
-  <section class="getbox">
-    <!-- Generated by scripts/generate-landing-qr.mjs. SVG, not PNG: this gets
-         projected and printed, and a raster QR resamples into mush. -->
-    <img class="qr" src="/get/qr.svg" alt="QR code linking to this page" />
-
-    <p class="qr-caption" id="qr-caption">Point your phone camera here</p>
-
-    <a class="cta" id="primary" href="#">Open SanctiWalk</a>
-    <a class="cta cta--quiet" id="secondary" href="#" hidden>Download for Android</a>
+  <section class="download">
+    <a class="cta" id="apk" href="https://github.com/Gifeys/SanctDemo/releases/latest">
+      Download for Android
+    </a>
+    <p class="meta">APK &middot; 66 MB &middot; Android 8 and later</p>
 
     <p class="sub" id="note"></p>
+
+    <!-- Not the headline, but not hidden either: an iPhone in the room
+         still needs somewhere to go, and the web version is most of the
+         app. -->
+    <a class="alt" href="https://sanct-demo-vxzb.vercel.app">
+      On an iPhone or a computer? Open the web version
+    </a>
+  </section>
+
+  <section class="steps">
+    <h2>Installing it</h2>
+    <ol>
+      <li>
+        Tap <strong>Download for Android</strong> above and wait for the file to
+        finish.
+      </li>
+      <li>
+        Open the downloaded file. Your phone will warn you that it came from
+        outside the Play Store &mdash; <strong>that warning is normal</strong> for a
+        student project, and you only have to allow it once.
+      </li>
+      <li>
+        Tap <strong>Install</strong>, then open SanctiWalk and sign in with
+        Google so your scans and applications are saved to your account.
+      </li>
+    </ol>
+  </section>
+
+  <section class="shots">
+    <h2>What it looks like</h2>
+    <div class="rail">
+      <figure>
+        <img src="/get/shots/home.jpg" alt="The home screen, showing the parish and today's Mass times" loading="lazy" width="190" />
+        <figcaption>Your parish, today</figcaption>
+      </figure>
+      <figure>
+        <img src="/get/shots/map.jpg" alt="The map, showing parishes across the diocese" loading="lazy" width="190" />
+        <figcaption>Every parish, mapped</figcaption>
+      </figure>
+      <figure>
+        <img src="/get/shots/history.jpg" alt="A parish history page with a listen button" loading="lazy" width="190" />
+        <figcaption>History, read aloud</figcaption>
+      </figure>
+      <figure>
+        <img src="/get/shots/rosary.jpg" alt="The Rosary screen" loading="lazy" width="190" />
+        <figcaption>The Rosary, guided</figcaption>
+      </figure>
+    </div>
   </section>
 
   <section class="does">
@@ -288,10 +354,11 @@
   <section class="needs">
     <h3>Before you install</h3>
     <ul>
-      <li><strong>Android:</strong> everything works, including the AR tour.</li>
-      <li><strong>iPhone:</strong> use the web version. It does everything except the AR tour, which needs Android.</li>
+      <li><strong>Android 8 or later.</strong> Everything works, including the AR tour.</li>
+      <li><strong>iPhone:</strong> use the web version above. It does everything except the AR tour, which needs Android.</li>
       <li><strong>The AR tour</strong> is a separate app and needs a phone that supports Google ARCore.</li>
-      <li><strong>Mass times, history and the Rosary</strong> work without a signal. The camera scanner needs internet.</li>
+      <li><strong>Offline:</strong> Mass times, church history and the Rosary work with no signal. The camera scanner needs internet.</li>
+      <li><strong>Permissions:</strong> the camera is used only while you are scanning, and the frame is analysed and discarded &mdash; nothing is kept. Location is used to tell which parish you are at.</li>
     </ul>
   </section>
 
@@ -300,65 +367,41 @@
       Built as a capstone project for STI College, in consultation with
       Mary Help of Christians Parish and San Roque Cathedral Parish.
     </p>
-    <p>
-      <a href="https://github.com/Gifeys/SanctDemo">Source code</a>
-    </p>
+    <p><a href="https://github.com/Gifeys/SanctDemo">Source code</a></p>
   </footer>
 
 </main>
 
 <script>
 /*
- * Which button to show.
+ * A note that fits the device, and nothing more.
  *
- * The page cannot install anything by itself, so the one useful thing it
- * can do is stop offering the wrong thing: an APK to an iPhone, or a
- * download button to somebody sitting at a laptop who needs the QR.
+ * The download is the headline for everyone - this page exists to hand
+ * out an APK - so the button is never hidden or swapped. All this adds
+ * is the one sentence that is true for the reader: an iPhone cannot
+ * install the file, and a laptop should send itself the link.
  *
- * Deliberately not clever. User-agent sniffing is a guess, so every
- * device still gets the web app as the primary action - the one thing
- * that works everywhere - and Android merely gets the APK offered as
- * well. Guessing wrong therefore costs a visitor nothing.
+ * Deliberately not clever. User-agent sniffing is a guess, and guessing
+ * wrong here costs a visitor nothing but a slightly odd sentence.
  */
 (function () {
-  var APP_URL = 'https://sanct-demo-vxzb.vercel.app';
-  // The APK is ~69 MB, too large to keep in the repository, so it lives on
-  // GitHub Releases. Until a release is published this link lands on the
-  // releases page rather than a file - which is honest, and better than a
-  // button that downloads nothing.
-  var APK_URL = 'https://github.com/Gifeys/SanctDemo/releases/latest';
-
   var ua = navigator.userAgent || '';
   var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
-  var isPhone = isAndroid || isIOS;
-
-  var primary = document.getElementById('primary');
-  var secondary = document.getElementById('secondary');
   var note = document.getElementById('note');
-  var caption = document.getElementById('qr-caption');
-
-  primary.href = APP_URL;
 
   if (isAndroid) {
-    secondary.hidden = false;
-    secondary.href = APK_URL;
     note.textContent =
-      'The installed app adds the AR tour and works offline. Android will warn you ' +
-      'about installing outside the Play Store — that warning is normal for a ' +
-      'student project.';
+      'Your phone can run this. Follow the three steps below once the ' +
+      'download finishes.';
   } else if (isIOS) {
     note.textContent =
-      'On iPhone, open the link then tap Share › Add to Home Screen to use it ' +
-      'like an app. The AR tour is Android only.';
+      'This file will not install on an iPhone. Use the web version below ' +
+      'instead — add it to your Home Screen and it behaves like an app.';
   } else {
     note.textContent =
-      'You are on a computer. Scan the code above with your phone camera to open ' +
-      'this page there.';
-  }
-
-  if (!isPhone) {
-    caption.textContent = 'Scan this with your phone camera';
+      'You are on a computer. Send this page to your Android phone, or ' +
+      'download the file here and copy it across.';
   }
 })();
 </script>
