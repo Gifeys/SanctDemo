@@ -92,6 +92,68 @@ export function currentEngine(): Engine {
   })
 }
 
+/**
+ * The installed voice that actually speaks this language, or null.
+ *
+ * ## Why setting `lang` is not enough
+ *
+ * `utterance.lang` is a REQUEST. When no installed voice matches it the
+ * engine does not fail and does not fall silent - it reads the text in
+ * whatever its default voice is, which on almost every machine is
+ * English. So Tagalog prayers came out in an English voice, pronounced
+ * as though they were English words, with nothing anywhere saying why.
+ *
+ * Picking the voice object explicitly is the only way to be sure, and
+ * returning null when there is none is what lets the caller say so
+ * instead of quietly doing the wrong thing.
+ *
+ * Filipino is matched on both `fil` and `tl`: the two tags are the same
+ * language and engines disagree about which to publish.
+ */
+export function voiceFor(
+  language: Language,
+  win: Window | undefined = typeof window === 'undefined' ? undefined : window,
+): SpeechSynthesisVoice | null {
+  const synth = (win as (Window & { speechSynthesis?: SpeechSynthesis }) | undefined)?.speechSynthesis
+  if (!synth || typeof synth.getVoices !== 'function') return null
+
+  let voices: SpeechSynthesisVoice[]
+  try {
+    voices = synth.getVoices()
+  } catch {
+    return null
+  }
+  if (!voices || voices.length === 0) return null
+
+  const wanted = language === 'fil' ? /^(fil|tl)\b/i : /^en\b/i
+  const tagOf = (v: SpeechSynthesisVoice) => (v.lang ?? '').replace('_', '-')
+
+  // An exact regional match first, then the bare language. A Philippine
+  // Filipino voice is preferred over any other Filipino voice, but any
+  // Filipino voice beats falling back to English.
+  const exact = language === 'fil' ? 'fil-ph' : 'en-us'
+  return (
+    voices.find(v => tagOf(v).toLowerCase() === exact) ??
+    voices.find(v => wanted.test(tagOf(v))) ??
+    null
+  )
+}
+
+/**
+ * Whether this device can actually speak this language.
+ *
+ * The UI uses it to tell somebody their phone has no Filipino voice
+ * rather than reading Tagalog to them in English and leaving them to
+ * work out what went wrong.
+ */
+export function canSpeak(
+  language: Language,
+  win: Window | undefined = typeof window === 'undefined' ? undefined : window,
+): boolean {
+  if (isNativeApp()) return true // the device engine decides; asked at speak time
+  return voiceFor(language, win) !== null
+}
+
 /** A shade under natural pace; the default rattles through a reflection. */
 const RATE = 0.95
 
@@ -117,6 +179,10 @@ export async function speakAloud(text: string, language: Language): Promise<void
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = speechLocale(language)
+  // The voice object, not only the tag. Without this the engine reads
+  // Tagalog in whatever its default voice is, which is English.
+  const picked = voiceFor(language)
+  if (picked) utterance.voice = picked
   utterance.rate = RATE
 
   // Resolve when the voice actually stops, not when it starts.
