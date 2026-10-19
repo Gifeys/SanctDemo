@@ -2,35 +2,44 @@ import { useState } from "react";
 import { SpotlightProvider } from "./Spotlight";
 import Landing from "./Landing";
 import App from "../App";
-import { isHandset, readDeviceSignals } from "../lib/deviceClass";
 
 /**
- * What the root of the site is, which depends on who opened it.
+ * What the root of the site is.
  *
- * A phone gets the app. A laptop gets the page explaining the app.
+ * The same page for everybody - a phone, a tablet and a laptop all get
+ * the page that explains SanctiWalk, with the app one tap away. It used
+ * to send phones straight into the app, and that was wrong for a reason
+ * worth writing down: somebody shown the site on a laptop and then
+ * handed a phone saw two different things and reasonably concluded the
+ * phone was out of date. One front door is less clever and much clearer.
  *
- * ## Why this renders rather than redirects
+ * ## The exception: the installed app
  *
- * A redirect would change the URL, and the URL at the root is load
- * bearing: `manifest.webmanifest` sets `start_url: "/"`, so the
- * installed app opens here. Bouncing that to `/app` would leave the
- * installed app on a different address than the one it was installed
- * from, and the service worker's cached shell is keyed to this one.
- * Rendering keeps the address exactly as it was.
- *
- * ## Why it is decided once, not on resize
- *
- * Read at mount and kept. Somebody dragging a browser window narrow is
- * not holding a different device, and swapping the whole application
- * out from under them mid-session - losing scroll, state and anything
- * half-typed - would be a strange thing for a window resize to do.
+ * `manifest.webmanifest` sets `start_url: "/"`, so an installed PWA
+ * opens this route. Showing a page advertising the app to somebody who
+ * has already installed it and just tapped its icon would be absurd, so
+ * a standalone launch skips straight to the app.
  */
-export default function RootGate() {
-  const [handset] = useState(() =>
-    typeof window === "undefined" ? false : isHandset(readDeviceSignals(window)),
-  );
 
-  if (handset) {
+/** True when launched from a home-screen icon rather than a browser tab. */
+function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    // iOS Safari predates the standard and uses its own flag.
+    const iosStandalone = (window.navigator as { standalone?: boolean }).standalone === true;
+    return iosStandalone || window.matchMedia?.("(display-mode: standalone)")?.matches === true;
+  } catch {
+    return false;
+  }
+}
+
+export default function RootGate() {
+  // Read once. A browser cannot become an installed app mid-session, and
+  // swapping the whole page out from under somebody would be a strange
+  // thing for a media query to do.
+  const [installed] = useState(isStandalone);
+
+  if (installed) {
     return (
       <SpotlightProvider>
         <App />

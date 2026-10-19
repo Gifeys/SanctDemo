@@ -72,14 +72,22 @@ export default function Landing() {
                   frame beside it. Not "Explore" - there is nothing to
                   explore elsewhere, it is already running. */}
               <Link className="lp__cta lp__cta--quiet" to="/app">
-                Open full screen
+                {/* "Open full screen" on a laptop, where the app is
+                    already running in the frame beside this. On a phone
+                    there is no frame - see below - so the same link is
+                    the only way in and says so. */}
+                <span className="lp__cta-wide">Open full screen</span>
+                <span className="lp__cta-narrow">Open SanctiWalk</span>
                 <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
             </div>
 
             <p className="lp__footnote">
-              The app beside this is live. Tap it. The Android build adds the
-              AR heritage tour.
+              {/* "beside" on a laptop, "below" on a phone - the frame
+                  moves, so the sentence pointing at it has to move too. */}
+              <span className="lp__cta-wide">The app beside this is live. Tap it. </span>
+              <span className="lp__cta-narrow">The app below is live. Try it. </span>
+              The Android build adds the AR heritage tour.
             </p>
           </div>
 

@@ -4302,8 +4302,48 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   border-radius: 24px;
   background: var(--color-brand-card);
 }
-@media (max-width: 420px) {
-  .lp__phone-screen { width: 272px; height: 580px; }
+
+/* The live app in a frame is a laptop idea. On a phone the screen IS
+   the frame, so a phone-inside-a-phone would be a toy version of the
+   thing the visitor is holding - and a 300px iframe inside a 375px
+   screen is unusable besides. The button above takes them to the real
+   one instead. */
+@media (max-width: 760px) {
+  .lp__cta-wide { display: none; }
+
+  /* The running app, on a phone too.
+
+     It is a phone inside a phone, which sounds silly until you watch
+     somebody use it: the frame is what tells a visitor that the thing
+     scrolling under their thumb is the actual app and not a picture of
+     one. The same reassurance the laptop version gives, and the reason
+     both pages now show it.
+
+     Below the buttons here, not above. The tablet rule puts it first
+     because at that width the copy and the phone sit side by side and
+     the eye should land on the picture; on a phone everything is one
+     column, and burying the headline under a 600px frame means the
+     visitor scrolls before reading a word. */
+  .lp__shot { order: 1; margin-top: 26px; }
+
+  .lp__phone { padding: 9px; border-radius: 30px; }
+  .lp__phone-screen {
+    width: min(300px, 78vw);
+    /* Tall enough to show the bulletin and the tab bar together, which
+       is what makes it read as the app rather than as a header. */
+    height: min(600px, 150vw);
+    border-radius: 21px;
+  }
+
+  /* The nav wrapped "What it does" onto three lines beside the logo and
+     pushed the masthead to twice its height. On a phone those links are
+     scrolling past a thumb-flick below anyway; Download is the only one
+     that goes somewhere else, so it is the only one that stays. */
+  .lp__nav a:not(:last-child) { display: none; }
+  .lp__bar { padding-bottom: 26px; }
+}
+@media (min-width: 761px) {
+  .lp__cta-narrow { display: none; }
 }
 
 .lp__shot-note {
