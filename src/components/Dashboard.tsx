@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ChevronUp } from "lucide-react";
 import HomeQuickLinks, { type HomeSection } from "./HomeQuickLinks";
 import MinistrySacramentPair from "./MinistrySacramentPair";
 import { useLanguage } from "../lib/useLanguage";
@@ -164,10 +163,6 @@ export default function Dashboard({
       )}
 
       <div className="home-sheet px-4 pb-4">
-        <div className="home-sheet__handle" aria-hidden="true">
-          <ChevronUp className="w-6 h-6" />
-        </div>
-
         {/* The whole sheet is the bulletin, so its name goes at the top
             rather than over one section of it. */}
         <h2 className="home-sheet__title">{t("home.bulletin", language)}</h2>

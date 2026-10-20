@@ -1726,12 +1726,14 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   );
 }
 
-.home-sheet__handle {
-  display: grid;
-  place-items: center;
-  padding: 8px 0 2px;
-  color: color-mix(in srgb, var(--home-heading) 45%, transparent);
-}
+/* The sheet had a chevron at its top edge, in the band where it rides
+   up over the hero photograph. It was there to say "this panel pulls
+   up" - and nothing pulls. There is no drag handler on .home-sheet and
+   never was, so it promised a gesture the app does not have, and what
+   it actually looked like was a stray line drawn across the parish's
+   name. Removed rather than restyled: the honest fix for a control
+   that controls nothing is to take it away, and the sheet's rounded
+   top already says where it begins. */
 
 /* Each section carries its own faint motif, as the design does: push-pins
    behind the bulletin, calendars behind the schedule, crosses behind the
