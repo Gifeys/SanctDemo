@@ -1876,7 +1876,17 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
      rather than merely escaping it. This is the ordinary cost of a
      floating action button, and the reason apps that have one reserve
      room for it. */
-  padding-bottom: 68px;
+  /* 54px is what the Ask Sancti button actually reaches above the
+     bar - measured, not guessed - and the extra two keep the last line
+     from touching it. 68 was generous and showed as an obvious empty
+     band at the end of every screen.
+
+     It cannot go to zero while a button floats there: the clearance is
+     the room that button occupies, and without it the last card is
+     covered again, which is the complaint this padding was added for.
+     Removing the gap entirely means moving Ask Sancti into the tab
+     bar. */
+  padding-bottom: 56px;
 }
 
 /* No scrollbar gutter at phone widths.
