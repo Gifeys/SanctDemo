@@ -45,12 +45,13 @@ export default function Landing() {
 
         <div className="lp__hero">
           <div className="lp__copy">
+            {/* Broken at the comma, which is where the rhyme turns.
+                Two lines, not three: the couplet only works if both
+                halves are read as halves. */}
             <h1 className="lp__headline">
-              Every parish,
+              The Diocese in your hand,
               <br />
-              explained as you
-              <br />
-              stand in it.
+              guided as you planned
             </h1>
 
             <p className="lp__lede">
@@ -110,16 +111,26 @@ export default function Landing() {
                 same Firebase session - not a copy. It is the pattern
                 the Rosary already uses in DailyRosary.tsx. */}
             <div className="lp__phone">
-              <iframe
-                className="lp__phone-screen"
-                src="/app"
-                title="SanctiWalk, running"
-                loading="eager"
-                // The app asks for these itself when someone taps Scan
-                // or opens the map; without them the iframe would deny
-                // them before the app ever saw the request.
-                allow="camera; geolocation; microphone"
-              />
+              {/* The iframe is a real phone viewport - 375 x 812, the
+                  size the app is designed against - and the wrapper
+                  scales it down to fit. Setting the iframe itself to
+                  300px instead made the app lay out AT 300px, which is
+                  narrower than any handset it was built for: the
+                  bulletin tiles clipped their own labels and the Ask
+                  Sancti button sat half off the edge. Scaling shrinks
+                  the picture; it does not squeeze the layout. */}
+              <div className="lp__phone-viewport">
+                <iframe
+                  className="lp__phone-screen"
+                  src="/app"
+                  title="SanctiWalk, running"
+                  loading="eager"
+                  // The app asks for these itself when someone taps Scan
+                  // or opens the map; without them the iframe would deny
+                  // them before the app ever saw the request.
+                  allow="camera; geolocation; microphone"
+                />
+              </div>
             </div>
             <p className="lp__shot-note">Live — try it</p>
           </div>

@@ -4290,17 +4290,32 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   background: var(--color-brand-primary);
   box-shadow: 0 26px 60px rgb(28 44 86 / 0.26);
 }
-/* The running app. A fixed pixel width, not a fluid one: the app
-   inside decides it is on a phone from its own innerWidth, and that
-   decision must not flicker as the page is resized. 300x640 is a
-   small-but-real handset. */
-.lp__phone-screen {
-  display: block;
-  width: 300px;
-  height: 640px;
-  border: 0;
+/* The running app, at a real phone's size, scaled to fit.
+
+   --ph-scale is the only thing a breakpoint changes. The iframe stays
+   375 x 812 - an iPhone's own viewport, and the width the app's layout
+   was built against - so the app inside never has to cope with a width
+   no real handset has. The wrapper is the scaled box the page lays out
+   against, because a CSS transform does not change the space an
+   element occupies and the hero would otherwise reserve the full 812px
+   of height for something drawn at 633. */
+.lp__phone-viewport {
+  --ph-scale: 0.78;
+  width: calc(375px * var(--ph-scale));
+  height: calc(812px * var(--ph-scale));
+  overflow: hidden;
   border-radius: 24px;
   background: var(--color-brand-card);
+}
+
+.lp__phone-screen {
+  display: block;
+  width: 375px;
+  height: 812px;
+  border: 0;
+  background: var(--color-brand-card);
+  transform: scale(var(--ph-scale));
+  transform-origin: top left;
 }
 
 /* The live app in a frame is a laptop idea. On a phone the screen IS
@@ -4327,12 +4342,12 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   .lp__shot { order: 1; margin-top: 26px; }
 
   .lp__phone { padding: 9px; border-radius: 30px; }
-  .lp__phone-screen {
-    width: min(300px, 78vw);
-    /* Tall enough to show the bulletin and the tab bar together, which
-       is what makes it read as the app rather than as a header. */
-    height: min(600px, 150vw);
-    border-radius: 21px;
+  /* Scaled to the screen it is sitting on, rather than to a fixed
+     number: 0.72 of a 375px phone is 270px, which leaves room for the
+     frame and the page gutter on the narrowest handset we test. */
+  .lp__phone-viewport {
+    --ph-scale: 0.72;
+    border-radius: 20px;
   }
 
   /* The nav wrapped "What it does" onto three lines beside the logo and
