@@ -89,14 +89,14 @@ export default function AdminApp() {
     return (
       <Routes>
         <Route path="login" element={<AdminLogin />} />
-        <Route path="*" element={<Navigate to="/parish-office/login" replace />} />
+        <Route path="*" element={<Navigate to="/parish-office-gav8thhe/login" replace />} />
       </Routes>
     );
   }
 
   return (
     <Routes>
-      <Route path="login" element={<Navigate to="/parish-office" replace />} />
+      <Route path="login" element={<Navigate to="/parish-office-gav8thhe" replace />} />
       <Route path="/" element={<AdminDashboard session={session!} />} />
       {/* "view/:id" rather than ":id", so a detail route can never be
           mistaken for the "ministry" / "sacrament" list routes. */}
@@ -111,7 +111,7 @@ export default function AdminApp() {
       <Route path="content" element={<AdminContent session={session!} />} />
       <Route path="availability" element={<AdminAvailability session={session!} />} />
       <Route path="analytics" element={<AdminAnalytics session={session!} />} />
-      <Route path="*" element={<Navigate to="/parish-office" replace />} />
+      <Route path="*" element={<Navigate to="/parish-office-gav8thhe" replace />} />
     </Routes>
   );
 }

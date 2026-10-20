@@ -32,7 +32,7 @@ export default function FinishSignIn() {
       setState("done");
       // An admin's own destination is the parish office, not the pilgrim
       // app - they signed in to review applications.
-      navigate(profile?.role === "church_admin" ? "/parish-office" : "/", { replace: true });
+      navigate(profile?.role === "church_admin" ? "/parish-office-gav8thhe" : "/", { replace: true });
     } catch (err) {
       const message = err instanceof AuthError ? err.message : "That link could not be used.";
       // The one recoverable failure: we simply do not know the address.

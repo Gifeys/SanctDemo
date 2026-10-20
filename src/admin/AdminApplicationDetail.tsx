@@ -70,7 +70,7 @@ export default function AdminApplicationDetail({ session }: { session: AdminSess
   }
 
   if (app === null) {
-    return <Frame onBack={() => navigate("/parish-office")}>
+    return <Frame onBack={() => navigate("/parish-office-gav8thhe")}>
       <div className="py-16 text-center">
         <Loader2 className="mx-auto w-7 h-7 animate-spin text-[var(--color-brand-primary)]" />
       </div>
@@ -78,7 +78,7 @@ export default function AdminApplicationDetail({ session }: { session: AdminSess
   }
 
   if (app === "missing") {
-    return <Frame onBack={() => navigate("/parish-office")}>
+    return <Frame onBack={() => navigate("/parish-office-gav8thhe")}>
       <div className="rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-12 text-center px-6">
         <ShieldAlert className="mx-auto w-7 h-7 text-[var(--color-brand-secondary)]" />
         <p className="mt-2 text-[16px] font-bold">This application is not available</p>
@@ -92,7 +92,7 @@ export default function AdminApplicationDetail({ session }: { session: AdminSess
   const closed = isClosed(app.status);
 
   return (
-    <Frame onBack={() => navigate("/parish-office")}>
+    <Frame onBack={() => navigate("/parish-office-gav8thhe")}>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-[22px] font-bold font-serif italic text-[var(--color-brand-text)]">
           {app.type}

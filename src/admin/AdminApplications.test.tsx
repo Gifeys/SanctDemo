@@ -63,8 +63,8 @@ function renderAt(path: string) {
   const view = render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/parish-office/applications" element={<AdminApplications session={SESSION} />} />
-        <Route path="/parish-office/applications/:kind" element={<AdminApplications session={SESSION} />} />
+        <Route path="/parish-office-gav8thhe/applications" element={<AdminApplications session={SESSION} />} />
+        <Route path="/parish-office-gav8thhe/applications/:kind" element={<AdminApplications session={SESSION} />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -83,24 +83,24 @@ beforeEach(() => {
 
 describe("AdminApplications", () => {
   it("shows the whole parish when nothing is filtered", async () => {
-    renderAt("/parish-office/applications");
+    renderAt("/parish-office-gav8thhe/applications");
     expect(await screen.findByText(/Showing 5 applications/)).toBeTruthy();
   });
 
   it("the Ministries view excludes sacraments without the admin filtering", async () => {
-    renderAt("/parish-office/applications/ministry");
+    renderAt("/parish-office-gav8thhe/applications/ministry");
     expect(await screen.findByText(/Showing 4 applications/)).toBeTruthy();
     expect(screen.queryByText("AUG-BAPTISM")).toBeNull();
   });
 
   it("the Sacraments view shows only sacraments", async () => {
-    renderAt("/parish-office/applications/sacrament");
+    renderAt("/parish-office-gav8thhe/applications/sacrament");
     expect(await screen.findByText(/Showing 1 application\b/)).toBeTruthy();
     expect(screen.getByText("AUG-BAPTISM")).toBeTruthy();
   });
 
   it("the coordinator case: August + Altar Servers + Pending leaves one row", async () => {
-    renderAt("/parish-office/applications/ministry");
+    renderAt("/parish-office-gav8thhe/applications/ministry");
     await screen.findByText(/Showing 4 applications/);
 
     fireEvent.change(screen.getByLabelText("Month"), { target: { value: "8" } });
@@ -114,14 +114,14 @@ describe("AdminApplications", () => {
   });
 
   it("searches by applicant", async () => {
-    renderAt("/parish-office/applications");
+    renderAt("/parish-office-gav8thhe/applications");
     await screen.findByText(/Showing 5 applications/);
     fireEvent.change(screen.getByLabelText("Search"), { target: { value: "maria" } });
     await waitFor(() => expect(screen.getByText(/Showing 1 application\b/)).toBeTruthy());
   });
 
   it("offers only the ministries somebody has actually applied for", async () => {
-    renderAt("/parish-office/applications/ministry");
+    renderAt("/parish-office-gav8thhe/applications/ministry");
     await screen.findByText(/Showing 4 applications/);
     const options = within(screen.getByLabelText("Ministry")).getAllByRole("option")
       .map(o => o.textContent);
@@ -131,7 +131,7 @@ describe("AdminApplications", () => {
   });
 
   it("exports what is on screen, not the whole parish", async () => {
-    renderAt("/parish-office/applications/ministry");
+    renderAt("/parish-office-gav8thhe/applications/ministry");
     await screen.findByText(/Showing 4 applications/);
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "approved" } });
     await waitFor(() => expect(screen.getByText(/Showing 1 application\b/)).toBeTruthy());
@@ -144,7 +144,7 @@ describe("AdminApplications", () => {
   });
 
   it("will not export an empty list", async () => {
-    renderAt("/parish-office/applications");
+    renderAt("/parish-office-gav8thhe/applications");
     await screen.findByText(/Showing 5 applications/);
     fireEvent.change(screen.getByLabelText("Search"), { target: { value: "nobody" } });
     await waitFor(() => expect(screen.getByText(/Nothing matches these filters/)).toBeTruthy());
@@ -158,7 +158,7 @@ describe("AdminApplications", () => {
   });
 
   it("clears every filter at once", async () => {
-    renderAt("/parish-office/applications");
+    renderAt("/parish-office-gav8thhe/applications");
     await screen.findByText(/Showing 5 applications/);
     fireEvent.change(screen.getByLabelText("Month"), { target: { value: "8" } });
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "pending" } });
@@ -169,7 +169,7 @@ describe("AdminApplications", () => {
   });
 
   it("sorts by applicant when the header is used", async () => {
-    renderAt("/parish-office/applications");
+    renderAt("/parish-office-gav8thhe/applications");
     await screen.findByText(/Showing 5 applications/);
     fireEvent.click(screen.getByRole("button", { name: /applicant/i }));
     await waitFor(() => expect(refsShown()[0]).toBe("AUG-ALTAR-PENDING"));

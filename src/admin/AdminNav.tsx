@@ -31,50 +31,50 @@ export interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  { to: "/parish-office", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+  { to: "/parish-office-gav8thhe", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   {
-    to: "/parish-office/applications",
+    to: "/parish-office-gav8thhe/applications",
     label: "Applications",
     icon: <ClipboardList className="w-4 h-4" />,
-    match: "/parish-office/applications",
+    match: "/parish-office-gav8thhe/applications",
   },
   {
-    to: "/parish-office/availability",
+    to: "/parish-office-gav8thhe/availability",
     label: "Open & closed",
     icon: <ToggleLeft className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/announcements",
+    to: "/parish-office-gav8thhe/announcements",
     label: "Announcements",
     icon: <Megaphone className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/mass-schedule",
+    to: "/parish-office-gav8thhe/mass-schedule",
     label: "Mass Schedule",
     icon: <Church className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/announcements/feasts",
+    to: "/parish-office-gav8thhe/announcements/feasts",
     label: "Feast Days",
     icon: <PartyPopper className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/announcements/events",
+    to: "/parish-office-gav8thhe/announcements/events",
     label: "Events",
     icon: <CalendarDays className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/analytics",
+    to: "/parish-office-gav8thhe/analytics",
     label: "Visitor activity",
     icon: <BarChart3 className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/content",
+    to: "/parish-office-gav8thhe/content",
     label: "What people read",
     icon: <BookOpen className="w-4 h-4" />,
   },
   {
-    to: "/parish-office/applications/archive",
+    to: "/parish-office-gav8thhe/applications/archive",
     label: "Archive",
     icon: <Archive className="w-4 h-4" />,
   },
@@ -89,11 +89,11 @@ export default function AdminNav() {
   // sub-boards are checked before the section they live under.
   function isOn(item: NavItem): boolean {
     if (pathname === item.to) return true;
-    if (item.to === "/parish-office/applications") {
-      return pathname.startsWith("/parish-office/applications/")
-        && !pathname.startsWith("/parish-office/applications/archive");
+    if (item.to === "/parish-office-gav8thhe/applications") {
+      return pathname.startsWith("/parish-office-gav8thhe/applications/")
+        && !pathname.startsWith("/parish-office-gav8thhe/applications/archive");
     }
-    if (item.to === "/parish-office/announcements") {
+    if (item.to === "/parish-office-gav8thhe/announcements") {
       // The board routes have their own chips.
       return false;
     }

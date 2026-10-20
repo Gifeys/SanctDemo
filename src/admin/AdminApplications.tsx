@@ -110,11 +110,11 @@ export default function AdminApplications({ session }: { session: AdminSession }
 
         <nav className="mb-5 flex flex-wrap gap-2 print:hidden">
           {[
-            { to: "/parish-office/applications", label: "Open", on: locked === null && routeScope === "open" },
-            { to: "/parish-office/applications/ministry", label: "Ministries", on: locked === "ministry" },
-            { to: "/parish-office/applications/sacrament", label: "Sacraments", on: locked === "sacrament" },
+            { to: "/parish-office-gav8thhe/applications", label: "Open", on: locked === null && routeScope === "open" },
+            { to: "/parish-office-gav8thhe/applications/ministry", label: "Ministries", on: locked === "ministry" },
+            { to: "/parish-office-gav8thhe/applications/sacrament", label: "Sacraments", on: locked === "sacrament" },
             {
-              to: "/parish-office/applications/archive",
+              to: "/parish-office-gav8thhe/applications/archive",
               label: archivedCount > 0 ? `Archive (${archivedCount})` : "Archive",
               on: routeScope === "archived",
             },

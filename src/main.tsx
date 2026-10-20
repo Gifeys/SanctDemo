@@ -77,8 +77,12 @@ createRoot(document.getElementById('root')!).render(
 
             /admin itself now answers like any other unknown path, so
             the move cannot be undone by guessing the old one. */}
-        <Route path="/parish-office/*" element={<AdminApp />} />
+        <Route path="/parish-office-gav8thhe/*" element={<AdminApp />} />
+
+        {/* Both earlier addresses are dead ends now, so neither the
+            original guess nor the first move reopens the office. */}
         <Route path="/admin/*" element={<Navigate to="/" replace />} />
+        <Route path="/parish-office/*" element={<Navigate to="/" replace />} />
 
         {/* The root is two different things.
             A phone gets the app, because somebody on a phone came to use

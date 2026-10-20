@@ -64,21 +64,21 @@ export default function ParishStatus({ churchId }: { churchId: string }) {
         <Card
           icon={<Users className="w-4 h-4" />}
           label="Ministries"
-          onClick={() => navigate("/parish-office/availability")}
+          onClick={() => navigate("/parish-office-gav8thhe/availability")}
           good={`${parishMinistries.open} accepting applications`}
           bad={parishMinistries.closed > 0 ? `${parishMinistries.closed} not available` : null}
         />
         <Card
           icon={<Sparkles className="w-4 h-4" />}
           label="Sacraments"
-          onClick={() => navigate("/parish-office/availability")}
+          onClick={() => navigate("/parish-office-gav8thhe/availability")}
           good={`${sacraments.open} open for applications`}
           bad={sacraments.closed > 0 ? `${sacraments.closed} not available` : null}
         />
         <Card
           icon={<Church className="w-4 h-4" />}
           label="Mass schedule"
-          onClick={() => navigate("/parish-office/mass-schedule")}
+          onClick={() => navigate("/parish-office-gav8thhe/mass-schedule")}
           good={
             schedule.length === 0
               ? "Using the times built into the app"
@@ -89,7 +89,7 @@ export default function ParishStatus({ churchId }: { churchId: string }) {
         <Card
           icon={<CalendarDays className="w-4 h-4" />}
           label="Next feast day"
-          onClick={() => navigate("/parish-office/announcements/feasts")}
+          onClick={() => navigate("/parish-office-gav8thhe/announcements/feasts")}
           good={
             nextFeast
               ? `${nextFeast.title}${nextFeast.when ? ` — ${formatWhen(nextFeast.when)}` : ""}`
