@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { SpotlightProvider } from "./Spotlight";
 import Landing from "./Landing";
 import App from "../App";
@@ -13,17 +14,35 @@ import App from "../App";
  * handed a phone saw two different things and reasonably concluded the
  * phone was out of date. One front door is less clever and much clearer.
  *
- * ## The exception: the installed app
+ * ## The exception: anyone who already has the app
  *
  * `manifest.webmanifest` sets `start_url: "/"`, so an installed PWA
- * opens this route. Showing a page advertising the app to somebody who
- * has already installed it and just tapped its icon would be absurd, so
- * a standalone launch skips straight to the app.
+ * opens this route, and the APK's WebView loads the same bundle at
+ * https://localhost/. Showing a page advertising SanctiWalk to
+ * somebody who has already installed it and just tapped its icon
+ * would be absurd, so both go straight to the app.
+ *
+ * The Capacitor check is not optional and is listed first. A WebView
+ * inside an APK is NOT a PWA: it does not match
+ * `(display-mode: standalone)` and sets no `navigator.standalone`, so
+ * a display-mode test alone says "browser" and the installed Android
+ * app opens on its own advertisement. That is exactly what shipped,
+ * and it is the whole reason this function asks three questions
+ * instead of one.
  */
 
-/** True when launched from a home-screen icon rather than a browser tab. */
-function isStandalone(): boolean {
+/** True when this is the installed app rather than a browser tab. */
+function isInstalledApp(): boolean {
   if (typeof window === "undefined") return false;
+
+  // The APK. Asked first because it is the only one of the three that
+  // is a fact rather than an inference.
+  try {
+    if (Capacitor.isNativePlatform()) return true;
+  } catch {
+    // No Capacitor bridge: an ordinary browser. Fall through.
+  }
+
   try {
     // iOS Safari predates the standard and uses its own flag.
     const iosStandalone = (window.navigator as { standalone?: boolean }).standalone === true;
@@ -37,7 +56,7 @@ export default function RootGate() {
   // Read once. A browser cannot become an installed app mid-session, and
   // swapping the whole page out from under somebody would be a strange
   // thing for a media query to do.
-  const [installed] = useState(isStandalone);
+  const [installed] = useState(isInstalledApp);
 
   if (installed) {
     return (
