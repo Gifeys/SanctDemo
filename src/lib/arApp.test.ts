@@ -57,33 +57,39 @@ describe('arAvailability', () => {
 
 describe('arLaunchParish', () => {
   const mhcp = 'route-mhcp'
+  const src = 'route-src'
 
-  it('opens the sala when testing away from a parish', () => {
-    // The proponents' own case: simulator off, at home. Handing over the
-    // real parish here localizes against a church that is kilometres
-    // away, which is what made Start AR look broken at the desk.
-    expect(arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: false }))
-      .toBe(AR_SALA_PREVIEW)
-  })
-
-  it('opens the real parish when standing in it, simulator off', () => {
-    expect(arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: true }))
-      .toBe(mhcp)
-  })
-
-  it('never substitutes the sala once the simulator is on', () => {
-    // Simulator on is the visitor's build. A pilgrim must never be shown
-    // somebody's living room, and arAccess has already held the launch
-    // back unless they are at the parish.
-    for (const atParish of [true, false]) {
-      expect(arLaunchParish({ parishId: mhcp, simulatorMode: true, atParish }))
-        .toBe(mhcp)
+  it('sends the parish the pilgrim chose, wherever they are standing', () => {
+    // The bug this replaces: with the simulator off and presence unable
+    // to confirm a geofence, it substituted the sala preview. GPS indoors
+    // in a concrete church is exactly where a geofence fails, so somebody
+    // standing in front of the marker at Mary Help of Christians was
+    // handed a scan of the proponents' living room.
+    for (const simulatorMode of [true, false]) {
+      for (const atParish of [true, false]) {
+        expect(arLaunchParish({ parishId: mhcp, simulatorMode, atParish })).toBe(mhcp)
+      }
     }
   })
 
+  it('never hands one parish another parish', () => {
+    // The substituted id was the MHCP preview, so at San Roque the
+    // mistake was not merely the wrong room - it was the wrong church.
+    for (const atParish of [true, false]) {
+      expect(arLaunchParish({ parishId: src, simulatorMode: false, atParish })).toBe(src)
+    }
+  })
+
+  it('still opens the sala when the sala is what was chosen', () => {
+    // Reachable on purpose, never by substitution.
+    expect(
+      arLaunchParish({ parishId: AR_SALA_PREVIEW, simulatorMode: false, atParish: false }),
+    ).toBe(AR_SALA_PREVIEW)
+  })
+
   it('carries the chosen parish into the URL', () => {
-    const id = arLaunchParish({ parishId: mhcp, simulatorMode: false, atParish: false })
-    expect(arTourUrl(id)).toBe(`${AR_APP_SCHEME}://tour?church=route-mhcp-preview`)
+    const id = arLaunchParish({ parishId: src, simulatorMode: false, atParish: true })
+    expect(arTourUrl(id)).toBe(`${AR_APP_SCHEME}://tour?church=${src}`)
   })
 })
 

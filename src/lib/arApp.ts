@@ -97,28 +97,40 @@ export interface ArLaunchTarget {
 }
 
 /**
- * Which parish the AR app should actually open.
+ * The parish whose stations the AR app should load.
  *
- * SanctiWalk used to hand over its own parish id unconditionally, so
- * pressing Start AR at home opened Maypajo: the phone localized against a
- * church it was nowhere near and drew that church's plan across the room.
- * There was no way to reach the sala from the app at all, only an adb
- * deep link.
+ * The one the pilgrim chose. Always.
  *
- * So the same switch that decides whether the tour may open at all also
- * decides what it opens:
+ * ## What this used to do, and why it was wrong
  *
- *   simulator ON  - the visitor's build. Always the real parish; arAccess
- *                   has already refused the launch unless they are
- *                   standing in it.
- *   simulator OFF - the testing build. At a parish it is still that
- *                   parish, because being there is the whole point;
- *                   anywhere else it is the sala, which is the only room
- *                   whose scan and models this phone can actually see.
+ * It substituted the sala preview whenever the simulator was off and
+ * presence could not confirm the pilgrim was inside a geofence. The
+ * intention was kind - opening the tour at a desk localizes against a
+ * church kilometres away, which made Start AR look broken while we
+ * were building it.
+ *
+ * The cost landed on the person it was meant to help. GPS indoors, in
+ * a concrete church, is exactly where a geofence fails; so somebody
+ * standing in Mary Help of Christians, in front of the marker, tapped
+ * Start AR and was handed a scan of the proponents' living room. At
+ * San Roque the same thing, and the id it substituted was the MHCP
+ * preview - so the wrong parish, not merely the wrong room.
+ *
+ * ## Why no substitution is also the safer failure
+ *
+ * The AR app cannot start until it reads a printed marker. Away from
+ * the parish there is no marker, so the honest outcome of launching
+ * the real parish at a desk is an app that waits and says it is
+ * waiting. That is self-explanatory. Being shown a different church's
+ * stations is not, and it cannot be told apart from the app being
+ * broken - which is precisely how it was read.
+ *
+ * The sala is still reachable: AR_SALA_PREVIEW is a parish id like any
+ * other and can be chosen on purpose. What it can no longer do is
+ * arrive uninvited in place of the parish somebody picked.
  */
 export function arLaunchParish(
-  { parishId, simulatorMode, atParish }: ArLaunchTarget,
+  { parishId }: ArLaunchTarget,
 ): string {
-  if (simulatorMode || atParish) return parishId
-  return AR_SALA_PREVIEW
+  return parishId
 }
