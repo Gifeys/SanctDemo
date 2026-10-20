@@ -1457,10 +1457,6 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   --pw-scale-delta: 0;
   --pw-media-dy: 0px;
   --pw-image-dy: 0px;
-  /* The height of the rounded lip below, in one place: the band's own
-     padding has to clear it and the script reads it back off ::after. */
-  --pw-lip: 26px;
-
   isolation: isolate;
   overflow: hidden;
   /* Scan and Pray put the band inside a flex column that is itself the
@@ -1472,32 +1468,38 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   /* Paints up into the status bar area rather than stopping below it. */
   margin-top: calc(-1 * env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
-  /* The lip is drawn INSIDE the band's bottom edge, so the text needs its
-     own breathing room on top of the lip's height. With only the 22px the
-     street address ran the last few pixels of its line box in under the
-     lip and the rounded edge cut across the lettering. */
-  padding-bottom: calc(22px + var(--pw-lip));
-  /* Pulls the rounded content sheet up over the header's lower edge. */
+  /* Room for the sheet's curve to sit over this band without landing
+     on the street address. 22px of breathing room plus the 26px the
+     sheet is pulled up by, below. */
+  padding-bottom: 48px;
+  /* Pulls the sheet up so its rounded top is drawn OVER this band.
+     That overlap is the whole reason the curve is visible: the sheet's
+     corners are transparent, so without dark behind them there is a
+     straight edge and no curve at all.
+
+     What does NOT come back with it is the lip. The band used to paint
+     its own copy of the curve on top at z-index 2, and that copy is
+     what sliced the heading in half and left a spare strip under the
+     collapsed header. One curve, drawn by the sheet, with the band
+     simply showing through behind it. */
   margin-bottom: -26px;
 }
 
-/* The content sheet's rounded top, drawn by the band rather than by the
-   sheet. The band now paints above the sheet, which would otherwise hide
-   the lip the design shows overlapping the navy; drawing it here keeps the
-   resting appearance identical and, once collapsed, carries the lip along
-   so the sheet reads as tucked under the bar. Its colour is the first stop
-   of .home-sheet's gradient. */
-.parish-welcome::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--pw-lip);
-  background: color-mix(in srgb, var(--parish-ink, #1B2A6B) 2%, var(--parish-tint, #EEF3FC));
-  border-radius: 30px 30px 0 0;
-  z-index: 2;
-}
+/* The band used to paint a rounded lip inside its own bottom edge, with
+   the sheet pulled 26px up behind it, so that the two together looked
+   like one curved join.
+
+   Two edges pretending to be one is what it actually was, and both
+   problems came from that. The lip sat ABOVE the sheet at z-index 2,
+   so the heading underneath it was sliced in half; and once the band
+   collapsed on scroll the lip stayed with it, leaving a pale strip
+   between the header and the content that read as a spare layer
+   nobody had asked for.
+
+   There is one edge now: the sheet's own rounded top, which is the
+   same 30px curve in the same colour and was always directly behind
+   the lip. Nothing is drawn over the sheet, so nothing can cut into
+   it. */
 
 /* Drifts up more slowly than the page, so the collapse reads as depth
    rather than as the photograph being dragged away. The factor is how much
@@ -1704,7 +1706,17 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .home-sheet {
   position: relative;
   border-radius: 30px 30px 0 0;
-  padding-top: 8px;
+  /* Below the curve, not inside it.
+
+     The sheet is pulled 26px up over the band, so its first 26px are
+     the rounded corners themselves. The heading has to start after
+     them: at 8px it began inside the curve and the band showed through
+     the lettering, which is what made PARISH BULLETIN unreadable on
+     San Roque, whose heading ink is a brown close to its own band.
+
+     36px is those 26 plus ten of daylight. Anything under 26 puts the
+     heading back inside the curve. */
+  padding-top: 36px;
   /* Clips the section motifs at the screen edge, which is where they were
      always meant to stop.
      They bleed outwards on purpose - `--motif-bleed` is negative so each
