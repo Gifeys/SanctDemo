@@ -1874,6 +1874,18 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    Reserving the band at the end of the content is what actually keeps
    the last item clear. 16px: the 12px overhang plus a little daylight,
    so a control is not merely clear of the circle but readably so. */
+/* The full-bleed tabs take none of it.
+
+   Map is a map and Pray is the Rosary: both fill their space to the
+   bar, and neither ends in a card the floating button could sit on.
+   The clearance there was simply a strip of dead background above the
+   tab bar - which is what it looked like. */
+.app-scroll[data-tab=navigator],
+.app-scroll[data-tab=rosary],
+.app-scroll[data-tab=ar] {
+  padding-bottom: 0;
+}
+
 .app-scroll,
 .scroll-safe {
   /* Clearance for BOTH floating things at the bottom of the app.
@@ -1892,14 +1904,12 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
      room for it. */
   /* 54px is what the Ask Sancti button actually reaches above the
      bar - measured, not guessed - and the extra two keep the last line
-     from touching it. 68 was generous and showed as an obvious empty
-     band at the end of every screen.
+     from touching it.
 
-     It cannot go to zero while a button floats there: the clearance is
-     the room that button occupies, and without it the last card is
-     covered again, which is the complaint this padding was added for.
-     Removing the gap entirely means moving Ask Sancti into the tab
-     bar. */
+     It cannot go to zero on a page of cards while a button floats
+     there: the clearance IS the room that button occupies, and without
+     it the last card is covered again. It is switched off below for
+     the pages that have no last card to cover. */
   padding-bottom: 56px;
 }
 

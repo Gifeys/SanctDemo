@@ -1233,7 +1233,16 @@ export default function App() {
 
 
                 {/* PRIMARY VIEW CONTENT WORKSPACE */}
-                <div className="app-scroll flex-1 min-h-0 flex flex-col overflow-y-auto">
+                {/* data-tab lets the stylesheet tell a scrolling page of
+                    cards from a full-bleed canvas. Home needs room at the
+                    bottom so the floating Ask Sancti button never lands on
+                    the last card; Map and Pray fill their space edge to
+                    edge, and the same room there is just a dead strip of
+                    background above the bar. */}
+                <div
+                  data-tab={activeTab}
+                  className="app-scroll flex-1 min-h-0 flex flex-col overflow-y-auto"
+                >
                   
                   {/* TAB 1: Parish Dashboard / Home Tab — TODAY first, then
                       the parish grid, then diocese-wide content. Extracted
