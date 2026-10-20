@@ -41,11 +41,28 @@ export default function ParishListRow({ parish, onSelect, selected, distanceMete
         ? haversineMeters(position, parish.coordinates)
         : null;
 
+  /*
+   * Only the two parishes with content behind them can be opened.
+   *
+   * The other twenty-nine were tappable and led to a page with a name
+   * and nothing else - no Mass times, no history, no ministries,
+   * because nobody has collected them yet. A row that opens an empty
+   * page does not read as "not ready", it reads as broken, and it is
+   * the kind of thing a visitor finds during a demonstration.
+   *
+   * Disabled rather than hidden. The diocese has thirty-one parishes
+   * and the directory should show thirty-one; what it should not do is
+   * promise that all of them are finished.
+   */
+  const openable = Boolean(parish.isLive);
+
   return (
     <button
       type="button"
-      onClick={() => onSelect(parish.id)}
+      onClick={() => openable && onSelect(parish.id)}
+      disabled={!openable}
       aria-pressed={selected}
+      aria-label={openable ? undefined : `${parish.name} — details not published yet`}
       className={`w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-colors ${
         selected
           ? "bg-[var(--color-brand-card-sunk)] border-[var(--color-brand-primary)]"
@@ -55,7 +72,7 @@ export default function ParishListRow({ parish, onSelect, selected, distanceMete
             // thirty rows that open to almost nothing, so the row itself
             // now carries the difference.
             ? "bg-[var(--color-brand-card-sunk)] border-[var(--color-brand-primary)] shadow-[0_1px_3px_rgba(16,34,86,0.10)]"
-            : "bg-[var(--color-brand-card)] border-[var(--color-brand-border)]"
+            : "bg-[var(--color-brand-card)] border-[var(--color-brand-border)] opacity-60 cursor-default"
       }`}
     >
       <div className="flex-1 min-w-0">

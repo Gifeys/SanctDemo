@@ -220,7 +220,13 @@ export default function SearchScreen({ onSelectParish, onClose }: SearchScreenPr
               parish={{
                 id: parish.id,
                 name: parish.name,
-                meta: full.vicariate ? `${full.vicariate} (unconfirmed)` : undefined,
+                // "(unconfirmed)" did not explain why the row cannot be
+                // opened. Saying the details are not published yet does,
+                // and it is the truth: the field team has not collected
+                // them for these parishes.
+                meta: full.status === "live"
+                  ? full.vicariate
+                  : [full.vicariate, "details coming soon"].filter(Boolean).join(" · "),
                 coordinates: full.coordinates,
                 isLive: full.status === "live",
               }}
