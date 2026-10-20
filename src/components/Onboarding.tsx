@@ -58,6 +58,17 @@ export default function Onboarding({ onChoose }: OnboardingProps) {
     }
 
     return withDistance.sort((a, b) => {
+      // The two finished parishes first, always.
+      //
+      // This list is somebody's first screen, and alphabetical order
+      // opened it on Birhen ng Lourdes - a parish whose page is a name
+      // and nothing else yet. The only two that lead anywhere were
+      // buried halfway down thirty-one rows. Distance and the alphabet
+      // still order everything after them.
+      const aLive = a.parish.status === "live" ? 0 : 1;
+      const bLive = b.parish.status === "live" ? 0 : 1;
+      if (aLive !== bLive) return aLive - bLive;
+
       if (a.metres !== null && b.metres !== null) return a.metres - b.metres;
       return a.parish.name.localeCompare(b.parish.name);
     });
