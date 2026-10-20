@@ -1457,6 +1457,11 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   --pw-scale-delta: 0;
   --pw-media-dy: 0px;
   --pw-image-dy: 0px;
+  /* Height of the rounded lip drawn at this band's bottom edge.
+     The sheet's padding-top has to exceed it or the heading ends
+     up behind the curve. */
+  --pw-lip: 26px;
+
   isolation: isolate;
   overflow: hidden;
   /* Scan and Pray put the band inside a flex column that is itself the
@@ -1485,21 +1490,30 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   margin-bottom: -26px;
 }
 
-/* The band used to paint a rounded lip inside its own bottom edge, with
-   the sheet pulled 26px up behind it, so that the two together looked
-   like one curved join.
+/* The curve where the sheet meets the band.
 
-   Two edges pretending to be one is what it actually was, and both
-   problems came from that. The lip sat ABOVE the sheet at z-index 2,
-   so the heading underneath it was sliced in half; and once the band
-   collapsed on scroll the lip stayed with it, leaving a pale strip
-   between the header and the content that read as a spare layer
-   nobody had asked for.
+   This lip is what actually draws it. The band sits above the sheet in
+   paint order, so the sheet's own rounded top is hidden behind it -
+   deleting this once left a dead straight edge with no curve at all,
+   which is not what anybody wanted.
 
-   There is one edge now: the sheet's own rounded top, which is the
-   same 30px curve in the same colour and was always directly behind
-   the lip. Nothing is drawn over the sheet, so nothing can cut into
-   it. */
+   The bug it used to cause was never the curve itself, it was the
+   heading sitting underneath the curve: at 8px of sheet padding,
+   PARISH BULLETIN began 12px inside this lip and had the top of every
+   letter covered. The sheet now starts its content at 36px - past the
+   26px of lip, with ten to spare - so the curve is drawn and the words
+   are below it rather than behind it. */
+.parish-welcome::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--pw-lip);
+  background: color-mix(in srgb, var(--parish-ink, #1B2A6B) 2%, var(--parish-tint, #EEF3FC));
+  border-radius: 30px 30px 0 0;
+  z-index: 2;
+}
 
 /* Drifts up more slowly than the page, so the collapse reads as depth
    rather than as the photograph being dragged away. The factor is how much
