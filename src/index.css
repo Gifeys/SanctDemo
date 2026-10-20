@@ -1848,10 +1848,37 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    so a control is not merely clear of the circle but readably so. */
 .app-scroll,
 .scroll-safe {
-  padding-bottom: 16px;
+  /* Clearance for BOTH floating things at the bottom of the app.
+
+     16px was enough for the raised Scan button, which only overhangs
+     the bar by 12px. It was never enough for the Ask Sancti button,
+     which floats 76px up from the bar and stands 42px tall - measured,
+     it reaches 54px above the scroller's bottom edge. So the last
+     item on every screen sat underneath it: on Home that was the
+     announcement note, with the button painted across the sentence
+     telling you there was nothing this week.
+
+     68px is that 54 plus daylight, so the final line clears the button
+     rather than merely escaping it. This is the ordinary cost of a
+     floating action button, and the reason apps that have one reserve
+     room for it. */
+  padding-bottom: 68px;
 }
 
-@media (pointer: coarse) {
+/* No scrollbar gutter at phone widths.
+
+   A touch device gives you an overlay scrollbar that takes no space, so
+   the coarse-pointer rule was enough while the app only ever ran on a
+   phone or filled a laptop window. It is not enough inside the landing
+   page's frame: that is a desktop browser rendering a 375px viewport,
+   the pointer is a mouse, and the classic 5px gutter appeared as a pale
+   stripe down the right edge of the mockup - clearly visible against
+   the navy hero.
+
+   Keyed to width as well as pointer, because the question is really
+   "is this laid out as a phone", and 768px is the same breakpoint
+   isDeviceSurface uses to answer it. */
+@media (pointer: coarse), (max-width: 768px) {
   .app-scroll {
     scrollbar-width: none;
   }
