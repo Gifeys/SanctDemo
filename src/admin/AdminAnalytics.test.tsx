@@ -70,7 +70,7 @@ function entry(over: Partial<ActivityEntry> = {}): ActivityEntry {
 
 function show() {
   render(
-    <MemoryRouter initialEntries={["/admin/analytics"]}>
+    <MemoryRouter initialEntries={["/parish-office/analytics"]}>
       <AdminAnalytics session={SESSION} />
     </MemoryRouter>,
   );

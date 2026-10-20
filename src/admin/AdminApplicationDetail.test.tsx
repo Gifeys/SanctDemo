@@ -69,9 +69,9 @@ const APP: ApplicationDoc = {
 
 function renderWith(app: ApplicationDoc) {
   const view = render(
-    <MemoryRouter initialEntries={["/admin/applications/abc"]}>
+    <MemoryRouter initialEntries={["/parish-office/applications/abc"]}>
       <Routes>
-        <Route path="/admin/applications/:id" element={<AdminApplicationDetail session={SESSION} />} />
+        <Route path="/parish-office/applications/:id" element={<AdminApplicationDetail session={SESSION} />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -148,9 +148,9 @@ describe("AdminApplicationDetail", () => {
 
   it("says so plainly when the document is not readable", async () => {
     render(
-      <MemoryRouter initialEntries={["/admin/applications/abc"]}>
+      <MemoryRouter initialEntries={["/parish-office/applications/abc"]}>
         <Routes>
-          <Route path="/admin/applications/:id" element={<AdminApplicationDetail session={SESSION} />} />
+          <Route path="/parish-office/applications/:id" element={<AdminApplicationDetail session={SESSION} />} />
         </Routes>
       </MemoryRouter>,
     );

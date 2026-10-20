@@ -260,7 +260,11 @@
   </p>
 
   <section class="download">
-    <a class="cta" id="apk" href="https://github.com/Gifeys/SanctDemo/releases/latest">
+    <!-- The file itself, served from this site. It was pointing at a
+         GitHub releases page that had no release on it, so the one
+         button the page exists for did nothing. download= makes the
+         browser save it rather than try to display it. -->
+    <a class="cta" id="apk" href="/download/SanctiWalk.apk" download="SanctiWalk.apk">
       Download for Android
     </a>
     <p class="meta">APK &middot; 66 MB &middot; Android 8 and later</p>

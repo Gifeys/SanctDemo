@@ -31,50 +31,50 @@ export interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  { to: "/admin", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+  { to: "/parish-office", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   {
-    to: "/admin/applications",
+    to: "/parish-office/applications",
     label: "Applications",
     icon: <ClipboardList className="w-4 h-4" />,
-    match: "/admin/applications",
+    match: "/parish-office/applications",
   },
   {
-    to: "/admin/availability",
+    to: "/parish-office/availability",
     label: "Open & closed",
     icon: <ToggleLeft className="w-4 h-4" />,
   },
   {
-    to: "/admin/announcements",
+    to: "/parish-office/announcements",
     label: "Announcements",
     icon: <Megaphone className="w-4 h-4" />,
   },
   {
-    to: "/admin/mass-schedule",
+    to: "/parish-office/mass-schedule",
     label: "Mass Schedule",
     icon: <Church className="w-4 h-4" />,
   },
   {
-    to: "/admin/announcements/feasts",
+    to: "/parish-office/announcements/feasts",
     label: "Feast Days",
     icon: <PartyPopper className="w-4 h-4" />,
   },
   {
-    to: "/admin/announcements/events",
+    to: "/parish-office/announcements/events",
     label: "Events",
     icon: <CalendarDays className="w-4 h-4" />,
   },
   {
-    to: "/admin/analytics",
+    to: "/parish-office/analytics",
     label: "Visitor activity",
     icon: <BarChart3 className="w-4 h-4" />,
   },
   {
-    to: "/admin/content",
+    to: "/parish-office/content",
     label: "What people read",
     icon: <BookOpen className="w-4 h-4" />,
   },
   {
-    to: "/admin/applications/archive",
+    to: "/parish-office/applications/archive",
     label: "Archive",
     icon: <Archive className="w-4 h-4" />,
   },
@@ -89,11 +89,11 @@ export default function AdminNav() {
   // sub-boards are checked before the section they live under.
   function isOn(item: NavItem): boolean {
     if (pathname === item.to) return true;
-    if (item.to === "/admin/applications") {
-      return pathname.startsWith("/admin/applications/")
-        && !pathname.startsWith("/admin/applications/archive");
+    if (item.to === "/parish-office/applications") {
+      return pathname.startsWith("/parish-office/applications/")
+        && !pathname.startsWith("/parish-office/applications/archive");
     }
-    if (item.to === "/admin/announcements") {
+    if (item.to === "/parish-office/announcements") {
       // The board routes have their own chips.
       return false;
     }

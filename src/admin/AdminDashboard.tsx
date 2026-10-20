@@ -126,13 +126,13 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
             asks "how many pending". */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
           <Tile label="Still open" value={apps === null ? "—" : totals.open}
-                onClick={() => navigate("/admin/applications")} />
+                onClick={() => navigate("/parish-office/applications")} />
           <Tile label="Ministries" value={apps === null ? "—" : totals.ministry}
-                onClick={() => navigate("/admin/applications/ministry")} />
+                onClick={() => navigate("/parish-office/applications/ministry")} />
           <Tile label="Sacraments" value={apps === null ? "—" : totals.sacrament}
-                onClick={() => navigate("/admin/applications/sacrament")} />
+                onClick={() => navigate("/parish-office/applications/sacrament")} />
           <Tile label="This month" value={apps === null ? "—" : totals.thisMonth}
-                onClick={() => navigate("/admin/applications")} />
+                onClick={() => navigate("/parish-office/applications")} />
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -152,7 +152,7 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
               somewhere they visibly went - a number that simply dropped
               reads as data lost. */}
           <Tile label="Archived" value={apps === null ? "—" : totals.archived}
-                onClick={() => navigate("/admin/applications/archive")} />
+                onClick={() => navigate("/parish-office/applications/archive")} />
         </div>
 
         {/* What the parish currently looks like to a pilgrim, as opposed
@@ -166,7 +166,7 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
               the open ones, and a finished application is still recent. */}
           <h2 className="text-[17px] font-bold font-serif italic">Needing attention</h2>
           <button
-            onClick={() => navigate("/admin/applications")}
+            onClick={() => navigate("/parish-office/applications")}
             className="text-[15px] font-bold text-[var(--color-brand-primary)]"
           >
             Open the full table

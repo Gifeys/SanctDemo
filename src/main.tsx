@@ -1,7 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import { SpotlightProvider } from './components/Spotlight';
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
+import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import App from './App.tsx';
 import FinishSignIn from './routes/FinishSignIn.tsx';
 import SignUpFlow from './routes/SignUpFlow.tsx';
@@ -65,7 +65,20 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/signup" element={<SignUpFlow />} />
         <Route path="/finish-sign-in" element={<FinishSignIn />} />
-        <Route path="/admin/*" element={<AdminApp />} />
+        {/* The parish office. Not at /admin.
+
+            Moving it is worth almost nothing against anyone who looks -
+            the path is in the JavaScript bundle, which is public - and
+            it is NOT what keeps the office safe. That is Firebase Auth,
+            the admins collection, and the Firestore rules Google
+            enforces on their own servers. What it does buy is quiet:
+            the bots that sweep the internet for /admin and /wp-admin
+            all day stop finding a login form here.
+
+            /admin itself now answers like any other unknown path, so
+            the move cannot be undone by guessing the old one. */}
+        <Route path="/parish-office/*" element={<AdminApp />} />
+        <Route path="/admin/*" element={<Navigate to="/" replace />} />
 
         {/* The root is two different things.
             A phone gets the app, because somebody on a phone came to use

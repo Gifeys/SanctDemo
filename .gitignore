@@ -13,6 +13,11 @@ node_modules/
 
 # Stray APK copies made when transferring builds to a phone.
 *.apk
+# ...except the one the download page serves. Vercel deploys what is in
+# git, so an ignored APK means the button downloads a 404. This is a
+# deliberate 67 MB in the repository; see docs or move to GitHub
+# Releases if the history gets heavy.
+!public/download/*.apk
 
 # Local dev binaries (cloudflared). Not part of the app.
 tools/
