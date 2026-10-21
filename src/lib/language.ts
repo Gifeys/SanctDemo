@@ -77,8 +77,34 @@ export function pick(value: Bilingual | string | undefined, language: Language):
   return value[language] || value[language === "en" ? "fil" : "en"] || "";
 }
 
+/**
+ * A language pinned by the URL, as in /app?lang=en.
+ *
+ * This exists for the landing page, whose phone mockup is a real
+ * SanctiWalk in an iframe. The iframe is same-origin, so it reads the
+ * same localStorage as the app - which means a visitor who had once
+ * set Tagalog saw the marketing demo in Tagalog, and so did anyone
+ * looking over their shoulder. The demo is a showcase for strangers
+ * and has to be legible to all of them.
+ *
+ * It deliberately does NOT persist. Pinning the preview must not
+ * silently rewrite the language of the pilgrim's own app, which is the
+ * same storage.
+ */
+function languageFromUrl(): Language | null {
+  try {
+    const value = new URLSearchParams(window.location.search).get("lang");
+    return value === "en" || value === "fil" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export function loadLanguage(): Language {
   try {
+    const pinned = languageFromUrl();
+    if (pinned) return pinned;
+
     const stored = localStorage.getItem(LANGUAGE_KEY);
     if (stored === "en" || stored === "fil") return stored;
     // Nothing chosen yet: inherit whatever the rosary was set to, so a

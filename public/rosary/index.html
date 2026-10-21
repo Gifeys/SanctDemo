@@ -1507,12 +1507,17 @@ const Liturgical = (function () {
   return { computeEaster: computeEaster, describe: describe };
 })();
 
-/* Mystery-set names for the start screen only, per the client's chosen
-   Filipino wording. (The prayer engine's own Filipino names elsewhere in
-   this file are unrelated and untouched.) */
+/* Mystery-set names for the start screen.
+
+   Tuwa, Liwanag, Hapis, Luwalhati - the nouns the Filipino rosary
+   actually uses, and the same wording as the prayer engine's own
+   setNames above. This screen used adjectives instead ("Maligayang
+   Misteryo", "Mahapding Misteryo"), so the set a person chose on the
+   start screen was named one way and then named another way the moment
+   they began praying it. */
 const START_SET_NAMES = {
   en: { joyful:"The Joyful Mysteries", sorrowful:"The Sorrowful Mysteries", glorious:"The Glorious Mysteries", luminous:"The Luminous Mysteries" },
-  tl: { joyful:"Maligayang Misteryo", sorrowful:"Mahapding Misteryo", glorious:"Maluwalhating Misteryo", luminous:"Misteryo ng Liwanag" }
+  tl: { joyful:"Misteryo ng Tuwa", sorrowful:"Misteryo ng Hapis", glorious:"Misteryo ng Luwalhati", luminous:"Misteryo ng Liwanag" }
 };
 
 /* ==================================================================
@@ -3033,7 +3038,8 @@ function paintStartScreen() {
 /** Mystery-set labels shown in the settings panel, localized to S.lang. */
 const MYSTERY_PANEL_LABELS = {
   en: { today: "Today's Mystery", joyful: "Joyful", sorrowful: "Sorrowful", glorious: "Glorious", luminous: "Luminous" },
-  tl: { today: "Ngayong Araw", joyful: "Maligayang", sorrowful: "Mahapding", glorious: "Maluwalhati", luminous: "Liwanag" }
+  // The short forms of the same four nouns; see START_SET_NAMES.
+  tl: { today: "Ngayong Araw", joyful: "Tuwa", sorrowful: "Hapis", glorious: "Luwalhati", luminous: "Liwanag" }
 };
 
 function paintSettingsPanel() {

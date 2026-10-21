@@ -122,7 +122,11 @@ export default function Landing() {
               <div className="lp__phone-viewport">
                 <iframe
                   className="lp__phone-screen"
-                  src="/app"
+                  /* English, whatever this visitor last chose for themselves.
+         The iframe shares the landing page's localStorage, so without
+         this the public demo came up in whichever language the last
+         person to use the app on this browser had picked. */
+      src="/app?lang=en"
                   title="SanctiWalk, running"
                   loading="eager"
                   // The app asks for these itself when someone taps Scan
