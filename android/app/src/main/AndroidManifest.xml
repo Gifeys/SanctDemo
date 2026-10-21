@@ -69,6 +69,19 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Mass reminders, and the "tell me when this opens" bells on the
+         schedule, ministries and sacraments.
+
+         Android 13 made posting a notification a runtime permission. The
+         app already asked for it through the Capacitor plugin and the
+         answer was always no - silently, with no system dialog, because
+         a permission the manifest does not declare cannot be granted and
+         requestPermissions() just returns denied. So notifications were
+         the one thing the app never prompted for on install, and every
+         Mass change notice went nowhere. It has to be declared here for
+         the prompt to exist at all. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Parish detection and walking directions. Coarse is listed too so the
          app still installs and degrades gracefully on a device that refuses
          precise location. -->

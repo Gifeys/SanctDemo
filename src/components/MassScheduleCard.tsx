@@ -4,6 +4,7 @@ import { MASS_SCHEDULES } from "../data";
 import { liturgicalDay } from "../lib/liturgical";
 import { dayOfMonth, sundayMassCard, type MassTime } from "../lib/sundayMasses";
 import { useParishContent } from "../lib/useParishContent";
+import WatchBell from "./WatchBell";
 
 interface MassScheduleCardProps {
   /** The active tour route id, e.g. "route-mhcp". */
@@ -44,6 +45,11 @@ export default function MassScheduleCard({
   const today = liturgicalDay(now);
 
   const hasAnything = card.anticipated !== null || card.sunday.times.length > 0;
+
+  // Any Mass the parish has marked off this week.
+  const suspended =
+    (card.anticipated !== null && !card.anticipated.available) ||
+    card.sunday.times.some(t => !t.available);
 
   return (
     <section
@@ -114,6 +120,22 @@ export default function MassScheduleCard({
               </div>
             )}
 
+            {suspended && (
+              /* Only where a Mass is actually off. A bell on a schedule
+                 with nothing wrong with it is an invitation to subscribe
+                 to silence. */
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-black/20 px-3 py-2.5">
+                <span className="text-[14px] leading-snug text-white/85">
+                  Tell me when these Mass times are back.
+                </span>
+                <WatchBell
+                  watch={{ kind: "mass", parishId: routeId }}
+                  label="this Mass schedule"
+                  className="watch-bell--onDark"
+                />
+              </div>
+            )}
+
             <button
               type="button"
               onClick={() => setExpanded(v => !v)}
@@ -155,8 +177,14 @@ function MassRow({ label, times, date }: { label: string; times: MassTime[]; dat
           {times.map(({ time, available }) => (
             <li
               key={time}
+              /* A struck-through time is given the whole row.
+                 "6:00 AM NOT AVAILABLE" does not fit one half of a
+                 two-column grid on a phone, and whitespace-nowrap meant
+                 it did not wrap either - it ran straight over the time
+                 in the next column. Full width, and the label can sit
+                 beside it with room to spare. */
               className={`flex items-center gap-1.5 text-[16px] ${
-                available ? "text-white/95" : "text-white/55"
+                available ? "text-white/95" : "col-span-2 text-white/55"
               }`}
             >
               <Clock className="w-3.5 h-3.5 shrink-0 opacity-80" />
@@ -164,7 +192,7 @@ function MassRow({ label, times, date }: { label: string; times: MassTime[]; dat
                 {time}
               </span>
               {!available && (
-                <span className="text-[12px] font-bold uppercase tracking-wider whitespace-nowrap">
+                <span className="text-[12px] font-bold uppercase tracking-wider">
                   Not available
                 </span>
               )}

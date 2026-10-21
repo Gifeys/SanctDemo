@@ -14,6 +14,7 @@ import { pick } from "../lib/language";
 import { SACRAMENT_DESCRIPTION_FIL, bilingualFor } from "../lib/contentTranslations";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
 import AvailabilityBadge from "./AvailabilityBadge";
+import WatchBell from "./WatchBell";
 
 interface SacramentsTabProps {
   parish: Route;
@@ -177,10 +178,22 @@ export default function SacramentsTab({
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">
-                      <AvailabilityBadge
-                        open={isOpenForApplications(managed, sac.id)}
-                        kind="sacrament"
-                      />
+                      {/* Closed today is not closed forever. Without
+                          this the only way to find out sacrament reopened
+                          was to keep coming back and looking at the same
+                          badge. */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AvailabilityBadge
+                          open={isOpenForApplications(managed, sac.id)}
+                          kind="sacrament"
+                        />
+                        {!isOpenForApplications(managed, sac.id) && (
+                          <WatchBell
+                            watch={{ kind: "sacrament", parishId: parish.id, itemId: sac.id }}
+                            label={sac.name}
+                          />
+                        )}
+                      </div>
 
                       {/* The parish's own words where they have written
                           any; the compiled text where they have not.

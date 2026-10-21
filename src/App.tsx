@@ -51,13 +51,14 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getDoc, getDocs, writeBatch, query, where } from "firebase/firestore";
 
 import { Route, UserProgress } from "./types";
-import { ROUTES, BADGES, MASS_SCHEDULES } from "./data";
+import { ROUTES, BADGES, MASS_SCHEDULES, MINISTRIES, SACRAMENTS } from "./data";
 import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 import { useMassScheduleNotice } from "./lib/useMassScheduleNotice";
+import { useOpeningNotices } from "./lib/useOpeningNotices";
 import { useParishContent } from "./lib/useParishContent";
 import { checkParishColour, readableTextOn, parseHex } from "./lib/contrast";
 
@@ -757,6 +758,20 @@ export default function App() {
     ownParishId,
     ROUTES.find(r => r.id === ownParishId)?.name.replace(" Guide", "").replace(" Tour", "")
       ?? "Your parish",
+  );
+
+  // And the same for anything a pilgrim has put a bell on. A ministry
+  // that opens for a fortnight a year is the case this exists for:
+  // without it the only way to catch it is to keep opening the app and
+  // reading the same "not available" badge until the one day it is not.
+  useOpeningNotices(
+    ownParishId,
+    ROUTES.find(r => r.id === ownParishId)?.name.replace(" Guide", "").replace(" Tour", "")
+      ?? "Your parish",
+    itemId =>
+      MINISTRIES.find(m => m.id === itemId)?.name
+      ?? SACRAMENTS.find(s => s.id === itemId)?.name
+      ?? "A ministry",
   );
 
   const viewingAnotherParish =

@@ -16,6 +16,7 @@ import { submitApplication } from "../lib/applications";
 import { useParishContent } from "../lib/useParishContent";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
 import AvailabilityBadge from "./AvailabilityBadge";
+import WatchBell from "./WatchBell";
 
 interface MinistriesTabProps {
   parish: Route;
@@ -311,10 +312,22 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--color-brand-card)] bg-[var(--color-brand-card)]/30 space-y-3 font-sans">
-                      <AvailabilityBadge
-                        open={isOpenForApplications(managed, min.id)}
-                        kind="ministry"
-                      />
+                      {/* Closed today is not closed forever. Without
+                          this the only way to find out ministry reopened
+                          was to keep coming back and looking at the same
+                          badge. */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AvailabilityBadge
+                          open={isOpenForApplications(managed, min.id)}
+                          kind="ministry"
+                        />
+                        {!isOpenForApplications(managed, min.id) && (
+                          <WatchBell
+                            watch={{ kind: "ministry", parishId: parish.id, itemId: min.id }}
+                            label={min.name}
+                          />
+                        )}
+                      </div>
 
                       {/* The parish's own words where they have written
                           any, the compiled description where they have

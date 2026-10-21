@@ -2608,15 +2608,77 @@ function handleMicError(err) {
    is heard in the language it is shown in.
    ================================================================== */
 const Narrator = {
-  supported: typeof window !== "undefined"
+  /* Whether the HOST app has answered our hello and can speak for us.
+     See the bridge note below. */
+  bridge: false,
+  web: typeof window !== "undefined"
     && "speechSynthesis" in window
     && typeof SpeechSynthesisUtterance === "function",
+  get supported() { return this.bridge || this.web; },
   speaking: false
 };
 
+/* ==================================================================
+   Speaking through the host app, when there is one.
+
+   This page runs in an iframe. Inside the Android build that iframe is
+   a WebView, and a WebView's window.speechSynthesis is a stub: the
+   object is there, speak() accepts the utterance without complaining,
+   getVoices() returns an empty list, and nothing is ever said. That is
+   why the guided Rosary was silent on the phone while working on a
+   laptop - the feature detection above passed and the engine simply
+   had no voices behind it.
+
+   The app around us does have a voice: it talks to the platform's own
+   text-to-speech through a Capacitor plugin, which is the only thing
+   that actually makes sound on the device. So we ask it. On load this
+   page says hello to its parent; a SanctiWalk host answers, and from
+   then on every line goes out as a message instead of to the stub.
+
+   Opened directly in a browser there is no host, nobody answers, and
+   the Web Speech path below is used exactly as before.
+   ================================================================== */
+var HOST_CHANNEL = "sanctiwalk-rosary";
+
+function hostPost(message) {
+  if (!Narrator.bridge) return false;
+  try {
+    window.parent.postMessage(
+      Object.assign({ channel: HOST_CHANNEL }, message),
+      window.location.origin
+    );
+    return true;
+  } catch (e) { return false; }
+}
+
+window.addEventListener("message", function (event) {
+  if (event.origin !== window.location.origin) return;
+  var data = event.data;
+  if (!data || data.channel !== HOST_CHANNEL) return;
+
+  if (data.type === "host-ready") {
+    if (Narrator.bridge) return;
+    Narrator.bridge = true;
+    // The guide switch is hidden where nothing can speak. The host
+    // answering is the moment that stops being true, so the settings
+    // panel has to be redrawn or the pilgrim never sees the switch.
+    if (typeof paintSettingsPanel === "function") { try { paintSettingsPanel(); } catch (e) {} }
+  } else if (data.type === "spoke-end") {
+    Narrator.speaking = false;
+  }
+});
+
+try {
+  window.parent.postMessage(
+    { channel: HOST_CHANNEL, type: "hello" },
+    window.location.origin
+  );
+} catch (e) { /* no parent, or a cross-origin one. Web Speech it is. */ }
+
 function narratorStop() {
-  if (!Narrator.supported) return;
   Narrator.speaking = false;
+  if (hostPost({ type: "stop" })) return;
+  if (!Narrator.web) return;
   try { window.speechSynthesis.cancel(); } catch (e) {}
 }
 
@@ -2635,6 +2697,12 @@ function narrateStep(step) {
   const name = (step.name || "").trim();
   const text = (name ? name.replace(/[.\s]+$/, "") + ". " : "") + (body || "");
   if (!text.trim()) return;
+
+  // The host speaks it where there is one; see the bridge note above.
+  Narrator.speaking = true;
+  if (hostPost({ type: "speak", text: text, lang: S.lang === "tl" ? "fil" : "en" })) return;
+
+  if (!Narrator.web) { Narrator.speaking = false; return; }
 
   const u = new SpeechSynthesisUtterance(text);
   u.lang = langTag();

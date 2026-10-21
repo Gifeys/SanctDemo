@@ -5955,3 +5955,74 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   line-height: 1.4;
   color: rgb(255 255 255 / 0.62);
 }
+
+/* ==========================================================================
+   "Notify me" bells
+
+   On a closed ministry, a suspended Mass, a sacrament between intakes.
+   Small and quiet: it sits beside the badge that says the thing is shut,
+   and it is the answer to that badge rather than a second announcement
+   competing with it.
+   ========================================================================== */
+.watch-bell__wrap {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.watch-bell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* Tall enough to hit. At 6px of padding this came out 27px high,
+     which is a control you aim at rather than tap - and it is the only
+     way to act on a closed ministry, so missing it is the whole
+     interaction. */
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-brand-border, rgba(27, 42, 107, 0.18));
+  background: transparent;
+  color: var(--color-brand-primary, #1B2A6B);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  /* The row this sits in can get tight on a 360px screen, and a control
+     that shrinks until its label is unreadable is worse than one that
+     wraps onto its own line. */
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.watch-bell:hover {
+  background: color-mix(in srgb, var(--color-brand-primary, #1B2A6B) 7%, transparent);
+}
+
+.watch-bell.is-on {
+  border-color: var(--color-brand-primary, #1B2A6B);
+  background: color-mix(in srgb, var(--color-brand-primary, #1B2A6B) 12%, transparent);
+}
+
+/* The Mass card is a deep green panel, so the brand navy disappears
+   into it. On dark, the bell borrows the panel's own white. */
+.watch-bell--onDark {
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+.watch-bell--onDark:hover { background: rgba(255, 255, 255, 0.14); }
+.watch-bell--onDark.is-on {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.watch-bell__note {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brand-muted, #5B6478);
+}
+.watch-bell--onDark + .watch-bell__note,
+.watch-bell__wrap:has(.watch-bell--onDark) .watch-bell__note {
+  color: rgba(255, 255, 255, 0.85);
+}
