@@ -91,7 +91,7 @@ export default function SacramentsTab({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
       <div hidden={openId !== null}>
       <ParishSectionHeader
         routeId={parish.id}

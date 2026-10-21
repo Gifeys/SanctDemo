@@ -1890,6 +1890,26 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   padding-bottom: 0;
 }
 
+/* History, Ministries and Sacraments do the same as Home, below.
+
+   Each of these three fills its screen with one coloured panel - the
+   history gradient, or the card tint the two lists sit on. The 56px of
+   clearance was on the SCROLLER, one layer above that panel, so the gap
+   showed the shell underneath: a pale strip ruled across the bottom of
+   a deep blue page. Moved onto the panel, the panel's own colour simply
+   continues down to the tab bar and there is nothing to see.
+
+   Ministries already pads itself through .scroll-safe, so it only needs
+   the outer padding removed or the two would add up to 112px. */
+.app-scroll[data-tab=history],
+.app-scroll[data-tab=ministries],
+.app-scroll[data-tab=sacraments] {
+  padding-bottom: 0;
+}
+.app-scroll[data-tab=history] .parish-history {
+  padding-bottom: 56px;
+}
+
 /* Home takes its clearance from the sheet instead of the scroller.
 
    The same 56px, one layer lower. On the scroller the gap showed the
