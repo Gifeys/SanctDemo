@@ -156,9 +156,21 @@ function shortLabel(name: string): string {
 // shown (the rule this codebase holds itself to: unverified data is
 // labelled, never hidden — see coordinatesVerified/scheduleVerified), but
 // never as a bare fact, and — per mapSearch.ts — never matched against.
-function vicariateLabel(vicariate: string): string {
+function vicariateLabel(vicariate: string, parishId?: string): string {
+  // The two implemented parishes have been through the parish office:
+  // their vicariate, coordinates and schedule are all confirmed, so the
+  // caveat is simply wrong on them now. It stays on the other
+  // twenty-nine, where each vicariate is still our nearest-seat guess
+  // rather than the diocese's own word.
+  if (parishId && CONFIRMED_PARISHES.has(parishId)) return vicariate;
   return `${vicariate} (unconfirmed)`;
 }
+
+/** Parishes whose details have been confirmed with the parish itself. */
+const CONFIRMED_PARISHES = new Set([
+  "parish-mary-help-of-christians-parish",
+  "parish-san-roque-cathedral",
+]);
 
 // Search shows a parish's vicariate as its secondary "location" line — the
 // same role `location` plays in the client's prototype data
@@ -173,7 +185,7 @@ interface SearchParish extends SearchableParish {
 const SEARCHABLE_PARISHES: SearchParish[] = PARISHES.map(p => ({
   id: p.id,
   name: shortLabel(p.name),
-  location: vicariateLabel(p.vicariate),
+  location: vicariateLabel(p.vicariate, p.id),
   coordinates: p.coordinates,
   routeId: LIVE_PARISH_TO_ROUTE_ID[p.id],
   isLive: p.status === "live" && Boolean(LIVE_PARISH_TO_ROUTE_ID[p.id]),
@@ -660,7 +672,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     );
     // Bottom padding keeps the route clear of the place sheet, which covers
     // the lower third of the frame.
-    map.fitBounds(bounds, { padding: { top: 64, left: 64, right: 64, bottom: 260 }, duration: 500 });
+    map.fitBounds(bounds, {
+      padding: { top: 64, left: 64, right: 64, bottom: 260 },
+      // Fitting all thirty-one parishes pulls back far enough that
+      // the streets disappear. Past this the map stops being worth
+      // looking at, so it stops here and lets the pilgrim pan.
+      maxZoom: 13.4,
+      duration: 500,
+    });
   }
 
   /** The one-line summary the card shows under a drawn route. */
@@ -707,7 +726,10 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       container: containerRef.current,
       style: STYLE_URL,
       center: [DIOCESE_BOUNDS.lngMin + (DIOCESE_BOUNDS.lngMax - DIOCESE_BOUNDS.lngMin) / 2, 14.655],
-      zoom: 12.3,
+      // Close enough to read street names. 12.3 fitted the whole
+      // diocese on screen but rendered it as a grey mass with no
+      // streets in it, which is not a map anybody can use.
+      zoom: 13.4,
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -1196,7 +1218,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       return;
     }
 
-    map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 15) });
+    map.flyTo({ center: [position.lng, position.lat], zoom: Math.max(map.getZoom(), 16.5) });
   }
 
   // Selecting a search result flies to the parish and opens its card, so
@@ -1469,7 +1491,11 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
                     {distanceMeters !== null && (
                       <span className="dmap-results__distance">{formatDistance(distanceMeters)} away</span>
                     )}
-                    {parish.location && <span>{parish.location} (unconfirmed)</span>}
+                    {/* parish.location already carries the caveat where it still
+                        applies - see vicariateLabel - so appending a second
+                        one printed it twice on the unconfirmed parishes and
+                        wrongly on the two that are confirmed. */}
+                    {parish.location && <span>{parish.location}</span>}
                   </span>
                 </button>
               </li>
@@ -1485,7 +1511,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
         {selectedParish && !navigatingTo && (
           <MapPlaceSheet
             name={shortLabel(selectedParish.name)}
-            location={vicariateLabel(selectedParish.vicariate)}
+            location={vicariateLabel(selectedParish.vicariate, selectedParish.id)}
             routeId={LIVE_PARISH_TO_ROUTE_ID[selectedParish.id] ?? null}
             straightLineMetres={position ? haversineMeters(position, selectedParish.coordinates) : null}
             directionsStatus={

@@ -257,7 +257,7 @@
 
 .dmap-live__recentre {
   position: absolute;
-  top: 92px;
+  top: calc(92px + env(safe-area-inset-top, 0px));
   right: 8px;
   z-index: 5;
   font-size: 14px;
@@ -328,7 +328,11 @@
    (not MapLibre's default white popup/control styling), since it now sits
    directly over the light basemap and needs its own visual edge. */
 .dmap-search {
-  position: absolute; z-index: 6; top: 8px;
+  /* Below the status bar, the way Google Maps sits below it.
+     On a phone with a notch, top:8px put this under the clock and the
+     signal bars. env() is 0 in a browser, so the desktop layout is
+     unchanged. */
+  position: absolute; z-index: 6; top: calc(8px + env(safe-area-inset-top, 0px));
   left: 8px; right: 52px;
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 999px;
