@@ -79,9 +79,24 @@ export default function MassScheduleCard({
             {today.season}
           </p>
         )}
-        <h3 className="text-[21px] font-bold leading-[1.2] tracking-tight text-balance">
-          {today.name}
-        </h3>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[21px] font-bold leading-[1.2] tracking-tight text-balance">
+            {today.name}
+          </h3>
+
+          {/* Only where a Mass is actually off. A bell on a schedule with
+              nothing wrong with it is an invitation to subscribe to
+              silence. The icon carries it alone: a sentence explaining
+              the bell took more room than the times it was about. */}
+          {suspended && (
+            <WatchBell
+              watch={{ kind: "mass", parishId: routeId }}
+              label="this Mass schedule"
+              className="watch-bell--onDark"
+              iconOnly
+            />
+          )}
+        </div>
 
         {!hasAnything ? (
           // 29 of the 31 parishes have no collected schedule. An empty green
@@ -117,22 +132,6 @@ export default function MassScheduleCard({
                     date={card.sunday.date}
                   />
                 )}
-              </div>
-            )}
-
-            {suspended && (
-              /* Only where a Mass is actually off. A bell on a schedule
-                 with nothing wrong with it is an invitation to subscribe
-                 to silence. */
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl bg-black/20 px-3 py-2.5">
-                <span className="text-[14px] leading-snug text-white/85">
-                  Tell me when these Mass times are back.
-                </span>
-                <WatchBell
-                  watch={{ kind: "mass", parishId: routeId }}
-                  label="this Mass schedule"
-                  className="watch-bell--onDark"
-                />
               </div>
             )}
 

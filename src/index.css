@@ -6026,3 +6026,13 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .watch-bell__wrap:has(.watch-bell--onDark) .watch-bell__note {
   color: rgba(255, 255, 255, 0.85);
 }
+
+/* The bell on its own, in the Mass card's header.
+   Square so the circle is a circle, and the same 40px tap target the
+   labelled form has. */
+.watch-bell--icon {
+  min-width: 40px;
+  padding: 0;
+  justify-content: center;
+  flex: none;
+}

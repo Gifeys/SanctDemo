@@ -22,11 +22,14 @@ export default function WatchBell({
   watch,
   label,
   className = "",
+  iconOnly = false,
 }: {
   watch: Watch;
   /** What is being watched, for the screen reader: "Confirmation". */
   label: string;
   className?: string;
+  /** The bell on its own, with no words beside it. */
+  iconOnly?: boolean;
 }) {
   const [on, setOn] = useState(() => isWatched(watch));
   const [note, setNote] = useState<string | null>(null);
@@ -65,16 +68,22 @@ export default function WatchBell({
         onClick={toggle}
         aria-pressed={on}
         aria-label={on ? `Stop reminders about ${label}` : `Remind me when ${label} opens`}
-        className={`watch-bell${on ? " is-on" : ""} ${className}`.trim()}
+        className={`watch-bell${on ? " is-on" : ""}${iconOnly ? " watch-bell--icon" : ""} ${className}`.trim()}
       >
         {on ? (
-          <BellRing className="w-[15px] h-[15px]" aria-hidden />
+          <BellRing className="w-[18px] h-[18px]" aria-hidden />
         ) : (
-          <Bell className="w-[15px] h-[15px]" aria-hidden />
+          <Bell className="w-[18px] h-[18px]" aria-hidden />
         )}
-        <span className="watch-bell__text">{on ? "Reminding you" : "Notify me"}</span>
+        {/* The aria-label carries the whole meaning when the words are
+            gone, which is why it names the thing rather than the icon. */}
+        {!iconOnly && (
+          <span className="watch-bell__text">{on ? "Reminding you" : "Notify me"}</span>
+        )}
       </button>
-      {note && (
+      {/* The bell alone has no room beside it for a sentence; its own
+          filled state is the acknowledgement there. */}
+      {note && !iconOnly && (
         <span className="watch-bell__note" role="status">
           {note}
         </span>
