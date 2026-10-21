@@ -57,6 +57,7 @@ import { tabForParishSelection } from "./lib/parishSelection";
 import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
+import UpdateBanner from "./components/UpdateBanner";
 import { useMassScheduleNotice } from "./lib/useMassScheduleNotice";
 import { useOpeningNotices } from "./lib/useOpeningNotices";
 import { useParishContent } from "./lib/useParishContent";
@@ -1254,6 +1255,10 @@ export default function App() {
                     the last card; Map and Pray fill their space edge to
                     edge, and the same room there is just a dead strip of
                     background above the bar. */}
+                {/* Above the scroller, so it is not scrolled away before
+                    it has been read. Renders nothing in a browser. */}
+                <UpdateBanner />
+
                 <div
                   data-tab={activeTab}
                   className="app-scroll flex-1 min-h-0 flex flex-col overflow-y-auto"

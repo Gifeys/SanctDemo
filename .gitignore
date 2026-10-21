@@ -35,3 +35,7 @@ bun.lock
 bun.lockb
 tools/bin/
 docs/ui/_docx/
+
+# Release signing. Never commit these: the keystore is the app identity.
+android/keystore.properties
+android/*.keystore

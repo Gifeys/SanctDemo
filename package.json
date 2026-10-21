@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "qr:posters": "node scripts/generate-qr-posters.mjs",
     "build:app": "vite build",
-    "apk": "vite build && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleDebug'],{cwd:'android',stdio:'inherit',shell:true})\"",
+    "apk": "node tools/write-latest-version.mjs && vite build && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleRelease'],{cwd:'android',stdio:'inherit',shell:true})\"",
     "apk:lan": "cross-env CAP_LAN_TEST=1 npm run apk",
     "test:rules": "firebase emulators:exec --only firestore --project sanctiwalk-rules-test \"vitest run -c vitest.rules.config.ts\""
   },

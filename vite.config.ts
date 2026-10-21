@@ -44,8 +44,20 @@ function copyMapLibreWorker() {
   };
 }
 
+// One version, from package.json, baked into the bundle.
+//
+// The Android build reads the same field for versionName and derives
+// versionCode from it, so the running app and the published release
+// cannot disagree about which build this is. See lib/appUpdate.
+const APP_VERSION = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
+).version as string
+
 export default defineConfig(({command}) => {
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(APP_VERSION),
+    },
     plugins: [react(), tailwindcss(), copyMapLibreWorker()],
     resolve: {
       alias: {

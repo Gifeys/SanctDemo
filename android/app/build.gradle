@@ -1,5 +1,30 @@
 apply plugin: 'com.android.application'
 
+// Release signing, and the version the app reports.
+//
+// Android identifies an app by the key that signed it. While SanctiWalk was
+// signed with the debug key, every build carried whatever debug keystore the
+// build machine happened to have - so an "update" built elsewhere could not
+// install over an existing copy at all, and the only way out for the user was
+// to uninstall and lose their saved parish, reminders and subscriptions.
+//
+// keystore.properties and the .keystore beside it are deliberately NOT in
+// git. They must be backed up: lose them and no future build can ever update
+// an installed SanctiWalk again.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// The version comes from package.json, so the web app and the APK can never
+// disagree about which release this is. versionCode has to be an integer that
+// only ever increases, which is what the in-app update check compares.
+def packageJson = new groovy.json.JsonSlurper().parse(rootProject.file('../package.json'))
+def semver = (packageJson.version ?: '1.0.0').toString().tokenize('.')
+def appVersionName = semver.join('.')
+def appVersionCode = semver[0].toInteger() * 10000 + semver[1].toInteger() * 100 + semver[2].toInteger()
+
 android {
     namespace = "ph.edu.sti.sanctiwalk"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +32,8 @@ android {
         applicationId "ph.edu.sti.sanctiwalk"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +41,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Left off deliberately. The app is a WebView around a built web
+            // bundle; there is almost no Java to shrink, and R8 has broken
+            // Capacitor plugin reflection here before. The APK is the same
+            // size either way.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
