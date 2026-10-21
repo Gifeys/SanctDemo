@@ -1886,6 +1886,20 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   padding-bottom: 0;
 }
 
+/* Home takes its clearance from the sheet instead of the scroller.
+
+   The same 56px, one layer lower. On the scroller the gap showed the
+   shell underneath it - a near-white that is not the parish tint the
+   sheet ends on - so it read as a white band ruled across the bottom
+   of the page. Moved onto the sheet, the sheet's own colour simply
+   continues down to the bar and there is nothing to see. */
+.app-scroll[data-tab=home] {
+  padding-bottom: 0;
+}
+.app-scroll[data-tab=home] .home-sheet {
+  padding-bottom: 56px;
+}
+
 .app-scroll,
 .scroll-safe {
   /* Clearance for BOTH floating things at the bottom of the app.
@@ -3691,6 +3705,22 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* The stand-in for a parish whose photographs have not been collected.
+   The mark on the parish tint, centred and small, rather than a photo
+   cropped to fill - it should read as a placeholder, not as a picture
+   of something. */
+.bulletin-section__photo--mark {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--parish-ink, #1B2A6B) 6%, var(--parish-tint, #EEF3FC));
+}
+.bulletin-section__photo--mark img {
+  width: 44%;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.5;
 }
 
 .bulletin-section__scrim {

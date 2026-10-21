@@ -181,7 +181,7 @@ export default function Dashboard({
         <div key={section} className="home-panel">
         {section === "ministries" && (
           <section className="home-section">
-            <MinistrySacramentPair language={language} onNavigate={onNavigate} />
+            <MinistrySacramentPair language={language} onNavigate={onNavigate} parishId={parish.id} />
           </section>
         )}
 

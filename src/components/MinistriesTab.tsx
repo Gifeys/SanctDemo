@@ -44,8 +44,25 @@ interface MinistriesTabProps {
  */
 const PLACEHOLDER_MINISTRY = "/parish/placeholder-photo.svg";
 
+/**
+ * The parishes whose own ministry photographs we actually hold.
+ *
+ * MINISTRY_IMAGES came out of Mary Help of Christians' PDF - its
+ * altar servers, its choirs, its lectors. Keyed by ministry id alone,
+ * they were shown to every parish, so San Roque's page carried
+ * photographs of another parish's people. The ministry ids are shared
+ * between parishes; the congregations in the pictures are not.
+ */
+const PARISHES_WITH_OWN_PHOTOS = new Set(["route-mhcp"]);
+
 export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn, openRequest }: MinistriesTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
+
+  // A photograph only when it is this parish's own.
+  const photoFor = (ministryId: string) =>
+    PARISHES_WITH_OWN_PHOTOS.has(parish.id)
+      ? MINISTRY_IMAGES[ministryId] ?? PLACEHOLDER_MINISTRY
+      : PLACEHOLDER_MINISTRY;
 
   // Which ministries this parish is currently taking applications for.
   // Parish-scoped, not global: the choir may be full at Mary Help and
@@ -233,7 +250,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                 >
                   <span className="ministry-card__media">
                     <img
-                      src={MINISTRY_IMAGES[min.id] ?? PLACEHOLDER_MINISTRY}
+                      src={photoFor(min.id)}
                       alt=""
                       loading="lazy"
                       onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_MINISTRY; }}
@@ -276,7 +293,7 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                 >
                   <div className="ministry-hero">
                     <img
-                      src={MINISTRY_IMAGES[min.id] ?? PLACEHOLDER_MINISTRY}
+                      src={photoFor(min.id)}
                       alt=""
                       onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_MINISTRY; }}
                     />
