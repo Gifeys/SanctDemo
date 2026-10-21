@@ -120,3 +120,80 @@ export function sundayMassCard(
 export function dayOfMonth(date: Date): string {
   return String(date.getDate()).padStart(2, '0')
 }
+
+/** One day of the week ahead, with the date it falls on. */
+export interface MassDay {
+  /** "Monday" — as the parish wrote it. */
+  day: string
+  date: Date
+  times: MassTime[]
+  /** The parish's own note for this day, if they wrote one. */
+  note?: string
+  /** True for the day the pilgrim is actually standing in. */
+  isToday: boolean
+}
+
+const DAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+]
+
+/**
+ * The next seven days, today first.
+ *
+ * ## Why the card needed this
+ *
+ * The Mass card showed the anticipated Mass and Sunday, and nothing
+ * else. Every parish in the data also lists weekday Masses - Mary Help
+ * has one every morning and an evening Mass from Wednesday - and none
+ * of them appeared anywhere in the app. Somebody looking for Tuesday's
+ * 6:00 AM was told, in effect, that it did not exist.
+ *
+ * ## Why it starts today rather than on Monday
+ *
+ * A calendar week is an administrator's unit. A pilgrim's question is
+ * "when is the next Mass I can get to", and the answer is almost always
+ * today or tomorrow. Starting on Monday buries today's remaining Masses
+ * four rows down on a Thursday.
+ *
+ * ## Why days with no Mass are kept
+ *
+ * A parish with no Monday Mass is answering the question. Dropping the
+ * row leaves the reader to notice an absence between Sunday and
+ * Tuesday, which is the kind of thing people get wrong when they are
+ * deciding whether to leave the house.
+ */
+export function weekAhead(schedule: MassScheduleEntry[], now: Date): MassDay[] {
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+
+  const days: MassDay[] = []
+
+  for (let offset = 0; offset < 7; offset++) {
+    const date = new Date(start)
+    date.setDate(date.getDate() + offset)
+
+    const name = DAY_NAMES[date.getDay()]
+    const entry = schedule.find(e => e.day === name)
+
+    days.push({
+      day: name,
+      date,
+      times: entry
+        ? parseTimes(entry.time).map(time => ({
+            time,
+            available: isTimeAvailable(entry, time),
+          }))
+        : [],
+      ...(entry?.note ? { note: entry.note } : {}),
+      isToday: offset === 0,
+    })
+  }
+
+  return days
+}

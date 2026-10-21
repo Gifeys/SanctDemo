@@ -29,10 +29,36 @@
  * device, a network or a Firestore.
  */
 
+/**
+ * One day of the stored schedule.
+ *
+ * `time` is a COMMA-SEPARATED STRING, not an array, because that is
+ * what MassScheduleEntry in lib/schedule actually holds and what the
+ * admin writes to Firestore.
+ *
+ * This type used to declare `times?: string[]`, which no caller ever
+ * supplied. The field was therefore always undefined, every day
+ * fingerprinted as "sunday|", and the fingerprint encoded nothing but
+ * the LIST OF DAY NAMES - so moving a Mass, adding one, or suspending
+ * one all produced an identical fingerprint and no notification was
+ * ever sent for any of them. The tests passed because they were
+ * written against this same wrong shape.
+ */
 export interface MassEntryLike {
   day?: string
-  times?: string[]
+  /** "6:00 AM, 9:00 AM" */
+  time?: string
+  /** Times the parish has suspended. Exact matches against `time`. */
+  unavailableTimes?: string[]
   note?: string
+}
+
+/** Splits a stored "6:00 AM, 9:00 AM" into its parts, normalised. */
+function partsOf(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean)
 }
 
 export type MassChange = 'none' | 'first-seen' | 'updated' | 'unavailable' | 'restored'
@@ -54,10 +80,69 @@ export function massFingerprint(schedule: MassEntryLike[] | null | undefined): s
   if (!Array.isArray(schedule) || schedule.length === 0) return null
   const parts = schedule.map(e => {
     const day = (e.day ?? '').trim().toLowerCase()
-    const times = (e.times ?? []).map(t => t.trim().toLowerCase()).join(',')
-    return `${day}|${times}`
+    const times = partsOf(e.time).join(',')
+    // Suspensions belong in the fingerprint. A parish calling off this
+    // Sunday's 6:00 AM has not changed a single time in `time`, so
+    // without this the schedule looks untouched and the one person who
+    // most needs telling - the one who goes at six - is told nothing.
+    const off = (e.unavailableTimes ?? [])
+      .map(t => t.trim().toLowerCase())
+      .filter(Boolean)
+      .sort()
+      .join(',')
+    return `${day}|${times}|${off}`
   })
   return parts.join(';')
+}
+
+/** One suspended or restored Mass, for the wording below. */
+export interface MassMoved {
+  day: string
+  time: string
+}
+
+/**
+ * Which Masses were called off, and which came back.
+ *
+ * Read back out of the two fingerprints rather than the schedules
+ * themselves, because the fingerprint is the only thing kept between
+ * runs. That is also why its shape above is parseable.
+ */
+export function massDiff(
+  previous: string | null,
+  current: string | null,
+): { suspended: MassMoved[]; restored: MassMoved[] } {
+  const none = { suspended: [], restored: [] }
+  if (!previous || !current || previous === 'UNAVAILABLE') return none
+
+  const read = (fp: string): Map<string, Set<string>> => {
+    const map = new Map<string, Set<string>>()
+    for (const part of fp.split(';')) {
+      const [day = '', , off = ''] = part.split('|')
+      map.set(day, new Set(off.split(',').filter(Boolean)))
+    }
+    return map
+  }
+
+  const before = read(previous)
+  const after = read(current)
+
+  const suspended: MassMoved[] = []
+  const restored: MassMoved[] = []
+
+  for (const [day, nowOff] of after) {
+    const wasOff = before.get(day) ?? new Set<string>()
+    for (const time of nowOff) if (!wasOff.has(time)) suspended.push({ day, time })
+    for (const time of wasOff) if (!nowOff.has(time)) restored.push({ day, time })
+  }
+
+  return { suspended, restored }
+}
+
+/** "sunday" + "6:00 am" -> "6:00 AM Sunday". */
+function spoken({ day, time }: MassMoved): string {
+  const Day = day.charAt(0).toUpperCase() + day.slice(1)
+  return `${time.toUpperCase()} ${Day}`
 }
 
 /**
@@ -90,13 +175,58 @@ export interface MassNotice {
 }
 
 /** The words for a change, or null when there is nothing to say. */
-export function massNotice(change: MassChange, parishName: string): MassNotice | null {
+export function massNotice(
+  change: MassChange,
+  parishName: string,
+  /**
+   * What exactly moved, from massDiff.
+   *
+   * Optional, and the generic wording below is used without it. With
+   * it the notice can name the Mass, which is the difference between
+   * something the reader must open the app to act on and something
+   * they can act on from the lock screen: "the 6:00 AM Sunday Mass is
+   * suspended" either does or does not concern you, and you know
+   * which without tapping anything.
+   */
+  moved?: { suspended: MassMoved[]; restored: MassMoved[] },
+): MassNotice | null {
   switch (change) {
-    case 'updated':
+    case 'updated': {
+      const suspended = moved?.suspended ?? []
+      const restored = moved?.restored ?? []
+
+      if (suspended.length === 1 && restored.length === 0) {
+        return {
+          title: `${spoken(suspended[0])} Mass is suspended`,
+          body: `${parishName} has called off the ${spoken(suspended[0])} Mass. The rest of the schedule is unchanged.`,
+        }
+      }
+      if (suspended.length > 1 && restored.length === 0) {
+        return {
+          title: `${suspended.length} Masses suspended`,
+          body: `${parishName} has called off ${suspended.map(spoken).join(', ')}.`,
+        }
+      }
+      if (restored.length === 1 && suspended.length === 0) {
+        return {
+          title: `${spoken(restored[0])} Mass is back`,
+          body: `${parishName} is celebrating the ${spoken(restored[0])} Mass again.`,
+        }
+      }
+      if (restored.length > 1 && suspended.length === 0) {
+        return {
+          title: `${restored.length} Masses are back`,
+          body: `${parishName} is celebrating ${restored.map(spoken).join(', ')} again.`,
+        }
+      }
+
+      // Times themselves moved, or both happened at once. Nothing
+      // short and true can be said, so it says the true vague thing.
       return {
         title: 'Mass schedule updated',
         body: `${parishName} has changed its Mass times. Open SanctiWalk to see the new schedule.`,
       }
+    }
     case 'unavailable':
       return {
         title: 'Mass schedule unavailable',

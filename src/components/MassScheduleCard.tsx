@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { AlertTriangle, ChevronUp, Clock } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronUp, Clock } from "lucide-react";
 import { MASS_SCHEDULES } from "../data";
 import { liturgicalDay } from "../lib/liturgical";
-import { dayOfMonth, sundayMassCard, type MassTime } from "../lib/sundayMasses";
+import {
+  dayOfMonth,
+  sundayMassCard,
+  weekAhead,
+  type MassDay,
+  type MassTime,
+} from "../lib/sundayMasses";
 import { useParishContent } from "../lib/useParishContent";
 import WatchBell from "./WatchBell";
 
@@ -31,6 +37,7 @@ export default function MassScheduleCard({
   now,
 }: MassScheduleCardProps) {
   const [expanded, setExpanded] = useState(true);
+  const [showWeek, setShowWeek] = useState(false);
 
   const managed = useParishContent(routeId);
   const compiled = MASS_SCHEDULES[routeId];
@@ -45,6 +52,9 @@ export default function MassScheduleCard({
   const today = liturgicalDay(now);
 
   const hasAnything = card.anticipated !== null || card.sunday.times.length > 0;
+
+  // Every day of the coming week, today first.
+  const week = weekAhead(schedule, now);
 
   // Any Mass the parish has marked off this week.
   const suspended =
@@ -132,6 +142,36 @@ export default function MassScheduleCard({
                     date={card.sunday.date}
                   />
                 )}
+
+                {/* The rest of the week.
+                    The card showed the anticipated Mass and Sunday and
+                    nothing else, while every parish also holds weekday
+                    Masses - so somebody looking for Tuesday's 6:00 AM
+                    was told in effect that it did not exist. It is
+                    folded away rather than listed, because Sunday is
+                    what most people open this for. */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowWeek(v => !v)}
+                    aria-expanded={showWeek}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-black/20 px-3 py-2.5 text-[14px] font-bold text-white/90"
+                  >
+                    <CalendarDays className="w-4 h-4" aria-hidden />
+                    {showWeek ? "Hide the full schedule" : "See the full schedule"}
+                  </button>
+
+                  {showWeek && (
+                    <div className="mt-3 space-y-3 border-t border-white/20 pt-3">
+                      <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white/70">
+                        The week ahead
+                      </p>
+                      {week.map(day => (
+                        <WeekRow key={day.date.toISOString()} day={day} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -205,6 +245,64 @@ function MassRow({ label, times, date }: { label: string; times: MassTime[]; dat
           {date.toLocaleDateString("en-US", { month: "short" })}
         </p>
         <p className="text-[30px] font-black leading-none tabular-nums">{dayOfMonth(date)}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One day of the week ahead.
+ *
+ * Laid out flat rather than as the two-column grid the Sunday row
+ * uses: a weekday usually has one or two Masses, and a grid built for
+ * six leaves a hole beside every one of them.
+ *
+ * A day with no Mass says so. Leaving the row out would make the
+ * reader notice an absence between Sunday and Tuesday, which is
+ * exactly the kind of thing people get wrong when deciding whether to
+ * leave the house.
+ */
+function WeekRow({ day }: { day: MassDay }) {
+  return (
+    <div className={`flex items-start gap-3 ${day.isToday ? "" : "opacity-95"}`}>
+      <div className="w-[88px] shrink-0">
+        <p className="text-[14px] font-bold leading-tight">
+          {day.isToday ? "Today" : day.day}
+        </p>
+        <p className="text-[12px] font-semibold uppercase tracking-wider text-white/60">
+          {day.date.toLocaleDateString("en-US", { month: "short" })} {dayOfMonth(day.date)}
+        </p>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        {day.times.length === 0 ? (
+          <p className="text-[14px] text-white/55">No Mass</p>
+        ) : (
+          <ul className="flex flex-wrap gap-x-3 gap-y-1">
+            {day.times.map(({ time, available }) => (
+              <li
+                key={time}
+                className={`flex items-center gap-1.5 text-[15px] ${
+                  available ? "text-white/95" : "text-white/55"
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5 shrink-0 opacity-70" aria-hidden />
+                <span className={`tabular-nums${available ? "" : " line-through"}`}>
+                  {time}
+                </span>
+                {!available && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider">
+                    Off
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {day.note && (
+          <p className="mt-1 text-[13px] leading-snug text-white/70">{day.note}</p>
+        )}
       </div>
     </div>
   );

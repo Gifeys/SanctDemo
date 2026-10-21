@@ -16,6 +16,7 @@ import { notifyNow, permissionState } from './deviceNotifications'
 import { watchParishContent } from './parishContent'
 import {
   classifyMassChange,
+  massDiff,
   massFingerprint,
   massFingerprintKey,
   massNotice,
@@ -67,7 +68,9 @@ export function useMassScheduleNotice(
       // be told about it again on the next snapshot.
       writeSeen(parishId, nextStoredFingerprint(current))
 
-      const notice = massNotice(change, name.current)
+      // What moved, so the notice can name the Mass rather than
+      // saying only that something changed.
+      const notice = massNotice(change, name.current, massDiff(previous, current))
       if (!notice) return
 
       void (async () => {
