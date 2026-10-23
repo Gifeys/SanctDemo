@@ -415,5 +415,57 @@
   }
 })();
 </script>
+
+<script>
+/* Counts a download, then gets out of the way.
+
+   This page is plain HTML with no Firebase SDK and no session, so the
+   row goes straight to Firestore's REST endpoint. The rule for
+   pageEvents accepts exactly these three fields from an anonymous
+   caller and nothing else - see firestore.rules.
+
+   sendBeacon, so the request survives the navigation that starts the
+   download, and nothing is awaited: the file must start downloading
+   whether or not the counter works. The web config below is public by
+   design; it identifies the project, it does not authorise anything
+   the rules do not already allow. */
+(function () {
+  var PROJECT = "sanctiwalk-49bfd";
+  var KEY = "AIzaSyAsivkY-pp-YelObNCj_m0UUCae8DDYCdo";
+  var URL_ = "https://firestore.googleapis.com/v1/projects/" + PROJECT +
+             "/databases/(default)/documents/pageEvents?key=" + KEY;
+
+  function visitor() {
+    try {
+      var id = localStorage.getItem("sanctiwalk.visitor");
+      if (id) return id;
+      var b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      id = Array.prototype.map.call(b, function (x) {
+        return ("0" + x.toString(16)).slice(-2);
+      }).join("");
+      localStorage.setItem("sanctiwalk.visitor", id);
+      return id;
+    } catch (e) {
+      return String(Date.now()) + Math.random().toString(16).slice(2, 10);
+    }
+  }
+
+  var link = document.getElementById("apk");
+  if (!link) return;
+  link.addEventListener("click", function () {
+    try {
+      var body = JSON.stringify({
+        fields: {
+          kind: { stringValue: "download" },
+          visitorId: { stringValue: visitor() },
+          createdAt: { timestampValue: new Date().toISOString() }
+        }
+      });
+      navigator.sendBeacon(URL_, new Blob([body], { type: "application/json" }));
+    } catch (e) { /* the download matters, the tally does not */ }
+  });
+})();
+</script>
 </body>
 </html>

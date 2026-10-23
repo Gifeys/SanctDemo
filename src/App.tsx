@@ -58,6 +58,7 @@ import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 import UpdateBanner from "./components/UpdateBanner";
+import { recordPageEvent } from "./lib/recordPageEvent";
 import { useMassScheduleNotice } from "./lib/useMassScheduleNotice";
 import { useOpeningNotices } from "./lib/useOpeningNotices";
 import { useParishContent } from "./lib/useParishContent";
@@ -760,6 +761,13 @@ export default function App() {
     ROUTES.find(r => r.id === ownParishId)?.name.replace(" Guide", "").replace(" Tour", "")
       ?? "Your parish",
   );
+
+  // One line in the parish office's figures: somebody opened it.
+  // Deduped to once per browser per half hour inside recordPageEvent,
+  // because a reload is not a person arriving.
+  useEffect(() => {
+    void recordPageEvent("open");
+  }, []);
 
   // And the same for anything a pilgrim has put a bell on. A ministry
   // that opens for a fortnight a year is the case this exists for:

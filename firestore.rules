@@ -278,6 +278,51 @@ service cloud.firestore {
     //
     // Nothing may edit or delete a visit. An admin who could rewrite
     // them could manufacture a parish's attendance.
+    /**
+     * Page opens and downloads. See lib/pageEvents.
+     *
+     * The only collection in this database an UNAUTHENTICATED caller
+     * may write to, and it is on purpose: most people who open
+     * SanctiWalk never sign in, and the download page is plain HTML
+     * with no session at all. A count that only saw signed-in visitors
+     * would answer a different question from the one asked.
+     *
+     * So it is locked down by shape instead of by identity. Three
+     * fields and no others, a kind from a fixed pair, a visitor token
+     * of bounded length, and the SERVER's timestamp - a caller cannot
+     * backdate a row, cannot attach anything to it, and cannot write a
+     * field that was not designed for. Nothing here identifies a
+     * person, so a forged row costs an inaccurate tally and nothing
+     * else.
+     *
+     * Nobody reads it but a parish admin, and no one may ever change
+     * or delete a row: a tally that can be edited is not a record.
+     */
+    match /pageEvents/{eventId} {
+      allow create: if request.resource.data.keys().hasOnly(['kind', 'visitorId', 'createdAt'])
+        && request.resource.data.kind in ['open', 'download']
+        && request.resource.data.visitorId is string
+        && request.resource.data.visitorId.size() >= 8
+        && request.resource.data.visitorId.size() <= 64
+        // A window rather than an exact match on request.time.
+        //
+        // The app writes this with the SDK's serverTimestamp, which
+        // resolves to request.time exactly. The download page cannot:
+        // it is plain HTML posting to the REST endpoint, where the only
+        // timestamp available is the browser's own. Demanding equality
+        // would have silently rejected every download - the one event
+        // the parish asked for most.
+        //
+        // Five minutes either way still makes a row impossible to file
+        // into last month, which is the thing worth preventing.
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt > request.time - duration.value(5, 'm')
+        && request.resource.data.createdAt < request.time + duration.value(5, 'm');
+
+      allow read: if isSignedIn() && myRole() == 'church_admin';
+      allow update, delete: if false;
+    }
+
     match /visits/{visitId} {
       allow create: if isSignedIn()
         && request.resource.data.uid == request.auth.uid

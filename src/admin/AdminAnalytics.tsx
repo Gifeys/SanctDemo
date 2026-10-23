@@ -14,6 +14,9 @@ import {
   ACTIVE_WINDOW_MS, countActive, summariseVisits,
   type VisitDoc, type VisitSummary,
 } from "../lib/visits";
+import {
+  summarisePageEvents, type PageEvent, type PageEventTotals,
+} from "../lib/pageEvents";
 
 /**
  * What the parish's visitors did, as opposed to what they asked for.
@@ -140,6 +143,8 @@ export default function AdminAnalytics({ session }: { session: AdminSession }) {
             {error}
           </p>
         )}
+
+        <ReachPanel />
 
         {summary === null && (
           <div className="py-12 text-center">
@@ -428,5 +433,90 @@ function Rows({ data }: { data: Datum[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+
+/**
+ * How many found the app at all, and how many took it away.
+ *
+ * Separate from the visit figures above it because it answers a
+ * different question: those are about people inside a church, these
+ * are about everyone who opened SanctiWalk anywhere. Most of them
+ * never sign in and are not standing near a parish, so they appear in
+ * nothing else on this page.
+ *
+ * Counts, not names. The same decision as the rest of this screen:
+ * "how many downloaded it" and "who downloaded it" are different
+ * questions and only the first is answered here. There is nothing in
+ * the record that reaches a person.
+ */
+function ReachPanel() {
+  const [totals, setTotals] = useState<PageEventTotals | null>(null);
+  const [since, setSince] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stop = onSnapshot(
+      collection(db, "pageEvents"),
+      snap => {
+        const rows: PageEvent[] = [];
+        let earliest: number | null = null;
+        snap.forEach(doc => {
+          const d = doc.data() as {
+            kind?: string;
+            visitorId?: string;
+            createdAt?: { toDate?: () => Date };
+          };
+          const when = d.createdAt?.toDate?.();
+          if (!when) return;
+          if (earliest === null || when.getTime() < earliest) earliest = when.getTime();
+          if (d.kind !== "open" && d.kind !== "download") return;
+          rows.push({ kind: d.kind, visitorId: d.visitorId ?? "", at: when.toISOString() });
+        });
+        setTotals(summarisePageEvents(rows));
+        setSince(earliest === null ? null : new Date(earliest).toLocaleDateString());
+      },
+      () => setTotals(null),
+    );
+    return stop;
+  }, []);
+
+  if (totals === null) return null;
+
+  return (
+    <section className="mb-5">
+      <h2 className="text-[18px] font-bold text-[var(--color-brand-text)]">
+        Reach
+      </h2>
+      <p className="text-[14px] leading-snug text-[var(--color-brand-secondary)]">
+        {since
+          ? `Everyone who opened SanctiWalk or downloaded it, counted since ${since}.`
+          : "Everyone who opened SanctiWalk or downloaded it."}{" "}
+        Nobody is named.
+      </p>
+
+      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Figure
+          label="Opened the app"
+          value={totals.opens}
+          hint="Every time somebody opened SanctiWalk, on the web or on a phone."
+        />
+        <Figure
+          label="Different people"
+          value={totals.people}
+          hint="Distinct browsers. Forty opens from four people is not forty people."
+        />
+        <Figure
+          label="Downloads"
+          value={totals.downloads}
+          hint="Taps on Download for Android. Downloading twice usually means the first one failed."
+        />
+        <Figure
+          label="Different downloaders"
+          value={totals.downloaders}
+          hint="Distinct browsers that downloaded it at least once."
+        />
+      </div>
+    </section>
   );
 }
