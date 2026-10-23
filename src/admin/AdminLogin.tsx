@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Loader2, Mail, ShieldCheck } from "lucide-react";
-import { signIn, sendSecondFactorLink, resetPassword, AuthError } from "../lib/authFlow";
+import { signIn, sendSecondFactorLink, AuthError } from "../lib/authFlow";
 
 /**
  * Parish office sign-in.
@@ -88,19 +88,16 @@ export default function AdminLogin() {
           {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</> : <><Mail className="w-4 h-4" /> Continue</>}
         </button>
 
-        <button
-          type="button"
-          onClick={async () => {
-            if (!email.trim()) { setError("Enter your email address first."); return; }
-            await resetPassword(email.trim());
-            // Deliberately the same message whether or not the address is
-            // registered: anything else is a way to enumerate accounts.
-            setNotice("If an account exists for that address, a reset link is on its way.");
-          }}
-          className="w-full py-2 text-[14px] font-semibold text-[var(--color-brand-secondary)]"
-        >
-          Forgot your password?
-        </button>
+        {/* Not a self-service reset.
+            A parish office account is handed out by whoever runs
+            SanctiWalk for the diocese, and getting back into one is
+            their decision rather than something an email link should
+            settle. Saying so is also more honest than a button that
+            sends a message to an inbox the secretary may not have. */}
+        <p className="w-full pt-2 text-[13px] leading-snug text-[var(--color-brand-muted)]">
+          Forgot your password? Contact the SanctiWalk administrator to have it
+          reset.
+        </p>
       </form>
     </Card>
   );

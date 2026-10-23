@@ -39,8 +39,13 @@ const ITEMS: NavItem[] = [
     match: "/parish-office-gav8thhe/applications",
   },
   {
-    to: "/parish-office-gav8thhe/availability",
-    label: "Open & closed",
+    to: "/parish-office-gav8thhe/ministries",
+    label: "Ministries",
+    icon: <BookOpen className="w-4 h-4" />,
+  },
+  {
+    to: "/parish-office-gav8thhe/sacraments",
+    label: "Sacraments",
     icon: <ToggleLeft className="w-4 h-4" />,
   },
   {
@@ -54,24 +59,9 @@ const ITEMS: NavItem[] = [
     icon: <Church className="w-4 h-4" />,
   },
   {
-    to: "/parish-office-gav8thhe/announcements/feasts",
-    label: "Feast Days",
-    icon: <PartyPopper className="w-4 h-4" />,
-  },
-  {
-    to: "/parish-office-gav8thhe/announcements/events",
-    label: "Events",
-    icon: <CalendarDays className="w-4 h-4" />,
-  },
-  {
     to: "/parish-office-gav8thhe/analytics",
     label: "Visitor activity",
     icon: <BarChart3 className="w-4 h-4" />,
-  },
-  {
-    to: "/parish-office-gav8thhe/content",
-    label: "What people read",
-    icon: <BookOpen className="w-4 h-4" />,
   },
   {
     to: "/parish-office-gav8thhe/applications/archive",

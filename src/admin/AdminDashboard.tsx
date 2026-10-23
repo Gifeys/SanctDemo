@@ -4,7 +4,6 @@ import { Loader2, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../lib/firebase";
 import StatusBadge from "./StatusBadge";
-import AdminNav from "./AdminNav";
 import { signOutNow } from "../lib/authFlow";
 import type { AdminSession } from "./AdminApp";
 import { isArchived } from "../lib/applicationFilters";
@@ -113,7 +112,12 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
             below is for moving around once you know the place. */}
         <AdminTiles parishName={session.church?.name ?? "Parish"} />
 
-        <AdminNav />
+        {/* No pill row here.
+
+            Every pill on it is a tile directly above it, so on this one
+            page it says everything twice. It stays on every OTHER page,
+            where there are no tiles and it is the only way to move
+            between sections. */}
 
         {error && (
           <p role="alert" className="mb-4 rounded-2xl bg-[#FBE9E4] border border-[#E7C3B8] px-4 py-3 text-[15px] text-[var(--color-brand-error)]">

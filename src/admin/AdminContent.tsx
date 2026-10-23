@@ -133,8 +133,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Item({
+export function Item({
   id, name, kind, edited, open, busy, saved, current, existing, onToggle, onSave,
+  availability,
 }: {
   id: string;
   name: string;
@@ -147,6 +148,16 @@ function Item({
   existing: ItemContent;
   onToggle: () => void;
   onSave: (patch: ItemContent) => void;
+  /**
+   * The "accepting applications" switch, when the page wants one.
+   *
+   * Editing what a ministry says and deciding whether anybody can join
+   * it used to be two separate pages, so a secretary closing the choir
+   * had to find one screen, and correcting its description another.
+   * They are the same thought about the same ministry, so the switch
+   * rides along with the row. Left out where a page only edits.
+   */
+  availability?: React.ReactNode;
 }) {
   // Keyed off `open` by the parent remounting, so reopening a row always
   // shows what is saved rather than a half-finished edit from earlier.
@@ -160,11 +171,15 @@ function Item({
 
   return (
     <li>
+      {/* The switch sits BESIDE the expander, not inside it: one button
+          cannot contain another, and a switch that also opened the
+          editor would make closing a ministry a two-step accident. */}
+      <div className="flex items-center">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="w-full flex items-center gap-3 p-4 text-left"
+        className="min-w-0 flex-1 flex items-center gap-3 p-4 text-left"
       >
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-bold leading-snug text-[var(--color-brand-text)]">
@@ -181,6 +196,9 @@ function Item({
         )}
         <ChevronDown className={`w-5 h-5 shrink-0 text-[var(--color-brand-secondary)] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+
+      {availability && <div className="shrink-0 pr-4">{availability}</div>}
+      </div>
 
       {open && (
         <div className="px-4 pb-5 space-y-4">

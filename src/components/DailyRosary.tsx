@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 
+import { Capacitor } from "@capacitor/core";
+import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+
 import { speakAloud, stopAloud } from "../lib/speech";
 
 // The client's own hand-built rosary app is mounted here as-is, via iframe,
@@ -79,6 +82,32 @@ export default function DailyRosary() {
         // Resolves when the voice stops, so this is the moment the page
         // can light its next bead rather than guess at a duration.
         reply({ type: "spoke-end" });
+        return;
+      }
+
+      // ---- listening, for the same reason as speaking -----------------
+      //
+      // The Rosary follows along as you pray through the Web Speech API's
+      // SpeechRecognition. That exists in desktop Chrome and does not
+      // exist at all in the Android WebView - window.SpeechRecognition and
+      // window.webkitSpeechRecognition are both undefined there - so on
+      // the phone the page simply never heard anything. It is the same
+      // gap as the voice, in the other direction, and it has the same
+      // answer: the app around it has a native recogniser and lends it.
+
+      if (data.type === "listen-available") {
+        reply({ type: "listen-availability", available: await listenAvailable() });
+        return;
+      }
+
+      if (data.type === "listen-start") {
+        await startListening(data.lang === "fil" ? "fil" : "en", reply);
+        return;
+      }
+
+      if (data.type === "listen-stop") {
+        await stopListening();
+        return;
       }
     }
 
@@ -96,10 +125,79 @@ export default function DailyRosary() {
         ref={frame}
         src="/rosary/index.html"
         title="Holy Rosary"
+        /* Without this the WebView refuses getUserMedia inside the
+           frame, which also kills the loudness glow that lights the
+           bead even where recognition is unavailable. */
+        allow="microphone"
         onLoad={announce}
         style={{ border: 0 }}
         className="flex-1 w-full h-full"
       />
     </div>
   );
+}
+
+/** Native recognition, where there is any. */
+async function listenAvailable(): Promise<boolean> {
+  try {
+    if (!Capacitor.isNativePlatform()) return false;
+    const { available } = await SpeechRecognition.available();
+    if (!available) return false;
+    const perm = await SpeechRecognition.checkPermissions();
+    if (perm.speechRecognition !== "granted") {
+      const asked = await SpeechRecognition.requestPermissions();
+      if (asked.speechRecognition !== "granted") return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let listening = false;
+
+async function stopListening(): Promise<void> {
+  if (!listening) return;
+  listening = false;
+  try {
+    await SpeechRecognition.removeAllListeners();
+    await SpeechRecognition.stop();
+  } catch {
+    /* nothing was listening; stopping silence is not an error */
+  }
+}
+
+/**
+ * Listens and relays what it hears, phrase by phrase.
+ *
+ * partialResults, because the Rosary matches continuously as somebody
+ * prays rather than waiting for them to finish a decade. popup is off:
+ * Android's own dialog would cover the prayer the pilgrim is reading.
+ */
+async function startListening(
+  language: "fil" | "en",
+  reply: (m: Record<string, unknown>) => void,
+): Promise<void> {
+  if (!(await listenAvailable())) {
+    reply({ type: "listen-availability", available: false });
+    return;
+  }
+  await stopListening();
+  listening = true;
+
+  try {
+    await SpeechRecognition.addListener("partialResults", (result: { matches?: string[] }) => {
+      const heard = result?.matches?.[0];
+      if (heard) reply({ type: "heard", text: heard });
+    });
+    await SpeechRecognition.start({
+      language: language === "fil" ? "fil-PH" : "en-US",
+      maxResults: 1,
+      partialResults: true,
+      popup: false,
+    });
+  } catch {
+    listening = false;
+    reply({ type: "listen-availability", available: false });
+  }
 }

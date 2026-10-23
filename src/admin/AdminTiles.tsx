@@ -59,38 +59,32 @@ const TILES: TileDef[] = [
     ribbon: "Parish",
   },
   {
-    to: "/parish-office-gav8thhe/content",
-    label: "What People Read",
-    icon: <BookOpen />,
-    keywords: "content history description ministries sacraments requirements text kasaysayan nilalaman",
-    ribbon: "Parish",
-  },
-  {
     to: "/parish-office-gav8thhe/announcements",
     label: "Announcements",
     icon: <Megaphone />,
-    keywords: "announcements bulletin notice post patalastas abiso",
+    keywords: "announcements bulletin notice post feast days events calendar patalastas abiso kapistahan pista kaganapan",
+    ribbon: "Parish",
+  },
+  // Ministries and Sacraments replace three tiles: "What People Read",
+  // which edited the descriptions of both, and "Open & Closed", which
+  // switched applications for both. Those were two screens describing
+  // one thing, so the parish had to visit both to finish a job.
+  //
+  // Feast Days and Events are gone from here too. They are boards on
+  // the Announcements page, reachable from it, and three tiles for one
+  // page is three places to look for the same thing.
+  {
+    to: "/parish-office-gav8thhe/ministries",
+    label: "Ministries",
+    icon: <BookOpen />,
+    keywords: "ministries ministry open closed accepting applications description requirements choir lector ministeryo",
     ribbon: "Parish",
   },
   {
-    to: "/parish-office-gav8thhe/announcements/feasts",
-    label: "Feast Days",
-    icon: <PartyPopper />,
-    keywords: "feast days patron titular celebration kapistahan pista",
-    ribbon: "Parish",
-  },
-  {
-    to: "/parish-office-gav8thhe/announcements/events",
-    label: "Events",
-    icon: <CalendarDays />,
-    keywords: "events calendar activity fiesta kaganapan okasyon",
-    ribbon: "Parish",
-  },
-  {
-    to: "/parish-office-gav8thhe/availability",
-    label: "Open & Closed",
+    to: "/parish-office-gav8thhe/sacraments",
+    label: "Sacraments",
     icon: <ToggleLeft />,
-    keywords: "availability open closed accepting applications stop",
+    keywords: "sacraments baptism wedding confirmation open closed accepting applications binyag kasal kumpil",
     ribbon: "Parish",
   },
   {

@@ -2620,6 +2620,8 @@ const Narrator = {
     && "speechSynthesis" in window
     && typeof SpeechSynthesisUtterance === "function",
   get supported() { return this.bridge || this.web; },
+  /** The host has a native recogniser and permission for it. */
+  hostCanListen: false,
   speaking: false
 };
 
@@ -2668,8 +2670,25 @@ window.addEventListener("message", function (event) {
     // answering is the moment that stops being true, so the settings
     // panel has to be redrawn or the pilgrim never sees the switch.
     if (typeof paintSettingsPanel === "function") { try { paintSettingsPanel(); } catch (e) {} }
+    // Can it hear as well as speak? Asked once, answered asynchronously
+    // because it may have to request the microphone permission first.
+    hostPost({ type: "listen-available" });
   } else if (data.type === "spoke-end") {
     Narrator.speaking = false;
+  } else if (data.type === "listen-availability") {
+    Narrator.hostCanListen = !!data.available;
+    if (!Narrator.hostCanListen && S.voiceWanted && !SR) {
+      S.voiceWanted = false;
+      toast(P[S.lang].ui.micUnsupported);
+    }
+    syncMicButton();
+  } else if (data.type === "heard" && typeof data.text === "string") {
+    // The host's recogniser reports the same way ours does: a running
+    // transcript of the current phrase, matched continuously rather
+    // than waited out to the end of a decade.
+    S.voiceLive = true;
+    evaluate(data.text);
+    syncMicButton();
   }
 });
 
@@ -2744,7 +2763,15 @@ let rec = null, recRunning = false, wantRunning = false;
 let heardWords = [], targetWords = [], silenceTimer = null, thresholdMet = false;
 let spokenPointer = 0;      // words lit so far in this step; only ever grows
 
-function voiceSupported() { return !!SR; }
+/* Recognition, whether our own or the host's.
+ *
+ * window.SpeechRecognition and window.webkitSpeechRecognition are both
+ * undefined in the Android WebView, so SR is null there and the Rosary
+ * simply never heard anybody on a phone - the one device it is actually
+ * prayed with. The app around us has a native recogniser; Narrator.bridge
+ * already means "a SanctiWalk host answered", and the host tells us
+ * separately whether its recogniser is usable. */
+function voiceSupported() { return !!SR || Narrator.hostCanListen; }
 function langTag() { return S.lang === "tl" ? "fil-PH" : "en-US"; }
 
 function startVoice() {
@@ -2759,6 +2786,17 @@ function startVoice() {
     syncMicButton();
     return;
   }
+
+  // No recogniser of our own, but the host has one: it listens and sends
+  // back what it hears. See voiceSupported above.
+  if (!SR && Narrator.hostCanListen) {
+    wantRunning = true;
+    hostPost({ type: "listen-start", lang: S.lang === "tl" ? "fil" : "en" });
+    S.voiceLive = true;
+    syncMicButton();
+    return;
+  }
+
   wantRunning = true;
   ensureRec();
   try { if (!recRunning) rec.start(); } catch (e) { /* already starting */ }
@@ -2768,6 +2806,7 @@ function startVoice() {
 function stopVoice() {
   wantRunning = false;
   clearTimeout(silenceTimer);
+  if (!SR && Narrator.hostCanListen) hostPost({ type: "listen-stop" });
   if (rec && recRunning) { try { rec.stop(); } catch (e) {} }
   S.voiceLive = false;
   stopMeter();

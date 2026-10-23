@@ -27,15 +27,24 @@ describe("AdminTiles", () => {
     for (const label of [
       "Applications",
       "Mass Schedule",
-      "What People Read",
       "Announcements",
-      "Feast Days",
-      "Events",
-      "Open & Closed",
+      "Ministries",
+      "Sacraments",
       "Visitor Activity",
       "Archive",
     ]) {
       expect(screen.getByText(label)).toBeTruthy();
+    }
+  });
+
+  it("has no tile for the pages that were folded into others", () => {
+    // "What People Read" and "Open & Closed" each listed ministries AND
+    // sacraments, so finishing one job meant visiting both; they are now
+    // a page per kind. Feast Days and Events are boards on the
+    // Announcements page rather than destinations of their own.
+    renderBoard();
+    for (const gone of ["What People Read", "Open & Closed", "Feast Days", "Events"]) {
+      expect(screen.queryByText(gone)).toBeNull();
     }
   });
 
@@ -78,6 +87,6 @@ describe("AdminTiles", () => {
     const tiles = screen
       .getAllByRole("button")
       .filter(b => b.className.includes("admin-tile"));
-    expect(tiles).toHaveLength(9);
+    expect(tiles).toHaveLength(7);
   });
 });

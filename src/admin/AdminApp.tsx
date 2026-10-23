@@ -11,9 +11,8 @@ import AdminApplicationDetail from "./AdminApplicationDetail";
 import AdminApplications from "./AdminApplications";
 import AdminAnnouncements from "./AdminAnnouncements";
 import AdminAnalytics from "./AdminAnalytics";
-import AdminAvailability from "./AdminAvailability";
+import AdminItems from "./AdminItems";
 import AdminMassSchedule from "./AdminMassSchedule";
-import AdminContent from "./AdminContent";
 import type { Church, UserProfile } from "../types";
 
 /**
@@ -108,8 +107,17 @@ export default function AdminApp() {
           see AdminAnnouncements for why they are not three collections. */}
       <Route path="announcements/:board" element={<AdminAnnouncements session={session!} />} />
       <Route path="mass-schedule" element={<AdminMassSchedule session={session!} />} />
-      <Route path="content" element={<AdminContent session={session!} />} />
-      <Route path="availability" element={<AdminAvailability session={session!} />} />
+      {/* Ministries and Sacraments: one page each, carrying both the
+          description people read and the switch that decides whether
+          they can apply. The two pages these replaced - "What people
+          read" and "Open & Closed" - each listed both kinds, so doing
+          one afternoon's work on the choir meant visiting both. */}
+      <Route path="ministries" element={<AdminItems session={session!} kind="ministry" />} />
+      <Route path="sacraments" element={<AdminItems session={session!} kind="sacrament" />} />
+
+      {/* Old links, including anything bookmarked by the parish office. */}
+      <Route path="content" element={<Navigate to="/parish-office-gav8thhe/ministries" replace />} />
+      <Route path="availability" element={<Navigate to="/parish-office-gav8thhe/ministries" replace />} />
       <Route path="analytics" element={<AdminAnalytics session={session!} />} />
       <Route path="*" element={<Navigate to="/parish-office-gav8thhe" replace />} />
     </Routes>
