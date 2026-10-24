@@ -132,6 +132,52 @@ export interface PhotoUploadResult {
 export type ParishPhotoKind = "patron" | "history" | "mass";
 
 /**
+ * A photograph for one ministry or sacrament.
+ *
+ * Separate from ParishPhotoKind because there is one of these per ITEM,
+ * not one per parish, so the path has to carry the item id.
+ *
+ * It goes to Cloud Storage rather than into the parish document as a
+ * data URL, the way announcement banners do. An announcement is its own
+ * document and can carry its own 220 KB; every ministry and sacrament
+ * shares ONE parish document, and Firestore caps a document at 1 MiB -
+ * so inlining them would have worked for about four photographs and
+ * then started failing to save, which is the worst way for a limit to
+ * announce itself.
+ */
+export async function uploadItemPhoto(
+  parishId: string,
+  itemId: string,
+  file: File,
+): Promise<PhotoUploadResult> {
+  if (!file.type.startsWith("image/")) {
+    return { error: "That file is not an image. Choose a JPG or PNG photo." };
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return {
+      error: `That photo is ${(file.size / 1024 / 1024).toFixed(1)} MB. Please use one under 5 MB — most phones can resize when sharing.`,
+    };
+  }
+
+  try {
+    const storage = getStorage(app);
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    // One fixed path per parish per item, so re-uploading replaces
+    // rather than leaving orphans nobody will clean up.
+    const target = ref(storage, `parish-photos/items/${parishId}/${itemId}.${extension}`);
+    await uploadBytes(target, file, { contentType: file.type });
+    return { url: await getDownloadURL(target) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[parishContent] item photo upload failed:", message);
+    if (/storage\/unauthorized|permission/i.test(message)) {
+      return { error: "The photo was refused by storage. Check the Storage rules allow parish admins to write parish-photos." };
+    }
+    return { error: "That photo could not be uploaded. Check your connection and try again." };
+  }
+}
+
+/**
  * Uploads one of a parish's photographs and returns its public URL.
  *
  * Validated before the network is touched: a phone camera photo is routinely

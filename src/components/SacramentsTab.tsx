@@ -35,6 +35,14 @@ export default function SacramentsTab({
 
   // Which sacraments this parish is currently taking applications for.
   const managed = useParishContent(parish.id);
+
+  // The parish's own upload ahead of the shipped image, for the same
+  // reason as in Ministries: a secretary who has put a photograph on a
+  // sacrament has said what it should look like.
+  const photoFor = (sacramentId: string) =>
+    managed?.itemContent?.[sacramentId]?.imageUrl
+    ?? SACRAMENT_IMAGES[sacramentId]
+    ?? PLACEHOLDER_SACRAMENT;
   const { language } = useLanguage();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -134,7 +142,7 @@ export default function SacramentsTab({
               >
                 <span className="ministry-card__media">
                   <img
-                    src={SACRAMENT_IMAGES[sac.id] ?? PLACEHOLDER_SACRAMENT}
+                    src={photoFor(sac.id)}
                     alt=""
                     loading="lazy"
                     onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_SACRAMENT; }}
@@ -160,7 +168,7 @@ export default function SacramentsTab({
                 >
                   <div className="ministry-hero">
                     <img
-                      src={SACRAMENT_IMAGES[sac.id] ?? PLACEHOLDER_SACRAMENT}
+                      src={photoFor(sac.id)}
                       alt=""
                       onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_SACRAMENT; }}
                     />

@@ -128,6 +128,7 @@ export default function AdminItems({
                 key={`${item.id}-${openId === item.id}`}
                 id={item.id}
                 name={item.name}
+                churchId={churchId}
                 kind={kind}
                 edited={hasParishContent(managed, item.id)}
                 open={openId === item.id}

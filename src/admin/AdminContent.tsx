@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { uploadItemPhoto } from "../lib/parishContent";
 import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
@@ -84,6 +85,7 @@ export default function AdminContent({ session }: { session: AdminSession }) {
               key={s.id}
               id={s.id}
               name={s.name}
+              churchId={churchId}
               kind="sacrament"
               edited={hasParishContent(managed, s.id)}
               open={openId === s.id}
@@ -103,6 +105,7 @@ export default function AdminContent({ session }: { session: AdminSession }) {
               key={m.id}
               id={m.id}
               name={m.name}
+              churchId={churchId}
               kind="ministry"
               edited={hasParishContent(managed, m.id)}
               open={openId === m.id}
@@ -134,10 +137,12 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function Item({
-  id, name, kind, edited, open, busy, saved, current, existing, onToggle, onSave,
+  id, name, kind, churchId, edited, open, busy, saved, current, existing, onToggle, onSave,
   availability,
 }: {
   id: string;
+  /** Whose parish this is, for the photograph's storage path. */
+  churchId: string;
   name: string;
   kind: "ministry" | "sacrament";
   edited: boolean;
@@ -168,6 +173,9 @@ export function Item({
   const [process, setProcess] = useState(listToLines(existing.process));
   const [reminders, setReminders] = useState(listToLines(existing.reminders));
   const [contact, setContact] = useState(existing.contact ?? "");
+  const [imageUrl, setImageUrl] = useState(existing.imageUrl ?? "");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   return (
     <li>
@@ -202,6 +210,72 @@ export function Item({
 
       {open && (
         <div className="px-4 pb-5 space-y-4">
+          {/* The photograph.
+              Stored as a downscaled data URL on the parish's own record,
+              the same way an announcement banner is - a secretary has a
+              photo on their phone, not a URL. */}
+          <div>
+            <p className="text-[14px] font-bold text-[var(--color-brand-text)]">Photo</p>
+            {imageUrl ? (
+              <div className="mt-2">
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="w-full max-w-[320px] rounded-xl border border-[var(--color-brand-border)] object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[var(--color-brand-danger)]"
+                >
+                  <Trash2 className="w-4 h-4" aria-hidden />
+                  Remove photo
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-[14px] text-[var(--color-brand-secondary)]">
+                No photo yet. The app shows a placeholder until you add one.
+              </p>
+            )}
+
+            <label className="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-border)] px-4 py-2 text-[14px] font-bold text-[var(--color-brand-primary)] cursor-pointer">
+              {photoBusy
+                ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                : <ImagePlus className="w-4 h-4" aria-hidden />}
+              {imageUrl ? "Change photo" : "Add a photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={photoBusy}
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  // Cleared immediately so choosing the SAME file again
+                  // still fires a change event.
+                  e.target.value = "";
+                  if (!file) return;
+                  setPhotoBusy(true);
+                  setPhotoError(null);
+                  // To Cloud Storage, not into the document. Every
+                  // ministry and sacrament shares ONE parish record and
+                  // Firestore caps a document at 1 MiB, so inlining
+                  // photographs would work for about four of them and
+                  // then start failing to save. See uploadItemPhoto.
+                  const result = await uploadItemPhoto(churchId, id, file);
+                  if (result.url) setImageUrl(result.url);
+                  else setPhotoError(result.error ?? "That photo could not be uploaded.");
+                  setPhotoBusy(false);
+                }}
+              />
+            </label>
+
+            {photoError && (
+              <p role="alert" className="mt-1 text-[14px] font-semibold text-[var(--color-brand-danger)]">
+                {photoError}
+              </p>
+            )}
+          </div>
+
           <Box
             label="About"
             value={about}
@@ -268,6 +342,7 @@ export function Item({
             disabled={busy}
             onClick={() =>
               onSave({
+                imageUrl,
                 about,
                 requirements: linesToList(requirements),
                 schedule,

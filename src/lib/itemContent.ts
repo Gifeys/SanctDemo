@@ -45,6 +45,19 @@ export interface ItemContent {
   contact?: string;
   /** Responsibilities, for ministries. */
   responsibilities?: string[];
+  /**
+   * The parish's own photograph, as a data URL.
+   *
+   * Stored the same way an announcement's banner is, and for the same
+   * reason: a parish secretary has a photo on their phone, not a URL,
+   * and adding Cloud Storage uploads here would be a second pipeline
+   * to keep working. Downscaled and size-capped by the shared helper
+   * in lib/announcementImage before it is ever saved.
+   *
+   * Absent means "use whatever the app ships", which for most
+   * parishes is the placeholder rather than another parish's people.
+   */
+  imageUrl?: string;
 }
 
 /** The content as it should be displayed: parish's words over the app's. */

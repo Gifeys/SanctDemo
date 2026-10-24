@@ -30,6 +30,22 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // One photograph per ministry or sacrament, per parish.
+    //
+    // A separate rule because the one above matches a SINGLE path
+    // segment: parish-photos/items/route-mhcp/choir.jpg has three more,
+    // so it would have fallen through to the deny-all below and every
+    // upload would have been refused.
+    //
+    // Same guards. A client-side size check is a courtesy to the user,
+    // not a security control - anyone can post straight to the bucket.
+    match /parish-photos/items/{parishId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Nothing else is writable. An open default here would make the bucket a
     // free file host for anyone who found the project id.
     match /{allPaths=**} {

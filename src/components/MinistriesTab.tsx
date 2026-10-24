@@ -59,16 +59,20 @@ const PARISHES_WITH_OWN_PHOTOS = new Set(["route-mhcp"]);
 export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn, openRequest }: MinistriesTabProps) {
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
 
-  // A photograph only when it is this parish's own.
-  const photoFor = (ministryId: string) =>
-    PARISHES_WITH_OWN_PHOTOS.has(parish.id)
-      ? MINISTRY_IMAGES[ministryId] ?? PLACEHOLDER_MINISTRY
-      : PLACEHOLDER_MINISTRY;
-
   // Which ministries this parish is currently taking applications for.
   // Parish-scoped, not global: the choir may be full at Mary Help and
   // short-handed at San Roque, and the ministries themselves are shared.
   const managed = useParishContent(parish.id);
+
+  // A photograph only when it is this parish's own, and the parish's
+  // own upload ahead of anything compiled in: a secretary who has put
+  // a photograph on this ministry has said what it should look like,
+  // and no shipped default should override that.
+  const photoFor = (ministryId: string) =>
+    managed?.itemContent?.[ministryId]?.imageUrl
+    ?? (PARISHES_WITH_OWN_PHOTOS.has(parish.id)
+          ? MINISTRY_IMAGES[ministryId] ?? PLACEHOLDER_MINISTRY
+          : PLACEHOLDER_MINISTRY);
   const { language } = useLanguage();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);

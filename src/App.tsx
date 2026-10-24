@@ -59,6 +59,7 @@ import parishData from "./data/diocese-parishes.json";
 import { assertKnownParishIds, routeIdForParish } from "./lib/parishIds";
 import UpdateBanner from "./components/UpdateBanner";
 import { recordPageEvent } from "./lib/recordPageEvent";
+import { useAndroidBack } from "./lib/useAndroidBack";
 import { useMassScheduleNotice } from "./lib/useMassScheduleNotice";
 import { useOpeningNotices } from "./lib/useOpeningNotices";
 import { useParishContent } from "./lib/useParishContent";
@@ -760,6 +761,22 @@ export default function App() {
     ownParishId,
     ROUTES.find(r => r.id === ownParishId)?.name.replace(" Guide", "").replace(" Tour", "")
       ?? "Your parish",
+  );
+
+  // Android's Back button. Closes whatever is on top, then steps back
+  // to Home, and only minimises at the root - it used to quit the whole
+  // app on the first press, because nothing handled it at all.
+  useAndroidBack(
+    [
+      { when: tutorialOpen, close: () => setTutorialOpen(false) },
+      { when: isSearchOpen, close: () => setIsSearchOpen(false) },
+      { when: isSignInOpen, close: () => setIsSignInOpen(false) },
+      { when: isChangeParishOpen, close: () => setIsChangeParishOpen(false) },
+      { when: isRosarySettingsOpen, close: () => setIsRosarySettingsOpen(false) },
+      { when: isSimulatorOpen, close: () => setIsSimulatorOpen(false) },
+    ],
+    activeTab === "home",
+    () => setActiveTab("home"),
   );
 
   // One line in the parish office's figures: somebody opened it.
