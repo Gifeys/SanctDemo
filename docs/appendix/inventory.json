@@ -1,0 +1,1703 @@
+[
+  {
+    "volume": 1,
+    "id": "APP-001",
+    "file": "main.tsx",
+    "path": "SanctDemo/src/main.tsx",
+    "lines": 120
+  },
+  {
+    "volume": 1,
+    "id": "APP-002",
+    "file": "App.tsx",
+    "path": "SanctDemo/src/App.tsx",
+    "lines": 1664
+  },
+  {
+    "volume": 1,
+    "id": "APP-003",
+    "file": "RootGate.tsx",
+    "path": "SanctDemo/src/components/RootGate.tsx",
+    "lines": 70
+  },
+  {
+    "volume": 1,
+    "id": "APP-004",
+    "file": "PhoneContainer.tsx",
+    "path": "SanctDemo/src/components/PhoneContainer.tsx",
+    "lines": 193
+  },
+  {
+    "volume": 1,
+    "id": "APP-005",
+    "file": "Landing.tsx",
+    "path": "SanctDemo/src/components/Landing.tsx",
+    "lines": 228
+  },
+  {
+    "volume": 1,
+    "id": "APP-006",
+    "file": "AdminPortal.tsx",
+    "path": "SanctDemo/src/components/AdminPortal.tsx",
+    "lines": 980
+  },
+  {
+    "volume": 1,
+    "id": "APP-007",
+    "file": "ApplicationForm.tsx",
+    "path": "SanctDemo/src/components/ApplicationForm.tsx",
+    "lines": 376
+  },
+  {
+    "volume": 1,
+    "id": "APP-008",
+    "file": "ArPlaceholder.tsx",
+    "path": "SanctDemo/src/components/ArPlaceholder.tsx",
+    "lines": 75
+  },
+  {
+    "volume": 1,
+    "id": "APP-009",
+    "file": "ArScannerPanel.tsx",
+    "path": "SanctDemo/src/components/ArScannerPanel.tsx",
+    "lines": 83
+  },
+  {
+    "volume": 1,
+    "id": "APP-010",
+    "file": "ArTour.tsx",
+    "path": "SanctDemo/src/components/ArTour.tsx",
+    "lines": 1392
+  },
+  {
+    "volume": 1,
+    "id": "APP-011",
+    "file": "AvailabilityBadge.tsx",
+    "path": "SanctDemo/src/components/AvailabilityBadge.tsx",
+    "lines": 38
+  },
+  {
+    "volume": 1,
+    "id": "APP-012",
+    "file": "BulletinRail.tsx",
+    "path": "SanctDemo/src/components/BulletinRail.tsx",
+    "lines": 232
+  },
+  {
+    "volume": 1,
+    "id": "APP-013",
+    "file": "ChangeParishModal.tsx",
+    "path": "SanctDemo/src/components/ChangeParishModal.tsx",
+    "lines": 80
+  },
+  {
+    "volume": 1,
+    "id": "APP-014",
+    "file": "ChurchHistory.tsx",
+    "path": "SanctDemo/src/components/ChurchHistory.tsx",
+    "lines": 423
+  },
+  {
+    "volume": 1,
+    "id": "APP-015",
+    "file": "ChurchHistoryCard.tsx",
+    "path": "SanctDemo/src/components/ChurchHistoryCard.tsx",
+    "lines": 115
+  },
+  {
+    "volume": 1,
+    "id": "APP-016",
+    "file": "CompanionTab.tsx",
+    "path": "SanctDemo/src/components/CompanionTab.tsx",
+    "lines": 248
+  },
+  {
+    "volume": 1,
+    "id": "APP-017",
+    "file": "CustomDioceseMap.tsx",
+    "path": "SanctDemo/src/components/CustomDioceseMap.tsx",
+    "lines": 54
+  },
+  {
+    "volume": 1,
+    "id": "APP-018",
+    "file": "DailyRosary.tsx",
+    "path": "SanctDemo/src/components/DailyRosary.tsx",
+    "lines": 203
+  },
+  {
+    "volume": 1,
+    "id": "APP-019",
+    "file": "Dashboard.tsx",
+    "path": "SanctDemo/src/components/Dashboard.tsx",
+    "lines": 271
+  },
+  {
+    "volume": 1,
+    "id": "APP-020",
+    "file": "DioceseMap.tsx",
+    "path": "SanctDemo/src/components/DioceseMap.tsx",
+    "lines": 200
+  },
+  {
+    "volume": 1,
+    "id": "APP-021",
+    "file": "EditProfileCard.tsx",
+    "path": "SanctDemo/src/components/EditProfileCard.tsx",
+    "lines": 234
+  },
+  {
+    "volume": 1,
+    "id": "APP-022",
+    "file": "ExploreTab.tsx",
+    "path": "SanctDemo/src/components/ExploreTab.tsx",
+    "lines": 156
+  },
+  {
+    "volume": 1,
+    "id": "APP-023",
+    "file": "HistoryQuiz.tsx",
+    "path": "SanctDemo/src/components/HistoryQuiz.tsx",
+    "lines": 200
+  },
+  {
+    "volume": 1,
+    "id": "APP-024",
+    "file": "HomeHero.tsx",
+    "path": "SanctDemo/src/components/HomeHero.tsx",
+    "lines": 211
+  },
+  {
+    "volume": 1,
+    "id": "APP-025",
+    "file": "HomeQuickLinks.tsx",
+    "path": "SanctDemo/src/components/HomeQuickLinks.tsx",
+    "lines": 86
+  },
+  {
+    "volume": 1,
+    "id": "APP-026",
+    "file": "ItemDetailSections.tsx",
+    "path": "SanctDemo/src/components/ItemDetailSections.tsx",
+    "lines": 112
+  },
+  {
+    "volume": 1,
+    "id": "APP-027",
+    "file": "LoginModal.tsx",
+    "path": "SanctDemo/src/components/LoginModal.tsx",
+    "lines": 491
+  },
+  {
+    "volume": 1,
+    "id": "APP-028",
+    "file": "MapPlaceSheet.tsx",
+    "path": "SanctDemo/src/components/MapPlaceSheet.tsx",
+    "lines": 237
+  },
+  {
+    "volume": 1,
+    "id": "APP-029",
+    "file": "MapTab.tsx",
+    "path": "SanctDemo/src/components/MapTab.tsx",
+    "lines": 440
+  },
+  {
+    "volume": 1,
+    "id": "APP-030",
+    "file": "MassNowBadge.tsx",
+    "path": "SanctDemo/src/components/MassNowBadge.tsx",
+    "lines": 63
+  },
+  {
+    "volume": 1,
+    "id": "APP-031",
+    "file": "MassSchedule.tsx",
+    "path": "SanctDemo/src/components/MassSchedule.tsx",
+    "lines": 209
+  },
+  {
+    "volume": 1,
+    "id": "APP-032",
+    "file": "MassScheduleCard.tsx",
+    "path": "SanctDemo/src/components/MassScheduleCard.tsx",
+    "lines": 309
+  },
+  {
+    "volume": 1,
+    "id": "APP-033",
+    "file": "MeTab.tsx",
+    "path": "SanctDemo/src/components/MeTab.tsx",
+    "lines": 429
+  },
+  {
+    "volume": 1,
+    "id": "APP-034",
+    "file": "MinistriesTab.tsx",
+    "path": "SanctDemo/src/components/MinistriesTab.tsx",
+    "lines": 412
+  },
+  {
+    "volume": 1,
+    "id": "APP-035",
+    "file": "MinistrySacramentPair.tsx",
+    "path": "SanctDemo/src/components/MinistrySacramentPair.tsx",
+    "lines": 117
+  },
+  {
+    "volume": 1,
+    "id": "APP-036",
+    "file": "MyApplications.tsx",
+    "path": "SanctDemo/src/components/MyApplications.tsx",
+    "lines": 124
+  },
+  {
+    "volume": 1,
+    "id": "APP-037",
+    "file": "MyApplicationsPage.tsx",
+    "path": "SanctDemo/src/components/MyApplicationsPage.tsx",
+    "lines": 203
+  },
+  {
+    "volume": 1,
+    "id": "APP-038",
+    "file": "NotificationsCard.tsx",
+    "path": "SanctDemo/src/components/NotificationsCard.tsx",
+    "lines": 93
+  },
+  {
+    "volume": 1,
+    "id": "APP-039",
+    "file": "NotificationsPage.tsx",
+    "path": "SanctDemo/src/components/NotificationsPage.tsx",
+    "lines": 128
+  },
+  {
+    "volume": 1,
+    "id": "APP-040",
+    "file": "Onboarding.tsx",
+    "path": "SanctDemo/src/components/Onboarding.tsx",
+    "lines": 154
+  },
+  {
+    "volume": 1,
+    "id": "APP-041",
+    "file": "ParishCard.tsx",
+    "path": "SanctDemo/src/components/ParishCard.tsx",
+    "lines": 64
+  },
+  {
+    "volume": 1,
+    "id": "APP-042",
+    "file": "ParishContentEditor.tsx",
+    "path": "SanctDemo/src/components/ParishContentEditor.tsx",
+    "lines": 307
+  },
+  {
+    "volume": 1,
+    "id": "APP-043",
+    "file": "ParishHero.tsx",
+    "path": "SanctDemo/src/components/ParishHero.tsx",
+    "lines": 220
+  },
+  {
+    "volume": 1,
+    "id": "APP-044",
+    "file": "ParishListRow.tsx",
+    "path": "SanctDemo/src/components/ParishListRow.tsx",
+    "lines": 118
+  },
+  {
+    "volume": 1,
+    "id": "APP-045",
+    "file": "ParishSectionHeader.tsx",
+    "path": "SanctDemo/src/components/ParishSectionHeader.tsx",
+    "lines": 201
+  },
+  {
+    "volume": 1,
+    "id": "APP-046",
+    "file": "ParishWelcomeHeader.tsx",
+    "path": "SanctDemo/src/components/ParishWelcomeHeader.tsx",
+    "lines": 394
+  },
+  {
+    "volume": 1,
+    "id": "APP-047",
+    "file": "PilgrimQuiz.tsx",
+    "path": "SanctDemo/src/components/PilgrimQuiz.tsx",
+    "lines": 220
+  },
+  {
+    "volume": 1,
+    "id": "APP-048",
+    "file": "PrayScreen.tsx",
+    "path": "SanctDemo/src/components/PrayScreen.tsx",
+    "lines": 42
+  },
+  {
+    "volume": 1,
+    "id": "APP-049",
+    "file": "PresenceBanner.tsx",
+    "path": "SanctDemo/src/components/PresenceBanner.tsx",
+    "lines": 26
+  },
+  {
+    "volume": 1,
+    "id": "APP-050",
+    "file": "PresenceSheet.tsx",
+    "path": "SanctDemo/src/components/PresenceSheet.tsx",
+    "lines": 142
+  },
+  {
+    "volume": 1,
+    "id": "APP-051",
+    "file": "PreviewVideo.tsx",
+    "path": "SanctDemo/src/components/PreviewVideo.tsx",
+    "lines": 81
+  },
+  {
+    "volume": 1,
+    "id": "APP-052",
+    "file": "PwaBanner.tsx",
+    "path": "SanctDemo/src/components/PwaBanner.tsx",
+    "lines": 182
+  },
+  {
+    "volume": 1,
+    "id": "APP-053",
+    "file": "RailDots.tsx",
+    "path": "SanctDemo/src/components/RailDots.tsx",
+    "lines": 122
+  },
+  {
+    "volume": 1,
+    "id": "APP-054",
+    "file": "ReminderSettingsCard.tsx",
+    "path": "SanctDemo/src/components/ReminderSettingsCard.tsx",
+    "lines": 241
+  },
+  {
+    "volume": 1,
+    "id": "APP-055",
+    "file": "RosarySettingsModal.tsx",
+    "path": "SanctDemo/src/components/RosarySettingsModal.tsx",
+    "lines": 202
+  },
+  {
+    "volume": 1,
+    "id": "APP-056",
+    "file": "SacramentsTab.tsx",
+    "path": "SanctDemo/src/components/SacramentsTab.tsx",
+    "lines": 245
+  },
+  {
+    "volume": 1,
+    "id": "APP-057",
+    "file": "SanctiHost.tsx",
+    "path": "SanctDemo/src/components/SanctiHost.tsx",
+    "lines": 490
+  },
+  {
+    "volume": 1,
+    "id": "APP-058",
+    "file": "SanctiSheet.tsx",
+    "path": "SanctDemo/src/components/SanctiSheet.tsx",
+    "lines": 249
+  },
+  {
+    "volume": 1,
+    "id": "APP-059",
+    "file": "ScannerChrome.tsx",
+    "path": "SanctDemo/src/components/ScannerChrome.tsx",
+    "lines": 130
+  },
+  {
+    "volume": 1,
+    "id": "APP-060",
+    "file": "SearchScreen.tsx",
+    "path": "SanctDemo/src/components/SearchScreen.tsx",
+    "lines": 250
+  },
+  {
+    "volume": 1,
+    "id": "APP-061",
+    "file": "SettingDisclosure.tsx",
+    "path": "SanctDemo/src/components/SettingDisclosure.tsx",
+    "lines": 73
+  },
+  {
+    "volume": 1,
+    "id": "APP-062",
+    "file": "SignInFirst.tsx",
+    "path": "SanctDemo/src/components/SignInFirst.tsx",
+    "lines": 53
+  },
+  {
+    "volume": 1,
+    "id": "APP-063",
+    "file": "SimulatorPanel.tsx",
+    "path": "SanctDemo/src/components/SimulatorPanel.tsx",
+    "lines": 133
+  },
+  {
+    "volume": 1,
+    "id": "APP-064",
+    "file": "Spotlight.tsx",
+    "path": "SanctDemo/src/components/Spotlight.tsx",
+    "lines": 269
+  },
+  {
+    "volume": 1,
+    "id": "APP-065",
+    "file": "TripPlanner.tsx",
+    "path": "SanctDemo/src/components/TripPlanner.tsx",
+    "lines": 160
+  },
+  {
+    "volume": 1,
+    "id": "APP-066",
+    "file": "TutorialRunner.tsx",
+    "path": "SanctDemo/src/components/TutorialRunner.tsx",
+    "lines": 157
+  },
+  {
+    "volume": 1,
+    "id": "APP-067",
+    "file": "UpdateBanner.tsx",
+    "path": "SanctDemo/src/components/UpdateBanner.tsx",
+    "lines": 105
+  },
+  {
+    "volume": 1,
+    "id": "APP-068",
+    "file": "VerseCard.tsx",
+    "path": "SanctDemo/src/components/VerseCard.tsx",
+    "lines": 54
+  },
+  {
+    "volume": 1,
+    "id": "APP-069",
+    "file": "WatchBell.tsx",
+    "path": "SanctDemo/src/components/WatchBell.tsx",
+    "lines": 93
+  },
+  {
+    "volume": 1,
+    "id": "APP-070",
+    "file": "PresenceContext.tsx",
+    "path": "SanctDemo/src/context/PresenceContext.tsx",
+    "lines": 213
+  },
+  {
+    "volume": 1,
+    "id": "APP-071",
+    "file": "activityLog.ts",
+    "path": "SanctDemo/src/lib/activityLog.ts",
+    "lines": 47
+  },
+  {
+    "volume": 1,
+    "id": "APP-072",
+    "file": "analytics.ts",
+    "path": "SanctDemo/src/lib/analytics.ts",
+    "lines": 243
+  },
+  {
+    "volume": 1,
+    "id": "APP-073",
+    "file": "announcementImage.ts",
+    "path": "SanctDemo/src/lib/announcementImage.ts",
+    "lines": 85
+  },
+  {
+    "volume": 1,
+    "id": "APP-074",
+    "file": "announcements.ts",
+    "path": "SanctDemo/src/lib/announcements.ts",
+    "lines": 235
+  },
+  {
+    "volume": 1,
+    "id": "APP-075",
+    "file": "apiBase.ts",
+    "path": "SanctDemo/src/lib/apiBase.ts",
+    "lines": 41
+  },
+  {
+    "volume": 1,
+    "id": "APP-076",
+    "file": "appKey.ts",
+    "path": "SanctDemo/src/lib/appKey.ts",
+    "lines": 37
+  },
+  {
+    "volume": 1,
+    "id": "APP-077",
+    "file": "appUpdate.ts",
+    "path": "SanctDemo/src/lib/appUpdate.ts",
+    "lines": 134
+  },
+  {
+    "volume": 1,
+    "id": "APP-078",
+    "file": "applicationFilters.ts",
+    "path": "SanctDemo/src/lib/applicationFilters.ts",
+    "lines": 225
+  },
+  {
+    "volume": 1,
+    "id": "APP-079",
+    "file": "applicationForm.ts",
+    "path": "SanctDemo/src/lib/applicationForm.ts",
+    "lines": 358
+  },
+  {
+    "volume": 1,
+    "id": "APP-080",
+    "file": "applicationView.ts",
+    "path": "SanctDemo/src/lib/applicationView.ts",
+    "lines": 146
+  },
+  {
+    "volume": 1,
+    "id": "APP-081",
+    "file": "applications.ts",
+    "path": "SanctDemo/src/lib/applications.ts",
+    "lines": 190
+  },
+  {
+    "volume": 1,
+    "id": "APP-082",
+    "file": "arApp.ts",
+    "path": "SanctDemo/src/lib/arApp.ts",
+    "lines": 136
+  },
+  {
+    "volume": 1,
+    "id": "APP-083",
+    "file": "askSancti.ts",
+    "path": "SanctDemo/src/lib/askSancti.ts",
+    "lines": 84
+  },
+  {
+    "volume": 1,
+    "id": "APP-084",
+    "file": "availability.ts",
+    "path": "SanctDemo/src/lib/availability.ts",
+    "lines": 102
+  },
+  {
+    "volume": 1,
+    "id": "APP-085",
+    "file": "avatar.ts",
+    "path": "SanctDemo/src/lib/avatar.ts",
+    "lines": 119
+  },
+  {
+    "volume": 1,
+    "id": "APP-086",
+    "file": "churches.ts",
+    "path": "SanctDemo/src/lib/churches.ts",
+    "lines": 91
+  },
+  {
+    "volume": 1,
+    "id": "APP-087",
+    "file": "contentTranslations.ts",
+    "path": "SanctDemo/src/lib/contentTranslations.ts",
+    "lines": 184
+  },
+  {
+    "volume": 1,
+    "id": "APP-088",
+    "file": "contrast.ts",
+    "path": "SanctDemo/src/lib/contrast.ts",
+    "lines": 130
+  },
+  {
+    "volume": 1,
+    "id": "APP-089",
+    "file": "deviceNotifications.ts",
+    "path": "SanctDemo/src/lib/deviceNotifications.ts",
+    "lines": 194
+  },
+  {
+    "volume": 1,
+    "id": "APP-090",
+    "file": "displayMode.ts",
+    "path": "SanctDemo/src/lib/displayMode.ts",
+    "lines": 74
+  },
+  {
+    "volume": 1,
+    "id": "APP-091",
+    "file": "exportApplications.ts",
+    "path": "SanctDemo/src/lib/exportApplications.ts",
+    "lines": 211
+  },
+  {
+    "volume": 1,
+    "id": "APP-092",
+    "file": "findScroller.ts",
+    "path": "SanctDemo/src/lib/findScroller.ts",
+    "lines": 36
+  },
+  {
+    "volume": 1,
+    "id": "APP-093",
+    "file": "followedParishes.ts",
+    "path": "SanctDemo/src/lib/followedParishes.ts",
+    "lines": 100
+  },
+  {
+    "volume": 1,
+    "id": "APP-094",
+    "file": "googleAuth.ts",
+    "path": "SanctDemo/src/lib/googleAuth.ts",
+    "lines": 151
+  },
+  {
+    "volume": 1,
+    "id": "APP-095",
+    "file": "heading.ts",
+    "path": "SanctDemo/src/lib/heading.ts",
+    "lines": 154
+  },
+  {
+    "volume": 1,
+    "id": "APP-096",
+    "file": "historyNarration.ts",
+    "path": "SanctDemo/src/lib/historyNarration.ts",
+    "lines": 114
+  },
+  {
+    "volume": 1,
+    "id": "APP-097",
+    "file": "historyQuiz.ts",
+    "path": "SanctDemo/src/lib/historyQuiz.ts",
+    "lines": 183
+  },
+  {
+    "volume": 1,
+    "id": "APP-098",
+    "file": "homeParish.ts",
+    "path": "SanctDemo/src/lib/homeParish.ts",
+    "lines": 38
+  },
+  {
+    "volume": 1,
+    "id": "APP-099",
+    "file": "idToken.ts",
+    "path": "SanctDemo/src/lib/idToken.ts",
+    "lines": 34
+  },
+  {
+    "volume": 1,
+    "id": "APP-100",
+    "file": "itemContent.ts",
+    "path": "SanctDemo/src/lib/itemContent.ts",
+    "lines": 204
+  },
+  {
+    "volume": 1,
+    "id": "APP-101",
+    "file": "language.ts",
+    "path": "SanctDemo/src/lib/language.ts",
+    "lines": 145
+  },
+  {
+    "volume": 1,
+    "id": "APP-102",
+    "file": "liturgical.ts",
+    "path": "SanctDemo/src/lib/liturgical.ts",
+    "lines": 195
+  },
+  {
+    "volume": 1,
+    "id": "APP-103",
+    "file": "liturgicalColours.ts",
+    "path": "SanctDemo/src/lib/liturgicalColours.ts",
+    "lines": 53
+  },
+  {
+    "volume": 1,
+    "id": "APP-104",
+    "file": "mapAccuracy.ts",
+    "path": "SanctDemo/src/lib/mapAccuracy.ts",
+    "lines": 97
+  },
+  {
+    "volume": 1,
+    "id": "APP-105",
+    "file": "mapMarkers.ts",
+    "path": "SanctDemo/src/lib/mapMarkers.ts",
+    "lines": 72
+  },
+  {
+    "volume": 1,
+    "id": "APP-106",
+    "file": "mapSearch.ts",
+    "path": "SanctDemo/src/lib/mapSearch.ts",
+    "lines": 250
+  },
+  {
+    "volume": 1,
+    "id": "APP-107",
+    "file": "massScheduleWatch.ts",
+    "path": "SanctDemo/src/lib/massScheduleWatch.ts",
+    "lines": 243
+  },
+  {
+    "volume": 1,
+    "id": "APP-108",
+    "file": "ministryApplication.ts",
+    "path": "SanctDemo/src/lib/ministryApplication.ts",
+    "lines": 149
+  },
+  {
+    "volume": 1,
+    "id": "APP-109",
+    "file": "ministrySearch.ts",
+    "path": "SanctDemo/src/lib/ministrySearch.ts",
+    "lines": 83
+  },
+  {
+    "volume": 1,
+    "id": "APP-110",
+    "file": "modelRetry.ts",
+    "path": "SanctDemo/src/lib/modelRetry.ts",
+    "lines": 180
+  },
+  {
+    "volume": 1,
+    "id": "APP-111",
+    "file": "mysteries.ts",
+    "path": "SanctDemo/src/lib/mysteries.ts",
+    "lines": 39
+  },
+  {
+    "volume": 1,
+    "id": "APP-112",
+    "file": "navigation.ts",
+    "path": "SanctDemo/src/lib/navigation.ts",
+    "lines": 255
+  },
+  {
+    "volume": 1,
+    "id": "APP-113",
+    "file": "notifications.ts",
+    "path": "SanctDemo/src/lib/notifications.ts",
+    "lines": 211
+  },
+  {
+    "volume": 1,
+    "id": "APP-114",
+    "file": "openingSubscriptions.ts",
+    "path": "SanctDemo/src/lib/openingSubscriptions.ts",
+    "lines": 118
+  },
+  {
+    "volume": 1,
+    "id": "APP-115",
+    "file": "pageEvents.ts",
+    "path": "SanctDemo/src/lib/pageEvents.ts",
+    "lines": 185
+  },
+  {
+    "volume": 1,
+    "id": "APP-116",
+    "file": "parishIds.ts",
+    "path": "SanctDemo/src/lib/parishIds.ts",
+    "lines": 74
+  },
+  {
+    "volume": 1,
+    "id": "APP-117",
+    "file": "parishPhotos.ts",
+    "path": "SanctDemo/src/lib/parishPhotos.ts",
+    "lines": 56
+  },
+  {
+    "volume": 1,
+    "id": "APP-118",
+    "file": "parishSelection.ts",
+    "path": "SanctDemo/src/lib/parishSelection.ts",
+    "lines": 49
+  },
+  {
+    "volume": 1,
+    "id": "APP-119",
+    "file": "parishTheme.ts",
+    "path": "SanctDemo/src/lib/parishTheme.ts",
+    "lines": 90
+  },
+  {
+    "volume": 1,
+    "id": "APP-120",
+    "file": "pilgrimage.ts",
+    "path": "SanctDemo/src/lib/pilgrimage.ts",
+    "lines": 203
+  },
+  {
+    "volume": 1,
+    "id": "APP-121",
+    "file": "presence.ts",
+    "path": "SanctDemo/src/lib/presence.ts",
+    "lines": 114
+  },
+  {
+    "volume": 1,
+    "id": "APP-122",
+    "file": "project.ts",
+    "path": "SanctDemo/src/lib/project.ts",
+    "lines": 43
+  },
+  {
+    "volume": 1,
+    "id": "APP-123",
+    "file": "qr.ts",
+    "path": "SanctDemo/src/lib/qr.ts",
+    "lines": 122
+  },
+  {
+    "volume": 1,
+    "id": "APP-124",
+    "file": "recordPageEvent.ts",
+    "path": "SanctDemo/src/lib/recordPageEvent.ts",
+    "lines": 34
+  },
+  {
+    "volume": 1,
+    "id": "APP-125",
+    "file": "recordVisit.ts",
+    "path": "SanctDemo/src/lib/recordVisit.ts",
+    "lines": 127
+  },
+  {
+    "volume": 1,
+    "id": "APP-126",
+    "file": "registerServiceWorker.ts",
+    "path": "SanctDemo/src/lib/registerServiceWorker.ts",
+    "lines": 46
+  },
+  {
+    "volume": 1,
+    "id": "APP-127",
+    "file": "reminderSchedule.ts",
+    "path": "SanctDemo/src/lib/reminderSchedule.ts",
+    "lines": 337
+  },
+  {
+    "volume": 1,
+    "id": "APP-128",
+    "file": "rosarySettings.ts",
+    "path": "SanctDemo/src/lib/rosarySettings.ts",
+    "lines": 71
+  },
+  {
+    "volume": 1,
+    "id": "APP-129",
+    "file": "routing.ts",
+    "path": "SanctDemo/src/lib/routing.ts",
+    "lines": 195
+  },
+  {
+    "volume": 1,
+    "id": "APP-130",
+    "file": "sancti.ts",
+    "path": "SanctDemo/src/lib/sancti.ts",
+    "lines": 749
+  },
+  {
+    "volume": 1,
+    "id": "APP-131",
+    "file": "sanctiAnswers.ts",
+    "path": "SanctDemo/src/lib/sanctiAnswers.ts",
+    "lines": 370
+  },
+  {
+    "volume": 1,
+    "id": "APP-132",
+    "file": "sanctiGrounding.ts",
+    "path": "SanctDemo/src/lib/sanctiGrounding.ts",
+    "lines": 244
+  },
+  {
+    "volume": 1,
+    "id": "APP-133",
+    "file": "scanNarration.ts",
+    "path": "SanctDemo/src/lib/scanNarration.ts",
+    "lines": 102
+  },
+  {
+    "volume": 1,
+    "id": "APP-134",
+    "file": "scanQuota.ts",
+    "path": "SanctDemo/src/lib/scanQuota.ts",
+    "lines": 104
+  },
+  {
+    "volume": 1,
+    "id": "APP-135",
+    "file": "scanQuotaStore.ts",
+    "path": "SanctDemo/src/lib/scanQuotaStore.ts",
+    "lines": 177
+  },
+  {
+    "volume": 1,
+    "id": "APP-136",
+    "file": "schedule.ts",
+    "path": "SanctDemo/src/lib/schedule.ts",
+    "lines": 177
+  },
+  {
+    "volume": 1,
+    "id": "APP-137",
+    "file": "simulatorMode.ts",
+    "path": "SanctDemo/src/lib/simulatorMode.ts",
+    "lines": 103
+  },
+  {
+    "volume": 1,
+    "id": "APP-138",
+    "file": "speech.ts",
+    "path": "SanctDemo/src/lib/speech.ts",
+    "lines": 227
+  },
+  {
+    "volume": 1,
+    "id": "APP-139",
+    "file": "spotlight.ts",
+    "path": "SanctDemo/src/lib/spotlight.ts",
+    "lines": 137
+  },
+  {
+    "volume": 1,
+    "id": "APP-140",
+    "file": "sundayMasses.ts",
+    "path": "SanctDemo/src/lib/sundayMasses.ts",
+    "lines": 199
+  },
+  {
+    "volume": 1,
+    "id": "APP-141",
+    "file": "tutorial.ts",
+    "path": "SanctDemo/src/lib/tutorial.ts",
+    "lines": 151
+  },
+  {
+    "volume": 1,
+    "id": "APP-142",
+    "file": "ui.ts",
+    "path": "SanctDemo/src/lib/ui.ts",
+    "lines": 147
+  },
+  {
+    "volume": 1,
+    "id": "APP-143",
+    "file": "useAuthUid.ts",
+    "path": "SanctDemo/src/lib/useAuthUid.ts",
+    "lines": 19
+  },
+  {
+    "volume": 1,
+    "id": "APP-144",
+    "file": "useCamera.ts",
+    "path": "SanctDemo/src/lib/useCamera.ts",
+    "lines": 322
+  },
+  {
+    "volume": 1,
+    "id": "APP-145",
+    "file": "useDeviceHeading.ts",
+    "path": "SanctDemo/src/lib/useDeviceHeading.ts",
+    "lines": 231
+  },
+  {
+    "volume": 1,
+    "id": "APP-146",
+    "file": "useDragSafeClicks.ts",
+    "path": "SanctDemo/src/lib/useDragSafeClicks.ts",
+    "lines": 58
+  },
+  {
+    "volume": 1,
+    "id": "APP-147",
+    "file": "useLanguage.ts",
+    "path": "SanctDemo/src/lib/useLanguage.ts",
+    "lines": 53
+  },
+  {
+    "volume": 1,
+    "id": "APP-148",
+    "file": "useMassScheduleNotice.ts",
+    "path": "SanctDemo/src/lib/useMassScheduleNotice.ts",
+    "lines": 90
+  },
+  {
+    "volume": 1,
+    "id": "APP-149",
+    "file": "useNarration.ts",
+    "path": "SanctDemo/src/lib/useNarration.ts",
+    "lines": 92
+  },
+  {
+    "volume": 1,
+    "id": "APP-150",
+    "file": "useOpeningNotices.ts",
+    "path": "SanctDemo/src/lib/useOpeningNotices.ts",
+    "lines": 141
+  },
+  {
+    "volume": 1,
+    "id": "APP-151",
+    "file": "useParishContent.ts",
+    "path": "SanctDemo/src/lib/useParishContent.ts",
+    "lines": 28
+  },
+  {
+    "volume": 1,
+    "id": "APP-152",
+    "file": "useParishContents.ts",
+    "path": "SanctDemo/src/lib/useParishContents.ts",
+    "lines": 60
+  },
+  {
+    "volume": 1,
+    "id": "APP-153",
+    "file": "useQrScanner.ts",
+    "path": "SanctDemo/src/lib/useQrScanner.ts",
+    "lines": 178
+  },
+  {
+    "volume": 1,
+    "id": "APP-154",
+    "file": "useReminders.ts",
+    "path": "SanctDemo/src/lib/useReminders.ts",
+    "lines": 134
+  },
+  {
+    "volume": 1,
+    "id": "APP-155",
+    "file": "useSimulatorMode.ts",
+    "path": "SanctDemo/src/lib/useSimulatorMode.ts",
+    "lines": 43
+  },
+  {
+    "volume": 1,
+    "id": "APP-156",
+    "file": "userProfile.ts",
+    "path": "SanctDemo/src/lib/userProfile.ts",
+    "lines": 119
+  },
+  {
+    "volume": 1,
+    "id": "APP-157",
+    "file": "verseBackdrops.ts",
+    "path": "SanctDemo/src/lib/verseBackdrops.ts",
+    "lines": 57
+  },
+  {
+    "volume": 1,
+    "id": "APP-158",
+    "file": "verses.ts",
+    "path": "SanctDemo/src/lib/verses.ts",
+    "lines": 97
+  },
+  {
+    "volume": 1,
+    "id": "APP-159",
+    "file": "visits.ts",
+    "path": "SanctDemo/src/lib/visits.ts",
+    "lines": 159
+  },
+  {
+    "volume": 1,
+    "id": "APP-160",
+    "file": "data.ts",
+    "path": "SanctDemo/src/data.ts",
+    "lines": 635
+  },
+  {
+    "volume": 1,
+    "id": "APP-161",
+    "file": "types.ts",
+    "path": "SanctDemo/src/types.ts",
+    "lines": 214
+  },
+  {
+    "volume": 1,
+    "id": "APP-162",
+    "file": "index.css",
+    "path": "SanctDemo/src/index.css",
+    "lines": 6125
+  },
+  {
+    "volume": 2,
+    "id": "API-001",
+    "file": "server.ts",
+    "path": "SanctDemo/server.ts",
+    "lines": 1080
+  },
+  {
+    "volume": 2,
+    "id": "API-002",
+    "file": "firebase.ts",
+    "path": "SanctDemo/src/lib/firebase.ts",
+    "lines": 11
+  },
+  {
+    "volume": 2,
+    "id": "API-003",
+    "file": "authFlow.ts",
+    "path": "SanctDemo/src/lib/authFlow.ts",
+    "lines": 262
+  },
+  {
+    "volume": 2,
+    "id": "API-004",
+    "file": "parishContent.ts",
+    "path": "SanctDemo/src/lib/parishContent.ts",
+    "lines": 186
+  },
+  {
+    "volume": 2,
+    "id": "API-005",
+    "file": "parishContentStore.ts",
+    "path": "SanctDemo/src/lib/parishContentStore.ts",
+    "lines": 59
+  },
+  {
+    "volume": 2,
+    "id": "API-006",
+    "file": "firestore.rules",
+    "path": "SanctDemo/firestore.rules",
+    "lines": 409
+  },
+  {
+    "volume": 2,
+    "id": "API-007",
+    "file": "firestore.indexes.json",
+    "path": "SanctDemo/firestore.indexes.json",
+    "lines": 5
+  },
+  {
+    "volume": 2,
+    "id": "API-008",
+    "file": "AdminAnalytics.tsx",
+    "path": "SanctDemo/src/admin/AdminAnalytics.tsx",
+    "lines": 522
+  },
+  {
+    "volume": 2,
+    "id": "API-009",
+    "file": "AdminAnnouncements.tsx",
+    "path": "SanctDemo/src/admin/AdminAnnouncements.tsx",
+    "lines": 575
+  },
+  {
+    "volume": 2,
+    "id": "API-010",
+    "file": "AdminApp.tsx",
+    "path": "SanctDemo/src/admin/AdminApp.tsx",
+    "lines": 135
+  },
+  {
+    "volume": 2,
+    "id": "API-011",
+    "file": "AdminApplicationDetail.tsx",
+    "path": "SanctDemo/src/admin/AdminApplicationDetail.tsx",
+    "lines": 307
+  },
+  {
+    "volume": 2,
+    "id": "API-012",
+    "file": "AdminApplications.tsx",
+    "path": "SanctDemo/src/admin/AdminApplications.tsx",
+    "lines": 386
+  },
+  {
+    "volume": 2,
+    "id": "API-013",
+    "file": "AdminAvailability.tsx",
+    "path": "SanctDemo/src/admin/AdminAvailability.tsx",
+    "lines": 189
+  },
+  {
+    "volume": 2,
+    "id": "API-014",
+    "file": "AdminContent.tsx",
+    "path": "SanctDemo/src/admin/AdminContent.tsx",
+    "lines": 318
+  },
+  {
+    "volume": 2,
+    "id": "API-015",
+    "file": "AdminDashboard.tsx",
+    "path": "SanctDemo/src/admin/AdminDashboard.tsx",
+    "lines": 261
+  },
+  {
+    "volume": 2,
+    "id": "API-016",
+    "file": "AdminItems.tsx",
+    "path": "SanctDemo/src/admin/AdminItems.tsx",
+    "lines": 201
+  },
+  {
+    "volume": 2,
+    "id": "API-017",
+    "file": "AdminLogin.tsx",
+    "path": "SanctDemo/src/admin/AdminLogin.tsx",
+    "lines": 114
+  },
+  {
+    "volume": 2,
+    "id": "API-018",
+    "file": "AdminMassSchedule.tsx",
+    "path": "SanctDemo/src/admin/AdminMassSchedule.tsx",
+    "lines": 348
+  },
+  {
+    "volume": 2,
+    "id": "API-019",
+    "file": "AdminNav.tsx",
+    "path": "SanctDemo/src/admin/AdminNav.tsx",
+    "lines": 112
+  },
+  {
+    "volume": 2,
+    "id": "API-020",
+    "file": "AdminTiles.tsx",
+    "path": "SanctDemo/src/admin/AdminTiles.tsx",
+    "lines": 178
+  },
+  {
+    "volume": 2,
+    "id": "API-021",
+    "file": "ParishStatus.tsx",
+    "path": "SanctDemo/src/admin/ParishStatus.tsx",
+    "lines": 147
+  },
+  {
+    "volume": 2,
+    "id": "API-022",
+    "file": "StatusBadge.tsx",
+    "path": "SanctDemo/src/admin/StatusBadge.tsx",
+    "lines": 30
+  },
+  {
+    "volume": 3,
+    "id": "MAP-001",
+    "file": "DioceseMapLive.tsx",
+    "path": "SanctDemo/src/components/DioceseMapLive.tsx",
+    "lines": 1702
+  },
+  {
+    "volume": 3,
+    "id": "MAP-002",
+    "file": "NavigationOverlay.tsx",
+    "path": "SanctDemo/src/components/NavigationOverlay.tsx",
+    "lines": 244
+  },
+  {
+    "volume": 3,
+    "id": "MAP-003",
+    "file": "CompassControl.tsx",
+    "path": "SanctDemo/src/components/CompassControl.tsx",
+    "lines": 180
+  },
+  {
+    "volume": 3,
+    "id": "MAP-004",
+    "file": "followCamera.ts",
+    "path": "SanctDemo/src/lib/followCamera.ts",
+    "lines": 190
+  },
+  {
+    "volume": 3,
+    "id": "MAP-005",
+    "file": "geo.ts",
+    "path": "SanctDemo/src/lib/geo.ts",
+    "lines": 42
+  },
+  {
+    "volume": 3,
+    "id": "MAP-006",
+    "file": "travelModes.ts",
+    "path": "SanctDemo/src/lib/travelModes.ts",
+    "lines": 94
+  },
+  {
+    "volume": 3,
+    "id": "MAP-007",
+    "file": "place.html",
+    "path": "SanctiWalkAR/Tools/viewer/place.html",
+    "lines": 864
+  },
+  {
+    "volume": 3,
+    "id": "MAP-008",
+    "file": "index.html",
+    "path": "SanctiWalkAR/Tools/viewer/index.html",
+    "lines": 383
+  },
+  {
+    "volume": 3,
+    "id": "MAP-009",
+    "file": "export.html",
+    "path": "SanctiWalkAR/Tools/viewer/export.html",
+    "lines": 172
+  },
+  {
+    "volume": 3,
+    "id": "MAP-010",
+    "file": "save_server.py",
+    "path": "SanctiWalkAR/Tools/viewer/save_server.py",
+    "lines": 77
+  },
+  {
+    "volume": 3,
+    "id": "MAP-011",
+    "file": "deploy-stations.py",
+    "path": "SanctiWalkAR/Tools/deploy-stations.py",
+    "lines": 302
+  },
+  {
+    "volume": 3,
+    "id": "MAP-012",
+    "file": "make-parish-marker.py",
+    "path": "SanctiWalkAR/Tools/make-parish-marker.py",
+    "lines": 216
+  },
+  {
+    "volume": 3,
+    "id": "MAP-013",
+    "file": "make-marker-pdf.py",
+    "path": "SanctiWalkAR/Tools/make-marker-pdf.py",
+    "lines": 68
+  },
+  {
+    "volume": 3,
+    "id": "MAP-014",
+    "file": "marker-pose.py",
+    "path": "SanctiWalkAR/Tools/marker-pose.py",
+    "lines": 223
+  },
+  {
+    "volume": 3,
+    "id": "MAP-015",
+    "file": "glb-to-obj-indexed.py",
+    "path": "SanctiWalkAR/Tools/glb-to-obj-indexed.py",
+    "lines": 200
+  },
+  {
+    "volume": 3,
+    "id": "MAP-016",
+    "file": "optimise-scan.py",
+    "path": "SanctiWalkAR/Tools/optimise-scan.py",
+    "lines": 151
+  },
+  {
+    "volume": 4,
+    "id": "AR-001",
+    "file": "AdminAccess.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/AdminAccess.cs",
+    "lines": 110
+  },
+  {
+    "volume": 4,
+    "id": "AR-002",
+    "file": "AppLanguage.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/AppLanguage.cs",
+    "lines": 71
+  },
+  {
+    "volume": 4,
+    "id": "AR-003",
+    "file": "ArFlowUI.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/ArFlowUI.cs",
+    "lines": 1423
+  },
+  {
+    "volume": 4,
+    "id": "AR-004",
+    "file": "ChurchFrame.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/ChurchFrame.cs",
+    "lines": 124
+  },
+  {
+    "volume": 4,
+    "id": "AR-005",
+    "file": "ChurchOriginTest.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/ChurchOriginTest.cs",
+    "lines": 2602
+  },
+  {
+    "volume": 4,
+    "id": "AR-006",
+    "file": "DeviceSpeech.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/DeviceSpeech.cs",
+    "lines": 194
+  },
+  {
+    "volume": 4,
+    "id": "AR-007",
+    "file": "FirstPersonWalkthrough.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/FirstPersonWalkthrough.cs",
+    "lines": 166
+  },
+  {
+    "volume": 4,
+    "id": "AR-008",
+    "file": "MarkerScan.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/MarkerScan.cs",
+    "lines": 83
+  },
+  {
+    "volume": 4,
+    "id": "AR-009",
+    "file": "MultiSetVps.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/MultiSetVps.cs",
+    "lines": 501
+  },
+  {
+    "volume": 4,
+    "id": "AR-010",
+    "file": "MuseumStation.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/MuseumStation.cs",
+    "lines": 242
+  },
+  {
+    "volume": 4,
+    "id": "AR-011",
+    "file": "MuseumStationsGenerated.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/MuseumStationsGenerated.cs",
+    "lines": 710
+  },
+  {
+    "volume": 4,
+    "id": "AR-012",
+    "file": "MuseumUI.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/MuseumUI.cs",
+    "lines": 1154
+  },
+  {
+    "volume": 4,
+    "id": "AR-013",
+    "file": "OriginPicker.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/OriginPicker.cs",
+    "lines": 154
+  },
+  {
+    "volume": 4,
+    "id": "AR-014",
+    "file": "POIDirectory.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/POIDirectory.cs",
+    "lines": 159
+  },
+  {
+    "volume": 4,
+    "id": "AR-015",
+    "file": "POIPanel.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/POIPanel.cs",
+    "lines": 112
+  },
+  {
+    "volume": 4,
+    "id": "AR-016",
+    "file": "PointOfInterest.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/PointOfInterest.cs",
+    "lines": 195
+  },
+  {
+    "volume": 4,
+    "id": "AR-017",
+    "file": "ScanSimulator.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/ScanSimulator.cs",
+    "lines": 69
+  },
+  {
+    "volume": 4,
+    "id": "AR-018",
+    "file": "SceneGizmos.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/SceneGizmos.cs",
+    "lines": 57
+  },
+  {
+    "volume": 4,
+    "id": "AR-019",
+    "file": "SiteReadiness.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/SiteReadiness.cs",
+    "lines": 274
+  },
+  {
+    "volume": 4,
+    "id": "AR-020",
+    "file": "StationBubble.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/StationBubble.cs",
+    "lines": 426
+  },
+  {
+    "volume": 4,
+    "id": "AR-021",
+    "file": "StationCalibrator.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/StationCalibrator.cs",
+    "lines": 454
+  },
+  {
+    "volume": 4,
+    "id": "AR-022",
+    "file": "StationMarker.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/StationMarker.cs",
+    "lines": 120
+  },
+  {
+    "volume": 4,
+    "id": "AR-023",
+    "file": "StationRecording.cs",
+    "path": "SanctiWalkAR/Assets/Scripts/StationRecording.cs",
+    "lines": 250
+  },
+  {
+    "volume": 4,
+    "id": "AR-024",
+    "file": "ARProjectSetup.cs",
+    "path": "SanctiWalkAR/Assets/Editor/ARProjectSetup.cs",
+    "lines": 587
+  },
+  {
+    "volume": 4,
+    "id": "AR-025",
+    "file": "ArDeepLink.cs",
+    "path": "SanctiWalkAR/Assets/Editor/ArDeepLink.cs",
+    "lines": 179
+  },
+  {
+    "volume": 4,
+    "id": "AR-026",
+    "file": "AuthoringPreview.cs",
+    "path": "SanctiWalkAR/Assets/Editor/AuthoringPreview.cs",
+    "lines": 123
+  },
+  {
+    "volume": 4,
+    "id": "AR-027",
+    "file": "DesktopTestBuild.cs",
+    "path": "SanctiWalkAR/Assets/Editor/DesktopTestBuild.cs",
+    "lines": 60
+  },
+  {
+    "volume": 4,
+    "id": "AR-028",
+    "file": "ExportPois.cs",
+    "path": "SanctiWalkAR/Assets/Editor/ExportPois.cs",
+    "lines": 247
+  },
+  {
+    "volume": 4,
+    "id": "AR-029",
+    "file": "ModelCheck.cs",
+    "path": "SanctiWalkAR/Assets/Editor/ModelCheck.cs",
+    "lines": 66
+  },
+  {
+    "volume": 4,
+    "id": "AR-030",
+    "file": "MultiSetCredentials.cs",
+    "path": "SanctiWalkAR/Assets/Editor/MultiSetCredentials.cs",
+    "lines": 65
+  },
+  {
+    "volume": 4,
+    "id": "AR-031",
+    "file": "MuseumUICapture.cs",
+    "path": "SanctiWalkAR/Assets/Editor/MuseumUICapture.cs",
+    "lines": 140
+  },
+  {
+    "volume": 4,
+    "id": "AR-032",
+    "file": "ScanFlowDump.cs",
+    "path": "SanctiWalkAR/Assets/Editor/ScanFlowDump.cs",
+    "lines": 115
+  },
+  {
+    "volume": 4,
+    "id": "AR-033",
+    "file": "StationEditorScene.cs",
+    "path": "SanctiWalkAR/Assets/Editor/StationEditorScene.cs",
+    "lines": 403
+  },
+  {
+    "volume": 5,
+    "id": "CFG-001",
+    "file": "package.json",
+    "path": "SanctDemo/package.json",
+    "lines": 76
+  },
+  {
+    "volume": 5,
+    "id": "CFG-002",
+    "file": "vite.config.ts",
+    "path": "SanctDemo/vite.config.ts",
+    "lines": 119
+  },
+  {
+    "volume": 5,
+    "id": "CFG-003",
+    "file": "tsconfig.json",
+    "path": "SanctDemo/tsconfig.json",
+    "lines": 27
+  },
+  {
+    "volume": 5,
+    "id": "CFG-004",
+    "file": "vitest.config.ts",
+    "path": "SanctDemo/vitest.config.ts",
+    "lines": 25
+  },
+  {
+    "volume": 5,
+    "id": "CFG-005",
+    "file": "vercel.json",
+    "path": "SanctDemo/vercel.json",
+    "lines": 43
+  },
+  {
+    "volume": 5,
+    "id": "CFG-006",
+    "file": "capacitor.config.ts",
+    "path": "SanctDemo/capacitor.config.ts",
+    "lines": 69
+  },
+  {
+    "volume": 5,
+    "id": "CFG-007",
+    "file": "build.gradle",
+    "path": "SanctDemo/android/app/build.gradle",
+    "lines": 97
+  },
+  {
+    "volume": 5,
+    "id": "CFG-008",
+    "file": "variables.gradle",
+    "path": "SanctDemo/android/variables.gradle",
+    "lines": 16
+  },
+  {
+    "volume": 5,
+    "id": "CFG-009",
+    "file": "AndroidManifest.xml",
+    "path": "SanctDemo/android/app/src/main/AndroidManifest.xml",
+    "lines": 95
+  },
+  {
+    "volume": 5,
+    "id": "CFG-010",
+    "file": "ChurchMarkers.asset",
+    "path": "SanctiWalkAR/Assets/AR/ChurchMarkers.asset",
+    "lines": 49
+  }
+]

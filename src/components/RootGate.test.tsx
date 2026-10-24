@@ -30,6 +30,17 @@ vi.mock("./Spotlight", () => ({
 }));
 
 import RootGate from "./RootGate";
+import { saveConsent } from "../lib/consent";
+
+/**
+ * The installed app shows the first-launch notices before anything
+ * else, so a test about WHICH app is rendered has to get past them.
+ * Accepting here is what a device looks like on every launch after the
+ * first; the notices themselves are tested in ConsentGate.test.tsx.
+ */
+function alreadyAccepted() {
+  saveConsent(true, true);
+}
 
 function renderGate() {
   return render(
@@ -54,15 +65,34 @@ describe("RootGate", () => {
     isNativePlatform.mockReturnValue(false);
     setStandalone(false);
     delete (window.navigator as { standalone?: boolean }).standalone;
+    localStorage.clear();
   });
 
   it("gives the installed Android app the app, not the advertisement", () => {
     // The regression that shipped. Capacitor reports native; nothing
     // else does, because a WebView matches no PWA display mode.
     isNativePlatform.mockReturnValue(true);
+    alreadyAccepted();
     renderGate();
     expect(screen.getByText("THE APP")).toBeTruthy();
     expect(screen.queryByText("THE LANDING PAGE")).toBeNull();
+  });
+
+  it("stops the installed app at the notices on first launch", () => {
+    // Nothing accepted yet, so the APK must show the Terms and the
+    // Privacy Notice before the app itself.
+    isNativePlatform.mockReturnValue(true);
+    renderGate();
+    expect(screen.getByText("Welcome to SanctiWalk")).toBeTruthy();
+    expect(screen.queryByText("THE APP")).toBeNull();
+  });
+
+  it("never shows the notices in a plain browser", () => {
+    // A visitor looking at the parish's public site has installed
+    // nothing and should not meet a consent wall.
+    renderGate();
+    expect(screen.queryByText("Welcome to SanctiWalk")).toBeNull();
+    expect(screen.getByText("THE LANDING PAGE")).toBeTruthy();
   });
 
   it("gives a plain browser the landing page", () => {
@@ -73,6 +103,7 @@ describe("RootGate", () => {
 
   it("gives a home-screen PWA the app", () => {
     setStandalone(true);
+    alreadyAccepted();
     renderGate();
     expect(screen.getByText("THE APP")).toBeTruthy();
   });
@@ -80,6 +111,7 @@ describe("RootGate", () => {
   it("gives an iOS home-screen launch the app", () => {
     // iOS Safari predates the standard and uses its own flag.
     (window.navigator as { standalone?: boolean }).standalone = true;
+    alreadyAccepted();
     renderGate();
     expect(screen.getByText("THE APP")).toBeTruthy();
   });

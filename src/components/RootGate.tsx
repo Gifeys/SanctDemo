@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Capacitor } from "@capacitor/core";
+
+import ConsentGate from "./ConsentGate";
 import { SpotlightProvider } from "./Spotlight";
 import Landing from "./Landing";
 import App from "../App";
@@ -59,10 +61,17 @@ export default function RootGate() {
   const [installed] = useState(isInstalledApp);
 
   if (installed) {
+    // The consent screen belongs here and nowhere else: this is the
+    // branch that runs inside the APK, which is where somebody has
+    // deliberately installed the thing. A visitor merely looking at
+    // the parish's public site has installed nothing and agreed to
+    // nothing, and should not meet a consent wall. See ConsentGate.
     return (
-      <SpotlightProvider>
-        <App />
-      </SpotlightProvider>
+      <ConsentGate>
+        <SpotlightProvider>
+          <App />
+        </SpotlightProvider>
+      </ConsentGate>
     );
   }
 
