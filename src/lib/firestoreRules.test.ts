@@ -774,3 +774,51 @@ describe("the activity heartbeat", () => {
       { lastActiveAt: new Date().toISOString(), role: "church_admin" }));
   });
 });
+
+/**
+ * The exact write the admin portal makes when a photograph is chosen.
+ *
+ * Reproduced field for field, because the portal reported "refused"
+ * for an account the portal itself had already admitted - which it
+ * only does for role == 'church_admin' with a churchId. Something in
+ * the rule disagreed with something in the payload, and guessing from
+ * a screenshot was not finding it.
+ */
+describe("a ministry photograph, exactly as the portal writes it", () => {
+  it("the parish's own admin may write one", async () => {
+    const db = as(ADMIN_A);
+    await assertSucceeds(setDoc(doc(db, "itemPhotos", `${CHURCH_A}__min-altar-servers`), {
+      parishId: CHURCH_A,
+      itemId: "min-altar-servers",
+      dataUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      updatedAt: new Date().toISOString(),
+      updatedBy: "",
+    }));
+  });
+
+  it("another parish's admin may not", async () => {
+    const db = as(ADMIN_B);
+    await assertFails(setDoc(doc(db, "itemPhotos", `${CHURCH_A}__min-altar-servers`), {
+      parishId: CHURCH_A,
+      itemId: "min-altar-servers",
+      dataUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      updatedAt: new Date().toISOString(),
+      updatedBy: "",
+    }));
+  });
+
+  it("an ordinary pilgrim may not", async () => {
+    const db = as(USER_A);
+    await assertFails(setDoc(doc(db, "itemPhotos", `${CHURCH_A}__min-altar-servers`), {
+      parishId: CHURCH_A,
+      itemId: "min-altar-servers",
+      dataUrl: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
+      updatedAt: new Date().toISOString(),
+      updatedBy: "",
+    }));
+  });
+
+  it("anyone may read one, signed in or not", async () => {
+    await assertSucceeds(getDoc(doc(unauthed(), "itemPhotos", `${CHURCH_A}__x`)));
+  });
+});
