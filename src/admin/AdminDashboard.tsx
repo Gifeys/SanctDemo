@@ -213,13 +213,13 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
                     tabIndex={0}
                     role="link"
                     aria-label={`Open ${a.type ?? a.kind} from ${a.applicantName ?? "applicant"}`}
-                    onClick={() => navigate(`/admin/applications/view/${a.id}`)}
+                    onClick={() => navigate(`/parish-office-gav8thhe/applications/view/${a.id}`)}
                     onKeyDown={e => {
                       // The row is the target, so it has to answer the
                       // keyboard the way a link would.
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigate(`/admin/applications/view/${a.id}`);
+                        navigate(`/parish-office-gav8thhe/applications/view/${a.id}`);
                       }
                     }}
                     className="cursor-pointer hover:bg-[var(--color-brand-card-sunk)] focus:bg-[var(--color-brand-card-sunk)] outline-none"

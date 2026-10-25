@@ -284,11 +284,11 @@ export default function AdminApplications({ session }: { session: AdminSession }
                     tabIndex={0}
                     role="link"
                     aria-label={`Open ${a.type} from ${a.applicantName}`}
-                    onClick={() => navigate(`/admin/applications/view/${a.id}`)}
+                    onClick={() => navigate(`/parish-office-gav8thhe/applications/view/${a.id}`)}
                     onKeyDown={e => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigate(`/admin/applications/view/${a.id}`);
+                        navigate(`/parish-office-gav8thhe/applications/view/${a.id}`);
                       }
                     }}
                     className="cursor-pointer hover:bg-[var(--color-brand-card-sunk)] focus:bg-[var(--color-brand-card-sunk)] outline-none"
