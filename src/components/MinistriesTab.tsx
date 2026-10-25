@@ -14,6 +14,7 @@ import { pick } from "../lib/language";
 import { MINISTRY_DESCRIPTION_EN, bilingualFor } from "../lib/contentTranslations";
 import { submitApplication } from "../lib/applications";
 import { useParishContent } from "../lib/useParishContent";
+import { watchItemPhotos } from "../lib/itemPhoto";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
 import AvailabilityBadge from "./AvailabilityBadge";
 import WatchBell from "./WatchBell";
@@ -64,12 +65,18 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   // short-handed at San Roque, and the ministries themselves are shared.
   const managed = useParishContent(parish.id);
 
+  // The parish's own uploads, live. Kept in their own documents rather
+  // than in the parish record, so fifteen photographs cannot overflow
+  // it - see lib/itemPhoto.
+  const [parishPhotos, setParishPhotos] = useState<Record<string, string>>({});
+  useEffect(() => watchItemPhotos(parish.id, setParishPhotos), [parish.id]);
+
   // A photograph only when it is this parish's own, and the parish's
   // own upload ahead of anything compiled in: a secretary who has put
   // a photograph on this ministry has said what it should look like,
   // and no shipped default should override that.
   const photoFor = (ministryId: string) =>
-    managed?.itemContent?.[ministryId]?.imageUrl
+    parishPhotos[ministryId]
     ?? (PARISHES_WITH_OWN_PHOTOS.has(parish.id)
           ? MINISTRY_IMAGES[ministryId] ?? PLACEHOLDER_MINISTRY
           : PLACEHOLDER_MINISTRY);

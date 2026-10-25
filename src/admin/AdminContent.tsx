@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ImagePlus, Loader2, Trash2 } from "lucide-react";
-import { uploadItemPhoto } from "../lib/parishContent";
+import { clearItemPhoto, readItemPhoto, saveItemPhoto } from "../lib/itemPhoto";
 import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
@@ -174,6 +174,18 @@ export function Item({
   const [reminders, setReminders] = useState(listToLines(existing.reminders));
   const [contact, setContact] = useState(existing.contact ?? "");
   const [imageUrl, setImageUrl] = useState(existing.imageUrl ?? "");
+
+  // The photograph lives in its own document, not in `existing`, so it
+  // is fetched when the row opens. The row is remounted on open, so
+  // this runs once per opening rather than on every keystroke.
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const saved = await readItemPhoto(churchId, id);
+      if (live && saved) setImageUrl(saved);
+    })();
+    return () => { live = false; };
+  }, [churchId, id]);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -225,7 +237,12 @@ export function Item({
                 />
                 <button
                   type="button"
-                  onClick={() => setImageUrl("")}
+                  onClick={async () => {
+                    setPhotoBusy(true);
+                    await clearItemPhoto(churchId, id, "");
+                    setImageUrl("");
+                    setPhotoBusy(false);
+                  }}
                   className="mt-2 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[var(--color-brand-danger)]"
                 >
                   <Trash2 className="w-4 h-4" aria-hidden />
@@ -256,14 +273,24 @@ export function Item({
                   if (!file) return;
                   setPhotoBusy(true);
                   setPhotoError(null);
-                  // To Cloud Storage, not into the document. Every
-                  // ministry and sacrament shares ONE parish record and
-                  // Firestore caps a document at 1 MiB, so inlining
-                  // photographs would work for about four of them and
-                  // then start failing to save. See uploadItemPhoto.
-                  const result = await uploadItemPhoto(churchId, id, file);
-                  if (result.url) setImageUrl(result.url);
-                  else setPhotoError(result.error ?? "That photo could not be uploaded.");
+                  // Into Firestore, as a downscaled data URL, in a
+                  // document of its own. Cloud Storage is not switched
+                  // on for this project and switching it on asks for a
+                  // billing plan; Firestore is already here and already
+                  // holds announcement banners exactly this way. The
+                  // separate document is what keeps fifteen ministries
+                  // from overflowing the parish record's 1 MiB.
+                  //
+                  // Saved immediately, not on the Save button: the
+                  // photograph is its own record, and a parish that
+                  // picks a photo and closes the row should not find it
+                  // gone.
+                  const result = await saveItemPhoto(churchId, id, file, "");
+                  // Read back what was stored rather than trusting the
+                  // local copy, so the preview is the thing the app
+                  // will actually show.
+                  if (result.ok) setImageUrl((await readItemPhoto(churchId, id)) ?? "");
+                  else setPhotoError(result.error ?? "That photo could not be saved.");
                   setPhotoBusy(false);
                 }}
               />

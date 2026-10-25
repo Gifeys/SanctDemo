@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ParishSectionHeader from "./ParishSectionHeader";
 import { SACRAMENTS, SACRAMENT_IMAGES } from "../data";
 import { Sparkles, Calendar, BookOpen, ChevronDown, ChevronUp, Check, CheckCircle, AlertCircle, Bookmark, Info, ArrowLeft, ChevronRight } from "lucide-react";
 import { Route } from "../types";
 import { submitApplication } from "../lib/applications";
 import { useParishContent } from "../lib/useParishContent";
+import { watchItemPhotos } from "../lib/itemPhoto";
 import ApplicationForm from "./ApplicationForm";
 import SignInFirst from "./SignInFirst";
 import ItemDetailSections from "./ItemDetailSections";
@@ -36,11 +37,15 @@ export default function SacramentsTab({
   // Which sacraments this parish is currently taking applications for.
   const managed = useParishContent(parish.id);
 
+  // The parish's own uploads, live; see lib/itemPhoto.
+  const [parishPhotos, setParishPhotos] = useState<Record<string, string>>({});
+  useEffect(() => watchItemPhotos(parish.id, setParishPhotos), [parish.id]);
+
   // The parish's own upload ahead of the shipped image, for the same
   // reason as in Ministries: a secretary who has put a photograph on a
   // sacrament has said what it should look like.
   const photoFor = (sacramentId: string) =>
-    managed?.itemContent?.[sacramentId]?.imageUrl
+    parishPhotos[sacramentId]
     ?? SACRAMENT_IMAGES[sacramentId]
     ?? PLACEHOLDER_SACRAMENT;
   const { language } = useLanguage();

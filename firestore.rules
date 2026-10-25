@@ -298,6 +298,42 @@ service cloud.firestore {
      * Nobody reads it but a parish admin, and no one may ever change
      * or delete a row: a tally that can be edited is not a record.
      */
+    /**
+     * One photograph per ministry or sacrament, per parish.
+     *
+     * In Firestore rather than Cloud Storage because Storage is not
+     * switched on for this project and switching it on asks for a
+     * billing plan. An announcement's banner is already kept this way,
+     * so this is the established pattern here, not a new one.
+     *
+     * One document per photograph rather than a field on the parish
+     * record: that record is shared by every ministry and sacrament,
+     * and Firestore caps a document at 1 MiB, so a handful of
+     * photographs would have started failing to save and taken the
+     * descriptions with them.
+     *
+     * Read by anyone, because the ministries list must load for a
+     * pilgrim who has never signed in. Written only by an
+     * administrator of the parish the photograph belongs to - the
+     * same scoping every other parish record has.
+     */
+    match /itemPhotos/{photoId} {
+      allow read: if true;
+
+      allow create, update: if isAdminOf(request.resource.data.parishId)
+        && request.resource.data.keys().hasOnly(
+             ['parishId', 'itemId', 'dataUrl', 'updatedAt', 'updatedBy'])
+        && request.resource.data.itemId is string
+        && request.resource.data.dataUrl is string
+        // Roughly 300 KB of base64, comfortably inside the 1 MiB
+        // document ceiling and well above what the downscaler emits.
+        && request.resource.data.dataUrl.size() < 400000;
+
+      // Removing a photograph is writing an empty one, so there is
+      // nothing to delete and no path that needs it.
+      allow delete: if false;
+    }
+
     match /pageEvents/{eventId} {
       allow create: if request.resource.data.keys().hasOnly(['kind', 'visitorId', 'createdAt'])
         && request.resource.data.kind in ['open', 'download']
