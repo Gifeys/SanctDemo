@@ -10,13 +10,49 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Administrators are listed in the Firestore `admins` collection, one
-    // document per uid, granted from the Firebase console and never from the
-    // client. Same rule the Firestore rules use, so there is one definition
-    // of "admin" across the project rather than two that can drift.
-    function isAdmin() {
+    // Who counts as an administrator here.
+    //
+    // ## The drift this replaces
+    //
+    // This file used to ask only whether a document existed at
+    // admins/{uid}, with a comment claiming it was "the same rule the
+    // Firestore rules use". It was not. firestore.rules calls that the
+    // SUPER admin - a legacy diocese-wide flag - and says of it, in so
+    // many words, that it is "deliberately NOT accepted as a substitute
+    // for isAdminOf(): a global flag is the precise thing church
+    // isolation has to stop".
+    //
+    // The portal, meanwhile, admits people on users/{uid}.role ==
+    // 'church_admin' with a churchId. So a parish secretary could sign
+    // in, edit a ministry's text, and have every photo upload refused -
+    // by a rule asking a question nobody had answered for them.
+    //
+    // ## What each function is for
+    //
+    // isSuperAdmin  the legacy diocese-wide flag. Kept, because
+    //               console-granted accounts exist and removing it
+    //               would lock out whoever holds one.
+    // isParishAdmin the parish-scoped role the portal actually grants.
+    //               Mirrors isAdminOf() in firestore.rules, including
+    //               the churchId comparison, so the two files answer
+    //               the same question the same way.
+    function isSuperAdmin() {
       return request.auth != null
         && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    function parishOf() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.churchId;
+    }
+
+    function roleOf() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isParishAdmin(parishId) {
+      return request.auth != null
+        && roleOf() == 'church_admin'
+        && parishOf() == parishId;
     }
 
     match /parish-photos/{fileName} {
@@ -25,9 +61,43 @@ service firebase.storage {
       // Size and type are enforced here as well as in the client, because a
       // client-side check is a courtesy to the user, not a security control —
       // anyone can post directly to the bucket.
-      allow write: if isAdmin()
+      // Scoped by the file's own name.
+      //
+      // The parish is not a path segment here - uploadParishPhoto
+      // writes route-mhcp.jpg, route-mhcp-history.jpg and
+      // route-mhcp-mass.jpg - so the only place to read it is the
+      // name. Left unscoped, a San Roque administrator could replace
+      // Mary Help's patron photograph, which is the image on their
+      // Home screen. That was demonstrated against this rules engine
+      // before this line was written.
+      //
+      // matches() is fully anchored in Firebase rules, so
+      // 'route-mhcp[-.].*' matches route-mhcp.jpg and
+      // route-mhcp-history.jpg and nothing belonging to another
+      // parish. The separator class is what stops a parish id that is
+      // a prefix of a longer one from reaching across.
+      //
+      // Existing files keep their paths exactly: this narrows WHO may
+      // write them, not where they live.
+      // create and update carry a file, so they are size- and
+      // type-checked. delete carries none: request.resource is null on
+      // a delete, so those two conditions would throw rather than
+      // evaluate. It happened to DENY deletes for that reason, which is
+      // the right outcome reached by accident - a null-dereference is
+      // not a security control, and a future reader tidying the
+      // expression could silently open deletion to every admin.
+      //
+      // So it is said outright. The same people who may replace a
+      // photograph may remove one, scoped the same way.
+      allow create, update: if (
+          isSuperAdmin()
+          || (roleOf() == 'church_admin' && fileName.matches(parishOf() + '[-.].*'))
+        )
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isSuperAdmin()
+        || (roleOf() == 'church_admin' && fileName.matches(parishOf() + '[-.].*'));
     }
 
     // One photograph per ministry or sacrament, per parish.
@@ -41,9 +111,19 @@ service firebase.storage {
     // not a security control - anyone can post straight to the bucket.
     match /parish-photos/items/{parishId}/{fileName} {
       allow read: if true;
-      allow write: if isAdmin()
+
+      // Scoped to the administrator's OWN parish, because here the
+      // parish is a path segment and can be compared. A Mary Help
+      // secretary cannot write San Roque's ministry photographs, which
+      // is the isolation firestore.rules already enforces for every
+      // other kind of parish record.
+      // Split for the same reason as above: a delete has no
+      // request.resource to measure.
+      allow create, update: if isParishAdmin(parishId)
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isParishAdmin(parishId);
     }
 
     // Nothing else is writable. An open default here would make the bucket a

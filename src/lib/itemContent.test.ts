@@ -125,3 +125,63 @@ describe("the textarea-to-list conversion", () => {
     expect(listToLines(undefined)).toBe("");
   });
 });
+
+/**
+ * The photograph, which mergeItemContent used to discard.
+ *
+ * imageUrl was added to ItemContent without being added to the merge,
+ * so a parish could upload a ministry photo, see it in the editor,
+ * press Save, and have it quietly dropped on the way to the database.
+ * A ministry whose only change was a photo fared worse: `clean` came
+ * out empty and the entire entry was deleted.
+ */
+describe('mergeItemContent and the ministry photograph', () => {
+  it('keeps an uploaded photo', () => {
+    const merged = mergeItemContent(null, 'min-choir', {
+      imageUrl: 'https://example.test/choir.jpg',
+    })
+    expect(merged['min-choir'].imageUrl).toBe('https://example.test/choir.jpg')
+  })
+
+  it('keeps the entry when the photo is the only change', () => {
+    // The deletion case: previously this removed min-choir entirely.
+    const merged = mergeItemContent(null, 'min-choir', {
+      imageUrl: 'https://example.test/choir.jpg',
+    })
+    expect(merged['min-choir']).toBeDefined()
+  })
+
+  it('keeps the photo alongside the written text', () => {
+    const merged = mergeItemContent(null, 'min-choir', {
+      about: 'The parish choir.',
+      imageUrl: 'https://example.test/choir.jpg',
+    })
+    expect(merged['min-choir'].about).toBe('The parish choir.')
+    expect(merged['min-choir'].imageUrl).toBe('https://example.test/choir.jpg')
+  })
+
+  it('removes the photo when the editor clears it', () => {
+    // The editor sets imageUrl to "" for "Remove photo".
+    const existing = {
+      itemContent: { 'min-choir': { about: 'x', imageUrl: 'https://example.test/old.jpg' } },
+    } as never
+    const merged = mergeItemContent(existing, 'min-choir', { about: 'x', imageUrl: '' })
+    expect(merged['min-choir'].imageUrl).toBeUndefined()
+    expect(merged['min-choir'].about).toBe('x')
+  })
+
+  it('does not keep a blank photo as a value', () => {
+    const merged = mergeItemContent(null, 'min-choir', { about: 'x', imageUrl: '   ' })
+    expect(merged['min-choir'].imageUrl).toBeUndefined()
+  })
+
+  it('leaves another ministry alone', () => {
+    const existing = {
+      itemContent: { 'min-lector': { imageUrl: 'https://example.test/lector.jpg' } },
+    } as never
+    const merged = mergeItemContent(existing, 'min-choir', {
+      imageUrl: 'https://example.test/choir.jpg',
+    })
+    expect(merged['min-lector'].imageUrl).toBe('https://example.test/lector.jpg')
+  })
+})

@@ -16,7 +16,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/lib/firestoreRules.test.ts'],
+    include: ['src/lib/firestoreRules.test.ts', 'src/lib/storageRules.test.ts'],
+    // One file at a time. Both suites clear the SAME emulator in their
+    // beforeEach, so running them together means each deletes the
+    // other's fixtures mid-test and the failures look like rule bugs.
+    fileParallelism: false,
     // The emulator is slow to accept the first connection on a cold start.
     testTimeout: 20000,
     hookTimeout: 30000,

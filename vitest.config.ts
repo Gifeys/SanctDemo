@@ -20,6 +20,6 @@ export default defineConfig({
     // fails on every machine without a Java emulator teaches people to
     // ignore the result. Run it with `npm run test:rules`, which starts
     // the emulator around it.
-    exclude: ['**/node_modules/**', '**/dist/**', 'src/lib/firestoreRules.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/lib/firestoreRules.test.ts', 'src/lib/storageRules.test.ts'],
   },
 })

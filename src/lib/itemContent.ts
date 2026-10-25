@@ -197,6 +197,18 @@ export function mergeItemContent(
   if (patch.process?.length) clean.process = patch.process;
   if (patch.reminders?.length) clean.reminders = patch.reminders;
   if (patch.responsibilities?.length) clean.responsibilities = patch.responsibilities;
+  // The photograph, which this function used to drop on the floor.
+  //
+  // Everything above was copied field by field, and imageUrl was added
+  // to ItemContent later without being added here - so a parish could
+  // upload a ministry photograph, watch it appear in the editor, press
+  // Save, and have it silently discarded on the way to the database.
+  // Worse, a ministry whose ONLY change was a photograph produced an
+  // empty `clean` and had its whole entry deleted below.
+  //
+  // An empty string is how the editor says "remove the photo", and the
+  // falsy check below is what carries that through.
+  if (patch.imageUrl?.trim()) clean.imageUrl = patch.imageUrl.trim();
 
   if (Object.keys(clean).length === 0) {
     // Nothing written: drop the key entirely rather than leaving {}
