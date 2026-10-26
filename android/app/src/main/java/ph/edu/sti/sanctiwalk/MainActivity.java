@@ -13,7 +13,6 @@ import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 
 import java.util.List;
-import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
 
@@ -31,28 +30,32 @@ public class MainActivity extends BridgeActivity {
         // takes the whole app down. See SanctiWalkWebChromeClient.
         getBridge().getWebView().setWebChromeClient(new SanctiWalkWebChromeClient(getBridge()));
 
-        publishWindowInsets();
+        insetWebViewFromSystemBars();
     }
 
     /**
-     * Hands the system bar insets to CSS.
+     * Keeps the page out from under the status and navigation bars.
      *
-     * The app's stylesheets are full of env(safe-area-inset-top), which
-     * is the right thing on iOS and reports ZERO in the Android WebView -
-     * Android never populates it. So every one of those rules evaluated
-     * to no inset at all, and with targetSdk 36 the window is edge to
-     * edge whether it likes it or not: the map's search bar, the
-     * navigation banner and the Rosary's title were all drawn underneath
-     * the clock and the signal bars, where they could not be tapped.
+     * targetSdk 36 means the window is edge to edge and cannot opt out -
+     * the flag that allowed it is ignored from Android 16 - so the web
+     * content is laid out behind the clock and the signal bars unless
+     * something insets it.
      *
-     * targetSdk 35 could have opted out of edge to edge. 36 cannot - the
-     * opt-out flag is ignored from Android 16 - so the insets have to be
-     * measured and passed in rather than avoided.
+     * This pads the WebView itself rather than publishing the insets as
+     * CSS variables, which is what it did first. That version was
+     * correct in principle and failed in practice for a reason worth
+     * recording: the Rosary runs in an IFRAME, which is a separate
+     * document that cannot see the host page's variables, so the fix
+     * had to be forwarded to it by message and depended on a handshake
+     * landing before the first paint. Padding the view needs none of
+     * that - every document inside it, iframes included, simply starts
+     * below the bars.
      *
-     * Published as --sw-inset-*, which index.css folds together with
-     * env() so the same stylesheet stays correct on iOS and the web.
+     * The strip left behind shows the window background. Capacitor's
+     * theme sets that from the splash background, which is the app's
+     * own paper, so it reads as part of the page rather than a band.
      */
-    private void publishWindowInsets() {
+    private void insetWebViewFromSystemBars() {
         final android.webkit.WebView webView = getBridge().getWebView();
 
         ViewCompat.setOnApplyWindowInsetsListener(webView, (view, windowInsets) -> {
@@ -61,24 +64,11 @@ public class MainActivity extends BridgeActivity {
             Insets bars = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
 
-            float density = getResources().getDisplayMetrics().density;
-            final String js = String.format(
-                Locale.US,
-                "(function(){var s=document.documentElement.style;"
-                    + "s.setProperty('--sw-inset-top','%dpx');"
-                    + "s.setProperty('--sw-inset-bottom','%dpx');"
-                    + "s.setProperty('--sw-inset-left','%dpx');"
-                    + "s.setProperty('--sw-inset-right','%dpx');"
-                    + "window.dispatchEvent(new Event('sanctiwalk:insets'));})()",
-                Math.round(bars.top / density),
-                Math.round(bars.bottom / density),
-                Math.round(bars.left / density),
-                Math.round(bars.right / density));
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
 
-            // Insets arrive before the page has loaded, and again on
-            // rotation. Re-applied each time rather than read once.
-            view.post(() -> webView.evaluateJavascript(js, null));
-            return windowInsets;
+            // Consumed, so nothing underneath applies them a second time
+            // and pads the content twice.
+            return WindowInsetsCompat.CONSUMED;
         });
 
         ViewCompat.requestApplyInsets(webView);

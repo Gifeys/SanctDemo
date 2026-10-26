@@ -353,9 +353,10 @@ body { display: flex; align-items: center; justify-content: center; overflow: hi
 /* ========================== HEADER ============================= */
 header {
   position: relative; z-index: 20;
-  /* env() is always 0 in the Android WebView, so the host measures the
-     bars natively and sends them in - see host-insets below. */
-  padding: max(14px, env(safe-area-inset-top, 0px), var(--sw-inset-top, 0px)) 18px 8px;
+  /* No Android inset needed here: MainActivity pads the WebView
+     itself, so this document already starts below the status bar.
+     env() still carries iOS and the browser. */
+  padding: max(14px, env(safe-area-inset-top, 0px)) 18px 8px;
   display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
   flex: 0 0 auto;
 }
@@ -1069,11 +1070,6 @@ header {
     <h1 class="serif set-name" id="hdr-set">Holy Rosary<span class="set-sub" id="hdr-sub">Ready</span></h1>
     <div class="tools">
       <button class="tool serif" id="btn-lang" title="Language">EN</button>
-      <button class="tool" id="btn-mic" title="Voice">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/>
-        </svg>
-      </button>
       <button class="tool" id="btn-full" title="Full screen" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round">
@@ -2694,19 +2690,20 @@ window.addEventListener("message", function (event) {
     Narrator.speaking = false;
   } else if (data.type === "listen-availability") {
     Narrator.hostCanListen = !!data.available;
-    if (!Narrator.hostCanListen && S.voiceWanted && !SR) {
+    /* Inside the app, the host's answer is the whole answer. `!SR` was
+       part of this test too, on the assumption that a WebView with a
+       SpeechRecognition constructor could fall back to it - it cannot;
+       the constructor exists with nothing behind it. Keeping that
+       condition meant a host which said "no recogniser" produced no
+       warning and a microphone button that did nothing at all. */
+    if (!Narrator.hostCanListen && S.voiceWanted && Narrator.bridge) {
       S.voiceWanted = false;
       toast(P[S.lang].ui.micUnsupported);
     }
     syncMicButton();
-  } else if (data.type === "host-insets") {
-    // The app around this page measured the system bars for us. This
-    // document cannot see the host's CSS variables, and Android never
-    // fills in env(safe-area-inset-*), so without this the title and
-    // the close button sat under the clock.
-    var root = document.documentElement.style;
-    root.setProperty("--sw-inset-top", data.top || "0px");
-    root.setProperty("--sw-inset-bottom", data.bottom || "0px");
+  } else if (data.type === "fullscreen-state") {
+    immersiveOn = !!data.on;
+    syncFullButton();
   } else if (data.type === "host-hidden") {
     // The app around this page has left the Pray screen, or gone to
     // the background entirely. An <audio> element carries on until
@@ -2824,7 +2821,23 @@ let spokenPointer = 0;      // words lit so far in this step; only ever grows
  * prayed with. The app around us has a native recogniser; Narrator.bridge
  * already means "a SanctiWalk host answered", and the host tells us
  * separately whether its recogniser is usable. */
-function voiceSupported() { return !!SR || Narrator.hostCanListen; }
+/**
+ * Voice following is switched off.
+ *
+ * It was never reliable on a handset. The page's own recogniser has no
+ * service behind it inside a WebView, and the app's native one turned
+ * out to depend on an on-device model that is not present for every
+ * language - so what a pilgrim actually got was a microphone that lit
+ * up and a prayer that never advanced.
+ *
+ * Returning false here is the whole switch: the mic button is gone
+ * from the header, startVoice is never reached, and the Rosary
+ * advances on a tap, which is how it already worked for anybody who
+ * had the microphone off. The code below is left in place rather than
+ * torn out, because the fault is in the platform's recognisers rather
+ * than in this page, and it may be worth another look later.
+ */
+function voiceSupported() { return false; }
 function langTag() { return S.lang === "tl" ? "fil-PH" : "en-US"; }
 
 function startVoice() {
@@ -2840,9 +2853,22 @@ function startVoice() {
     return;
   }
 
-  // No recogniser of our own, but the host has one: it listens and sends
-  // back what it hears. See voiceSupported above.
-  if (!SR && Narrator.hostCanListen) {
+  /* The host's recogniser, whenever there is a host.
+  
+     This used to read `!SR && Narrator.hostCanListen` - use the app's
+     recogniser only if this page has none of its own. That was written
+     when window.webkitSpeechRecognition did not exist in the Android
+     WebView, and it does now: recent WebViews expose the constructor
+     while having no recognition service bound behind it, so SR was
+     truthy, this branch was skipped, and the page talked to a
+     recogniser that silently never heard anything. The microphone lit
+     up and no listen-start ever reached the app.
+  
+     Inside SanctiWalk the app's native recogniser is always the right
+     one - it is the only one with a permission flow and a service. The
+     Web Speech path below is for this page opened on its own in a real
+     browser, where there is no host at all. */
+  if (Narrator.hostCanListen) {
     wantRunning = true;
     hostPost({ type: "listen-start", lang: S.lang === "tl" ? "fil" : "en" });
     S.voiceLive = true;
@@ -2859,7 +2885,7 @@ function startVoice() {
 function stopVoice() {
   wantRunning = false;
   clearTimeout(silenceTimer);
-  if (!SR && Narrator.hostCanListen) hostPost({ type: "listen-stop" });
+  if (Narrator.hostCanListen) hostPost({ type: "listen-stop" });
   if (rec && recRunning) { try { rec.stop(); } catch (e) {} }
   S.voiceLive = false;
   stopMeter();
@@ -2944,6 +2970,10 @@ function resetVoiceForStep() {
 }
 
 function syncMicButton() {
+  // The button is gone from the header while voice following is off,
+  // and this is called from a dozen places that have no idea about
+  // that - so it is a no-op rather than a null dereference.
+  if (!el.btnMic) return;
   el.btnMic.classList.toggle("active", S.voiceWanted && (voiceSupported() || Meter.supported));
   el.btnMic.classList.toggle("listening", Meter.running || S.voiceLive);
 }
@@ -2993,8 +3023,13 @@ var musicPausedByHost = false;
    so every call is guarded and a refusal leaves the button as it was
    rather than throwing in the middle of a prayer.
    ================================================================== */
+/* Whether the app's chrome is currently hidden for us. Owned by the
+   host, which is the only thing that can actually hide it; this is a
+   mirror of the answer it sends back. */
+var immersiveOn = false;
+
 function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  return immersiveOn || !!(document.fullscreenElement || document.webkitFullscreenElement);
 }
 
 function syncFullButton() {
@@ -3007,8 +3042,22 @@ function syncFullButton() {
 }
 
 function toggleFullscreen() {
+  var want = !isFullscreen();
+
+  /* Ask the app first. It is the only thing that can take its own tab
+     bar away, and the tab bar is the whole problem: the Fullscreen API
+     called in here makes this IFRAME full screen and the bar carries
+     on being drawn over the top of it. */
+  if (hostPost({ type: "fullscreen", on: want })) {
+    immersiveOn = want;
+    syncFullButton();
+    return;
+  }
+
+  /* Opened on its own, outside SanctiWalk - then the real API is the
+     right one and there is no chrome to worry about. */
   try {
-    if (isFullscreen()) {
+    if (!want) {
       var exit = document.exitFullscreen || document.webkitExitFullscreen;
       if (exit) exit.call(document);
       return;
@@ -3384,7 +3433,7 @@ el.btnLang.addEventListener("click", function (e) {
   }
 });
 
-el.btnMic.addEventListener("click", function (e) {
+if (el.btnMic) el.btnMic.addEventListener("click", function (e) {
   e.stopPropagation();
   if (!voiceSupported()) { toast(P[S.lang].ui.micUnsupported); return; }
   S.voiceWanted = !S.voiceWanted;

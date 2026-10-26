@@ -1568,8 +1568,14 @@ export default function App() {
                     The safe-area inset keeps the labels clear of the iPhone
                     home indicator. */}
                 <nav
+                  // Hidden while the Rosary is in full screen. Marked
+                  // rather than conditionally rendered: unmounting the
+                  // bar would remount the whole tab beneath it, which
+                  // in the Rosary's case means reloading the iframe and
+                  // losing the decade somebody is praying.
+                  data-app-nav
                   className="shrink-0 h-16 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] flex items-center justify-around px-1 z-40 shadow-md"
-                  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                  style={{ paddingBottom: "var(--safe-bottom, 0px)" }}
                 >
                   <button
                     onClick={() => setActiveTab("home")}

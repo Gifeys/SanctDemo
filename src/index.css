@@ -1,6 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+/* Full screen, as the Rosary asks for it.
+   
+   The Fullscreen API cannot do this job here: called inside an iframe
+   it needs allow="fullscreen" and, even granted, it makes the IFRAME
+   full screen while the app's own tab bar carries on being drawn over
+   the top. What was actually wanted is the app's chrome out of the
+   way, which is a layout decision and belongs here. */
+:root[data-immersive="true"] [data-app-nav] {
+  display: none;
+}
+
 :root {
   /* The real distance from each screen edge to something you can touch.
      

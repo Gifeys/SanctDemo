@@ -129,53 +129,18 @@ describe("AdminAnalytics", () => {
     expect(screen.queryByText(/pilgrim-uid-7777/)).toBeNull();
   });
 
-  it("counts registered pilgrims and leaves administrators out", async () => {
-    // An administrator is not one of the parish's users, and counting
-    // them would inflate a figure the parish reports.
-    show();
-    deliver([], [], [
-      { role: "user" }, { role: "user" }, { role: "church_admin" },
-    ]);
-    const tile = (await screen.findByText(/pilgrims with an account/i)).parentElement!;
-    expect(within(tile).getByText("2")).toBeTruthy();
-  });
+  /* Five tests stood here, covering "Registered users", "Active
+     users", "Estimated visits", "Visitors" and the by-parish
+     breakdown.
 
-  it("counts only those seen in the last fifteen minutes", async () => {
-    const now = Date.now();
-    show();
-    deliver([], [], [
-      { role: "user", lastActiveAt: new Date(now - 60_000).toISOString() },
-      { role: "user", lastActiveAt: new Date(now - 60 * 60_000).toISOString() },
-      { role: "user" },
-    ]);
-    const tile = (await screen.findByText(/in the last 15 minutes/i)).parentElement!;
-    expect(within(tile).getByText("1")).toBeTruthy();
-  });
+     Deleted with the features. They were not failing because
+     something broke - they were asserting behaviour the parish asked
+     to have removed, so keeping them would have meant either a red
+     suite or rebuilding the very thing that was taken out. A test
+     that outlives its feature is not coverage.
 
-  it("separates estimated visits from the people who made them", async () => {
-    show();
-    deliver([], [
-      { uid: "a", churchId: "route-mhcp", at: new Date().toISOString() },
-      { uid: "a", churchId: "route-mhcp", at: new Date().toISOString() },
-      { uid: "b", churchId: "route-mhcp", at: new Date().toISOString() },
-    ], []);
-    const visits = (await screen.findByText(/geolocation-detected/i)).parentElement!;
-    expect(within(visits).getByText("3")).toBeTruthy();
-    const visitors = screen.getByText(/distinct people behind/i).parentElement!;
-    expect(within(visitors).getByText("2")).toBeTruthy();
-  });
+     What replaced them is in lib/pageEvents.test.ts: the app-versus-
+     web split, and the rule that a row recorded before surfaces
+     existed is never counted as a web visit. */
 
-  it("calls the figure estimated and says it is not proof of entry", async () => {
-    // The one claim this feature must never make.
-    show();
-    deliver([], [{ uid: "a", churchId: "route-mhcp", at: new Date().toISOString() }], []);
-    expect(await screen.findByText(/proximity and not proof of entry/i)).toBeTruthy();
-  });
-
-  it("names the parish rather than its route id", async () => {
-    show();
-    deliver([], [{ uid: "a", churchId: "route-mhcp", at: new Date().toISOString() }], []);
-    await screen.findByText(/visits by parish/i);
-    expect(screen.queryByText("route-mhcp")).toBeNull();
-  });
 });

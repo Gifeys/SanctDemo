@@ -1137,12 +1137,67 @@ async function sendViaResend(to: string, subject: string, body: string, html?: s
  * refuses to issue a code - locked out, with no way through.
  */
 function canSendMail(): boolean {
-  return !!process.env.RESEND_API_KEY ||
+  return !!process.env.BREVO_API_KEY ||
+    !!process.env.RESEND_API_KEY ||
     !!(process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
+/**
+ * Sends over Brevo's HTTP API.
+ *
+ * Added because Resend's shared sender, onboarding@resend.dev, only
+ * delivers to the address that owns the Resend account. That is fine
+ * while one person is testing and useless the moment a second parish
+ * admin needs a sign-in code: Resend refuses the message outright and
+ * the new admin can never get in.
+ *
+ * The proper fix is a verified domain, which needs a domain somebody
+ * can edit DNS for. Brevo will verify a single ordinary email address
+ * instead, which the parish already has, and then deliver to anybody.
+ * Over HTTPS, so Render's blocked SMTP ports do not matter.
+ *
+ * Preferred over Resend when both are configured, because this is the
+ * one that can reach an arbitrary inbox.
+ */
+async function sendViaBrevo(to: string, subject: string, body: string, html?: string): Promise<void> {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) throw new Error("BREVO_API_KEY is not set.");
+
+  // Must be an address verified in Brevo, or it refuses the send.
+  const sender = process.env.BREVO_SENDER;
+  if (!sender) throw new Error("BREVO_SENDER is not set.");
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { email: sender, name: "SanctiWalk" },
+      to: [{ email: to }],
+      subject,
+      textContent: body,
+      htmlContent: html ?? body.replace(/\n/g, "<br/>"),
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Brevo refused the message (${res.status}): ${detail.slice(0, 300)}`);
+  }
+}
+
 async function sendMailWithFallback(to: string, subject: string, body: string, html?: string): Promise<void> {
-  // HTTPS first where it is available, because on this host it is the
+  // Brevo first: it is the only one of these that reaches an inbox
+  // other than the account owner's without a verified domain.
+  if (process.env.BREVO_API_KEY) {
+    await sendViaBrevo(to, subject, body, html);
+    return;
+  }
+
+  // HTTPS next where it is available, because on this host it is the
   // only thing that works at all.
   if (process.env.RESEND_API_KEY) {
     await sendViaResend(to, subject, body, html);

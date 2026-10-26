@@ -74,6 +74,7 @@ describe('summarisePageEvents', () => {
   it('counts nothing for nothing', () => {
     expect(summarisePageEvents([])).toEqual({
       opens: 0, downloads: 0, people: 0, downloaders: 0,
+      apkPeople: 0, webPeople: 0, unknownSurfacePeople: 0,
     })
   })
 
@@ -164,5 +165,58 @@ describe('byDay', () => {
 
   it('gives an empty list when nothing matches', () => {
     expect(byDay([ev('open', 'a', '2026-10-20T08:00:00Z')], 'download')).toEqual([])
+  })
+})
+
+describe('surfaces', () => {
+  const ev = (over: Partial<PageEvent>): PageEvent =>
+    ({ kind: 'open', visitorId: 'a', at: '2026-10-26T00:00:00Z', ...over })
+
+  it('counts the app and the web apart', () => {
+    const totals = summarisePageEvents([
+      ev({ visitorId: 'a', surface: 'apk' }),
+      ev({ visitorId: 'b', surface: 'web' }),
+      ev({ visitorId: 'c', surface: 'web' }),
+    ])
+    expect(totals.apkPeople).toBe(1)
+    expect(totals.webPeople).toBe(2)
+  })
+
+  it('does not count an old row as a web visit', () => {
+    // Everything recorded before surfaces existed has none. Treating
+    // that as "web" would invent a figure nobody measured.
+    const totals = summarisePageEvents([ev({ visitorId: 'a' })])
+    expect(totals.webPeople).toBe(0)
+    expect(totals.apkPeople).toBe(0)
+    expect(totals.unknownSurfacePeople).toBe(1)
+  })
+
+  it('counts somebody who used both in both', () => {
+    // And once in `people`, so the three do not sum to it.
+    const totals = summarisePageEvents([
+      ev({ visitorId: 'a', surface: 'apk' }),
+      ev({ visitorId: 'a', surface: 'web' }),
+    ])
+    expect(totals.people).toBe(1)
+    expect(totals.apkPeople).toBe(1)
+    expect(totals.webPeople).toBe(1)
+  })
+
+  it('leaves the headline numbers exactly as they were', () => {
+    // Adding this must not move the figures the parish already reads.
+    const totals = summarisePageEvents([
+      ev({ visitorId: 'a' }),
+      ev({ visitorId: 'b', surface: 'web' }),
+      ev({ kind: 'download', visitorId: 'a' }),
+    ])
+    expect(totals.opens).toBe(2)
+    expect(totals.people).toBe(2)
+    expect(totals.downloads).toBe(1)
+    expect(totals.downloaders).toBe(1)
+  })
+
+  it('ignores a surface on a download, which has no surface question', () => {
+    const totals = summarisePageEvents([ev({ kind: 'download', visitorId: 'a', surface: 'web' })])
+    expect(totals.webPeople).toBe(0)
   })
 })

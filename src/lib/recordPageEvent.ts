@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import { db } from "./firebase";
@@ -24,6 +25,10 @@ export async function recordPageEvent(kind: PageEventKind): Promise<void> {
     await addDoc(collection(db, "pageEvents"), {
       kind,
       visitorId: visitorId(),
+      // Which surface this was. Capacitor knows for certain whether it
+      // is the installed app; the user agent only guesses, and guesses
+      // wrong inside a WebView that trims it.
+      surface: Capacitor.isNativePlatform() ? "apk" : "web",
       // The server's clock. A handset with a wrong date cannot file
       // itself into last month.
       createdAt: serverTimestamp(),

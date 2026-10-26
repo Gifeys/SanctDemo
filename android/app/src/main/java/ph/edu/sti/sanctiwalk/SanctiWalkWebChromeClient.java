@@ -47,6 +47,31 @@ public class SanctiWalkWebChromeClient extends BridgeWebChromeClient {
         this.bridge = bridge;
     }
 
+    /**
+     * Lets the voice bridge's own log lines out of a release build.
+     *
+     * Capacitor routes console.log through its Logger, which is silent
+     * in a release build - so the diagnostics added for the Rosary's
+     * microphone produced nothing at all in logcat, and the empty
+     * capture looked like "the user never pressed the button" rather
+     * than "this cannot be seen from here".
+     *
+     * Only SW-VOICE lines are forwarded. Everything else keeps
+     * Capacitor's behaviour, so a release build does not start
+     * narrating every console message in the app.
+     *
+     * This path has no automated test and cannot have one: there is no
+     * WebView, no recogniser and no logcat in the test environment.
+     */
+    @Override
+    public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
+        String text = message.message();
+        if (text != null && text.startsWith("SW-VOICE")) {
+            android.util.Log.i("SW-VOICE", text);
+        }
+        return super.onConsoleMessage(message);
+    }
+
     @Override
     public void onPermissionRequest(final PermissionRequest request) {
         List<String> resources = Arrays.asList(request.getResources());

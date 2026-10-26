@@ -71,13 +71,12 @@ export default function DailyRosary() {
       if (frame.current && event.source !== frame.current.contentWindow) return;
 
       const data = event.data as
-        | { channel?: string; type?: string; text?: string; lang?: string }
+        | { channel?: string; type?: string; text?: string; lang?: string; on?: boolean }
         | null;
       if (!data || data.channel !== CHANNEL) return;
 
       if (data.type === "hello") {
         reply({ type: "host-ready" });
-        sendInsets();
         return;
       }
 
@@ -118,6 +117,12 @@ export default function DailyRosary() {
         await stopListening();
         return;
       }
+
+      if (data.type === "fullscreen") {
+        setImmersive(!!data.on);
+        reply({ type: "fullscreen-state", on: !!data.on });
+        return;
+      }
     }
 
     /**
@@ -133,22 +138,23 @@ export default function DailyRosary() {
      * resume.
      */
     /**
-     * The Rosary runs in an iframe, which is its own document, so the
-     * inset variables MainActivity writes onto the host page are not
-     * visible inside it. Without this the Rosary's title sat under the
-     * clock exactly as the map's search bar did.
+     * Takes the app's own chrome out of the way for the Rosary.
+     *
+     * The Fullscreen API cannot do this from inside the iframe: it
+     * would make the iframe full screen while the tab bar carries on
+     * being drawn over it. Hiding the chrome is the host's decision,
+     * so the Rosary asks and the host acts.
+     *
+     * setAttribute, not toggleAttribute: toggleAttribute sets the value
+     * to an EMPTY STRING and the stylesheet matches
+     * [data-immersive="true"], so the attribute appeared, the selector
+     * never matched, and the bar stayed put while the button lit up as
+     * though it had worked.
      */
-    function sendInsets() {
-      const style = getComputedStyle(document.documentElement);
-      reply({
-        type: "host-insets",
-        top: style.getPropertyValue("--sw-inset-top").trim() || "0px",
-        bottom: style.getPropertyValue("--sw-inset-bottom").trim() || "0px",
-      });
+    function setImmersive(on: boolean) {
+      if (on) document.documentElement.setAttribute("data-immersive", "true");
+      else document.documentElement.removeAttribute("data-immersive");
     }
-    // Fired by MainActivity each time the insets are applied, including
-    // on rotation and before the page has finished loading.
-    window.addEventListener("sanctiwalk:insets", sendInsets);
 
     function onVisibility() {
       reply({ type: document.hidden ? "host-hidden" : "host-visible" });
@@ -159,7 +165,9 @@ export default function DailyRosary() {
     window.addEventListener("message", onMessage);
     return () => {
       window.removeEventListener("message", onMessage);
-      window.removeEventListener("sanctiwalk:insets", sendInsets);
+      // Leaving the Pray tab with the chrome still hidden would strand
+      // the whole app with no way to change tab.
+      setImmersive(false);
       document.removeEventListener("visibilitychange", onVisibility);
       // Leaving the Pray tab must not leave a voice praying on behind
       // it, a microphone open, or music playing in an empty room.
@@ -187,13 +195,31 @@ export default function DailyRosary() {
   );
 }
 
+/**
+ * One tag for everything the speech bridge reports.
+ *
+ * Kept in the shipped build on purpose. This path cannot be exercised
+ * from a desktop browser or a test - there is no recogniser in either -
+ * so the only way anybody diagnoses it is by reading the device log
+ * while somebody prays into the phone. Twice now the fault has been
+ * guessed at from the symptom instead.
+ *
+ * Visible with:  adb logcat | grep SW-VOICE
+ */
+function voiceLog(...parts: unknown[]): void {
+  // eslint-disable-next-line no-console
+  console.log("SW-VOICE", ...parts);
+}
+
 /** Native recognition, where there is any. */
 async function listenAvailable(): Promise<boolean> {
   try {
     if (!Capacitor.isNativePlatform()) return false;
     const { available } = await SpeechRecognition.available();
+    voiceLog("available:", available);
     if (!available) return false;
     const perm = await SpeechRecognition.checkPermissions();
+    voiceLog("permission:", perm.speechRecognition);
     if (perm.speechRecognition !== "granted") {
       const asked = await SpeechRecognition.requestPermissions();
       if (asked.speechRecognition !== "granted") return false;
@@ -232,7 +258,9 @@ async function startListening(
   language: "fil" | "en",
   reply: (m: Record<string, unknown>) => void,
 ): Promise<void> {
+  voiceLog("listen-start requested, language:", language);
   if (!(await listenAvailable())) {
+    voiceLog("unavailable - giving up");
     reply({ type: "listen-availability", available: false });
     return;
   }
@@ -263,6 +291,7 @@ async function startListening(
           popup: false,
         });
         locale = candidate;
+        voiceLog("started in", candidate);
 
         // Not every recogniser emits partials.
         //
@@ -276,12 +305,14 @@ async function startListening(
         // So whatever start() hands back is used too. On a device that
         // does emit partials this is empty and costs nothing.
         const spoken = (result as { matches?: string[] } | undefined)?.matches?.[0];
+        voiceLog("start() returned:", JSON.stringify(result ?? null));
         if (spoken) {
           listenState = afterHeard(listenState);
           reply({ type: "heard", text: spoken, final: true });
         }
         return true;
-      } catch {
+      } catch (err) {
+        voiceLog("locale refused:", candidate, (err as Error)?.message ?? err);
         // This locale is not installed on the handset. Try the next
         // rather than reporting the whole feature unavailable, which
         // is what silently cost Tagalog users their voice following.
@@ -293,6 +324,7 @@ async function startListening(
   try {
     await SpeechRecognition.addListener("partialResults", (result: { matches?: string[] }) => {
       const heard = result?.matches?.[0];
+      voiceLog("partial:", JSON.stringify(result?.matches ?? null));
       if (!heard) return;
       // Something was heard, so the recogniser is working. Restarts
       // only count when they achieve nothing.
@@ -301,6 +333,7 @@ async function startListening(
     });
 
     await SpeechRecognition.addListener("listeningState", (state: { status: string }) => {
+      voiceLog("state:", state.status, "attempts:", listenState.attempts);
       if (state.status !== "stopped") return;
 
       const plan = planRestart(listenState);

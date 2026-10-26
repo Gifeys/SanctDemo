@@ -32,12 +32,24 @@
 /** What happened. Two kinds, because two were asked for. */
 export type PageEventKind = 'open' | 'download'
 
+/**
+ * Where the app was being used.
+ *
+ * Absent on everything recorded before this was added, which is why
+ * the totals report it separately rather than folding it into the
+ * headline numbers: an unknown surface is not a web visit, and
+ * counting it as one would quietly rewrite the past.
+ */
+export type PageEventSurface = 'apk' | 'web'
+
 export interface PageEvent {
   kind: PageEventKind
   /** Random per-browser token. See the note above. */
   visitorId: string
   /** ISO 8601, from the server's clock where there is one. */
   at: string
+  /** Absent on rows written before surfaces were recorded. */
+  surface?: PageEventSurface
 }
 
 const VISITOR_KEY = 'sanctiwalk.visitor'
@@ -130,6 +142,19 @@ export interface PageEventTotals {
   people: number
   /** Distinct browsers that downloaded it. */
   downloaders: number
+  /** Distinct browsers that opened the installed Android app. */
+  apkPeople: number
+  /** Distinct browsers that opened it in a web browser. */
+  webPeople: number
+  /**
+   * Distinct browsers whose surface was never recorded.
+   *
+   * Reported rather than hidden. Every row written before this field
+   * existed is one of these, so for a while apkPeople + webPeople will
+   * be far short of people - and a panel that did not say so would
+   * look like most of the parish had stopped using the app.
+   */
+  unknownSurfacePeople: number
 }
 
 /**
@@ -142,20 +167,38 @@ export interface PageEventTotals {
 export function summarisePageEvents(events: PageEvent[]): PageEventTotals {
   const openers = new Set<string>()
   const downloaders = new Set<string>()
+  const apk = new Set<string>()
+  const web = new Set<string>()
+  const unknown = new Set<string>()
   let opens = 0
   let downloads = 0
 
   for (const e of events) {
     if (e.kind === 'open') {
       opens += 1
-      if (e.visitorId) openers.add(e.visitorId)
+      if (!e.visitorId) continue
+      openers.add(e.visitorId)
+      if (e.surface === 'apk') apk.add(e.visitorId)
+      else if (e.surface === 'web') web.add(e.visitorId)
+      else unknown.add(e.visitorId)
     } else if (e.kind === 'download') {
       downloads += 1
       if (e.visitorId) downloaders.add(e.visitorId)
     }
   }
 
-  return { opens, downloads, people: openers.size, downloaders: downloaders.size }
+  // Somebody who opened it both ways is in both sets, and is one
+  // person in `people`. The three do not add up to it, and should not
+  // be presented as though they do.
+  return {
+    opens,
+    downloads,
+    people: openers.size,
+    downloaders: downloaders.size,
+    apkPeople: apk.size,
+    webPeople: web.size,
+    unknownSurfacePeople: unknown.size,
+  }
 }
 
 /** Rows from the last `days` days, newest first. */
