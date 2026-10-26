@@ -6,6 +6,7 @@ import { auth } from "../lib/firebase";
 import { getProfile } from "../lib/userProfile";
 import { getChurch } from "../lib/churches";
 import AdminLogin from "./AdminLogin";
+import TwoFactorGate from "./TwoFactorGate";
 import AdminDashboard from "./AdminDashboard";
 import AdminApplicationDetail from "./AdminApplicationDetail";
 import AdminApplications from "./AdminApplications";
@@ -38,7 +39,7 @@ export interface AdminSession {
 
 export default function AdminApp() {
   const [session, setSession] = useState<AdminSession | null>(null);
-  const [state, setState] = useState<"loading" | "out" | "not-admin" | "in">("loading");
+  const [state, setState] = useState<"loading" | "out" | "not-admin" | "needs-code" | "in">("loading");
 
   useEffect(() => {
     return onAuthStateChanged(auth, async user => {
@@ -51,10 +52,37 @@ export default function AdminApp() {
         return;
       }
 
+      // The second factor, enforced HERE rather than on the login
+      // screen.
+      //
+      // It was on the login screen, and it stopped nobody: the
+      // password alone signs the account in to Firebase, this
+      // listener fires, and the portal replaced the login component
+      // before its code prompt could block anything. The proof has to
+      // be checked where the portal is handed over.
+      //
+      // The claim must be NEWER than this sign-in. A claim from a
+      // previous session would let somebody who has just stolen a
+      // password walk straight in on the strength of a code the real
+      // administrator typed last week.
+      const token = await user.getIdTokenResult();
+      const verifiedAt = Number(token.claims.admin2fa ?? 0) * 1000;
+      const signedInAt = Date.parse(user.metadata.lastSignInTime ?? "") || 0;
+
+      if (!verifiedAt || verifiedAt < signedInAt) {
+        setSession(null);
+        setState("needs-code");
+        return;
+      }
+
       setSession({ user, profile, church: await getChurch(profile.churchId) });
       setState("in");
     });
   }, []);
+
+  if (state === "needs-code") {
+    return <TwoFactorGate email={auth.currentUser?.email ?? "your email"} />;
+  }
 
   if (state === "loading") {
     return (

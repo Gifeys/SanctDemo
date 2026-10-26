@@ -1008,7 +1008,7 @@ app.post("/api/admin/2fa/request", async (req, res) => {
     if (!email) return res.status(400).json({ error: "That account has no email address." });
 
     const mail = codeEmail(issued.code!, parishName);
-    await sendMail(email, mail.subject, mail.body);
+    await sendMailWithFallback(email, mail.subject, mail.body);
 
     // The address is NOT returned in full. The portal shows it so the
     // person knows where to look, and a partial is enough for that
@@ -1062,12 +1062,49 @@ async function adminEmailFor(uid: string): Promise<{ email: string; parishName: 
   };
 }
 
+/**
+ * Sends, trying the implicit-TLS port when the submission port hangs.
+ *
+ * Render's network blocks outbound connections on 587 and 25, so a
+ * mail that looks perfectly configured simply times out - which is
+ * exactly what happened here, and it is indistinguishable from a bad
+ * password until you watch the connection. 465 carries the same
+ * traffic under TLS from the first byte and is usually left open.
+ *
+ * Tried in order rather than guessed, so a host where 587 works is
+ * unaffected and one where it is blocked still gets its mail.
+ */
+async function sendMailWithFallback(to: string, subject: string, body: string): Promise<void> {
+  const configured = parseInt(process.env.SMTP_PORT || "587");
+  const ports = configured === 465 ? [465] : [configured, 465];
+
+  let lastError: Error | null = null;
+  for (const port of ports) {
+    try {
+      await sendMailOn(port, to, subject, body);
+      if (port !== configured) {
+        console.log(`[mail] port ${configured} did not connect; sent on ${port} instead.`);
+      }
+      return;
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`[mail] port ${port} failed: ${lastError.message}`);
+    }
+  }
+  throw lastError ?? new Error("Mail could not be sent.");
+}
+
 /** One place that actually sends, shared with /api/send-email. */
-async function sendMail(to: string, subject: string, body: string): Promise<void> {
+async function sendMailOn(port: number, to: string, subject: string, body: string): Promise<void> {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: parseInt(process.env.SMTP_PORT || "587") === 465,
+    port,
+    secure: port === 465,
+    // A blocked port otherwise hangs for the platform's default,
+    // which is long enough that the caller gives up first and the
+    // real reason never reaches the log.
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
     // STARTTLS is required, and the certificate is checked.
     //
     // This connection carries sign-in codes. rejectUnauthorized:false
@@ -1078,7 +1115,7 @@ async function sendMail(to: string, subject: string, body: string): Promise<void
     //
     // A private mail server with its own CA should pass that CA here
     // rather than turning the check off.
-    requireTLS: parseInt(process.env.SMTP_PORT || "587") !== 465,
+    requireTLS: port !== 465,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
   await transporter.sendMail({
