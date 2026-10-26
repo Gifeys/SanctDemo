@@ -10,6 +10,8 @@ import nodemailer from "nodemailer";
 import { ATTEMPT_TIMEOUT_MS, askWithRetry, isModelBusy, isTimeout, retryPlan } from "./src/lib/modelRetry";
 import { emptyBudget, isScannableParish, spentMessage, type ScanBudget } from "./src/lib/scanQuota";
 import { readParishContent } from "./src/lib/parishContentStore";
+import { codeEmail, messageFor, type OtpFailure } from "./src/lib/adminOtp";
+import { issueCode, verifyCode } from "./src/lib/adminOtpStore";
 import { groundingBlock, isGap, itemFacts, massFact, type Fact, type Gap } from "./src/lib/sanctiGrounding";
 import { MASS_SCHEDULES } from "./src/data";
 import {
@@ -954,6 +956,130 @@ app.get("/api/identify/budget", async (req, res) => {
 });
 
 // Check if SMTP is configured for real email sending
+/**
+ * The parish office's second factor: a six-digit code by email.
+ *
+ * ## Why the server does this and not the browser
+ *
+ * The code is generated here, stored here as a hash, and compared
+ * here. A browser that generated or checked its own code would be
+ * asking itself for permission. The portal only ever learns whether
+ * the answer was right.
+ *
+ * ## Why a custom claim rather than a flag
+ *
+ * On success the account gets an `admin2fa` custom claim. That lives
+ * inside the signed ID token, so it cannot be forged by a client the
+ * way a field in a document or a value in localStorage could. The
+ * portal refreshes its token and reads it back.
+ *
+ * Both routes need a valid ID token, so an unauthenticated caller
+ * cannot post codes to somebody else's address or grind guesses
+ * against their account.
+ */
+app.post("/api/admin/2fa/request", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  const uid = await uidFromToken(req.headers.authorization);
+  if (!uid) return res.status(401).json({ error: "Sign in first." });
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    // Said plainly rather than as a silent failure: without mail there
+    // is no way to finish signing in, and the administrator needs to
+    // know it is the server's fault and not their password.
+    return res.status(503).json({
+      error: "EMAIL_NOT_CONFIGURED",
+      message: "Email is not set up on the server, so a code cannot be sent. " +
+               "Contact the SanctiWalk administrator.",
+    });
+  }
+
+  try {
+    const issued = await issueCode(uid);
+    if (!issued.ok) {
+      return res.status(429).json({
+        error: "TOO_SOON",
+        message: "A code was just sent. Check your email, or wait a moment and try again.",
+        retryAfterMs: issued.retryAfterMs ?? 60_000,
+      });
+    }
+
+    const { email, parishName } = await adminEmailFor(uid);
+    if (!email) return res.status(400).json({ error: "That account has no email address." });
+
+    const mail = codeEmail(issued.code!, parishName);
+    await sendMail(email, mail.subject, mail.body);
+
+    // The address is NOT returned in full. The portal shows it so the
+    // person knows where to look, and a partial is enough for that
+    // without putting the whole address on screen.
+    return res.json({ ok: true, sentTo: maskEmail(email) });
+  } catch (error) {
+    console.error("[2FA] could not send a code:", (error as Error).message);
+    return res.status(500).json({ error: "That code could not be sent. Try again." });
+  }
+});
+
+app.post("/api/admin/2fa/verify", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  const uid = await uidFromToken(req.headers.authorization);
+  if (!uid) return res.status(401).json({ error: "Sign in first." });
+
+  const code = String(req.body?.code ?? "").trim();
+  try {
+    const result = await verifyCode(uid, code);
+    if (!result.ok) {
+      return res.status(400).json({
+        error: "BAD_CODE",
+        message: messageFor((result.reason ?? "wrong") as OtpFailure),
+      });
+    }
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("[2FA] verify failed:", (error as Error).message);
+    return res.status(500).json({ error: "That could not be checked. Try again." });
+  }
+});
+
+/** "ad****@gmail.com" - enough to recognise, not enough to publish. */
+function maskEmail(email: string): string {
+  const [name, domain] = email.split("@");
+  if (!domain) return "your email";
+  const head = name.slice(0, 2);
+  return `${head}${"*".repeat(Math.max(1, name.length - 2))}@${domain}`;
+}
+
+/** The administrator's address and the parish they belong to. */
+async function adminEmailFor(uid: string): Promise<{ email: string; parishName: string }> {
+  const { getAuth } = await import("firebase-admin/auth");
+  const user = await getAuth().getUser(uid);
+  const content = await readParishContent(
+    (user.customClaims?.churchId as string) ?? "").catch(() => null);
+  return {
+    email: user.email ?? "",
+    parishName: content?.name ?? "SanctiWalk",
+  };
+}
+
+/** One place that actually sends, shared with /api/send-email. */
+async function sendMail(to: string, subject: string, body: string): Promise<void> {
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: parseInt(process.env.SMTP_PORT || "587") === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    tls: { rejectUnauthorized: false },
+  });
+  await transporter.sendMail({
+    from: `"${process.env.SMTP_SENDER_NAME || "SanctiWalk Parish Office"}" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    text: body,
+    html: body.replace(/\n/g, "<br/>"),
+  });
+}
+
 app.get("/api/smtp-status", (req, res) => {
   const isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
   res.json({

@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Loader2, Mail, ShieldCheck } from "lucide-react";
-import { signIn, sendSecondFactorLink, AuthError } from "../lib/authFlow";
+import { signIn, AuthError } from "../lib/authFlow";
+import { requestCode, submitCode } from "../lib/adminTwoFactor";
 
 /**
  * Parish office sign-in.
@@ -17,6 +18,8 @@ export default function AdminLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
 
   async function submit(e: FormEvent) {
@@ -26,7 +29,16 @@ export default function AdminLogin() {
     try {
       const result = await signIn(email.trim(), password);
       if (result.pendingSecondFactor) {
-        await sendSecondFactorLink(email.trim());
+        // A six-digit code by email, not a link. A link moves the
+        // person out of the browser they are typing in, and on a
+        // shared parish computer it sits in an inbox anybody can open
+        // later. A code is read, typed, and spent.
+        const asked = await requestCode();
+        if (!asked.ok) {
+          setError(asked.message ?? "That code could not be sent.");
+          return;
+        }
+        setSentTo(asked.sentTo ?? null);
         setSent(true);
       }
     } catch (err) {
@@ -40,14 +52,77 @@ export default function AdminLogin() {
     return (
       <Card>
         <ShieldCheck className="mx-auto w-8 h-8 text-[var(--color-brand-primary)]" />
-        <h1 className="mt-3 text-[19px] font-bold font-serif italic">One more step</h1>
+        <h1 className="mt-3 text-[19px] font-bold font-serif italic">Enter your code</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-brand-text)]">
-          We sent a one-time sign-in link to <strong>{email}</strong>. Open it on this
-          device to finish.
+          We emailed a six-digit code to <strong>{sentTo ?? email}</strong>.
         </p>
-        <p className="mt-2 text-[14px] text-[var(--color-brand-secondary)]">
-          Your password alone does not open the parish office. The link expires and
-          can only be used once.
+
+        {error && (
+          <p role="alert" className="mt-3 rounded-2xl bg-[#FBE9E4] border border-[#E7C3B8] px-4 py-3 text-left text-[15px] text-[var(--color-brand-error)]">
+            {error}
+          </p>
+        )}
+
+        <form
+          className="mt-4 text-left"
+          onSubmit={async e => {
+            e.preventDefault();
+            setBusy(true);
+            setError(null);
+            const result = await submitCode(code.trim());
+            setBusy(false);
+            if (!result.ok) {
+              setError(result.message ?? "That code is not right.");
+              setCode("");
+              return;
+            }
+            // The token now carries the claim; AdminApp re-reads it.
+            window.location.reload();
+          }}
+        >
+          <input
+            value={code}
+            onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            aria-label="Six-digit code"
+            placeholder="000000"
+            className="w-full rounded-xl border border-[var(--color-brand-border)] px-4 py-3 text-center text-[26px] font-bold tracking-[0.4em] tabular-nums"
+          />
+
+          <button
+            type="submit"
+            disabled={busy || code.length !== 6}
+            className="mt-3 w-full rounded-full bg-[var(--color-brand-primary)] py-3 text-[16px] font-bold text-[var(--color-brand-on-accent)] disabled:opacity-50"
+          >
+            {busy ? "Checking…" : "Continue"}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            const again = await requestCode();
+            setBusy(false);
+            if (!again.ok) setError(again.message ?? "Could not send another code.");
+            else setNotice("A new code is on its way.");
+          }}
+          className="mt-3 text-[14px] font-semibold text-[var(--color-brand-secondary)]"
+        >
+          Send another code
+        </button>
+
+        {notice && (
+          <p className="mt-2 text-[14px] text-[var(--color-brand-secondary)]">{notice}</p>
+        )}
+
+        <p className="mt-3 text-[14px] text-[var(--color-brand-secondary)]">
+          Your password alone does not open the parish office. The code lasts ten
+          minutes and can be used once.
         </p>
       </Card>
     );
