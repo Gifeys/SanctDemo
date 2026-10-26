@@ -11,8 +11,14 @@
 /** Custom scheme registered by the AR app's Android manifest. */
 export const AR_APP_SCHEME = 'sanctiwalkar'
 
-/** Where to send someone whose phone cannot run it. */
-export const AR_APP_HELP = 'https://github.com/Gifeys/SanctDemo'
+/**
+ * Where to send someone whose phone cannot run it.
+ *
+ * The app's own download page, not the source repository. The
+ * repository link was public here and on the landing page's footer,
+ * which published the whole codebase to anyone who read either one.
+ */
+export const AR_APP_HELP = '/get/'
 
 export type ArAvailability =
   | { kind: 'ready' }

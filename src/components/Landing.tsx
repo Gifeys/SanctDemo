@@ -218,8 +218,6 @@ export default function Landing() {
           parishes named above.
         </p>
         <p>
-          <a href="https://github.com/Gifeys/SanctDemo">Source code</a>
-          <span aria-hidden> · </span>
           <a href="/get/">Download for Android</a>
         </p>
       </footer>
