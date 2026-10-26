@@ -6,6 +6,14 @@ import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
 import { closedIds, isOpenForApplications, withAvailability } from "../lib/availability";
 import {
+  MAX_WINDOWS_PER_ITEM,
+  describeWindows,
+  normaliseWindows,
+  withWindow,
+  withoutWindow,
+  type OpenWindow,
+} from "../lib/openWindows";
+import {
   hasParishContent, mergeItemContent, resolveMinistry, resolveSacrament,
   type ItemContent,
 } from "../lib/itemContent";
@@ -93,6 +101,22 @@ export default function AdminItems({
     }
   }
 
+  async function saveWindows(itemId: string, windows: OpenWindow[]) {
+    setSwitching(itemId);
+    setError(null);
+    try {
+      await saveParishContent(
+        churchId,
+        { openWindows: { ...(managed?.openWindows ?? {}), [itemId]: windows } },
+        session.user.email ?? "",
+      );
+    } catch {
+      setError("Those dates could not be saved. Check your connection and try again.");
+    } finally {
+      setSwitching(null);
+    }
+  }
+
   const openCount = items.filter(i => isOpenForApplications(managed, i.id)).length;
   const title = kind === "ministry" ? "Ministries" : "Sacraments";
 
@@ -150,6 +174,14 @@ export default function AdminItems({
                     onChange={next => void setOpen(item.id, next)}
                   />
                 }
+                calendar={
+                  <OpenDates
+                    name={item.name}
+                    windows={normaliseWindows(managed?.openWindows?.[item.id])}
+                    busy={switching === item.id}
+                    onChange={next => void saveWindows(item.id, next)}
+                  />
+                }
               />
             );
           })}
@@ -198,5 +230,121 @@ function AvailabilitySwitch({
         onChange={e => onChange(e.target.checked)}
       />
     </span>
+  );
+}
+
+/**
+ * The dates a ministry or sacrament is open for applications.
+ *
+ * ## Why ranges and not a month grid
+ *
+ * A parish office says "baptisms through November", not "the 1st, the
+ * 2nd, the 3rd…". A grid would make them tap thirty times to express
+ * one sentence, and would make a mistake thirty times as likely.
+ *
+ * ## Why no dates means open
+ *
+ * Every parish is in that state today, and every one of them is
+ * currently open. A page that read "no dates" as "closed" would shut
+ * every sacrament in the diocese the moment it shipped - see
+ * lib/openWindows.ts, which is where that rule actually lives.
+ *
+ * Saved on add and on remove, with no Save button, for the same reason
+ * the switch above has none: one range is one decision.
+ */
+function OpenDates({
+  name,
+  windows,
+  busy,
+  onChange,
+}: {
+  name: string;
+  windows: OpenWindow[];
+  busy: boolean;
+  onChange: (next: OpenWindow[]) => void;
+}) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const full = windows.length >= MAX_WINDOWS_PER_ITEM;
+  const canAdd = !!from && !!to && !busy && !full;
+
+  return (
+    <div className="mt-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] p-4">
+      <p className="text-[15px] font-bold text-[var(--color-brand-text)]">
+        Open on these dates
+      </p>
+      <p className="mt-1 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+        {describeWindows(windows, new Date().toISOString().slice(0, 10))}
+        {" "}Outside these dates it closes itself, so nobody has to remember to.
+      </p>
+
+      {windows.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-2">
+          {windows.map(w => (
+            <li
+              key={`${w.from}-${w.to}`}
+              className="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] px-3 py-2"
+            >
+              <span className="text-[14px] text-[var(--color-brand-text)]">
+                {w.from === w.to ? w.from : `${w.from} to ${w.to}`}
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onChange(withoutWindow(windows, w))}
+                aria-label={`Remove ${w.from} to ${w.to} from ${name}`}
+                className="text-[14px] font-semibold text-[var(--color-brand-error)] disabled:opacity-50"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-[13px] font-semibold text-[var(--color-brand-secondary)]">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={e => setFrom(e.target.value)}
+            className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-[15px]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[13px] font-semibold text-[var(--color-brand-secondary)]">
+          To
+          <input
+            type="date"
+            value={to}
+            // The end cannot precede the start. openWindows tolerates a
+            // reversed range rather than failing, but the office should
+            // not be able to enter one in the first place.
+            min={from || undefined}
+            onChange={e => setTo(e.target.value)}
+            className="rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-[15px]"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!canAdd}
+          onClick={() => {
+            onChange(withWindow(windows, { from, to }));
+            setFrom("");
+            setTo("");
+          }}
+          className="rounded-full bg-[var(--color-brand-primary)] px-4 py-2.5 text-[15px] font-bold text-[var(--color-brand-on-accent)] disabled:opacity-50"
+        >
+          Add dates
+        </button>
+      </div>
+
+      {full && (
+        <p className="mt-2 text-[13px] text-[var(--color-brand-secondary)]">
+          That is as many date ranges as one item can hold. Remove one to add another.
+        </p>
+      )}
+    </div>
   );
 }

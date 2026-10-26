@@ -3,6 +3,10 @@ import {
   announcementsForParish, upcomingAnnouncements, formatWhen,
   onBoard, publishedOnly, statusOf,
   type AnnouncementDoc,
+  VISIBILITY_DURATIONS,
+  daysRemaining,
+  hasExpired,
+  visibleUntilFor,
 } from "./announcements";
 
 const ann = (over: Partial<AnnouncementDoc>): AnnouncementDoc => ({
@@ -138,3 +142,75 @@ describe("the three boards", () => {
     }
   });
 });
+
+describe('announcement expiry', () => {
+  const item = (over: Partial<AnnouncementDoc> = {}): AnnouncementDoc =>
+    ({ id: 'a', title: 'T', date: '', type: 'Notice', status: 'published', ...over })
+
+  it('shows an announcement with no end date, as every existing one has', () => {
+    // The whole existing corpus has no visibleUntil. Shipping this must
+    // not empty a single parish bulletin.
+    expect(publishedOnly([item()], '2026-11-15')).toHaveLength(1)
+  })
+
+  it('shows it on the last day', () => {
+    // "Until the 30th" means the 30th is still a day it is seen.
+    expect(publishedOnly([item({ visibleUntil: '2026-11-30' })], '2026-11-30')).toHaveLength(1)
+  })
+
+  it('hides it the day after', () => {
+    expect(publishedOnly([item({ visibleUntil: '2026-11-30' })], '2026-12-01')).toHaveLength(0)
+  })
+
+  it('keeps showing a lapsed one that was never given a date', () => {
+    expect(hasExpired(item(), '2030-01-01')).toBe(false)
+  })
+
+  it('treats a corrupt date as no date rather than hiding the notice', () => {
+    // Silently removing a parish's notice, with nothing on screen to
+    // say why, is worse than showing it a little too long.
+    expect(hasExpired(item({ visibleUntil: 'soon' }), '2026-11-15')).toBe(false)
+    expect(hasExpired(item({ visibleUntil: '' }), '2026-11-15')).toBe(false)
+  })
+
+  it('still hides drafts regardless of dates', () => {
+    expect(publishedOnly([item({ status: 'draft', visibleUntil: '2030-01-01' })], '2026-11-15'))
+      .toHaveLength(0)
+  })
+})
+
+describe('visibleUntilFor', () => {
+  it('returns nothing for "until I remove it", which is the default', () => {
+    expect(visibleUntilFor(null)).toBeUndefined()
+  })
+
+  it('counts forward from today', () => {
+    expect(visibleUntilFor(7, new Date(2026, 10, 1))).toBe('2026-11-08')
+  })
+
+  it('rolls over a month end', () => {
+    expect(visibleUntilFor(30, new Date(2026, 10, 15))).toBe('2026-12-15')
+  })
+
+  it('offers "until I remove it" as the first choice', () => {
+    // Expiry has to be opt-in: an admin who skips the field must get
+    // the behaviour they have always had.
+    expect(VISIBILITY_DURATIONS[0].days).toBeNull()
+  })
+})
+
+describe('daysRemaining', () => {
+  it('counts down', () => {
+    expect(daysRemaining({ id: 'a', title: 'T', date: '', type: 'N', visibleUntil: '2026-11-20' }, '2026-11-15'))
+      .toBe(5)
+  })
+
+  it('goes negative once lapsed, so the admin can see by how much', () => {
+    expect(daysRemaining({ id: 'a', title: 'T', date: '', type: 'N', visibleUntil: '2026-11-10' }, '2026-11-15'))
+      .toBe(-5)
+  })
+
+  it('is null when it never ends', () => {
+    expect(daysRemaining({ id: 'a', title: 'T', date: '', type: 'N' }, '2026-11-15')).toBeNull()
+  })
+})

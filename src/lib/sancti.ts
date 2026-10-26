@@ -4,7 +4,7 @@
  * ## Why this is not a language model
  *
  * It was going to be Gemini, through the Express backend. That backend
- * is not deployed, which is exactly why the AI scanner does not work on
+ * is not deployed, which is exactly why Sancti Scan does not work on
  * the phone today — and an assistant whose first act is to fail at a
  * dead URL is worse than no assistant. Everything here runs on the
  * device: it answers with no signal, costs nothing, and cannot be taken

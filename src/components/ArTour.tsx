@@ -33,6 +33,7 @@ const PARISH_CHURCH_PHOTOS: Record<string, string> = {
 };
 import { Capacitor } from "@capacitor/core";
 import { arAvailability, arLaunchParish, arTourUrl } from "../lib/arApp";
+import { arSiteReadiness } from "../lib/arPresence";
 import PreviewVideo from "./PreviewVideo";
 import { useNarration } from "../lib/useNarration";
 import { scanScript } from "../lib/scanNarration";
@@ -294,10 +295,30 @@ export default function ArTour({
   // component already holds two of them; see lib/simulatorMode.ts for
   // why the switch exists and which way round it reads.
   const { simulatorMode } = useSimulatorMode();
-  const { presence } = usePresence();
+  const { presence, gpsStatus } = usePresence();
+
+  /**
+   * Whether the pilgrim's location permits the AR Museum.
+   *
+   * Not simply `presence.mode === "present"`. That is false whenever
+   * there is no fix at all - denied, lost, or still searching - and a
+   * cold GPS inside a stone church routinely takes tens of seconds,
+   * which is exactly when somebody opens this. Treating "I don't know"
+   * as "you are not here" would turn the gate away from the one person
+   * standing in front of the altar.
+   *
+   * So it blocks only on a fix that positively places them elsewhere,
+   * and warns otherwise. See lib/arPresence.ts.
+   */
+  const site = arSiteReadiness({
+    gpsStatus,
+    hereParishId: presence.mode === "present" ? presence.parishId : null,
+    tourParishId: parishId ?? "route-mhcp",
+  });
+
   const arGate = arAccess({
     simulatorMode,
-    atParish: presence.mode === "present",
+    atParish: site.canOpen,
     android: arAvailability(navigator.userAgent, Capacitor.getPlatform()).kind === "ready",
   });
   const [arStage, setArStage] = useState<ArStage>("find");
@@ -883,7 +904,7 @@ export default function ArTour({
               leaving a dead end. */}
           {/* Without a camera the scanner cannot be shown by doing it,
               and the AI/AR switch lives inside the camera view - so from
-              here both the AR museum and the AI scanner were simply
+              here both the AR Museum and Sancti Scan were simply
               missing, which reads as the AR scanner being broken. The
               recordings are the one thing that still works on a laptop,
               at a survey table, or behind a denied permission, so they
@@ -899,7 +920,7 @@ export default function ArTour({
                 onClick={() => setPreviewFor("ai")}
                 className="scan-card__action"
               >
-                <PlayCircle className="w-4 h-4" /> Preview AI Scanner
+                <PlayCircle className="w-4 h-4" /> Preview Sancti Scan
               </button>
               <button
                 type="button"
@@ -924,7 +945,7 @@ export default function ArTour({
         {previewFor && (
           <PreviewVideo
             src={previewFor === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
-            title={previewFor === "ar" ? "AR Museum tour" : "AI Scanner"}
+            title={previewFor === "ar" ? "AR Museum" : "Sancti Scan"}
             onClose={() => setPreviewFor(null)}
           />
         )}
@@ -946,7 +967,7 @@ export default function ArTour({
         ? { title: "Reading what you see", sub: "Hold steady" }
         // One line at phone width. The longer version wrapped and shoved
         // the subtitle down over the viewfinder.
-        : { title: "Point at a statue or marker", sub: "The AI scanner names it and tells you about it" }
+        : { title: "Point at a statue or marker", sub: "Sancti Scan names it and tells you about it" }
       : arStage === "find"
         ? { title: "AR Museum", sub: "Opens the SanctiWalk AR app, which reads the printed marker for you" }
         : arStage === "reading"
@@ -1085,7 +1106,7 @@ export default function ArTour({
             type="button"
             onClick={() => setPreviewFor(mode)}
             className="scan-preview-btn"
-            aria-label={`Watch how the ${mode === "ar" ? "AR tour" : "AI Scanner"} works`}
+            aria-label={`Watch how ${mode === "ar" ? "the AR Museum" : "Sancti Scan"} works`}
           >
             Preview
           </button>
@@ -1119,7 +1140,7 @@ export default function ArTour({
                   be refused. */}
               <p className="scan-caption">
                 {!signedIn
-                  ? `Sign in to use the AI scanner — ${SCANS_PER_PARISH_PER_DAY} scans a day at ${parishName}.`
+                  ? `Sign in to use Sancti Scan — ${SCANS_PER_PARISH_PER_DAY} scans a day at ${parishName}.`
                   : budget && budget.remaining === 0
                     ? `No scans left for ${parishName} today. The count resets at midnight UTC.`
                     : budget
@@ -1127,6 +1148,20 @@ export default function ArTour({
                       : "Tap to identify. The parish code is read automatically."}
               </p>
             </>
+          ) : arGate.allowed && site.warn ? (
+            /* Allowed, but the app cannot confirm where they are.
+               Without this the tour opens, finds no marker and looks
+               broken, and nothing on screen explains that the reason
+               is standing in the wrong building. A caution, not a
+               refusal - see lib/arPresence.ts for why it is not a
+               refusal. The tour below stays available. */
+            <div className="scan-gate scan-gate--warn" role="status">
+              <span className="scan-gate__icon" aria-hidden>
+                <MapPin className="w-5 h-5" />
+              </span>
+              <p className="scan-gate__title">Check you are at the right church</p>
+              <p className="scan-gate__body">{site.reason}</p>
+            </div>
           ) : !arGate.allowed ? (
             /* The AR tour cannot open here, and the panel below would
                offer a button that does nothing. The notice says which
@@ -1141,7 +1176,9 @@ export default function ArTour({
                   ? "Not available on this phone"
                   : "Open this at the parish"}
               </p>
-              <p className="scan-gate__body">{arGate.message}</p>
+              <p className="scan-gate__body">
+                {arGate.reason === "device" ? arGate.message : site.reason}
+              </p>
 
               {/* A dead end is what this was: the notice said the phone
                   could not run the tour and stopped there. Both of these
@@ -1182,7 +1219,7 @@ export default function ArTour({
       {previewFor && (
         <PreviewVideo
           src={previewFor === "ar" ? "/preview/ar.mp4" : "/preview/scanner.mp4"}
-          title={previewFor === "ar" ? "AR Museum tour" : "AI Scanner"}
+          title={previewFor === "ar" ? "AR Museum" : "Sancti Scan"}
           onClose={() => setPreviewFor(null)}
         />
       )}

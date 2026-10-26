@@ -537,7 +537,7 @@ Mary Help of Christians Parish`);
                 <div className="space-y-2.5">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span>Augmented Reality AR Scans</span>
+                      <span>AR Museum visits</span>
                       <strong className="text-cyan-400">902 usages (59%)</strong>
                     </div>
                     <div className="w-full h-2 bg-[var(--color-brand-text)] rounded-full overflow-hidden">

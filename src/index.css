@@ -2226,6 +2226,16 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   padding: 18px 20px 20px;
 }
 
+/* The caution shown when the AR Museum is reachable but the app
+   cannot confirm the pilgrim is in the right church. Amber rather than
+   the plain panel, because it is a warning; not red, because nothing
+   has gone wrong and nothing is being refused. */
+.scan-gate--warn {
+  border-radius: 18px;
+  background: rgb(246 196 90 / 0.14);
+  border: 1px solid rgb(246 196 90 / 0.42);
+}
+
 .scan-gate__icon {
   display: inline-flex;
   align-items: center;

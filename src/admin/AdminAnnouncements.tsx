@@ -8,6 +8,7 @@ import {
 import { db } from "../lib/firebase";
 import {
   ANNOUNCEMENT_TYPES, BOARD_LABEL, EVENT_TYPE, FEAST_TYPE, STATUS_LABEL,
+  VISIBILITY_DURATIONS, daysRemaining, visibleUntilFor,
   createAnnouncement, deleteAnnouncement, updateAnnouncement,
   formatWhen, onBoard, startOfDay, statusOf,
   type AnnouncementDoc, type AnnouncementStatus, type Board,
@@ -195,6 +196,17 @@ function ComposeForm({
   const [location, setLocation] = useState(editing?.location ?? "");
   const [body, setBody] = useState(editing?.body ?? "");
   const [imageUrl, setImageUrl] = useState(editing?.imageUrl ?? "");
+  /**
+   * How long this stays on the bulletin, in days. Null means until the
+   * office removes it, which is how every announcement has always
+   * behaved and so is the default.
+   *
+   * When editing, the stored end date is kept as-is unless the office
+   * picks a new duration - re-deriving it from "today" would quietly
+   * extend a notice every time somebody opened it to fix a typo.
+   */
+  const [durationDays, setDurationDays] = useState<number | null>(null);
+  const [durationTouched, setDurationTouched] = useState(false);
   const [busy, setBusy] = useState<"photo" | "save" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -221,21 +233,27 @@ function ComposeForm({
     setBusy("save");
     setError(null);
     try {
+      // Only overwrite the end date when the office actually chose one.
+      const visibleUntil = durationTouched
+        ? visibleUntilFor(durationDays)
+        : editing?.visibleUntil;
+
       if (editing) {
         await updateAnnouncement(
           editing.id,
-          { title, body, date, time, type, location, imageUrl, status },
+          { title, body, date, time, type, location, imageUrl, status, visibleUntil },
           authorEmail,
         );
         onDone();
         return;
       }
       await createAnnouncement(
-        { churchId, title, body, date, time, type, location, imageUrl, status },
+        { churchId, title, body, date, time, type, location, imageUrl, status, visibleUntil },
         authorEmail,
       );
       setTitle(""); setBody(""); setDate(""); setTime(""); setLocation(""); setImageUrl("");
       setType(defaultType);
+      setDurationDays(null); setDurationTouched(false);
       let note = status === "draft"
         ? "Saved as a draft. Nobody can see it until you publish it."
         : "Published. It is on the home screen now.";
@@ -307,6 +325,40 @@ function ComposeForm({
                  onChange={e => setTime(e.target.value)} className={INPUT} />
         </Field>
       </div>
+
+      {/* How long it runs for.
+          A duration, not a date, because an office thinks "put this up
+          for two weeks" rather than "until the 14th". The date it
+          lands on is shown underneath so the choice is not a guess. */}
+      <Field label="Show it for how long?" htmlFor="ann-until">
+        <select
+          id="ann-until"
+          value={durationTouched ? String(durationDays) : (editing?.visibleUntil ? "keep" : "null")}
+          onChange={e => {
+            if (e.target.value === "keep") { setDurationTouched(false); return; }
+            setDurationTouched(true);
+            setDurationDays(e.target.value === "null" ? null : Number(e.target.value));
+          }}
+          className={INPUT}
+        >
+          {editing?.visibleUntil && (
+            <option value="keep">Keep the current end date ({editing.visibleUntil})</option>
+          )}
+          {VISIBILITY_DURATIONS.map(d => (
+            <option key={d.label} value={String(d.days)}>{d.label}</option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-brand-secondary)]">
+          {durationTouched
+            ? durationDays === null
+              ? "It stays on the bulletin until you remove it."
+              : `It leaves the bulletin after ${visibleUntilFor(durationDays)}.`
+            : editing?.visibleUntil
+              ? `It leaves the bulletin after ${editing.visibleUntil}.`
+              : "It stays on the bulletin until you remove it."}
+          {" "}It never disappears from this page — only from what parishioners see.
+        </p>
+      </Field>
 
       <Field label="Where (optional)" htmlFor="ann-where">
         <input id="ann-where" value={location} maxLength={120}
@@ -440,6 +492,11 @@ function Row({
               {item.type}
             </span>
             <StatusChip status={status} />
+            {/* Whether its time has run out.
+                Expiring hides it from parishioners but changes nothing
+                here, so without this the office would see a published
+                notice that nobody can actually read. */}
+            <RunsOutChip item={item} />
           </div>
 
           <h3 className="mt-2 text-[16px] font-bold leading-snug text-[var(--color-brand-text)]">
@@ -513,6 +570,46 @@ function Row({
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * How long a published announcement has left, when it has an end date.
+ *
+ * Silent for anything with no end date, which is most of them - a chip
+ * on every row saying "no end date" would be noise, and the ones that
+ * matter are the ones about to lapse or already lapsed.
+ */
+function RunsOutChip({ item }: { item: AnnouncementDoc }) {
+  const left = daysRemaining(item);
+  if (left === null) return null;
+
+  const lapsed = left < 0;
+  const soon = left >= 0 && left <= 7;
+  if (!lapsed && !soon) {
+    return (
+      <span className="text-[13px] text-[var(--color-brand-secondary)]">
+        {left} days left
+      </span>
+    );
+  }
+
+  const tone = lapsed
+    ? { bg: "#FBE9E4", fg: "var(--color-brand-error)", br: "#E7C3B8" }
+    : { bg: "#F6F0E2", fg: "#6E5010", br: "#E0D2AE" };
+
+  return (
+    <span
+      className="text-[13px] font-bold px-2.5 py-1 rounded-full border"
+      style={{ background: tone.bg, color: tone.fg, borderColor: tone.br }}
+      title={`Set to run until ${item.visibleUntil}`}
+    >
+      {lapsed
+        ? "Hidden — its time ran out"
+        : left === 0
+          ? "Last day"
+          : `${left} days left`}
+    </span>
   );
 }
 

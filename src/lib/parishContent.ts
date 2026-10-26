@@ -3,6 +3,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "./firebase";
 import app from "./firebase";
 import type { MassScheduleEntry } from "./schedule";
+import type { OpenWindow } from "./openWindows";
 
 /**
  * Per-parish content an admin can change without a developer.
@@ -58,6 +59,21 @@ export interface ParishContent {
    * to accept an application, so its shape is not free to change.
    */
   closedApplications?: string[];
+
+  /**
+   * The dates each ministry or sacrament is open, keyed by id.
+   *
+   * Separate from closedApplications on purpose. That field is the
+   * parish's manual switch and the security rules read it directly, in
+   * one expression over one document; a rule cannot evaluate date
+   * ranges, so these windows are enforced in the app rather than in the
+   * rules. A parish that needs something shut NOW uses the switch,
+   * which is still the thing the server enforces.
+   *
+   * Absent, or an empty list, means no seasonal rule - see
+   * lib/openWindows.ts for why that has to mean open.
+   */
+  openWindows?: Record<string, OpenWindow[]>;
 
   /**
    * What the parish has written about each ministry and sacrament,

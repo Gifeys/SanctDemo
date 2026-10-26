@@ -1,29 +1,37 @@
 /**
- * Simulator mode, and who may open the AR tour.
+ * Testing mode, and who may open the AR Museum.
  *
- * ## What the switch is for
+ * ## The gate
  *
- * The AR tour is only meaningful inside a parish: it stands the parish's
- * own statues where they really are, read off a scan of that building.
- * Opened anywhere else it has nothing to anchor to, so for a visitor it
- * should say "this works at the parish" rather than opening onto an
- * empty room.
+ * The AR Museum is only meaningful inside a parish: it stands that
+ * parish's own statues where they really are, read off a scan of the
+ * building. Opened anywhere else it has nothing to anchor to, so it
+ * shows a camera that finds nothing - which people reasonably report
+ * as the AR being broken.
  *
- * But the proponents cannot be in the church every time they change
- * something, and a gate they cannot pass at home would mean no testing
- * at all. So it is a switch.
+ * So the location gate is the NORMAL behaviour, on for everyone.
  *
- *   OFF - everything is reachable from anywhere. This is the testing
- *         state, and it is the default, because a default that locked
- *         the tour would make a fresh install look broken.
+ * ## Why this changed
  *
- *   ON  - the app behaves as it will for a visitor: the AR tour opens
- *         only at the parish, and the AI scanner still works anywhere.
+ * It used to read `if (simulatorMode && !atParish)`, which meant the
+ * gate only applied when a testing switch was turned on - and that
+ * switch is off by default. So no visitor was ever stopped. The gate
+ * existed, was tested, and never once ran for a real user.
  *
- * The names are the other way round from the usual sense of
- * "simulator", so nothing here relies on the name: the setting screen
- * spells out what each position does, and so does the notice the
- * scanner shows.
+ * ## The switch now
+ *
+ * The proponents cannot be in the church every time they change
+ * something, so the switch remains, as an explicit bypass:
+ *
+ *   OFF - the real behaviour, and the default. The AR Museum opens
+ *         only at its own parish. Sancti Scan still works anywhere.
+ *
+ *   ON  - the location gate is lifted, for testing away from the
+ *         churches.
+ *
+ * This is the opposite sense from before. The setting screen spells out
+ * what each position does rather than relying on the name, which is why
+ * the inversion is safe to make.
  */
 
 export const SIMULATOR_KEY = 'sanctiwalk.simulatorMode'
@@ -88,14 +96,15 @@ export function arAccess({ simulatorMode, atParish, android }: ArConditions): Ar
     }
   }
 
-  if (simulatorMode && !atParish) {
+  // The gate, for everyone, unless testing has explicitly lifted it.
+  if (!atParish && !simulatorMode) {
     return {
       allowed: false,
       reason: 'away',
       message:
-        'The AR tour opens inside the parish. It places the parish’s '
+        'The AR Museum opens inside the parish. It places the parish’s '
         + 'own statues where they really stand, so it needs you to be '
-        + 'there. The scanner below works anywhere.',
+        + 'there. Sancti Scan below works anywhere.',
     }
   }
 

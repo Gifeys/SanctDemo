@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  closedIds, isOpenForApplications, withAvailability, summarise, closedMessage,
+  closedIds, isOpenForApplications, withAvailability, summarise, closedMessage, todayIso,
 } from "./availability";
 import type { ParishContent } from "./parishContent";
 
@@ -96,3 +96,54 @@ describe("what the pilgrim is told", () => {
     expect(closedMessage("sacrament", "Baptism")).toMatch(/parish office/i);
   });
 });
+
+describe('isOpenForApplications with a calendar', () => {
+  const NOV = (d: number) => `2026-11-${String(d).padStart(2, '0')}`
+  const withWindows = (windows: { from: string; to: string }[]) =>
+    ({ openWindows: { baptism: windows } }) as never
+
+  it('is open when no calendar has been set', () => {
+    // The state every parish is in today. Adding this feature must not
+    // close a single thing that was open yesterday.
+    expect(isOpenForApplications({} as never, 'baptism', NOV(15))).toBe(true)
+  })
+
+  it('is closed outside the dates the parish picked', () => {
+    expect(isOpenForApplications(withWindows([{ from: NOV(1), to: NOV(10) }]), 'baptism', NOV(20)))
+      .toBe(false)
+  })
+
+  it('is open inside them', () => {
+    expect(isOpenForApplications(withWindows([{ from: NOV(1), to: NOV(10) }]), 'baptism', NOV(5)))
+      .toBe(true)
+  })
+
+  it('lets the manual switch close something the calendar says is open', () => {
+    // The parish needs a way to stop applications NOW - a burst pipe,
+    // a funeral, a priest away - without editing dates.
+    const content = {
+      closedApplications: ['baptism'],
+      openWindows: { baptism: [{ from: NOV(1), to: NOV(30) }] },
+    } as never
+    expect(isOpenForApplications(content, 'baptism', NOV(15))).toBe(false)
+  })
+
+  it('does not apply one item\'s calendar to another', () => {
+    const content = { openWindows: { baptism: [{ from: NOV(1), to: NOV(2) }] } } as never
+    expect(isOpenForApplications(content, 'wedding', NOV(20))).toBe(true)
+  })
+})
+
+describe('todayIso', () => {
+  it('uses the local date, not UTC', () => {
+    // 8am in Manila is still the previous day in UTC. toISOString()
+    // would report yesterday, so anything opening "today" would read
+    // as closed for the first eight hours of every day.
+    const morningInManila = new Date(2026, 10, 15, 8, 0, 0)
+    expect(todayIso(morningInManila)).toBe('2026-11-15')
+  })
+
+  it('pads single digits', () => {
+    expect(todayIso(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})

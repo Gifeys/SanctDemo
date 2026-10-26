@@ -50,6 +50,21 @@ export interface AnnouncementDoc {
    */
   type: string;
   status?: AnnouncementStatus;
+  /**
+   * The last day this should appear in the app, as YYYY-MM-DD.
+   *
+   * Absent means it runs until somebody archives or deletes it, which
+   * is how every existing announcement behaves and must keep behaving.
+   *
+   * Expiring HIDES it from pilgrims; it does not change its status. The
+   * parish office still sees it, can see that it has lapsed, and can
+   * give it more time in one edit. Nothing disappears from the office
+   * without somebody deciding it should.
+   *
+   * A plain date, not a timestamp: a parish says "show this for two
+   * weeks", never "until 23:59:59+08:00".
+   */
+  visibleUntil?: string;
   /** Feast days and events happen somewhere. Announcements usually do not. */
   location?: string;
   imageUrl?: string;
@@ -114,8 +129,66 @@ export const STATUS_LABEL: Record<AnnouncementStatus, string> = {
  * can forget. The bulletin, the feast list and anything added later all
  * come through this.
  */
-export function publishedOnly(items: AnnouncementDoc[]): AnnouncementDoc[] {
-  return items.filter(a => statusOf(a) === "published");
+export function publishedOnly(
+  items: AnnouncementDoc[],
+  today: string = todayIso(),
+): AnnouncementDoc[] {
+  return items.filter(a => statusOf(a) === "published" && !hasExpired(a, today));
+}
+
+/** Today as YYYY-MM-DD, from local parts - see availability.todayIso. */
+export function todayIso(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Whether this has run past the date the parish gave it.
+ *
+ * No date means never. An unparseable one also means never: a corrupt
+ * field should not silently remove a parish's notice from the bulletin
+ * with nothing on screen to explain it.
+ */
+export function hasExpired(item: AnnouncementDoc, today: string = todayIso()): boolean {
+  const until = item.visibleUntil;
+  if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return false;
+  // Inclusive: an announcement good "until the 30th" shows ON the 30th.
+  return today > until;
+}
+
+/** How long a parish may run an announcement for, as the form offers it. */
+export const VISIBILITY_DURATIONS = [
+  { label: "Until I remove it", days: null },
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+  { label: "1 month", days: 30 },
+  { label: "2 months", days: 60 },
+  { label: "3 months", days: 90 },
+  { label: "6 months", days: 180 },
+] as const;
+
+/**
+ * The date a duration lands on, counting from today.
+ *
+ * Null days means no expiry at all, which is the existing behaviour and
+ * stays the default - picking a duration has to be a deliberate act.
+ */
+export function visibleUntilFor(days: number | null, from: Date = new Date()): string | undefined {
+  if (days === null) return undefined;
+  const end = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
+  return todayIso(end);
+}
+
+/** How many days are left, negative once lapsed. Null when it never ends. */
+export function daysRemaining(item: AnnouncementDoc, today: string = todayIso()): number | null {
+  const until = item.visibleUntil;
+  if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return null;
+  const toDate = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).getTime();
+  };
+  return Math.round((toDate(until) - toDate(today)) / 86_400_000);
 }
 
 const COLLECTION = "announcements";
@@ -180,6 +253,8 @@ export interface NewAnnouncement {
   location?: string;
   imageUrl?: string;
   status?: AnnouncementStatus;
+  /** See AnnouncementDoc.visibleUntil. Absent means it runs until removed. */
+  visibleUntil?: string;
 }
 
 export async function createAnnouncement(

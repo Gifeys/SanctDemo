@@ -1,4 +1,5 @@
 import type { ParishContent } from "./parishContent";
+import { isWithinWindows } from "./openWindows";
 
 /**
  * Whether a parish is currently accepting applications for a ministry or
@@ -45,8 +46,33 @@ export function closedIds(content: ParishContent | null | undefined): string[] {
 export function isOpenForApplications(
   content: ParishContent | null | undefined,
   itemId: string,
+  /**
+   * Today, as YYYY-MM-DD. Defaults to the real today.
+   *
+   * A parameter so the date can be fixed in a test, and so a caller
+   * already holding the date does not re-derive it per item down a
+   * list of thirty.
+   */
+  today: string = todayIso(),
 ): boolean {
-  return !closedIds(content).includes(itemId);
+  // The manual switch wins, always. It is what a parish uses to shut
+  // something immediately, and it is the only one of the two the
+  // security rules can enforce.
+  if (closedIds(content).includes(itemId)) return false;
+
+  // Then the calendar, if the parish set one. No windows means no
+  // seasonal rule, which means open - see lib/openWindows.ts.
+  return isWithinWindows(content?.openWindows?.[itemId], today);
+}
+
+/** Today in the same YYYY-MM-DD form the windows are stored in. */
+export function todayIso(now: Date = new Date()): string {
+  // Local date parts, not toISOString(): that converts to UTC, and at
+  // 8am in Manila UTC is still yesterday. A sacrament opening "today"
+  // would read as closed for the first eight hours of every day.
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 /**

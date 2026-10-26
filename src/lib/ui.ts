@@ -73,16 +73,16 @@ const STRINGS = {
   "me.rosarySettings": { en: "Rosary Settings", fil: "Setting ng Rosaryo" },
   "me.replayTutorial": { en: "Show me around again", fil: "Ipakita muli ang gabay" },
   "me.helpAndGuide": { en: "Help & guide", fil: "Tulong at gabay" },
-  "me.simulator": { en: "Simulator mode", fil: "Simulator mode" },
+  "me.simulator": { en: "Testing mode", fil: "Testing mode" },
   "me.simulatorOn": { en: "On", fil: "Naka-on" },
   "me.simulatorOff": { en: "Off", fil: "Naka-off" },
   "me.simulatorOnHelp": {
-    en: "On. The app behaves as it will for a visitor: the AR tour opens only inside the parish. The scanner still works anywhere.",
-    fil: "Naka-on. Kumikilos ang app gaya ng para sa bisita: bubukas lang ang AR tour sa loob ng parokya. Gumagana pa rin ang scanner kahit saan.",
+    en: "On. The location check is lifted, so the AR Museum opens anywhere. For testing away from the churches.",
+    fil: "Naka-on. Inalis ang pagsusuri ng lokasyon, kaya bubukas ang AR Museum kahit saan. Para sa pagsubok na malayo sa mga simbahan.",
   },
   "me.simulatorOffHelp": {
-    en: "Off. Everything is reachable from anywhere, for testing away from the churches.",
-    fil: "Naka-off. Maaabot ang lahat kahit saan, para sa pagsubok na malayo sa mga simbahan.",
+    en: "Off. The AR Museum opens only inside its own parish, as it does for a visitor. Sancti Scan still works anywhere.",
+    fil: "Naka-off. Bubukas lang ang AR Museum sa loob ng sariling parokya, gaya ng para sa bisita. Gumagana pa rin ang Sancti Scan kahit saan.",
   },
 
   // ---- reminders ----

@@ -139,6 +139,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export function Item({
   id, name, kind, churchId, edited, open, busy, saved, current, existing, onToggle, onSave,
   availability,
+  calendar,
 }: {
   id: string;
   /** Whose parish this is, for the photograph's storage path. */
@@ -163,6 +164,14 @@ export function Item({
    * rides along with the row. Left out where a page only edits.
    */
   availability?: React.ReactNode;
+  /**
+   * The open-dates editor, shown inside the expanded row.
+   *
+   * Beside the switch rather than in place of it: the switch is the
+   * immediate decision and the dates are the standing rule, and a
+   * parish needs both.
+   */
+  calendar?: React.ReactNode;
 }) {
   // Keyed off `open` by the parent remounting, so reopening a row always
   // shows what is saved rather than a half-finished edit from earlier.
@@ -222,6 +231,7 @@ export function Item({
 
       {open && (
         <div className="px-4 pb-5 space-y-4">
+          {calendar}
           {/* The photograph.
               Stored as a downscaled data URL on the parish's own record,
               the same way an announcement banner is - a secretary has a

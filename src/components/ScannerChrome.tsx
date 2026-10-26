@@ -86,8 +86,8 @@ export function ScannerTabs({
   onChange: (mode: ScannerMode) => void;
 }) {
   const options: Array<{ value: ScannerMode; label: string; hint: string }> = [
-    { value: "ai", label: "AI Scanner", hint: "Identify anything with the camera" },
-    { value: "ar", label: "AR Scanner", hint: "Start the AR tour at a marker" },
+    { value: "ai", label: "Sancti Scan", hint: "Identify anything with the camera" },
+    { value: "ar", label: "AR Museum", hint: "Only inside the church it belongs to" },
   ];
 
   return (
