@@ -408,34 +408,6 @@ function ReachPanel() {
         />
       </div>
 
-      {/* Where they used it.
-          Separate from the four above, and deliberately not folded
-          into them: every row recorded before this was added has no
-          surface, so these two start near zero and climb. Presented
-          as its own line with that said plainly, rather than as
-          headline figures that would read like a collapse in use. */}
-      <div className="mt-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card-sunk)] px-4 py-3">
-        <p className="text-[14px] font-bold text-[var(--color-brand-text)]">
-          Where they used it
-        </p>
-        <div className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
-          <span className="text-[15px] text-[var(--color-brand-text)]">
-            <strong className="text-[20px] tabular-nums">{totals.apkPeople}</strong>{" "}
-            on the Android app
-          </span>
-          <span className="text-[15px] text-[var(--color-brand-text)]">
-            <strong className="text-[20px] tabular-nums">{totals.webPeople}</strong>{" "}
-            on the website
-          </span>
-        </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-brand-secondary)]">
-          {totals.unknownSurfacePeople > 0
-            ? `Counted only since this was added, so ${totals.unknownSurfacePeople} earlier `
-              + `${totals.unknownSurfacePeople === 1 ? "person is" : "people are"} not in these two numbers yet. `
-            : ""}
-          Somebody who used both is counted in both.
-        </p>
-      </div>
     </section>
   );
 }
