@@ -1071,6 +1071,51 @@ async function adminEmailFor(uid: string): Promise<{ email: string; parishName: 
 }
 
 /**
+ * Sends over HTTPS, which is the only way mail leaves this host.
+ *
+ * Render blocks outbound SMTP on 587 and 25, and on 465 as well -
+ * every port nodemailer can use times out. That is not a
+ * misconfiguration to work around; it is the platform, and no SMTP
+ * setting will change it. An HTTP email API goes out over 443 like
+ * any other request.
+ *
+ * Used when RESEND_API_KEY is set, which is also the switch that
+ * makes the parish office's second factor usable again. Without it
+ * this falls through to SMTP below, which still works anywhere that
+ * does not block the ports - a laptop, or a different host.
+ */
+async function sendViaResend(to: string, subject: string, body: string): Promise<void> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY is not set.");
+
+  // A verified sender is required. Until a parish domain is verified,
+  // Resend's own onboarding address works and can only send to the
+  // account holder - enough to prove the path and to run the office's
+  // own sign-in codes.
+  const from = process.env.RESEND_FROM || "SanctiWalk <onboarding@resend.dev>";
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject,
+      text: body,
+      html: body.replace(/\n/g, "<br/>"),
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Resend refused the message (${res.status}): ${detail.slice(0, 200)}`);
+  }
+}
+
+/**
  * Sends, trying the implicit-TLS port when the submission port hangs.
  *
  * Render's network blocks outbound connections on 587 and 25, so a
@@ -1083,6 +1128,13 @@ async function adminEmailFor(uid: string): Promise<{ email: string; parishName: 
  * unaffected and one where it is blocked still gets its mail.
  */
 async function sendMailWithFallback(to: string, subject: string, body: string): Promise<void> {
+  // HTTPS first where it is available, because on this host it is the
+  // only thing that works at all.
+  if (process.env.RESEND_API_KEY) {
+    await sendViaResend(to, subject, body);
+    return;
+  }
+
   const configured = parseInt(process.env.SMTP_PORT || "587");
   const ports = configured === 465 ? [465] : [configured, 465];
 

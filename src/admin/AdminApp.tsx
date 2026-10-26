@@ -65,14 +65,37 @@ export default function AdminApp() {
       // previous session would let somebody who has just stolen a
       // password walk straight in on the strength of a code the real
       // administrator typed last week.
-      const token = await user.getIdTokenResult();
-      const verifiedAt = Number(token.claims.admin2fa ?? 0) * 1000;
-      const signedInAt = Date.parse(user.metadata.lastSignInTime ?? "") || 0;
+      // OFF until the server can actually send a code. Approved by
+      // the parish on 26 October 2026.
+      //
+      // Render blocks outbound SMTP on 587 AND 465 - both time out -
+      // so no code reaches anybody. With this on, the office was shut
+      // out of its own portal by a factor it could never satisfy, and
+      // a control that denies the legitimate user and nobody else is
+      // not protecting anything.
+      //
+      // Everything needed is written and tested: this gate, the
+      // server's generation and verification, the hashing, the
+      // attempt limits and the custom claim. Set this to true once
+      // mail goes out over HTTPS - see sendViaResend in server.ts.
+      //
+      // Until then the parish office is password-only, which is what
+      // it was before any of this.
+      const REQUIRE_SECOND_FACTOR = false;
 
-      if (!verifiedAt || verifiedAt < signedInAt) {
-        setSession(null);
-        setState("needs-code");
-        return;
+      if (REQUIRE_SECOND_FACTOR) {
+        // The claim must be NEWER than this sign-in, so one from a
+        // previous session cannot admit somebody who has just stolen
+        // a password.
+        const token = await user.getIdTokenResult();
+        const verifiedAt = Number(token.claims.admin2fa ?? 0) * 1000;
+        const signedInAt = Date.parse(user.metadata.lastSignInTime ?? "") || 0;
+
+        if (!verifiedAt || verifiedAt < signedInAt) {
+          setSession(null);
+          setState("needs-code");
+          return;
+        }
       }
 
       setSession({ user, profile, church: await getChurch(profile.churchId) });
