@@ -1068,8 +1068,18 @@ async function sendMail(to: string, subject: string, body: string): Promise<void
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: parseInt(process.env.SMTP_PORT || "587") === 465,
+    // STARTTLS is required, and the certificate is checked.
+    //
+    // This connection carries sign-in codes. rejectUnauthorized:false
+    // was copied in from the older endpoint below without thinking:
+    // it tells Node to accept ANY certificate, so anyone able to sit
+    // between this server and the mail host could read the codes in
+    // transit and hold the second factor of every parish account.
+    //
+    // A private mail server with its own CA should pass that CA here
+    // rather than turning the check off.
+    requireTLS: parseInt(process.env.SMTP_PORT || "587") !== 465,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    tls: { rejectUnauthorized: false },
   });
   await transporter.sendMail({
     from: `"${process.env.SMTP_SENDER_NAME || "SanctiWalk Parish Office"}" <${process.env.SMTP_USER}>`,
@@ -1121,9 +1131,10 @@ app.post("/api/send-email", async (req, res) => {
         user: smtpUser,
         pass: smtpPass,
       },
-      tls: {
-        rejectUnauthorized: false
-      }
+      // Certificate checked, as on the code transport above. The same
+      // credentials travel over this connection, so leaving one of the
+      // two unverified protects nothing.
+      requireTLS: smtpPort !== 465
     });
 
     const mailOptions = {
