@@ -77,6 +77,7 @@ export default function DailyRosary() {
 
       if (data.type === "hello") {
         reply({ type: "host-ready" });
+        sendInsets();
         return;
       }
 
@@ -131,6 +132,24 @@ export default function DailyRosary() {
      * a pocket playing music on is worse than one that forgot to
      * resume.
      */
+    /**
+     * The Rosary runs in an iframe, which is its own document, so the
+     * inset variables MainActivity writes onto the host page are not
+     * visible inside it. Without this the Rosary's title sat under the
+     * clock exactly as the map's search bar did.
+     */
+    function sendInsets() {
+      const style = getComputedStyle(document.documentElement);
+      reply({
+        type: "host-insets",
+        top: style.getPropertyValue("--sw-inset-top").trim() || "0px",
+        bottom: style.getPropertyValue("--sw-inset-bottom").trim() || "0px",
+      });
+    }
+    // Fired by MainActivity each time the insets are applied, including
+    // on rotation and before the page has finished loading.
+    window.addEventListener("sanctiwalk:insets", sendInsets);
+
     function onVisibility() {
       reply({ type: document.hidden ? "host-hidden" : "host-visible" });
       if (document.hidden) void stopAloud();
@@ -140,6 +159,7 @@ export default function DailyRosary() {
     window.addEventListener("message", onMessage);
     return () => {
       window.removeEventListener("message", onMessage);
+      window.removeEventListener("sanctiwalk:insets", sendInsets);
       document.removeEventListener("visibilitychange", onVisibility);
       // Leaving the Pray tab must not leave a voice praying on behind
       // it, a microphone open, or music playing in an empty room.
@@ -236,13 +256,30 @@ async function startListening(
     const candidates = locale ? [locale] : listenLocales(language);
     for (const candidate of candidates) {
       try {
-        await SpeechRecognition.start({
+        const result = await SpeechRecognition.start({
           language: candidate,
           maxResults: 1,
           partialResults: true,
           popup: false,
         });
         locale = candidate;
+
+        // Not every recogniser emits partials.
+        //
+        // The plugin documents start() as responding "directly without
+        // result" when partialResults is true, leaving everything to
+        // the event - and a good many Android builds, OEM ones
+        // especially, never fire that event and deliver only a final
+        // result here. On those handsets the microphone lit up and
+        // nothing was ever heard, which is exactly what was reported.
+        //
+        // So whatever start() hands back is used too. On a device that
+        // does emit partials this is empty and costs nothing.
+        const spoken = (result as { matches?: string[] } | undefined)?.matches?.[0];
+        if (spoken) {
+          listenState = afterHeard(listenState);
+          reply({ type: "heard", text: spoken, final: true });
+        }
         return true;
       } catch {
         // This locale is not installed on the handset. Try the next

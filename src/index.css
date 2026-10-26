@@ -2,6 +2,19 @@
 @import "tailwindcss";
 
 :root {
+  /* The real distance from each screen edge to something you can touch.
+     
+     env(safe-area-inset-*) is correct on iOS and in a browser, and is
+     always ZERO in the Android WebView - Android does not populate it.
+     With targetSdk 36 the window is edge to edge and cannot opt out, so
+     MainActivity measures the system bars itself and publishes them as
+     --sw-inset-*. max() takes whichever of the two is real, so one
+     stylesheet stays right on all three. */
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--sw-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--sw-inset-bottom, 0px));
+  --safe-left: max(env(safe-area-inset-left, 0px), var(--sw-inset-left, 0px));
+  --safe-right: max(env(safe-area-inset-right, 0px), var(--sw-inset-right, 0px));
+
   /* ─── PALETTE — "warm paper" (Claude Design redesign, direction 1c) ───
      The app used to be navy-on-navy: the client's #151B53 as the whole
      background with cream cards floating on it. The redesign inverts that.
@@ -257,7 +270,7 @@
 
 .dmap-live__recentre {
   position: absolute;
-  top: calc(92px + env(safe-area-inset-top, 0px));
+  top: calc(92px + var(--safe-top));
   right: 8px;
   z-index: 5;
   font-size: 14px;
@@ -332,7 +345,7 @@
      On a phone with a notch, top:8px put this under the clock and the
      signal bars. env() is 0 in a browser, so the desktop layout is
      unchanged. */
-  position: absolute; z-index: 6; top: calc(8px + env(safe-area-inset-top, 0px));
+  position: absolute; z-index: 6; top: calc(8px + var(--safe-top));
   left: 8px; right: 52px;
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 999px;
@@ -1475,8 +1488,8 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   flex-shrink: 0;
   background: var(--parish-band, #101B4A);
   /* Paints up into the status bar area rather than stopping below it. */
-  margin-top: calc(-1 * env(safe-area-inset-top, 0px));
-  padding-top: env(safe-area-inset-top, 0px);
+  margin-top: calc(-1 * var(--safe-top));
+  padding-top: var(--safe-top);
   /* Room for the sheet's curve to sit over this band without landing
      on the street address. 22px of breathing room plus the 26px the
      sheet is pulled up by, below. */
@@ -1591,7 +1604,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   /* The status bar sits over this band in the packaged app, so the top
      row is inset past it. On the web the inset is zero and this is just
      the design's own 14px. */
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 0;
+  padding: calc(14px + var(--safe-top)) 20px 0;
   color: #fff;
 }
 
@@ -2075,7 +2088,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
    a white button cannot be trusted on. */
 .parish-history__back {
   position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
+  top: calc(12px + var(--safe-top));
   left: 14px;
   width: 42px;
   height: 42px;
@@ -2122,7 +2135,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 .parish-history__body {
-  padding: 30px 22px calc(34px + env(safe-area-inset-bottom));
+  padding: 30px 22px calc(34px + var(--safe-bottom));
   color: #fff;
 }
 
@@ -2581,7 +2594,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 
 .parish-hero__control {
   position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
+  top: calc(12px + var(--safe-top));
   width: 42px;
   height: 42px;
   display: flex;
@@ -2879,7 +2892,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   align-items: center;
   gap: 12px;
   margin-top: 10px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 12px calc(10px + var(--safe-bottom));
   background: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
 }
 
@@ -5437,7 +5450,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   right: 14px;
   /* Clear of the tab bar, including the home indicator on a phone that
      has one. */
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(76px + var(--safe-bottom));
   z-index: 60;
   display: inline-flex;
   align-items: center;
@@ -5703,7 +5716,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 14px calc(14px + var(--safe-bottom));
   border-top: 1px solid var(--color-brand-border);
   background: var(--color-brand-card);
 }
@@ -6079,7 +6092,7 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  padding-top: calc(10px + var(--safe-top));
   background: var(--color-brand-primary, #1B2A6B);
   color: #fff;
 }
@@ -6144,8 +6157,8 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 .consent {
   min-height: 100dvh;
   background: var(--color-brand-bg, #EEF3FC);
-  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px
-           calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: calc(20px + var(--safe-top)) 16px
+           calc(24px + var(--safe-bottom));
   overflow-y: auto;
 }
 

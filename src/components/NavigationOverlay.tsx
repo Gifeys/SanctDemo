@@ -134,7 +134,15 @@ export default function NavigationOverlay({
           the top of the screen. Both used to sit in one card at the bottom,
           which also put them on top of the place sheet. z-30 keeps them
           above that sheet whatever else is open. */}
-      <div className="absolute inset-x-0 top-0 z-30 p-3">
+      {/* Clear of the status bar.
+          This was a flat p-3 against top-0, which on an edge-to-edge
+          window puts the turn instruction under the clock and the
+          signal bars - unreadable, and the back arrow in it could not
+          be tapped. --safe-top is the measured inset; see index.css. */}
+      <div
+        className="absolute inset-x-0 top-0 z-30 px-3 pb-3"
+        style={{ paddingTop: "calc(12px + var(--safe-top, 0px))" }}
+      >
         {/* Navy, because in this palette navy marks position, route and
             action — and this is all three. */}
         <div className="rounded-[22px] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-accent)] px-5 py-4 shadow-2xl">
