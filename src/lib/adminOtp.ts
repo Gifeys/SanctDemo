@@ -125,16 +125,117 @@ export function messageFor(reason: OtpFailure): string {
   }
 }
 
-/** The email, as plain text. */
-export function codeEmail(code: string, parishName: string): { subject: string; body: string } {
-  return {
-    subject: `${code} is your SanctiWalk parish office code`,
-    body:
-      `Your sign-in code for the ${parishName} parish office is:\n\n` +
-      `    ${code}\n\n` +
-      `It is good for ten minutes and can be used once.\n\n` +
-      `If you did not try to sign in, you can ignore this message — ` +
-      `nobody can get in with your email address alone. If it keeps ` +
-      `happening, change your password.\n`,
-  }
+/**
+ * Where the logo is fetched from.
+ *
+ * An absolute URL, because an email is read outside the app and a
+ * relative path resolves against the mail client. A remote image and
+ * not an embedded data URI: Gmail strips those.
+ */
+export const LOGO_URL =
+  'https://sanct-demo-vxzb.vercel.app/ui/sanctiwalk-lockup-navy.png'
+
+/**
+ * The code email, in both forms a mail client may use.
+ *
+ * `body` is the plain-text part and stays readable on its own - some
+ * clients show only that, and the code has to be findable there too.
+ * `html` is the laid-out version with the parish mark.
+ *
+ * Written as tables with inline styles, which is not how anything else
+ * in this project is written. Mail clients are not browsers: Gmail
+ * drops <style> blocks and flexbox, so the layout has to survive
+ * without either.
+ */
+export function codeEmail(
+  code: string,
+  parishName: string,
+): { subject: string; body: string; html: string } {
+  const subject = `${code} is your SanctiWalk parish office code`
+
+  const body =
+    `Your sign-in code for the ${parishName} parish office is:
+
+` +
+    `    ${code}
+
+` +
+    `It is good for ten minutes and can be used once.
+
+` +
+    `If you did not try to sign in, you can ignore this message — ` +
+    `nobody can get in with your email address alone. If it keeps ` +
+    `happening, change your password.
+`
+
+  const navy = '#1C2C56'
+  const ink = '#14171F'
+  const muted = '#63666D'
+  const paper = '#E7E4DD'
+
+  const html = `<!doctype html>
+<html><body style="margin:0;padding:24px 12px;background:${paper};">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+             style="max-width:460px;margin:0 auto;background:#FFFFFF;
+                    border-radius:18px;border:1px solid #D5D1C8;">
+        <tr><td align="center" style="padding:28px 28px 0 28px;">
+          <img src="${LOGO_URL}" alt="SanctiWalk" width="168"
+               style="display:block;width:168px;max-width:70%;height:auto;border:0;" />
+        </td></tr>
+
+        <tr><td align="center"
+                style="padding:20px 28px 0 28px;font-family:Georgia,'Times New Roman',serif;
+                       font-size:19px;font-style:italic;color:${ink};">
+          Your sign-in code
+        </td></tr>
+
+        <tr><td align="center"
+                style="padding:6px 28px 0 28px;font-family:Helvetica,Arial,sans-serif;
+                       font-size:15px;line-height:22px;color:${muted};">
+          For the ${escapeHtml(parishName)} parish office.
+        </td></tr>
+
+        <tr><td align="center" style="padding:20px 28px 0 28px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr><td align="center"
+                    style="background:${paper};border-radius:14px;padding:16px 26px;
+                           font-family:Helvetica,Arial,sans-serif;font-size:34px;
+                           font-weight:bold;letter-spacing:9px;color:${navy};">
+              ${code}
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td align="center"
+                style="padding:18px 28px 0 28px;font-family:Helvetica,Arial,sans-serif;
+                       font-size:15px;line-height:22px;color:${ink};">
+          It is good for ten minutes and can be used once.
+        </td></tr>
+
+        <tr><td style="padding:18px 28px 28px 28px;">
+          <div style="border-top:1px solid #E6E2D9;padding-top:16px;
+                      font-family:Helvetica,Arial,sans-serif;font-size:13px;
+                      line-height:20px;color:${muted};">
+            If you did not try to sign in, you can ignore this message &mdash;
+            nobody can get in with your email address alone. If it keeps
+            happening, change your password.
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`
+
+  return { subject, body, html }
+}
+
+/** Parish names come from the database, so they are escaped. */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }

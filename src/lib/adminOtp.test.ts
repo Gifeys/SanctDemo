@@ -6,6 +6,7 @@ import {
   MAX_ATTEMPTS,
   RESEND_COOLDOWN_MS,
   checkCode,
+  LOGO_URL,
   codeEmail,
   generateCode,
   mayResend,
@@ -131,5 +132,37 @@ describe('codeEmail', () => {
 
   it('says what to do if you did not ask for it', () => {
     expect(codeEmail('123456', 'P').body).toMatch(/did not try to sign in/i)
+  })
+
+  it('carries the parish mark as an absolute URL', () => {
+    // A relative path resolves against the mail client, not the app,
+    // so it would load nothing.
+    const { html } = codeEmail('123456', 'P')
+    expect(html).toContain(LOGO_URL)
+    expect(LOGO_URL).toMatch(/^https:\/\//)
+  })
+
+  it('puts the code in the laid-out version too', () => {
+    expect(codeEmail('004321', 'P').html).toContain('004321')
+  })
+
+  it('keeps a plain-text part that stands on its own', () => {
+    // Some clients show only this one, and the code has to be
+    // findable there as well.
+    const { body } = codeEmail('123456', 'P')
+    expect(body).toContain('123456')
+    expect(body).not.toContain('<')
+  })
+
+  it('escapes the parish name, which comes from the database', () => {
+    const { html } = codeEmail('123456', '<script>x</script>')
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('states the lifetime in both parts', () => {
+    const mail = codeEmail('123456', 'P')
+    expect(mail.body).toMatch(/ten minutes/i)
+    expect(mail.html).toMatch(/ten minutes/i)
   })
 })

@@ -26,6 +26,18 @@ import { signOutNow } from "../lib/authFlow";
  * needs a fresh code - a claim from last week does not let somebody
  * who has just stolen a password walk in.
  */
+/**
+ * Whether a failed reply is actually something going wrong.
+ *
+ * TOO_SOON means a code was sent moments ago and another was asked
+ * for too quickly. Nothing failed: the code is in the inbox. Showing
+ * it in red told the person something had broken at the exact moment
+ * the thing they wanted had already worked.
+ */
+function isRealError(reason?: string): boolean {
+  return reason !== "TOO_SOON";
+}
+
 export default function TwoFactorGate({ email }: { email: string }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,7 +54,8 @@ export default function TwoFactorGate({ email }: { email: string }) {
       const asked = await requestCode();
       if (!live) return;
       if (asked.ok) setSentTo(asked.sentTo ?? null);
-      else setError(asked.message ?? "That code could not be sent.");
+      else if (isRealError(asked.reason)) setError(asked.message ?? "That code could not be sent.");
+      else setNotice(asked.message ?? null);
     })();
     return () => { live = false; };
   }, []);
@@ -62,12 +75,22 @@ export default function TwoFactorGate({ email }: { email: string }) {
           </p>
         )}
 
+        {notice && (
+          <p
+            role="status"
+            className="mt-3 rounded-2xl bg-[#E8F2E8] border border-[#BCD8BC] px-4 py-3 text-left text-[15px] text-[#1F5130]"
+          >
+            {notice}
+          </p>
+        )}
+
         <form
           className="mt-4"
           onSubmit={async e => {
             e.preventDefault();
             setBusy(true);
             setError(null);
+            setNotice(null);
             const result = await submitCode(code.trim());
             setBusy(false);
             if (!result.ok) {
@@ -107,10 +130,12 @@ export default function TwoFactorGate({ email }: { email: string }) {
             onClick={async () => {
               setBusy(true);
               setError(null);
+              setNotice(null);
               const again = await requestCode();
               setBusy(false);
               if (again.ok) setNotice("A new code is on its way.");
-              else setError(again.message ?? "Could not send another code.");
+              else if (isRealError(again.reason)) setError(again.message ?? "Could not send another code.");
+              else setNotice(again.message ?? null);
             }}
             className="text-[14px] font-semibold text-[var(--color-brand-secondary)]"
           >
@@ -124,10 +149,6 @@ export default function TwoFactorGate({ email }: { email: string }) {
             Sign out
           </button>
         </div>
-
-        {notice && (
-          <p className="mt-2 text-[14px] text-[var(--color-brand-secondary)]">{notice}</p>
-        )}
 
         <p className="mt-3 text-[14px] text-[var(--color-brand-secondary)]">
           Your password alone does not open the parish office. The code lasts ten

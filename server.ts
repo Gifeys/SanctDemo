@@ -1016,7 +1016,7 @@ app.post("/api/admin/2fa/request", async (req, res) => {
     if (!email) return res.status(400).json({ error: "That account has no email address." });
 
     const mail = codeEmail(issued.code!, parishName);
-    await sendMailWithFallback(email, mail.subject, mail.body);
+    await sendMailWithFallback(email, mail.subject, mail.body, mail.html);
 
     // The address is NOT returned in full. The portal shows it so the
     // person knows where to look, and a partial is enough for that
@@ -1084,7 +1084,7 @@ async function adminEmailFor(uid: string): Promise<{ email: string; parishName: 
  * this falls through to SMTP below, which still works anywhere that
  * does not block the ports - a laptop, or a different host.
  */
-async function sendViaResend(to: string, subject: string, body: string): Promise<void> {
+async function sendViaResend(to: string, subject: string, body: string, html?: string): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY is not set.");
 
@@ -1105,7 +1105,7 @@ async function sendViaResend(to: string, subject: string, body: string): Promise
       to: [to],
       subject,
       text: body,
-      html: body.replace(/\n/g, "<br/>"),
+      html: html ?? body.replace(/\n/g, "<br/>"),
     }),
   });
 
@@ -1141,11 +1141,11 @@ function canSendMail(): boolean {
     !!(process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
-async function sendMailWithFallback(to: string, subject: string, body: string): Promise<void> {
+async function sendMailWithFallback(to: string, subject: string, body: string, html?: string): Promise<void> {
   // HTTPS first where it is available, because on this host it is the
   // only thing that works at all.
   if (process.env.RESEND_API_KEY) {
-    await sendViaResend(to, subject, body);
+    await sendViaResend(to, subject, body, html);
     return;
   }
 
@@ -1155,7 +1155,7 @@ async function sendMailWithFallback(to: string, subject: string, body: string): 
   let lastError: Error | null = null;
   for (const port of ports) {
     try {
-      await sendMailOn(port, to, subject, body);
+      await sendMailOn(port, to, subject, body, html);
       if (port !== configured) {
         console.log(`[mail] port ${configured} did not connect; sent on ${port} instead.`);
       }
@@ -1169,7 +1169,7 @@ async function sendMailWithFallback(to: string, subject: string, body: string): 
 }
 
 /** One place that actually sends, shared with /api/send-email. */
-async function sendMailOn(port: number, to: string, subject: string, body: string): Promise<void> {
+async function sendMailOn(port: number, to: string, subject: string, body: string, html?: string): Promise<void> {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port,
@@ -1197,7 +1197,7 @@ async function sendMailOn(port: number, to: string, subject: string, body: strin
     to,
     subject,
     text: body,
-    html: body.replace(/\n/g, "<br/>"),
+    html: html ?? body.replace(/\n/g, "<br/>"),
   });
 }
 

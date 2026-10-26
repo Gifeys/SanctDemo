@@ -14,6 +14,15 @@ export interface RequestResult {
   ok: boolean;
   sentTo?: string;
   message?: string;
+  /**
+   * The server's own code for what happened, passed through unchanged.
+   *
+   * The portal needs it to tell a refusal from a nudge. "A code was
+   * just sent, wait a moment" arrives as a 429 and is not a failure -
+   * a code IS in the inbox - so showing it in the red error box tells
+   * the person something went wrong when nothing did.
+   */
+  reason?: string;
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
@@ -34,7 +43,11 @@ export async function requestCode(): Promise<RequestResult> {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, message: data.message ?? "That code could not be sent." };
+      return {
+        ok: false,
+        reason: data.error,
+        message: data.message ?? "That code could not be sent.",
+      };
     }
     return { ok: true, sentTo: data.sentTo };
   } catch {
@@ -51,7 +64,7 @@ export async function submitCode(code: string): Promise<RequestResult> {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, message: data.message ?? "That code is not right." };
+      return { ok: false, reason: data.error, message: data.message ?? "That code is not right." };
     }
     // The server set a custom claim. It only reaches this browser on
     // the NEXT token, so the refresh is what actually finishes the
