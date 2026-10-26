@@ -2,6 +2,14 @@ import { useEffect, useRef } from "react";
 
 import { Capacitor } from "@capacitor/core";
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import {
+  IDLE,
+  afterHeard,
+  afterRestart,
+  listenLocales,
+  planRestart,
+  type RestartState,
+} from "../lib/listenRestart";
 
 import { speakAloud, stopAloud } from "../lib/speech";
 
@@ -111,11 +119,33 @@ export default function DailyRosary() {
       }
     }
 
+    /**
+     * Quieten the Rosary when it is not on screen.
+     *
+     * The ambient track lives inside the iframe, so nothing out here
+     * can pause it directly - the page has to be asked. Reported as
+     * the music still playing after leaving the screen, which is what
+     * happens to an <audio> element nobody tells to stop.
+     *
+     * Also fires when the whole app goes to the background: an app in
+     * a pocket playing music on is worse than one that forgot to
+     * resume.
+     */
+    function onVisibility() {
+      reply({ type: document.hidden ? "host-hidden" : "host-visible" });
+      if (document.hidden) void stopAloud();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+
     window.addEventListener("message", onMessage);
     return () => {
       window.removeEventListener("message", onMessage);
-      // Leaving the Pray tab must not leave a voice praying on behind it.
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Leaving the Pray tab must not leave a voice praying on behind
+      // it, a microphone open, or music playing in an empty room.
+      reply({ type: "host-hidden" });
       void stopAloud();
+      void stopListening();
     };
   }, []);
 
@@ -154,11 +184,22 @@ async function listenAvailable(): Promise<boolean> {
   }
 }
 
-let listening = false;
+/**
+ * Whether the pilgrim still wants the microphone, and how many times
+ * the recogniser has been restarted with nothing heard.
+ *
+ * Module-level because the restart is driven by a plugin event, which
+ * arrives outside any React render.
+ */
+let listenState: RestartState = { ...IDLE };
+let restartTimer: number | null = null;
 
 async function stopListening(): Promise<void> {
-  if (!listening) return;
-  listening = false;
+  listenState = { ...IDLE };
+  if (restartTimer !== null) {
+    window.clearTimeout(restartTimer);
+    restartTimer = null;
+  }
   try {
     await SpeechRecognition.removeAllListeners();
     await SpeechRecognition.stop();
@@ -167,13 +208,6 @@ async function stopListening(): Promise<void> {
   }
 }
 
-/**
- * Listens and relays what it hears, phrase by phrase.
- *
- * partialResults, because the Rosary matches continuously as somebody
- * prays rather than waiting for them to finish a decade. popup is off:
- * Android's own dialog would cover the prayer the pilgrim is reading.
- */
 async function startListening(
   language: "fil" | "en",
   reply: (m: Record<string, unknown>) => void,
@@ -183,21 +217,78 @@ async function startListening(
     return;
   }
   await stopListening();
-  listening = true;
+  listenState = { attempts: 0, wanted: true };
+
+  // The locale that actually started, so restarts do not re-run the
+  // fallback search for the rest of the Rosary.
+  let locale: string | null = null;
+
+  /**
+   * One recognition session.
+   *
+   * Android's recogniser is built around a single utterance: it hears
+   * one, delivers it, and stops. A Rosary is hundreds of utterances
+   * with a pause between each, so the session has to be reopened every
+   * time - which is the whole reason the voice following worked on a
+   * laptop and not on the phone.
+   */
+  async function session(): Promise<boolean> {
+    const candidates = locale ? [locale] : listenLocales(language);
+    for (const candidate of candidates) {
+      try {
+        await SpeechRecognition.start({
+          language: candidate,
+          maxResults: 1,
+          partialResults: true,
+          popup: false,
+        });
+        locale = candidate;
+        return true;
+      } catch {
+        // This locale is not installed on the handset. Try the next
+        // rather than reporting the whole feature unavailable, which
+        // is what silently cost Tagalog users their voice following.
+      }
+    }
+    return false;
+  }
 
   try {
     await SpeechRecognition.addListener("partialResults", (result: { matches?: string[] }) => {
       const heard = result?.matches?.[0];
-      if (heard) reply({ type: "heard", text: heard });
+      if (!heard) return;
+      // Something was heard, so the recogniser is working. Restarts
+      // only count when they achieve nothing.
+      listenState = afterHeard(listenState);
+      reply({ type: "heard", text: heard });
     });
-    await SpeechRecognition.start({
-      language: language === "fil" ? "fil-PH" : "en-US",
-      maxResults: 1,
-      partialResults: true,
-      popup: false,
+
+    await SpeechRecognition.addListener("listeningState", (state: { status: string }) => {
+      if (state.status !== "stopped") return;
+
+      const plan = planRestart(listenState);
+      if (!plan.restart) {
+        if (plan.giveUp) {
+          listenState = { ...IDLE };
+          reply({ type: "listen-availability", available: false });
+        }
+        return;
+      }
+
+      listenState = afterRestart(listenState);
+      restartTimer = window.setTimeout(() => {
+        restartTimer = null;
+        if (!listenState.wanted) return;
+        void session();
+      }, plan.delayMs);
     });
+
+    if (!(await session())) {
+      listenState = { ...IDLE };
+      reply({ type: "listen-availability", available: false });
+    }
   } catch {
-    listening = false;
+    listenState = { ...IDLE };
     reply({ type: "listen-availability", available: false });
   }
 }

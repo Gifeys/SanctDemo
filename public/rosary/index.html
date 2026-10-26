@@ -2682,6 +2682,22 @@ window.addEventListener("message", function (event) {
       toast(P[S.lang].ui.micUnsupported);
     }
     syncMicButton();
+  } else if (data.type === "host-hidden") {
+    // The app around this page has left the Pray screen, or gone to
+    // the background entirely. An <audio> element carries on until
+    // something tells it not to, which is why the music was still
+    // playing in an empty room.
+    musicPausedByHost = !el.ambientMusic || !el.ambientMusic.paused;
+    pauseMusic();
+    stopVoice();
+  } else if (data.type === "host-visible") {
+    // Only resume what WE paused. Somebody who turned the music off in
+    // settings, or paused it themselves, must not have it come back on
+    // because they glanced at another app.
+    if (musicPausedByHost) {
+      musicPausedByHost = false;
+      playMusic();
+    }
   } else if (data.type === "heard" && typeof data.text === "string") {
     // The host's recogniser reports the same way ours does: a running
     // transcript of the current phrase, matched continuously rather
@@ -2921,6 +2937,8 @@ function syncMicButton() {
        screen already started it just leaves playback exactly where it
        was - that's what keeps it gapless across the two screens
    ================================================================== */
+var musicPausedByHost = false;
+
 function playMusic() {
   if (!AMBIENT_MUSIC_FILE || !S.musicOn || !el.ambientMusic) return;
   if (!el.ambientMusic.src) el.ambientMusic.src = AMBIENT_MUSIC_FILE;
@@ -2949,6 +2967,19 @@ function pauseMusic() {
 function unlockMusicOnFirstGesture() {
   playMusic();
 }
+/* When this page is opened on its own rather than inside SanctiWalk,
+   there is no host to send host-hidden, so it watches for itself. In
+   the app both fire and the second is a no-op, via the same flag. */
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) {
+    musicPausedByHost = !el.ambientMusic || !el.ambientMusic.paused;
+    pauseMusic();
+  } else if (musicPausedByHost) {
+    musicPausedByHost = false;
+    playMusic();
+  }
+});
+
 document.addEventListener("pointerdown", unlockMusicOnFirstGesture, { capture: true, once: true });
 document.addEventListener("keydown", unlockMusicOnFirstGesture, { capture: true, once: true });
 
