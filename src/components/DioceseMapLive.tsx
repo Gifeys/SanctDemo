@@ -16,6 +16,7 @@ import {
   shouldFollow, zoomForTurn,
 } from "../lib/followCamera";
 import { useDeviceHeading } from "../lib/useDeviceHeading";
+import { nextCourse, type CourseState } from "../lib/travelCourse";
 import { Plus } from "lucide-react";
 import { type MapOrientationMode } from "./CompassControl";
 import TripPlanner from "./TripPlanner";
@@ -29,7 +30,7 @@ import {
   type TripStop,
 } from "../lib/pilgrimage";
 import NavigationOverlay from "./NavigationOverlay";
-import { splitPathAt } from "../lib/navigation";
+import { OFF_ROUTE_METERS, distanceToPath, splitPathAt } from "../lib/navigation";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
 
@@ -595,6 +596,33 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
    * second to redraw a line that is drawn imperatively anyway.
    */
   const routeLegRef = useRef<Record<string, number>>({});
+
+  /**
+   * Where to DRAW the walker, which is not always where the GPS says.
+   *
+   * While following a route, the arrow is put on the route rather than at
+   * the raw fix. A phone in a street reports the pavement, or a few
+   * metres into the building beside it, so the arrow sat off to one side
+   * with a visible gap between it and the line it was supposed to be
+   * walking along - which reads as the app not knowing where you are.
+   *
+   * Only while navigating, and only while close enough that the nearest
+   * point is plausibly where you are. Beyond that the honest thing is to
+   * show the fix: if you have genuinely left the route, an arrow glued to
+   * it would hide exactly the fact you need to see.
+   *
+   * Drawing only. Everything that DECIDES anything - off-route strikes,
+   * rerouting, arrival, distance remaining - keeps using the real fix, so
+   * this cannot talk the app into believing you are somewhere you are not.
+   */
+  const drawnPosition = useMemo(() => {
+    if (!position || !navigatingTo) return position;
+    const route = routes[navigatingTo.id];
+    if (!route || route.path.length < 2) return position;
+    if (distanceToPath(position, route.path) > OFF_ROUTE_METERS) return position;
+    return splitPathAt(position, route.path, routeLegRef.current[navigatingTo.id] ?? 0).ahead[0];
+  }, [position, navigatingTo, routes]);
+
   /**
    * Distance to the next manoeuvre, reported by the navigation overlay.
    * A ref rather than state: it changes on every GPS fix and only the
@@ -693,7 +721,33 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // Only the bearing is read here now. The status and the permission request
   // were for the compass dial's own UI; the hook asks for the sensor itself
   // on the first touch, so nothing on the map has to drive it.
-  const { heading } = useDeviceHeading();
+  const { heading: compassHeading } = useDeviceHeading();
+
+  /**
+   * Where the walker is going, from the compass or from their own track.
+   *
+   * The compass is preferred when it reports anything: standing still, it
+   * is the only thing that knows which way you are facing.
+   *
+   * But plenty of handsets report no absolute orientation at all - this
+   * was found on an Infinix during a walk, where turning round left the
+   * map pointing the old way because followCamera keeps its current
+   * bearing when the heading is null. Two fixes are enough to say which
+   * way someone went, so the track provides a course when the compass
+   * cannot.
+   */
+  const courseRef = useRef<CourseState>({ from: null, course: null });
+  const [trackCourse, setTrackCourse] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!position) return;
+    const next = nextCourse(courseRef.current, position);
+    if (next === courseRef.current) return;
+    courseRef.current = next;
+    if (next.course !== null) setTrackCourse(next.course);
+  }, [position?.lat, position?.lng]);
+
+  const heading = compassHeading ?? trackCourse;
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
   // and re-running that effect on every render would tear down and rebuild
@@ -1002,6 +1056,9 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     const map = mapRef.current;
     if (mode !== "live" || !map) return;
 
+    // The drawn position, not the raw fix - see drawnPosition above.
+    const position = drawnPosition;
+
     if (!position) {
       youMarkerRef.current?.remove();
       youMarkerRef.current = null;
@@ -1113,7 +1170,7 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, position?.lat, position?.lng, accuracyMeters]);
+  }, [mode, drawnPosition?.lat, drawnPosition?.lng, accuracyMeters]);
 
   // Point the direction light.
   //
