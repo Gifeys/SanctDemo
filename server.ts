@@ -991,7 +991,7 @@ app.post("/api/admin/2fa/request", async (req, res) => {
   const uid = await uidFromToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: "Sign in first." });
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  if (!canSendMail()) {
     // Said plainly rather than as a silent failure: without mail there
     // is no way to finish signing in, and the administrator needs to
     // know it is the server's fault and not their password.
@@ -1127,6 +1127,20 @@ async function sendViaResend(to: string, subject: string, body: string): Promise
  * Tried in order rather than guessed, so a host where 587 works is
  * unaffected and one where it is blocked still gets its mail.
  */
+/**
+ * Whether this deployment can send mail at all.
+ *
+ * Exactly the condition sendMailWithFallback needs to succeed, in one
+ * place, because two readings of it had drifted apart: the status
+ * endpoint counted only Resend while the code request still demanded
+ * SMTP credentials. That combination arms the second factor and then
+ * refuses to issue a code - locked out, with no way through.
+ */
+function canSendMail(): boolean {
+  return !!process.env.RESEND_API_KEY ||
+    !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 async function sendMailWithFallback(to: string, subject: string, body: string): Promise<void> {
   // HTTPS first where it is available, because on this host it is the
   // only thing that works at all.
@@ -1202,8 +1216,10 @@ app.get("/api/admin/2fa-status", (_req, res) => {
   res.json({
     // Only HTTPS delivery counts. SMTP is configured on this host and
     // still cannot send - every port is blocked - so treating it as
-    // available would lock the office out again.
-    mailAvailable: !!process.env.RESEND_API_KEY,
+    // available would lock the office out again - but SMTP credentials
+    // alone still count, because sendMailWithFallback will try them
+    // and this must agree with what the code request will actually do.
+    mailAvailable: canSendMail(),
   });
 });
 
