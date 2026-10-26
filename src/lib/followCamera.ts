@@ -119,10 +119,19 @@ export function needsCameraMove(
  * Matched to the GPS, not chosen for looks. Fixes arrive about once a
  * second, so an ease that outlasts the gap is still running when the next
  * one arrives and gets cancelled mid-flight - which is the stutter people
- * describe as the map "fighting itself". Anything shorter than the gap
- * leaves the camera parked between fixes, so this aims just under it.
+ * describe as the map "fighting itself".
+ *
+ * This was 800ms, which is nearly the whole gap, so the camera was always
+ * still travelling towards where the walker had been a moment ago and
+ * never once showed where they actually were. Reported from the street as
+ * the map being slow to keep up, and that is exactly what it was.
+ *
+ * Roughly half the gap instead. The camera arrives and waits, which looks
+ * stationary between fixes - the thing the old value was avoiding - but a
+ * camera briefly parked at the right place reads as settled, where one
+ * permanently short of it reads as lagging.
  */
-export const FOLLOW_DURATION_MS = 800
+export const FOLLOW_DURATION_MS = 450
 
 /**
  * Whether the app should still be driving the camera.

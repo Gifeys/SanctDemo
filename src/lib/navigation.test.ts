@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Coordinates } from './geo'
 import {
   OFF_ROUTE_METERS,
   announcementFor,
@@ -7,6 +8,7 @@ import {
   instructionFor,
   nextOffRouteState,
   progressAlong,
+  splitPathAt,
   type RouteStep,
 } from './navigation'
 
@@ -279,5 +281,87 @@ describe('instructionFor — against a real OSRM response', () => {
     expect(seen).toEqual([...seen].sort((a, b) => a - b))
     expect(index).toBe(REAL_ROUTE.length - 1)
     expect(progressAlong(destination, REAL_ROUTE, destination, index).arrived).toBe(true)
+  })
+})
+
+describe('splitPathAt', () => {
+  // A straight east-west line at constant latitude, so the maths is
+  // checkable by eye: four points 0.001 deg apart, ~107 m each.
+  const LINE: Coordinates[] = [
+    { lat: 14.6377, lng: 120.9730 },
+    { lat: 14.6377, lng: 120.9740 },
+    { lat: 14.6377, lng: 120.9750 },
+    { lat: 14.6377, lng: 120.9760 },
+  ]
+
+  it('leaves the whole line ahead when standing at the start', () => {
+    const { ahead, behind } = splitPathAt(LINE[0], LINE)
+    expect(behind.length).toBe(1)
+    expect(ahead.length).toBe(4)
+    expect(ahead[ahead.length - 1]).toEqual(LINE[3])
+  })
+
+  it('drops the part already walked', () => {
+    // Standing on the third point: only the last leg should remain.
+    const { ahead } = splitPathAt(LINE[2], LINE)
+    expect(ahead.length).toBe(2)
+    expect(ahead[1]).toEqual(LINE[3])
+  })
+
+  it('cuts mid-segment rather than snapping to the next vertex', () => {
+    // This is the whole point. Snapping to vertices makes the line jump
+    // a block at a time; the walker needs it to retreat continuously.
+    const half = { lat: 14.6377, lng: 120.9735 }
+    const { ahead } = splitPathAt(half, LINE)
+    expect(ahead[0].lng).toBeCloseTo(120.9735, 5)
+    expect(ahead.length).toBe(4)
+  })
+
+  it('starts the remaining line at the walker, not at the line', () => {
+    // Standing beside the route, not on it - the usual case, since GPS
+    // puts you on the pavement and the route down the middle.
+    const beside = { lat: 14.6380, lng: 120.9745 }
+    const { ahead } = splitPathAt(beside, LINE)
+    expect(ahead[0].lng).toBeCloseTo(120.9745, 4)
+    expect(ahead[0].lat).toBeCloseTo(14.6377, 4)
+  })
+
+  it('keeps the two halves joined', () => {
+    // No gap and no overlap, or the faded and solid lines show a seam.
+    const { ahead, behind } = splitPathAt({ lat: 14.6377, lng: 120.9744 }, LINE)
+    expect(behind[behind.length - 1]).toEqual(ahead[0])
+  })
+
+  it('reports nothing ahead once past the end', () => {
+    const past = { lat: 14.6377, lng: 120.9790 }
+    const { ahead } = splitPathAt(past, LINE)
+    expect(ahead.length).toBeLessThanOrEqual(2)
+    expect(ahead[ahead.length - 1]).toEqual(LINE[3])
+  })
+
+  it('survives a path too short to split', () => {
+    expect(splitPathAt(LINE[0], []).ahead).toEqual([])
+    expect(splitPathAt(LINE[0], []).behind).toEqual([])
+    expect(splitPathAt(LINE[0], [LINE[0]]).ahead).toEqual([LINE[0]])
+  })
+
+  it('never moves backwards along a line that doubles back', () => {
+    // A route out and back passes close to its own start. Picking the
+    // globally nearest segment would rewind the line to the beginning;
+    // the search starts from the leg already reached instead.
+    const loop: Coordinates[] = [
+      { lat: 14.6377, lng: 120.9730 },
+      { lat: 14.6377, lng: 120.9750 },
+      { lat: 14.6387, lng: 120.9750 },
+      { lat: 14.6387, lng: 120.9730 },
+    ]
+    const nearStartAgain = { lat: 14.6387, lng: 120.9731 }
+    const { ahead } = splitPathAt(nearStartAgain, loop, 2)
+    expect(ahead[ahead.length - 1]).toEqual(loop[3])
+    expect(ahead.length).toBe(2)
+  })
+
+  it('reports which leg it cut on, so the next fix can resume there', () => {
+    expect(splitPathAt(LINE[2], LINE).legIndex).toBe(2)
   })
 })

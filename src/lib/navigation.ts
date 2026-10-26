@@ -81,6 +81,116 @@ export function distanceToSegment(point: Coordinates, a: Coordinates, b: Coordin
   return Math.hypot(p.x - t * q.x, p.y - t * q.y)
 }
 
+/** Back from local metres to coordinates, for the split point. */
+function fromLocalMeters(offset: { x: number; y: number }, origin: Coordinates): Coordinates {
+  const latRadians = (origin.lat * Math.PI) / 180
+  return {
+    lat: origin.lat + offset.y / METERS_PER_DEG_LAT,
+    lng: origin.lng + offset.x / (METERS_PER_DEG_LAT * Math.cos(latRadians)),
+  }
+}
+
+/** Where on the segment a-b the point lands, and how far off it is. */
+function projectOntoSegment(
+  point: Coordinates,
+  a: Coordinates,
+  b: Coordinates,
+): { at: Coordinates; distance: number } {
+  const p = toLocalMeters(point, a)
+  const q = toLocalMeters(b, a)
+  const lengthSquared = q.x * q.x + q.y * q.y
+
+  if (lengthSquared === 0) return { at: a, distance: Math.hypot(p.x, p.y) }
+
+  const t = Math.max(0, Math.min(1, (p.x * q.x + p.y * q.y) / lengthSquared))
+  const foot = { x: t * q.x, y: t * q.y }
+  return {
+    at: fromLocalMeters(foot, a),
+    distance: Math.hypot(p.x - foot.x, p.y - foot.y),
+  }
+}
+
+/** Within a centimetre, which is far below any GPS fix. */
+function samePlace(a: Coordinates, b: Coordinates): boolean {
+  return haversineMeters(a, b) < 0.01
+}
+
+export interface PathSplit {
+  /** The part already walked, ending at the walker. */
+  behind: Coordinates[]
+  /** The part still to walk, starting at the walker. */
+  ahead: Coordinates[]
+  /** Which leg the cut fell on, to resume the search from next time. */
+  legIndex: number
+}
+
+/**
+ * Cuts a route at the walker.
+ *
+ * ## Why this exists
+ *
+ * The route line was drawn once, when the route was fetched, and never
+ * touched again. So it stayed exactly where it was while the walker moved
+ * through it - the line looked stuck, because it was. Every map people
+ * know consumes the route behind them; that is most of what makes one
+ * feel live rather than printed.
+ *
+ * ## Why it cuts mid-segment
+ *
+ * Dropping whole vertices would make the line jump a block at a time
+ * between junctions. OSRM returns long straight legs down a street, so
+ * the cut has to land wherever the walker actually is along one.
+ *
+ * ## Why the search starts at `fromLeg`
+ *
+ * A route that doubles back passes within metres of itself. Taking the
+ * globally nearest leg would snap the line back to the outbound half and
+ * erase the walk. Searching forward from the leg already reached makes
+ * the cut monotonic, which is the same reason progressAlong never lets
+ * stepIndex rewind.
+ */
+export function splitPathAt(
+  position: Coordinates,
+  path: Coordinates[],
+  fromLeg = 0,
+): PathSplit {
+  if (path.length === 0) return { behind: [], ahead: [], legIndex: 0 }
+  if (path.length === 1) return { behind: [path[0]], ahead: [path[0]], legIndex: 0 }
+
+  const start = Math.max(0, Math.min(fromLeg, path.length - 2))
+
+  let bestLeg = start
+  let bestAt = path[start]
+  let bestDistance = Number.POSITIVE_INFINITY
+
+  for (let i = start; i < path.length - 1; i++) {
+    const { at, distance } = projectOntoSegment(position, path[i], path[i + 1])
+    // `<=`, not `<`. Standing exactly on a vertex puts the walker at
+    // distance zero from BOTH legs meeting there, and taking the first
+    // leaves the leg just finished in front of them - the line keeps a
+    // dead stub behind the arrow and never advances past the junction.
+    // On a tie the later leg is the one still ahead.
+    if (distance <= bestDistance) {
+      bestDistance = distance
+      bestLeg = i
+      bestAt = at
+    }
+  }
+
+  // The cut point belongs to BOTH halves, so the faded line and the solid
+  // one meet without a gap or an overlap - but only once. When the cut
+  // lands on a vertex the point is already there, and repeating it gives
+  // MapLibre a zero-length segment, which it draws as a blob under the
+  // round line cap.
+  const behind = path.slice(0, bestLeg + 1)
+  if (!samePlace(behind[behind.length - 1], bestAt)) behind.push(bestAt)
+
+  const rest = path.slice(bestLeg + 1)
+  if (rest.length > 0 && samePlace(rest[0], bestAt)) rest.shift()
+
+  return { behind, ahead: [bestAt, ...rest], legIndex: bestLeg }
+}
+
 /** Shortest distance from a point to a whole path, in metres. */
 export function distanceToPath(point: Coordinates, path: Coordinates[]): number {
   if (path.length === 0) return Number.POSITIVE_INFINITY

@@ -29,6 +29,7 @@ import {
   type TripStop,
 } from "../lib/pilgrimage";
 import NavigationOverlay from "./NavigationOverlay";
+import { splitPathAt } from "../lib/navigation";
 import parishData from "../data/diocese-parishes.json";
 import DioceseMap from "./DioceseMap";
 
@@ -191,28 +192,91 @@ const SEARCHABLE_PARISHES: SearchParish[] = PARISHES.map(p => ({
   isLive: p.status === "live" && Boolean(LIVE_PARISH_TO_ROUTE_ID[p.id]),
 }));
 
-function routeLineId(routeId: string): { sourceId: string; layerId: string } {
-  return { sourceId: `route-line-src-${routeId}`, layerId: `route-line-${routeId}` };
-}
-
-function routeFeature(route: WalkingRoute): GeoJSON.Feature<GeoJSON.LineString> {
+function routeLineId(routeId: string): {
+  sourceId: string;
+  casingId: string;
+  doneId: string;
+  layerId: string;
+} {
   return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "LineString",
-      coordinates: route.path.map(p => [p.lng, p.lat]),
-    },
+    sourceId: `route-line-src-${routeId}`,
+    casingId: `route-line-casing-${routeId}`,
+    doneId: `route-line-done-${routeId}`,
+    layerId: `route-line-${routeId}`,
   };
 }
 
-// Draws (or updates) one parish's walking-route line. A 'direct' route
-// (OSRM unreachable/timed out — see routing.ts) is dashed so it reads
-// visually distinct from a real routed street path, matching the
-// distance-panel label ("direct" vs a walking time).
-function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute, accentColor: string) {
-  const { sourceId, layerId } = routeLineId(routeId);
-  const data = routeFeature(route);
+function lineFeature(
+  path: Coordinates[],
+  leg: "done" | "ahead",
+): GeoJSON.Feature<GeoJSON.LineString> {
+  return {
+    type: "Feature",
+    properties: { leg },
+    geometry: { type: "LineString", coordinates: path.map(p => [p.lng, p.lat]) },
+  };
+}
+
+/**
+ * The route as two lines: the part walked, and the part remaining.
+ *
+ * Without a position the whole route is "ahead", which is correct before
+ * the walker has started and for the browsing case where a route is just
+ * being shown on the map.
+ */
+export function routeFeatures(
+  route: WalkingRoute,
+  position: Coordinates | null,
+  fromLeg: number,
+): { data: GeoJSON.FeatureCollection; legIndex: number } {
+  if (!position || route.path.length < 2) {
+    return {
+      data: { type: "FeatureCollection", features: [lineFeature(route.path, "ahead")] },
+      legIndex: 0,
+    };
+  }
+
+  const { behind, ahead, legIndex } = splitPathAt(position, route.path, fromLeg);
+  const features: GeoJSON.Feature[] = [];
+  if (behind.length >= 2) features.push(lineFeature(behind, "done"));
+  if (ahead.length >= 2) features.push(lineFeature(ahead, "ahead"));
+
+  return { data: { type: "FeatureCollection", features }, legIndex };
+}
+
+/**
+ * Draws (or updates) one parish's walking route.
+ *
+ * ## Three layers, not one
+ *
+ * A single 3px stroke disappeared against the map: street casings and
+ * building edges are the same weight, and on a phone in daylight the line
+ * was lost among them. So, bottom to top:
+ *
+ *   casing  a white stroke under everything, which is what separates the
+ *           route from the streets rather than making it merely darker
+ *   done    the part already walked, faded
+ *   ahead   the part still to walk, full strength
+ *
+ * ## Why the travelled part is kept at all
+ *
+ * Erasing it entirely loses the thread back to where you came from, which
+ * is the one thing you want when you suspect you have gone wrong. Faded
+ * says "behind you" without competing with the road ahead.
+ *
+ * A 'direct' route (OSRM unreachable - see routing.ts) stays dashed, so it
+ * still reads as a straight line someone drew rather than a street path.
+ */
+function upsertRouteLayer(
+  map: MapLibreMap,
+  routeId: string,
+  route: WalkingRoute,
+  accentColor: string,
+  position: Coordinates | null = null,
+  fromLeg = 0,
+): number {
+  const { sourceId, casingId, doneId, layerId } = routeLineId(routeId);
+  const { data, legIndex } = routeFeatures(route, position, fromLeg);
   const dasharray = route.kind === "direct" ? [2, 2] : [1, 0];
 
   const existingSource = map.getSource(sourceId) as GeoJSONSource | undefined;
@@ -222,6 +286,27 @@ function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute
     map.addSource(sourceId, { type: "geojson", data });
   }
 
+  if (!map.getLayer(casingId)) {
+    map.addLayer({
+      id: casingId,
+      type: "line",
+      source: sourceId,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": "#FFFFFF", "line-width": 11, "line-opacity": 0.9 },
+    });
+  }
+
+  if (!map.getLayer(doneId)) {
+    map.addLayer({
+      id: doneId,
+      type: "line",
+      source: sourceId,
+      filter: ["==", ["get", "leg"], "done"],
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": accentColor, "line-width": 7, "line-opacity": 0.28 },
+    });
+  }
+
   if (map.getLayer(layerId)) {
     map.setPaintProperty(layerId, "line-dasharray", dasharray);
   } else {
@@ -229,14 +314,17 @@ function upsertRouteLayer(map: MapLibreMap, routeId: string, route: WalkingRoute
       id: layerId,
       type: "line",
       source: sourceId,
+      filter: ["==", ["get", "leg"], "ahead"],
       layout: { "line-join": "round", "line-cap": "round" },
       paint: {
         "line-color": accentColor,
-        "line-width": 3,
+        "line-width": 7,
         "line-dasharray": dasharray,
       },
     });
   }
+
+  return legIndex;
 }
 
 
@@ -395,8 +483,12 @@ function removeTripLayer(map: MapLibreMap) {
 }
 
 function removeRouteLayer(map: MapLibreMap, routeId: string) {
-  const { sourceId, layerId } = routeLineId(routeId);
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  const { sourceId, casingId, doneId, layerId } = routeLineId(routeId);
+  // Layers before the source they read from: MapLibre refuses to remove
+  // a source that a layer still points at.
+  for (const id of [layerId, doneId, casingId]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
   if (map.getSource(sourceId)) map.removeSource(sourceId);
 }
 
@@ -495,6 +587,14 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
   // route: a route is a line on the map, navigation is a live session that
   // follows the pilgrim and reroutes.
   const [navigatingTo, setNavigatingTo] = useState<{ id: string; name: string; coordinates: Coordinates } | null>(null);
+  /**
+   * Which leg of each route the line was last cut on.
+   *
+   * A ref, not state: it changes on every GPS fix and nothing renders
+   * from it, so holding it in state would re-render the whole map once a
+   * second to redraw a line that is drawn imperatively anyway.
+   */
+  const routeLegRef = useRef<Record<string, number>>({});
   /**
    * Distance to the next manoeuvre, reported by the navigation overlay.
    * A ref rather than state: it changes on every GPS fix and only the
@@ -1089,6 +1189,32 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     });
   }, [mode, navigatingTo, position?.lat, position?.lng, heading]);
 
+  // Consume the route as it is walked.
+  //
+  // The line used to be drawn once, when the route arrived, and then left
+  // alone - so it stayed exactly where it was while the walker moved
+  // through it. It looked stuck because it was. Re-cutting it at the
+  // walker on every fix is what makes it read as live.
+  //
+  // Imperative rather than through React: a GPS fix a second re-rendering
+  // a map of this size is wasted work, and MapLibre is updating a source
+  // either way.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !navigatingTo || !position) return;
+    const route = routes[navigatingTo.id];
+    if (!route) return;
+
+    routeLegRef.current[navigatingTo.id] = upsertRouteLayer(
+      map,
+      navigatingTo.id,
+      route,
+      resolveColor("var(--color-brand-accent)"),
+      position,
+      routeLegRef.current[navigatingTo.id] ?? 0,
+    );
+  }, [navigatingTo, position?.lat, position?.lng, routes]);
+
   // The dot becomes an arrow while a route is being followed, and the map
   // goes back to flat north-up when it ends.
   useEffect(() => {
@@ -1670,7 +1796,17 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
               // route currently being followed rather than the original one.
               const map = mapRef.current;
               if (!map) return;
-              upsertRouteLayer(map, navigatingTo.id, route, resolveColor("var(--color-brand-accent)"));
+              // A reroute is a different line, so where the walker had got
+              // to along the old one says nothing about this one.
+              routeLegRef.current[navigatingTo.id] = 0;
+              upsertRouteLayer(
+                map,
+                navigatingTo.id,
+                route,
+                resolveColor("var(--color-brand-accent)"),
+                position,
+                0,
+              );
               setRoutes(prev => ({ ...prev, [navigatingTo.id]: route }));
 
               // Close in on the walker when navigation starts.
