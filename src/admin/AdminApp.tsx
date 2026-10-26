@@ -7,6 +7,7 @@ import { getProfile } from "../lib/userProfile";
 import { getChurch } from "../lib/churches";
 import AdminLogin from "./AdminLogin";
 import TwoFactorGate from "./TwoFactorGate";
+import { apiBase } from "../lib/apiBase";
 import AdminDashboard from "./AdminDashboard";
 import AdminApplicationDetail from "./AdminApplicationDetail";
 import AdminApplications from "./AdminApplications";
@@ -37,6 +38,24 @@ export interface AdminSession {
   church: Church | null;
 }
 
+/**
+ * Whether the server can deliver a sign-in code right now.
+ *
+ * Unreachable or unsure means "no", so a sleeping backend cannot lock
+ * the parish office out. See the note at the call site for why that
+ * is the right direction here.
+ */
+async function secondFactorAvailable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${apiBase()}/api/admin/2fa-status`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.mailAvailable === true;
+  } catch {
+    return false;
+  }
+}
+
 export default function AdminApp() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [state, setState] = useState<"loading" | "out" | "not-admin" | "needs-code" | "in">("loading");
@@ -65,23 +84,25 @@ export default function AdminApp() {
       // previous session would let somebody who has just stolen a
       // password walk straight in on the strength of a code the real
       // administrator typed last week.
-      // OFF until the server can actually send a code. Approved by
-      // the parish on 26 October 2026.
+      // Required whenever the server can actually deliver a code.
       //
-      // Render blocks outbound SMTP on 587 AND 465 - both time out -
-      // so no code reaches anybody. With this on, the office was shut
-      // out of its own portal by a factor it could never satisfy, and
-      // a control that denies the legitimate user and nobody else is
-      // not protecting anything.
+      // This was a hardcoded `false`, because Render blocks outbound
+      // SMTP on every port and the gate had shut the parish office
+      // out of its own portal with a factor it could never satisfy.
+      // A constant was the wrong shape for that: it has to be
+      // remembered and flipped by hand, and a security control that
+      // depends on somebody remembering stays off.
       //
-      // Everything needed is written and tested: this gate, the
-      // server's generation and verification, the hashing, the
-      // attempt limits and the custom claim. Set this to true once
-      // mail goes out over HTTPS - see sendViaResend in server.ts.
+      // The server is asked instead, so the factor returns on its own
+      // the moment a mail key is configured.
       //
-      // Until then the parish office is password-only, which is what
-      // it was before any of this.
-      const REQUIRE_SECOND_FACTOR = false;
+      // When the answer cannot be obtained the factor is NOT required.
+      // That is deliberate and it is the lesser of two harms here: the
+      // alternative locks the office out whenever the backend is
+      // asleep, and this gate is not the boundary protecting parish
+      // data - firestore.rules is, and it is unaffected either way.
+      //
+      const REQUIRE_SECOND_FACTOR = await secondFactorAvailable();
 
       if (REQUIRE_SECOND_FACTOR) {
         // The claim must be NEWER than this sign-in, so one from a

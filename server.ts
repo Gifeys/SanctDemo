@@ -1187,6 +1187,26 @@ async function sendMailOn(port: number, to: string, subject: string, body: strin
   });
 }
 
+/**
+ * Whether the server can actually deliver a sign-in code.
+ *
+ * The portal asks this instead of carrying a hardcoded switch. A
+ * constant in the client had to be remembered and flipped by hand,
+ * which is the kind of thing that stays false for a year; this turns
+ * the second factor back on by itself the moment a mail key exists.
+ *
+ * Public on purpose, and it reveals nothing: a boolean saying whether
+ * this deployment can send email. No key, no address, no account.
+ */
+app.get("/api/admin/2fa-status", (_req, res) => {
+  res.json({
+    // Only HTTPS delivery counts. SMTP is configured on this host and
+    // still cannot send - every port is blocked - so treating it as
+    // available would lock the office out again.
+    mailAvailable: !!process.env.RESEND_API_KEY,
+  });
+});
+
 app.get("/api/smtp-status", (req, res) => {
   const isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
   res.json({
