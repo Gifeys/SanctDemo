@@ -528,7 +528,7 @@ function isNonFatalStyleError(error: unknown): boolean {
 }
 
 export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishId, onWalkToConsumed }: DioceseMapLiveProps) {
-  const { position, accuracyMeters, gpsStatus, simulation } = usePresence();
+  const { position, accuracyMeters, gpsCourse, gpsStatus, simulation } = usePresence();
 
   // The position on screen is the last one the device gave us, which is
   // not the same as where the pilgrim is standing now. When the watch
@@ -747,7 +747,19 @@ export default function DioceseMapLive({ onSelectParish, heightPx, walkToParishI
     if (next.course !== null) setTrackCourse(next.course);
   }, [position?.lat, position?.lng]);
 
-  const heading = compassHeading ?? trackCourse;
+  /**
+   * The bearing the map steers by, best source first.
+   *
+   * 1. The compass, which is the only one that works standing still.
+   * 2. The fix's own course over ground, which the device computes and
+   *    which arrives with every fix - no distance to cover first.
+   * 3. The track, derived here from successive positions.
+   *
+   * The track used to be the only fallback, and it needs several metres
+   * of walking before it will say anything. On a handset with no
+   * compass that made every change of direction take seconds to show.
+   */
+  const heading = compassHeading ?? gpsCourse ?? trackCourse;
   // Held in a ref so the marker-building effect doesn't need `onSelectParish`
   // in its dependency array — App.tsx passes a fresh function each render,
   // and re-running that effect on every render would tear down and rebuild

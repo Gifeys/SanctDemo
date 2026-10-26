@@ -1,5 +1,5 @@
 import { haversineMeters, type Coordinates } from './geo'
-import { normalizeDegrees, smoothHeading } from './heading'
+import { normalizeDegrees, shortestAngleDelta, smoothHeading } from './heading'
 
 /**
  * Which way the walker is going, worked out from where they have been.
@@ -31,7 +31,30 @@ import { normalizeDegrees, smoothHeading } from './heading'
  * bearing between two such samples is uniformly random - acting on it
  * spins the map while the walker stands still reading it.
  */
-export const COURSE_MIN_MOVE_M = 6
+export const COURSE_MIN_MOVE_M = 4
+
+/**
+ * How fast the course converges on a turn, 0-1 per update.
+ *
+ * Deliberately NOT heading.ts's DEFAULT_SMOOTHING_ALPHA. That constant is
+ * 0.15 and its own comment says why: it settles in about half a second
+ * "at the ~60Hz these sensor events arrive at". Borrowing it here was a
+ * mistake - these updates arrive once every few METRES of walking, call
+ * it one every four seconds, so fifteen updates to land a turn is over a
+ * minute. Reported from the street as the map taking forever to notice a
+ * change of direction, and that is arithmetic, not a feeling.
+ */
+export const COURSE_ALPHA = 0.5
+
+/**
+ * Past this much of a change, stop smoothing and take the new bearing.
+ *
+ * A gentle drift is noise to be filtered; a sharp change is a corner, and
+ * the walker already knows they turned. Easing through 90 degrees over
+ * several updates only means the map disagrees with them the whole way
+ * round. Below this, smoothing still does its job.
+ */
+export const COURSE_SNAP_DEGREES = 50
 
 /** Initial bearing from a to b, in degrees clockwise from north. */
 export function courseBetween(a: Coordinates, b: Coordinates): number {
@@ -70,10 +93,14 @@ export function nextCourse(
   if (haversineMeters(previous.from, position) < minMoveMeters) return previous
 
   const raw = courseBetween(previous.from, position)
-  return {
-    from: position,
-    // Smoothed against the last course for the same reason the compass is:
-    // one stride off the kerb should not swing the map.
-    course: previous.course === null ? raw : smoothHeading(previous.course, raw),
-  }
+  if (previous.course === null) return { from: position, course: raw }
+
+  // A corner is taken at once; a wobble is smoothed.
+  const turn = Math.abs(shortestAngleDelta(previous.course, raw))
+  const course =
+    turn >= COURSE_SNAP_DEGREES
+      ? raw
+      : smoothHeading(previous.course, raw, { alpha: COURSE_ALPHA })
+
+  return { from: position, course }
 }

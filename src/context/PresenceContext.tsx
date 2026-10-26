@@ -33,6 +33,21 @@ interface PresenceContextValue {
   // few hundred metres; there is no code fix for that, only surfacing it
   // instead of asserting a precise dot.
   accuracyMeters: number | null
+  /**
+   * Course over ground from the fix itself, in degrees, or null.
+   *
+   * GeolocationCoordinates.heading, which the device computes from its
+   * own motion. It was being discarded, and the map was left deriving a
+   * course from successive positions instead - which needs several
+   * metres of walking before it will say anything, so changing direction
+   * took seconds to register.
+   *
+   * Null while stationary, and null on hardware that does not report it,
+   * so callers must still have a fallback. The spec says heading is NaN
+   * when speed is 0; NaN is normalised away here rather than leaking out
+   * to turn a map bearing into NaN.
+   */
+  gpsCourse: number | null
   gpsStatus: GpsStatus
   simulation: SimulationValue
   setSimulation: (value: SimulationValue) => void
@@ -93,6 +108,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   const [simulation, setSimulation] = useState<SimulationValue>('off')
   const [position, setPosition] = useState<Coordinates | null>(null)
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null)
+  const [gpsCourse, setGpsCourse] = useState<number | null>(null)
   const presenceRef = useRef<PresenceState>(INITIAL_PRESENCE)
 
   function applyPosition(pos: Coordinates | null, options: { instant?: boolean } = {}) {
@@ -121,6 +137,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     // an honest accuracy figure, so any previous real-GPS accuracy reading
     // must not linger and be shown alongside it.
     setAccuracyMeters(null)
+    setGpsCourse(null)
     applyPosition(simulatedPosition(simulation, parishes), { instant: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulation])
@@ -134,6 +151,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     if (!('geolocation' in navigator)) {
       setGpsStatus('unavailable')
       setAccuracyMeters(null)
+      setGpsCourse(null)
       applyPosition(null, { instant: true })
       return
     }
@@ -146,6 +164,16 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         everFixed = true
         setGpsStatus('granted')
         setAccuracyMeters(p.coords.accuracy ?? null)
+        // Only while actually moving. Standing still, the reported
+        // heading is NaN or the last direction of a twitch, and either
+        // would spin the map under someone reading it.
+        const course = p.coords.heading
+        const speed = p.coords.speed
+        setGpsCourse(
+          course != null && Number.isFinite(course) && (speed == null || speed > 0.4)
+            ? course
+            : null,
+        )
         applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude })
       },
       err => {
@@ -168,6 +196,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
         if (err?.code === 1) {
           setGpsStatus('denied')
           setAccuracyMeters(null)
+          setGpsCourse(null)
           applyPosition(null, { instant: true })
           return
         }
@@ -196,11 +225,12 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       parish,
       position,
       accuracyMeters,
+      gpsCourse,
       gpsStatus: simulation === 'off' ? gpsStatus : 'granted',
       simulation,
       setSimulation,
     }),
-    [presence, parish, position, accuracyMeters, gpsStatus, simulation],
+    [presence, parish, position, accuracyMeters, gpsCourse, gpsStatus, simulation],
   )
 
   return <PresenceCtx.Provider value={value}>{children}</PresenceCtx.Provider>

@@ -55,9 +55,11 @@ describe('nextCourse', () => {
   it('keeps the anchor when it ignores a fix, so small steps add up', () => {
     // Moving the anchor on every fix would mean a slow walk never
     // clears the threshold and never produces a course at all.
+    // Three steps of about a metre, so the total stays under
+    // COURSE_MIN_MOVE_M and every one of them is ignored.
     let s = nextCourse(start, HERE)
-    for (let i = 1; i <= 5; i++) {
-      s = nextCourse(s, { lat: HERE.lat + 0.00001 * i, lng: HERE.lng })
+    for (let i = 1; i <= 3; i++) {
+      s = nextCourse(s, { lat: HERE.lat + 0.000009 * i, lng: HERE.lng })
     }
     expect(s.from).toEqual(HERE)
     expect(s.course).toBeNull()
@@ -73,12 +75,25 @@ describe('nextCourse', () => {
     s = nextCourse(s, NORTH)
     expect(s.course).toBeCloseTo(0, 0)
 
-    // Several fixes heading back south, since the course is smoothed.
-    for (let i = 1; i <= 12; i++) {
-      s = nextCourse(s, { lat: NORTH.lat - 0.0002 * i, lng: NORTH.lng })
-    }
-    expect(s.course).toBeGreaterThan(150)
-    expect(s.course).toBeLessThan(210)
+    // ONE fix heading back south is enough. A reversal is nothing like
+    // noise, and easing through it over a dozen fixes - a minute of
+    // walking - is what made the map feel like it was not following.
+    s = nextCourse(s, { lat: NORTH.lat - 0.0002, lng: NORTH.lng })
+    expect(s.course).toBeGreaterThan(170)
+    expect(s.course).toBeLessThan(190)
+  })
+
+  it('still smooths a slight wobble rather than chasing it', () => {
+    // Drifting a few degrees across a road is not a turn. Only changes
+    // past COURSE_SNAP_DEGREES are taken whole.
+    let s = nextCourse(start, HERE)
+    s = nextCourse(s, NORTH)
+    const before = s.course!
+    // A fix a few degrees east of due north.
+    s = nextCourse(s, { lat: NORTH.lat + 0.001, lng: NORTH.lng + 0.00007 })
+    const moved = Math.abs(s.course! - before)
+    expect(moved).toBeGreaterThan(0)
+    expect(moved).toBeLessThan(4)
   })
 
   it('holds its last course when the walker stops', () => {
