@@ -109,6 +109,14 @@ const APP_ORIGINS = new Set([
   "https://localhost",      // Capacitor, Android
   "capacitor://localhost",  // Capacitor, iOS
   "http://localhost",
+  // The deployed web app and the parish office portal.
+  //
+  // Missing until the office tried to sign in and the browser refused
+  // the request before sending it - which surfaced as "could not
+  // reach the server" while the server sat there answering /api/health
+  // in under a second. Everything API-backed had quietly only ever
+  // worked from the APK, whose origin is https://localhost.
+  "https://sanct-demo-vxzb.vercel.app",
 ]);
 
 const isAllowedOrigin = (origin: string) =>
@@ -1160,32 +1168,12 @@ app.post("/api/send-email", async (req, res) => {
       });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      // Certificate checked, as on the code transport above. The same
-      // credentials travel over this connection, so leaving one of the
-      // two unverified protects nothing.
-      requireTLS: smtpPort !== 465
-    });
+    // The shared sender, so this path gets the same port fallback as
+    // the sign-in codes - and so it can be used to prove whether mail
+    // leaves this host at all.
+    await sendMailWithFallback(to, subject, body);
 
-    const mailOptions = {
-      from: `"${senderName}" <${smtpUser}>`,
-      to,
-      subject,
-      text: body,
-      html: body.replace(/\n/g, "<br/>")
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully: %s", info.messageId);
-
-    res.json({ success: true, messageId: info.messageId });
+    res.json({ success: true });
   } catch (error: any) {
     console.error("Failed to send email via SMTP:", error);
     res.status(500).json({ error: "SMTP_ERROR", message: error.message });
