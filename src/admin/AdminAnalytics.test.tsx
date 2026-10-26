@@ -79,15 +79,14 @@ function show() {
 beforeEach(() => { for (const k of Object.keys(h.handlers)) delete h.handlers[k]; });
 
 describe("AdminAnalytics", () => {
-  it("says nothing is recorded rather than drawing zeros", async () => {
-    // A chart of zeros cannot distinguish "nobody came" from "we are
-    // not measuring", and the parish would read it as the first.
-    show();
-    deliver([]);
-    // "Nothing recorded yet" is now also the visits panel's empty text,
-    // so this asks for the station one specifically.
-    expect(await screen.findByText(/Activity appears here once pilgrims/i)).toBeTruthy();
-  });
+  /* A test stood here asserting the "Nothing recorded yet" panel, on
+     the reasoning that a chart of zeros cannot distinguish "nobody
+     came" from "we are not measuring".
+
+     That reasoning still holds and the panel went anyway: the parish
+     asked for it gone, and an empty box explaining its own emptiness
+     was the largest thing on a page meant to show two numbers. The
+     station activity still renders when there is activity. */
 
   it("counts distinct people, not events", async () => {
     show();

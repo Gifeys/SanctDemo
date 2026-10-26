@@ -133,18 +133,13 @@ export default function AdminAnalytics({ session }: { session: AdminSession }) {
             who is USING the app, and every extra figure beside that
             made the answer harder to see. */}
 
-        {summary !== null && summary.totalEvents === 0 && (
-          <div className="rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 py-8 text-center">
-            <p className="text-[16px] font-semibold text-[var(--color-brand-text)]">
-              Nothing recorded yet
-            </p>
-            <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
-              Activity appears here once pilgrims sign in and check in at
-              stations on the tour. Visitors who are not signed in are not
-              counted.
-            </p>
-          </div>
-        )}
+        {/* The "Nothing recorded yet" panel stood here, explaining that
+            station check-ins appear once pilgrims sign in.
+            
+            Removed: an empty box explaining why it is empty is the
+            largest thing on a page whose job is to show four numbers.
+            The station activity below still renders whenever there IS
+            activity to show. */}
 
         {summary !== null && summary.totalEvents > 0 && (
           <>
@@ -400,26 +395,16 @@ function ReachPanel() {
         Nobody is named.
       </p>
 
-      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <Figure
           label="Opened the app"
           value={totals.opens}
           hint="Every time somebody opened SanctiWalk, on the web or on a phone."
         />
         <Figure
-          label="Different people"
-          value={totals.people}
-          hint="Distinct browsers. Forty opens from four people is not forty people."
-        />
-        <Figure
           label="Downloads"
           value={totals.downloads}
           hint="Taps on Download for Android. Downloading twice usually means the first one failed."
-        />
-        <Figure
-          label="Different downloaders"
-          value={totals.downloaders}
-          hint="Distinct browsers that downloaded it at least once."
         />
       </div>
 
@@ -448,7 +433,7 @@ function ReachPanel() {
             ? `Counted only since this was added, so ${totals.unknownSurfacePeople} earlier `
               + `${totals.unknownSurfacePeople === 1 ? "person is" : "people are"} not in these two numbers yet. `
             : ""}
-          Somebody who used both is counted in both, so these do not add up to the figure above.
+          Somebody who used both is counted in both.
         </p>
       </div>
     </section>
