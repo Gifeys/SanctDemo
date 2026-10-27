@@ -3,6 +3,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { auth } from "./firebase";
+import { onWatchChange, watchedKeys } from "./openingSubscriptions";
 import { db } from "./firebase";
 
 /**
@@ -109,19 +110,55 @@ export async function startPushRegistration(churchId: string | null): Promise<vo
  * with no owner cannot be targeted and would only be a row nobody ever
  * cleans up.
  */
+/**
+ * The bells this device is carrying, as the server needs to see them.
+ *
+ * Subscriptions live in localStorage and nowhere else - deliberately,
+ * so a pilgrim can watch a ministry without an account. That also
+ * means the server has no idea who pressed which bell, so nothing
+ * could be delivered while the app was shut: the notice waited until
+ * the app was next opened, which for a Mass restored this Sunday is
+ * too late to be useful.
+ *
+ * Copying them onto the token row is the smallest thing that fixes
+ * it. The row already identifies the device and its parish; this adds
+ * what it is listening for. Only for signed-in pilgrims, because a
+ * token belongs to an account - watching without one still works, it
+ * just still waits for the app to open.
+ */
+function currentWatches(): string[] {
+  // Capped. This is written into a Firestore document and a list
+  // nobody bounds is how that document eventually fails to save.
+  return [...watchedKeys()].slice(0, 100);
+}
+
+/** Keeps the stored watches in step when a bell is pressed. */
+export function watchTokenUpdates(churchId: string | null): () => void {
+  return onWatchChange(() => {
+    const token = lastToken;
+    if (token) void saveToken(token, churchId);
+  });
+}
+
+/** The token this device last registered, so a bell change can re-file it. */
+let lastToken: string | null = null;
+
 export async function saveToken(token: string, churchId: string | null): Promise<void> {
   const user = auth.currentUser;
   if (!user) { pushLog("not signed in, token not filed"); return; }
   if (!token) { pushLog("empty token"); return; }
+  lastToken = token;
 
   try {
     await setDoc(doc(db, PUSH_TOKENS, token), {
       uid: user.uid,
       churchId: churchId ?? "",
       platform: Capacitor.getPlatform(),
+      watches: currentWatches(),
       updatedAt: serverTimestamp(),
     });
-    pushLog("token stored for parish:", churchId ?? "(none)");
+    pushLog("token stored for parish:", churchId ?? "(none)",
+      "watches:", currentWatches().length);
   } catch (error) {
     // Rules refusing it, or no connection. Either way the pilgrim
     // simply does not get pushes; nothing on screen should change.

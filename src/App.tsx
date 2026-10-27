@@ -28,7 +28,7 @@ import CustomDioceseMap from "./components/CustomDioceseMap";
 import { auth, db } from "./lib/firebase";
 import { logActivity } from "./lib/activityLog";
 import { HEARTBEAT_INTERVAL_MS, recordChurchVisit, touchActivity } from "./lib/recordVisit";
-import { startPushRegistration } from "./lib/pushRegistration";
+import { startPushRegistration, watchTokenUpdates } from "./lib/pushRegistration";
 import { getProfile } from "./lib/userProfile";
 import { watchNotifications, unreadCount } from "./lib/notifications";
 import { useReminders } from "./lib/useReminders";
@@ -810,6 +810,10 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn) return;
     void startPushRegistration(ownParishId);
+    // Pressing a bell has to reach the server too, or the
+    // subscription only exists on this device and nothing can be
+    // delivered while the app is shut - which was the whole problem.
+    return watchTokenUpdates(ownParishId);
   }, [isLoggedIn, ownParishId]);
 
   // The Mass schedule is the one thing in the app somebody acts on

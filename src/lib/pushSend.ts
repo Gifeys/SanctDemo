@@ -70,13 +70,54 @@ async function prune(tokens: string[]): Promise<void> {
   await batch.commit().catch(() => undefined);
 }
 
+/**
+ * Every device of a parish that is listening for one particular thing.
+ *
+ * The bells. A pilgrim presses "tell me when this opens" on a
+ * ministry, and that is only worth anything if it arrives when the
+ * parish actually opens it - which is rarely a moment the pilgrim
+ * happens to have the app in front of them.
+ *
+ * Narrow by design. Pushing an opened ministry to the whole parish
+ * would reach mostly people who never asked, and the fastest way to
+ * make a parish turn notifications off is to send them things they
+ * did not want.
+ */
+async function tokensWatching(churchId: string, watchKey: string): Promise<string[]> {
+  const snap = await getFirestore()
+    .collection(PUSH_TOKENS)
+    .where("churchId", "==", churchId)
+    .where("watches", "array-contains", watchKey)
+    .limit(MAX_TOKENS_PER_SEND)
+    .get();
+  return snap.docs.map(d => d.id);
+}
+
+/** Notifies only the devices carrying that bell. */
+export async function pushToWatchers(
+  churchId: string,
+  watchKey: string,
+  title: string,
+  body: string,
+): Promise<PushResult> {
+  return deliver(await tokensWatching(churchId, watchKey), title, body);
+}
+
 /** Sends one notification to every registered device of a parish. */
 export async function pushToParish(
   churchId: string,
   title: string,
   body: string,
 ): Promise<PushResult> {
-  const tokens = await tokensForParish(churchId);
+  return deliver(await tokensForParish(churchId), title, body);
+}
+
+/** The send itself, shared by the parish-wide and the watched paths. */
+async function deliver(
+  tokens: string[],
+  title: string,
+  body: string,
+): Promise<PushResult> {
   if (tokens.length === 0) return { sent: 0, failed: 0, pruned: 0 };
 
   const response = await getMessaging().sendEachForMulticast({

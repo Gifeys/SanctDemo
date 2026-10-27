@@ -279,3 +279,42 @@ export async function notifyParish(
 
   return { sent, push };
 }
+
+/**
+ * Pushes to the devices carrying one particular bell.
+ *
+ * Separate from notifyParish, which writes an in-app notice for
+ * everybody. Nobody asked for a notice about a ministry they are not
+ * watching, so this writes nothing and only rings the phones that
+ * subscribed.
+ *
+ * Never throws. A bell that fails to ring must not stop the parish
+ * from opening the ministry - the switch is the decision, this is
+ * only the telling.
+ */
+export async function notifyWatchers(
+  churchId: string,
+  watchKey: string,
+  title: string,
+  body: string,
+): Promise<PushOutcome> {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return { ok: false, reason: "Not signed in." };
+
+    const res = await fetch(`${apiBase()}/api/admin/notify-watchers`, {
+      method: "POST",
+      headers: withAppKey({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify({ churchId, watchKey, title, body }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, reason: data.error ?? `The server answered ${res.status}.` };
+    return { ok: true, pushed: Number(data.sent ?? 0) };
+  } catch {
+    return { ok: false, reason: "Could not reach the server." };
+  }
+}

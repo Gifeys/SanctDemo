@@ -12,7 +12,7 @@ import { emptyBudget, isScannableParish, spentMessage, type ScanBudget } from ".
 import { readParishContent } from "./src/lib/parishContentStore";
 import { codeEmail, messageFor, type OtpFailure } from "./src/lib/adminOtp";
 import { issueCode, verifyCode } from "./src/lib/adminOtpStore";
-import { pushToParish } from "./src/lib/pushSend";
+import { pushToParish, pushToWatchers } from "./src/lib/pushSend";
 import { groundingBlock, isGap, itemFacts, massFact, type Fact, type Gap } from "./src/lib/sanctiGrounding";
 import { MASS_SCHEDULES } from "./src/data";
 import {
@@ -1031,6 +1031,47 @@ app.get("/api/identify/budget", async (req, res) => {
  * admin sign-in would make it useless for diagnosing a server that
  * is not reachable by one.
  */
+/**
+ * Rings the bells for one ministry, sacrament or Mass.
+ *
+ * Reaches only the devices that asked about this exact thing, which
+ * is what makes it worth sending at all - a parish that pushes every
+ * change to everybody is a parish whose notifications get turned
+ * off.
+ *
+ * Same authorisation as /api/admin/notify: an administrator of THAT
+ * parish, checked against their own profile rather than against what
+ * the request claims.
+ */
+app.post("/api/admin/notify-watchers", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  const uid = await uidFromToken(req.headers.authorization);
+  if (!uid) return res.status(401).json({ error: "Sign in first." });
+
+  const { churchId, watchKey, title, body } = (req.body ?? {}) as {
+    churchId?: string; watchKey?: string; title?: string; body?: string;
+  };
+  if (!churchId || !watchKey || !title?.trim() || !body?.trim()) {
+    return res.status(400).json({ error: "churchId, watchKey, title and body are required." });
+  }
+
+  try {
+    const { getFirestore } = await import("firebase-admin/firestore");
+    const profile = await getFirestore().collection("users").doc(uid).get();
+    const data = profile.data() as { role?: string; churchId?: string } | undefined;
+
+    if (!(data?.role === "church_admin" && data?.churchId === churchId)) {
+      return res.status(403).json({ error: "Not allowed." });
+    }
+
+    return res.json(await pushToWatchers(churchId, watchKey, title.trim(), body.trim()));
+  } catch (error) {
+    console.error("[push] watcher send failed:", (error as Error).message);
+    return res.status(500).json({ error: "Those notifications could not be sent." });
+  }
+});
+
 app.get("/api/admin/push-selftest", async (req, res) => {
   if (!requireAppKey(req, res)) return;
 

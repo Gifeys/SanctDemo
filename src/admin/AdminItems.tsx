@@ -5,6 +5,8 @@ import { SACRAMENTS, ministriesForParish } from "../data";
 import { useParishContent } from "../lib/useParishContent";
 import { saveParishContent } from "../lib/parishContent";
 import { closedIds, isOpenForApplications, withAvailability } from "../lib/availability";
+import { watchKey } from "../lib/openingSubscriptions";
+import { notifyWatchers } from "../lib/notifications";
 import {
   MAX_WINDOWS_PER_ITEM,
   describeWindows,
@@ -94,6 +96,20 @@ export default function AdminItems({
         { closedApplications: withAvailability(closedIds(managed), itemId, open) },
         session.user.email ?? "",
       );
+
+      // Ring the bells, but only on OPENING. Somebody who asked to be
+      // told when confirmation opens did not ask to be told when it
+      // shuts again, and sending both halves is how a parish teaches
+      // people to swipe its notifications away.
+      if (open) {
+        const name = items.find(i => i.id === itemId)?.name ?? "A ministry";
+        await notifyWatchers(
+          churchId,
+          watchKey({ kind, parishId: churchId, itemId }),
+          `${name} is open`,
+          `${name} is now accepting applications at your parish.`,
+        );
+      }
     } catch {
       setError("That could not be saved. Check your connection and try again.");
     } finally {

@@ -359,9 +359,15 @@ service cloud.firestore {
 
       allow create, update: if isSignedIn()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['uid', 'churchId', 'platform', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'churchId', 'platform', 'watches', 'updatedAt'])
         && request.resource.data.churchId is string
-        && request.resource.data.platform is string;
+        && request.resource.data.platform is string
+        // The bells this device carries, so the server can ring only
+        // the phones that asked. Bounded: this is one field in one
+        // document and an unbounded list is how that document stops
+        // being writable.
+        && request.resource.data.get('watches', []) is list
+        && request.resource.data.get('watches', []).size() <= 100;
 
       // Signing out on a shared phone should be able to take the
       // token with it.

@@ -896,3 +896,51 @@ describe("push tokens", () => {
     await assertFails(deleteDoc(doc(as(USER_B), "pushTokens", TOKEN_A)));
   });
 });
+
+describe("push tokens carrying bells", () => {
+  const TOKEN = "fcm-token-with-watches";
+  const row = (over: Record<string, unknown> = {}) => ({
+    uid: USER_A,
+    churchId: CHURCH_A,
+    platform: "android",
+    watches: ["ministry:church_001:choir"],
+    updatedAt: serverTimestamp(),
+    ...over,
+  });
+
+  it("accepts the bells a device is carrying", async () => {
+    await assertSucceeds(setDoc(doc(as(USER_A), "pushTokens", TOKEN), row()));
+  });
+
+  it("accepts a device carrying none", async () => {
+    await assertSucceeds(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN), row({ watches: [] })),
+    );
+  });
+
+  it("refuses a list long enough to threaten the document", async () => {
+    // One field in one document; an unbounded list is how that
+    // document eventually stops being writable at all.
+    const tooMany = Array.from({ length: 101 }, (_, i) => `ministry:church_001:m${i}`);
+    await assertFails(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN), row({ watches: tooMany })),
+    );
+  });
+
+  it("refuses a watches field that is not a list", async () => {
+    await assertFails(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN), row({ watches: "choir" })),
+    );
+  });
+
+  it("still refuses any field nobody asked for", async () => {
+    await assertFails(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN), row({ sendTo: "elsewhere" })),
+    );
+  });
+
+  it("still cannot be read by anybody", async () => {
+    await setDoc(doc(as(USER_A), "pushTokens", TOKEN), row());
+    await assertFails(getDoc(doc(as(ADMIN_A), "pushTokens", TOKEN)));
+  });
+})
