@@ -6,15 +6,15 @@
   "scripts": {
     "dev": "tsx server.ts",
     "dev:https": "cross-env HTTPS=1 tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && node tools/stamp-service-worker.mjs && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "qr:posters": "node scripts/generate-qr-posters.mjs",
-    "build:app": "vite build",
-    "apk": "node tools/write-latest-version.mjs && vite build && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleRelease'],{cwd:'android',stdio:'inherit',shell:true})\"",
+    "build:app": "vite build && node tools/stamp-service-worker.mjs",
+    "apk": "node tools/write-latest-version.mjs && vite build && node tools/stamp-service-worker.mjs && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleRelease'],{cwd:'android',stdio:'inherit',shell:true})\"",
     "apk:lan": "cross-env CAP_LAN_TEST=1 npm run apk",
     "test:rules": "firebase emulators:exec --only firestore,storage --project sanctiwalk-rules-test \"vitest run -c vitest.rules.config.ts\""
   },

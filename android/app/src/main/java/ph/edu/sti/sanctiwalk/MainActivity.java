@@ -56,9 +56,21 @@ public class MainActivity extends BridgeActivity {
      * own paper, so it reads as part of the page rather than a band.
      */
     private void insetWebViewFromSystemBars() {
-        final android.webkit.WebView webView = getBridge().getWebView();
+        // The CONTENT view, not the WebView.
+        //
+        // The listener was on the WebView and never fired. Insets
+        // travel down from the decor view and any parent may consume
+        // them on the way; Capacitor's own layout sits in between, so
+        // by the time they would have reached the WebView there was
+        // nothing left to deliver. The app went on being drawn under
+        // the clock and the fix looked like it had done nothing.
+        //
+        // android.R.id.content is the first view below the decor that
+        // is ours, so nothing can have eaten the insets before it.
+        final android.view.View content = findViewById(android.R.id.content);
+        if (content == null) return;
 
-        ViewCompat.setOnApplyWindowInsetsListener(webView, (view, windowInsets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
             // The cutout as well as the bars: on a punch-hole phone the
             // camera sits outside the status bar's own height.
             Insets bars = windowInsets.getInsets(
@@ -71,7 +83,7 @@ public class MainActivity extends BridgeActivity {
             return WindowInsetsCompat.CONSUMED;
         });
 
-        ViewCompat.requestApplyInsets(webView);
+        ViewCompat.requestApplyInsets(content);
     }
 
     /**
