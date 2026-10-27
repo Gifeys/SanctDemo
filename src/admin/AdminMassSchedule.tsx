@@ -72,9 +72,19 @@ export default function AdminMassSchedule({ session }: { session: AdminSession }
     setError(null);
     try {
       const result = await notifyParish(churchId, "Mass schedule updated", message.trim());
+      // The push is reported apart from the notices, because they
+      // fail apart. Every notice can be written while not one phone
+      // rings, and "Sent to 12 people" in that case is false in the
+      // way that matters to somebody who closed the app.
+      const phones = result.push
+        ? result.push.ok
+          ? ` ${result.push.pushed ?? 0} ${result.push.pushed === 1 ? "phone" : "phones"} buzzed.`
+          : ` Phones were NOT buzzed: ${result.push.reason ?? "unknown reason"}.`
+        : "";
+
       setTold(result.tooManyFor
         ? `Nobody was notified: this parish has ${result.tooManyFor} members, more than the ${MAX_PARISH_NOTIFICATIONS} this can message at once. Post an announcement instead.`
-        : `Sent to ${result.sent} ${result.sent === 1 ? "person" : "people"}.`);
+        : `Sent to ${result.sent} ${result.sent === 1 ? "person" : "people"}.${phones}`);
       if (!result.tooManyFor) setMessage("");
     } catch {
       setError("That could not be sent. Check your connection and try again.");
