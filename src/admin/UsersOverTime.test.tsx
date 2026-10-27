@@ -14,11 +14,14 @@ describe("UsersOverTime", () => {
     expect(screen.getByText(/No usage recorded yet/i)).toBeTruthy();
   });
 
-  it("does not draw a line through a single point", () => {
-    // One dot with no line reads as a fault. A sentence does not.
+  it("draws even a single month, rather than refusing to", () => {
+    // This used to show a sentence instead, on the reasoning that one
+    // point with no line reads as a fault. True, but it meant the
+    // parish could never see the graph they had asked for during
+    // their first months of use. The caller pads the window; this
+    // component's job is to draw whatever it is given.
     render(<UsersOverTime data={[month("2026-10", "Oct 2026", 7)]} />);
-    expect(screen.getByText(/7/)).toBeTruthy();
-    expect(document.querySelector("polyline")).toBeNull();
+    expect(document.querySelector("svg")).toBeTruthy();
   });
 
   it("draws one point per month", () => {

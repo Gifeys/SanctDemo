@@ -11,8 +11,10 @@ import {
   type ActivityEntry, type AnalyticsSummary,
 } from "../lib/analytics";
 import {
-  summarisePageEvents, type PageEvent, type PageEventTotals,
+  summarisePageEvents, monthlyActiveUsers, withTrailingMonths,
+  type MonthlyUsers, type PageEvent, type PageEventTotals,
 } from "../lib/pageEvents";
+import UsersOverTime from "./UsersOverTime";
 
 /**
  * What the parish's visitors did, as opposed to what they asked for.
@@ -354,6 +356,9 @@ function Rows({ data }: { data: Datum[] }) {
 function ReachPanel() {
   const [totals, setTotals] = useState<PageEventTotals | null>(null);
   const [since, setSince] = useState<string | null>(null);
+  // Derived from the same rows this already reads, so the chart costs
+  // no additional Firestore reads.
+  const [monthly, setMonthly] = useState<MonthlyUsers[]>([]);
 
   useEffect(() => {
     const stop = onSnapshot(
@@ -374,6 +379,7 @@ function ReachPanel() {
           rows.push({ kind: d.kind, visitorId: d.visitorId ?? "", at: when.toISOString() });
         });
         setTotals(summarisePageEvents(rows));
+        setMonthly(monthlyActiveUsers(rows));
         setSince(earliest === null ? null : new Date(earliest).toLocaleDateString());
       },
       () => setTotals(null),
@@ -394,6 +400,21 @@ function ReachPanel() {
           : "Everyone who opened SanctiWalk or downloaded it."}{" "}
         Nobody is named.
       </p>
+
+      {/* The chart, here rather than only on the dashboard.
+          This is the page the parish opens when they want to know
+          who is using SanctiWalk, so it is where they looked for the
+          graph and did not find it. */}
+      <div className="mt-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+        <h3 className="text-[15px] font-bold text-[var(--color-brand-text)]">
+          People using SanctiWalk each month
+        </h3>
+        <p className="mb-3 text-[13px] leading-relaxed text-[var(--color-brand-secondary)]">
+          How many different people opened the app in each month.
+          {since && ` Counting began ${since}, so anything before that reads as zero because nobody was counting, not because nobody came.`}
+        </p>
+        <UsersOverTime data={withTrailingMonths(monthly, 6)} />
+      </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Figure

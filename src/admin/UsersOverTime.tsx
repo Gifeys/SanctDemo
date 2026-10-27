@@ -28,25 +28,18 @@ export default function UsersOverTime({ data }: { data: MonthlyUsers[] }) {
   const titleId = useId();
   const [picked, setPicked] = useState<number | null>(null);
 
-  // A chart of one point is a dot with no line through it, which reads
-  // as a fault rather than as "one month so far".
+  /* A single month used to be shown as a sentence rather than a
+     chart, on the reasoning that one point with no line through it
+     reads as a fault. True, but it meant the parish could never SEE
+     the graph they asked for in their first months of use - and they
+     did ask. The caller pads the window instead, so there is always
+     a line, and the months before counting began are labelled as
+     such rather than passed off as quiet months. */
   if (data.length === 0) {
     return (
       <p className="text-[15px] leading-relaxed text-[var(--color-brand-secondary)]">
         No usage recorded yet. This fills in as people open SanctiWalk — one
         point per month, counting how many different people opened it.
-      </p>
-    );
-  }
-
-  if (data.length === 1) {
-    const only = data[0];
-    return (
-      <p className="text-[15px] leading-relaxed text-[var(--color-brand-text)]">
-        <strong className="text-[22px] tabular-nums">{only.users}</strong>{" "}
-        {only.users === 1 ? "person" : "people"} opened SanctiWalk in{" "}
-        {only.label}. The chart appears once there is a second month to
-        compare it with.
       </p>
     );
   }

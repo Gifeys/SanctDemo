@@ -8,6 +8,7 @@ import {
   shouldRecord,
   summarisePageEvents,
   monthlyActiveUsers,
+  withTrailingMonths,
   visitorId,
   type PageEvent,
 } from './pageEvents'
@@ -290,5 +291,40 @@ describe('monthlyActiveUsers', () => {
   it('labels months readably', () => {
     expect(monthlyActiveUsers([open('a', '2026-10-01T00:00:00Z')])[0].label)
       .toBe('Oct 2026')
+  })
+})
+
+describe('withTrailingMonths', () => {
+  const row = (month: string, label: string, users: number) => ({ month, label, users })
+
+  it('leaves nothing as nothing', () => {
+    // No data at all is an empty state, not a flat line to nowhere.
+    expect(withTrailingMonths([], 6)).toEqual([])
+  })
+
+  it('pads a single month back to a window worth drawing', () => {
+    const out = withTrailingMonths([row('2026-10', 'Oct 2026', 5)], 4)
+    expect(out.map(r => r.month)).toEqual(['2026-07', '2026-08', '2026-09', '2026-10'])
+    expect(out[3].users).toBe(5)
+    expect(out[0].users).toBe(0)
+  })
+
+  it('crosses a year boundary backwards', () => {
+    const out = withTrailingMonths([row('2027-01', 'Jan 2027', 2)], 3)
+    expect(out.map(r => r.month)).toEqual(['2026-11', '2026-12', '2027-01'])
+  })
+
+  it('leaves a long history alone', () => {
+    const many = [
+      row('2026-08', 'Aug 2026', 1),
+      row('2026-09', 'Sep 2026', 2),
+      row('2026-10', 'Oct 2026', 3),
+    ]
+    expect(withTrailingMonths(many, 3)).toEqual(many)
+  })
+
+  it('keeps the real figures where they exist', () => {
+    const out = withTrailingMonths([row('2026-10', 'Oct 2026', 9)], 3)
+    expect(out.find(r => r.month === '2026-10')?.users).toBe(9)
   })
 })

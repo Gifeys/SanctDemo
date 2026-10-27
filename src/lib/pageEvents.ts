@@ -300,3 +300,47 @@ export function monthlyActiveUsers(events: PageEvent[]): MonthlyUsers[] {
 
   return out
 }
+
+/**
+ * Pads a short history so there is always a chart to look at.
+ *
+ * monthlyActiveUsers returns only the months that have data, which on
+ * a parish three days into counting is one row - and one point is a
+ * dot with no line through it, which reads as broken rather than as
+ * "early days". The admin asked to SEE a graph.
+ *
+ * So the window is extended backwards to `minMonths`, ending at the
+ * latest month present. The padded months are real zeros: nobody
+ * opened the app then, as far as the record goes.
+ *
+ * The caller must say when counting began, because a zero before that
+ * date does not mean nobody came - it means nobody was counting - and
+ * a chart that cannot tell those apart is the thing this project
+ * spent a day learning not to ship.
+ */
+export function withTrailingMonths(
+  rows: MonthlyUsers[],
+  minMonths: number,
+): MonthlyUsers[] {
+  if (rows.length === 0 || rows.length >= minMonths) return rows
+
+  const [endYear, endMonth] = rows[rows.length - 1].month.split('-').map(Number)
+  const out: MonthlyUsers[] = []
+
+  // Walk backwards from the last month, then reverse.
+  let year = endYear
+  let month = endMonth
+  for (let i = 0; i < minMonths; i++) {
+    const key = `${year}-${String(month).padStart(2, '0')}`
+    const existing = rows.find(r => r.month === key)
+    out.push(existing ?? {
+      month: key,
+      label: `${MONTH_NAMES[month - 1]} ${year}`,
+      users: 0,
+    })
+    month -= 1
+    if (month < 1) { month = 12; year -= 1 }
+  }
+
+  return out.reverse()
+}
