@@ -52,7 +52,7 @@ import { collection, onSnapshot, doc, setDoc, addDoc, deleteDoc, updateDoc, getD
 
 import { Route, UserProgress } from "./types";
 import { ROUTES, BADGES, MASS_SCHEDULES, MINISTRIES, SACRAMENTS } from "./data";
-import { loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
+import { hasChosenHomeParish, loadHomeParishId, saveHomeParishId } from "./lib/homeParish";
 import { tabForParishSelection } from "./lib/parishSelection";
 import { parishPhoto, parishPhotoAlt } from "./lib/parishPhotos";
 import parishData from "./data/diocese-parishes.json";
@@ -229,6 +229,16 @@ export default function App() {
   // fallback the dashboard shows whenever GPS says they are not at a parish.
   const [homeParishId, setHomeParishId] = useState<string | null>(() =>
     loadHomeParishId(VALID_HOME_IDS) ?? firstLiveParishId()
+  );
+  /**
+   * Whether that home parish was chosen, rather than seeded.
+   *
+   * See lib/homeParish.hasChosenHomeParish. An explicit choice has to
+   * outrank the parish on a signed-in profile; the seeded default must
+   * not, or signing in would stop moving anybody home.
+   */
+  const [choseHomeParish, setChoseHomeParish] = useState(() =>
+    hasChosenHomeParish(VALID_HOME_IDS)
   );
   /**
    * A request from outside the dashboard for one part of the bulletin.
@@ -749,7 +759,13 @@ export default function App() {
   // them raw made "parish-mary-help-of-christians-parish" look different
   // from "route-mhcp", and the way back was offered to a pilgrim already
   // standing in their own parish.
-  const ownParishId = routeForHomeParish(myParishId ?? homeParishId);
+  // An explicit Choose Parish wins over the profile; otherwise the
+  // profile wins over the seeded default. Without the first half,
+  // choosing a parish left "Back to my parish" on screen offering to
+  // undo the choice that had just been made.
+  const ownParishId = routeForHomeParish(
+    choseHomeParish ? homeParishId : (myParishId ?? homeParishId),
+  );
 
   // The Mass schedule is the one thing in the app somebody acts on
   // physically: they read it, then they leave the house at a certain
@@ -1041,6 +1057,8 @@ export default function App() {
   const handleChooseHomeParish = (parishId: string) => {
     saveHomeParishId(parishId);
     setHomeParishId(parishId);
+    // This is the act that makes it theirs, rather than the default.
+    setChoseHomeParish(true);
     // The home parish may be one of the 29 without a tour. The active route
     // still has to be a live one, so it is mapped rather than set directly —
     // setting a diocese id here would leave activeChurchRoute falling back to

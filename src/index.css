@@ -6332,3 +6332,23 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
 }
 
 .consent--doc .consent__go { margin-top: 22px; }
+
+/* A box that cannot be ticked yet, and why.
+   Dimmed rather than hidden: the reader needs to see that agreement
+   is coming and what unlocks it, not wonder where the box went. */
+.consent__check--locked {
+  opacity: 0.62;
+}
+
+.consent__locked-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-style: normal;
+  color: var(--color-brand-secondary, #5B6478);
+}
+
+.consent__go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

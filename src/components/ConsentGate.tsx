@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, FileText, ShieldCheck } from "lucide-react";
 
 import { needsConsent, saveConsent } from "../lib/consent";
@@ -43,10 +43,31 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
   const [privacy, setPrivacy] = useState(false);
   const [reading, setReading] = useState<Doc | null>(null);
 
+  /**
+   * Which documents have been read to the end.
+   *
+   * A tick box agreeing to terms nobody opened is a tick box, not an
+   * agreement, so the box cannot be ticked until the document has
+   * been scrolled to its last line. Both documents, not only the
+   * Terms: they are presented identically on this screen and gating
+   * one of them would read as a bug rather than as a rule.
+   */
+  const [readToEnd, setReadToEnd] = useState<Record<string, boolean>>({});
+  const markRead = useCallback(
+    (title: string) => setReadToEnd(prev => (prev[title] ? prev : { ...prev, [title]: true })),
+    [],
+  );
+
   if (!outstanding) return <>{children}</>;
 
   if (reading) {
-    return <FullDocument doc={reading} onBack={() => setReading(null)} />;
+    return (
+      <FullDocument
+        doc={reading}
+        onBack={() => setReading(null)}
+        onReachedEnd={() => markRead(reading.title)}
+      />
+    );
   }
 
   const ready = terms && privacy;
@@ -79,22 +100,38 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
           onRead={() => setReading(PRIVACY)}
         />
 
-        <label className="consent__check">
+        <label className={`consent__check${readToEnd[TERMS.title] ? "" : " consent__check--locked"}`}>
           <input
             type="checkbox"
             checked={terms}
+            disabled={!readToEnd[TERMS.title]}
             onChange={e => setTerms(e.target.checked)}
           />
-          <span>I have read and agree to the Terms and Conditions.</span>
+          <span>
+            I have read and agree to the Terms and Conditions.
+            {!readToEnd[TERMS.title] && (
+              <em className="consent__locked-note">
+                Open “Read in full” and scroll to the end to tick this.
+              </em>
+            )}
+          </span>
         </label>
 
-        <label className="consent__check">
+        <label className={`consent__check${readToEnd[PRIVACY.title] ? "" : " consent__check--locked"}`}>
           <input
             type="checkbox"
             checked={privacy}
+            disabled={!readToEnd[PRIVACY.title]}
             onChange={e => setPrivacy(e.target.checked)}
           />
-          <span>I have read and understood the Privacy Notice.</span>
+          <span>
+            I have read and understood the Privacy Notice.
+            {!readToEnd[PRIVACY.title] && (
+              <em className="consent__locked-note">
+                Open “Read in full” and scroll to the end to tick this.
+              </em>
+            )}
+          </span>
         </label>
 
         <button
@@ -152,9 +189,62 @@ function Card({
  * stays short enough to actually be read, and anybody who wants the
  * whole thing gets it with room to read it.
  */
-function FullDocument({ doc, onBack }: { doc: Doc; onBack: () => void }) {
+function FullDocument({
+  doc,
+  onBack,
+  onReachedEnd,
+}: {
+  doc: Doc;
+  onBack: () => void;
+  onReachedEnd: () => void;
+}) {
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const [atEnd, setAtEnd] = useState(false);
+
+  /**
+   * Whether the last line has been seen.
+   *
+   * ## The short-document case
+   *
+   * A document that fits the screen can never be scrolled, so waiting
+   * for a scroll event would leave the reader permanently unable to
+   * tick the box - the exact trap the parish asked to avoid. If there
+   * is nothing to scroll, it has been read by being shown.
+   *
+   * ## Why a tolerance
+   *
+   * scrollTop is fractional on a zoomed or high-density screen and
+   * routinely lands a pixel or two short of the arithmetic bottom, so
+   * an exact comparison never fires on a real handset.
+   */
+  const check = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+
+    // Nothing has been laid out yet, so nothing can be concluded.
+    // Without this the first run decides 0 <= 0 + 1 and unlocks the
+    // document before a word of it has been on screen - which on a
+    // slow handset is exactly when this effect gets to run.
+    if (el.scrollHeight === 0) return;
+
+    const nothingToScroll = el.scrollHeight <= el.clientHeight + 1;
+    const reachedBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
+    if (nothingToScroll || reachedBottom) {
+      setAtEnd(true);
+      onReachedEnd();
+    }
+  }, [onReachedEnd]);
+
+  // On mount, after layout, and again if the window changes size - a
+  // document that fitted in portrait may not fit in landscape.
+  useEffect(() => {
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [check]);
+
   return (
-    <div className="consent consent--doc">
+    <div className="consent consent--doc" ref={scroller} onScroll={check}>
       <div className="consent__sheet">
         <button type="button" className="consent__back" onClick={onBack}>
           <ArrowLeft className="w-4 h-4" aria-hidden />
@@ -175,9 +265,14 @@ function FullDocument({ doc, onBack }: { doc: Doc; onBack: () => void }) {
           </section>
         ))}
 
-        <button type="button" className="consent__go" onClick={onBack}>
+        <button
+          type="button"
+          className="consent__go"
+          disabled={!atEnd}
+          onClick={onBack}
+        >
           <Check className="w-4 h-4" aria-hidden />
-          Done
+          {atEnd ? "Done" : "Scroll to the end to continue"}
         </button>
       </div>
     </div>

@@ -36,3 +36,22 @@ export function saveHomeParishId(parishId: string): void {
     // still applies for this session via React state.
   }
 }
+
+/**
+ * Whether the pilgrim has actually CHOSEN a home parish.
+ *
+ * Distinct from loadHomeParishId returning something, because the app
+ * seeds a default when nothing is stored - so "has a home parish" is
+ * true from the first launch and says nothing about intent.
+ *
+ * It matters for the "Back to my parish" band. A signed-in pilgrim's
+ * profile carries the parish their applications go to, and that used
+ * to decide where home was unconditionally - so somebody who picked a
+ * different parish in Choose Parish was still told they were away
+ * from home, with a button offering to take them back to a parish
+ * they had just moved away from. An explicit choice has to outrank
+ * the profile; an unmade one must not.
+ */
+export function hasChosenHomeParish(validParishIds: readonly string[]): boolean {
+  return loadHomeParishId(validParishIds) !== null;
+}
