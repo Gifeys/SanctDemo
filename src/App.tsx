@@ -27,7 +27,7 @@ import CustomDioceseMap from "./components/CustomDioceseMap";
 // Firebase imports
 import { auth, db } from "./lib/firebase";
 import { logActivity } from "./lib/activityLog";
-import { recordChurchVisit, touchActivity } from "./lib/recordVisit";
+import { HEARTBEAT_INTERVAL_MS, recordChurchVisit, touchActivity } from "./lib/recordVisit";
 import { getProfile } from "./lib/userProfile";
 import { watchNotifications, unreadCount } from "./lib/notifications";
 import { useReminders } from "./lib/useReminders";
@@ -317,6 +317,34 @@ export default function App() {
   // minutes, so a long visit costs a handful of writes rather than one
   // per screen. Firestore on the free plan is billed by the document.
   useEffect(() => { void touchActivity(); }, [activeTab]);
+
+  /**
+   * And a pulse while the app is actually on screen.
+   *
+   * The tab change above is the only other signal, which makes
+   * somebody reading one screen look like they left: the Mass
+   * schedule is a page people sit on for a while, and after fifteen
+   * minutes the dashboard counted them as gone while they were still
+   * looking at it.
+   *
+   * Only while visible. A phone in a pocket should age out of "active
+   * users" - that is the figure being honest, not a gap to paper
+   * over - and a timer firing in the background would keep somebody
+   * counted as online overnight.
+   *
+   * touchActivity throttles to one write per five minutes regardless,
+   * so this cannot run up the Firestore bill however often it fires.
+   */
+  useEffect(() => {
+    const pulse = () => { if (!document.hidden) void touchActivity(); };
+    const timer = window.setInterval(pulse, HEARTBEAT_INTERVAL_MS);
+    // Coming back to the app should count at once, not in five minutes.
+    document.addEventListener("visibilitychange", pulse);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", pulse);
+    };
+  }, []);
 
   useEffect(() => {
     try {

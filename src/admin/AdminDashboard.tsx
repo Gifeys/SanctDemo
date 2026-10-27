@@ -10,6 +10,9 @@ import { isArchived } from "../lib/applicationFilters";
 import ParishStatus from "./ParishStatus";
 import AdminTiles from "./AdminTiles";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
+import { ACTIVE_WINDOW_MS, countActive } from "../lib/visits";
+import { monthlyActiveUsers, type PageEvent } from "../lib/pageEvents";
+import UsersOverTime from "./UsersOverTime";
 
 /**
  * The parish office dashboard.
@@ -33,6 +36,57 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
   const [apps, setApps] = useState<ApplicationDoc[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const churchId = session.profile.churchId;
+
+  /**
+   * The parish's own people, and everyone's app usage.
+   *
+   * Two different scopes, deliberately. The user counts are this
+   * parish's - filtered here AND in the rules, like every other admin
+   * screen - because "our registered pilgrims" is a parish question.
+   * The usage chart is not: a pageEvent carries no parish, because
+   * nothing about opening the app says which church you belong to,
+   * and inventing an attribution would be worse than labelling it
+   * honestly as app-wide.
+   */
+  const [people, setPeople] = useState<{ role?: string; lastActiveAt?: string }[] | null>(null);
+  const [usage, setUsage] = useState<PageEvent[] | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, "users"), where("churchId", "==", churchId));
+    return onSnapshot(
+      q,
+      snap => setPeople(snap.docs.map(d => d.data() as { role?: string; lastActiveAt?: string })),
+      err => setError(err.message),
+    );
+  }, [churchId]);
+
+  useEffect(() => {
+    return onSnapshot(
+      collection(db, "pageEvents"),
+      snap => setUsage(snap.docs.map(d => {
+        const row = d.data() as { kind?: string; visitorId?: string; createdAt?: { toDate?: () => Date } };
+        return {
+          kind: row.kind === "download" ? "download" : "open",
+          visitorId: row.visitorId ?? "",
+          // Firestore hands back a Timestamp; the pure functions take
+          // an ISO string so they can be tested without one.
+          at: row.createdAt?.toDate?.()?.toISOString() ?? "",
+        } as PageEvent;
+      })),
+      err => setError(err.message),
+    );
+  }, []);
+
+  /** Ordinary pilgrims. An administrator is not one of the parish's users. */
+  const pilgrims = useMemo(
+    () => (people === null ? null : people.filter(p => (p.role ?? "user") === "user")),
+    [people],
+  );
+
+  const monthly = useMemo(
+    () => (usage === null ? [] : monthlyActiveUsers(usage)),
+    [usage],
+  );
 
   useEffect(() => {
     const q = query(collection(db, "applications"), where("churchId", "==", churchId));
@@ -124,6 +178,41 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
             {error}
           </p>
         )}
+
+        {/* The parish's people.
+            Two numbers that are easy to confuse, so they are labelled
+            for the difference rather than for brevity: one is everyone
+            who ever signed up, the other is who is using it right now.
+            Showing the first alone invites reading it as the second. */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <Tile
+            label="Total users"
+            value={pilgrims === null ? "—" : pilgrims.length}
+            hint="Pilgrims with a SanctiWalk account at this parish, all time."
+          />
+          <Tile
+            label="Active users online"
+            value={pilgrims === null ? "—" : countActive(pilgrims, new Date())}
+            hint={`Signed in and using the app in the last ${Math.round(ACTIVE_WINDOW_MS / 60000)} minutes. Counted once per person, however many devices.`}
+          />
+        </div>
+
+        {/* Usage over time.
+            Real opens, not registrations: somebody who signed up in
+            March and never came back is not a user in April. */}
+        <section className="mb-4 rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+          <h2 className="text-[16px] font-bold text-[var(--color-brand-text)]">
+            People using SanctiWalk each month
+          </h2>
+          <p className="mb-3 text-[13px] leading-relaxed text-[var(--color-brand-secondary)]">
+            How many different people opened the app in each month, across the
+            whole diocese — opening the app says nothing about which parish
+            somebody belongs to, so this one figure is not split by parish.
+          </p>
+          {usage === null
+            ? <p className="text-[15px] text-[var(--color-brand-secondary)]">Loading…</p>
+            : <UsersOverTime data={monthly} />}
+        </section>
 
         {/* Volume first - what came in and of what kind - then the
             status breakdown below. A parish asks "how many" before it
@@ -245,17 +334,51 @@ export default function AdminDashboard({ session }: { session: AdminSession }) {
  * Clickable because a count a parish cannot act on is trivia: "12
  * pending" should be one tap from the twelve.
  */
-function Tile({ label, value, onClick }: { label: string; value: number | string; onClick: () => void }) {
+function Tile({
+  label,
+  value,
+  onClick,
+  hint,
+}: {
+  label: string;
+  value: number | string;
+  /** Omitted for a figure that is only a figure - see below. */
+  onClick?: () => void;
+  /** What the number actually counts, for the two that are easy to confuse. */
+  hint?: string;
+}) {
+  const body = (
+    <>
+      <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
+        {label}
+      </p>
+      <p className="mt-1 text-[28px] font-bold text-[var(--color-brand-text)]">{value}</p>
+      {hint && (
+        <p className="mt-1 text-[13px] leading-snug text-[var(--color-brand-secondary)]">
+          {hint}
+        </p>
+      )}
+    </>
+  );
+
+  // A tile that goes nowhere is not a button. Rendering one anyway
+  // puts it in the keyboard order and has a screen reader announce it
+  // as pressable, which is a promise the tile cannot keep.
+  if (!onClick) {
+    return (
+      <div className="rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+        {body}
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
       className="text-left rounded-[18px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 hover:bg-[var(--color-brand-card-sunk)]"
     >
-      <p className="text-[13px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
-        {label}
-      </p>
-      <p className="mt-1 text-[28px] font-bold text-[var(--color-brand-text)]">{value}</p>
+      {body}
     </button>
   );
 }

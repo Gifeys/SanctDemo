@@ -226,3 +226,77 @@ export function byDay(events: PageEvent[], kind: PageEventKind): { day: string; 
     .map(([day, count]) => ({ day, count }))
     .sort((a, b) => a.day.localeCompare(b.day))
 }
+
+/** One month's usage, for the admin's chart. */
+export interface MonthlyUsers {
+  /** YYYY-MM, which sorts correctly as a string. */
+  month: string
+  /** "Nov 2026", for the axis. */
+  label: string
+  /** Distinct browsers that opened the app that month. */
+  users: number
+}
+
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+/**
+ * Distinct people per month, from opens that actually happened.
+ *
+ * ## What the number means
+ *
+ * Monthly active users: how many different browsers opened the app in
+ * that calendar month. Not registrations - somebody who signed up in
+ * March and never came back is not a user in April, and presenting
+ * registrations as usage is the specific thing the parish asked not
+ * to see.
+ *
+ * Counted per month, not cumulatively, so the same person returning
+ * in three months is one user in each of them.
+ *
+ * ## Empty months
+ *
+ * A month with no opens is returned with zero rather than skipped. A
+ * line that jumps straight from September to November implies the two
+ * are adjacent, and a quiet month is a fact worth seeing.
+ */
+export function monthlyActiveUsers(events: PageEvent[]): MonthlyUsers[] {
+  const perMonth = new Map<string, Set<string>>()
+
+  for (const e of events) {
+    if (e.kind !== 'open' || !e.visitorId) continue
+    const when = new Date(e.at)
+    if (Number.isNaN(when.getTime())) continue
+    const month = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}`
+    const seen = perMonth.get(month) ?? new Set<string>()
+    seen.add(e.visitorId)
+    perMonth.set(month, seen)
+  }
+
+  if (perMonth.size === 0) return []
+
+  const months = [...perMonth.keys()].sort()
+  const out: MonthlyUsers[] = []
+
+  // Walk the calendar from the first month to the last so the gaps are
+  // filled rather than closed up.
+  const [firstYear, firstMonth] = months[0].split('-').map(Number)
+  const [lastYear, lastMonth] = months[months.length - 1].split('-').map(Number)
+
+  let year = firstYear
+  let month = firstMonth
+  while (year < lastYear || (year === lastYear && month <= lastMonth)) {
+    const key = `${year}-${String(month).padStart(2, '0')}`
+    out.push({
+      month: key,
+      label: `${MONTH_NAMES[month - 1]} ${year}`,
+      users: perMonth.get(key)?.size ?? 0,
+    })
+    month += 1
+    if (month > 12) { month = 1; year += 1 }
+  }
+
+  return out
+}

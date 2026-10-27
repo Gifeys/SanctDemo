@@ -7,6 +7,7 @@ import {
   recentEvents,
   shouldRecord,
   summarisePageEvents,
+  monthlyActiveUsers,
   visitorId,
   type PageEvent,
 } from './pageEvents'
@@ -218,5 +219,76 @@ describe('surfaces', () => {
   it('ignores a surface on a download, which has no surface question', () => {
     const totals = summarisePageEvents([ev({ kind: 'download', visitorId: 'a', surface: 'web' })])
     expect(totals.webPeople).toBe(0)
+  })
+})
+
+describe('monthlyActiveUsers', () => {
+  const open = (visitorId: string, at: string): PageEvent =>
+    ({ kind: 'open', visitorId, at })
+
+  it('has nothing to show before anything is recorded', () => {
+    // The chart needs an empty state rather than a flat line at zero
+    // stretching back to the epoch.
+    expect(monthlyActiveUsers([])).toEqual([])
+  })
+
+  it('counts distinct people, not opens', () => {
+    const rows = monthlyActiveUsers([
+      open('a', '2026-10-01T00:00:00Z'),
+      open('a', '2026-10-15T00:00:00Z'),
+      open('b', '2026-10-20T00:00:00Z'),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].users).toBe(2)
+  })
+
+  it('counts a returning person again in each month', () => {
+    // Monthly ACTIVE users: coming back in November is being active in
+    // November, not a duplicate of October.
+    const rows = monthlyActiveUsers([
+      open('a', '2026-10-05T00:00:00Z'),
+      open('a', '2026-11-05T00:00:00Z'),
+    ])
+    expect(rows.map(r => r.users)).toEqual([1, 1])
+  })
+
+  it('fills a quiet month rather than closing the gap', () => {
+    // A line jumping from September to November implies they are next
+    // to each other, and a month nobody opened it is worth seeing.
+    const rows = monthlyActiveUsers([
+      open('a', '2026-09-10T00:00:00Z'),
+      open('b', '2026-11-10T00:00:00Z'),
+    ])
+    expect(rows.map(r => r.month)).toEqual(['2026-09', '2026-10', '2026-11'])
+    expect(rows[1].users).toBe(0)
+  })
+
+  it('crosses a year end', () => {
+    const rows = monthlyActiveUsers([
+      open('a', '2026-12-10T00:00:00Z'),
+      open('b', '2027-01-10T00:00:00Z'),
+    ])
+    expect(rows.map(r => r.month)).toEqual(['2026-12', '2027-01'])
+  })
+
+  it('ignores downloads, which are not app usage', () => {
+    const rows = monthlyActiveUsers([
+      { kind: 'download', visitorId: 'a', at: '2026-10-01T00:00:00Z' },
+    ])
+    expect(rows).toEqual([])
+  })
+
+  it('ignores a row with an unreadable date rather than throwing', () => {
+    const rows = monthlyActiveUsers([
+      open('a', 'not a date'),
+      open('b', '2026-10-01T00:00:00Z'),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].users).toBe(1)
+  })
+
+  it('labels months readably', () => {
+    expect(monthlyActiveUsers([open('a', '2026-10-01T00:00:00Z')])[0].label)
+      .toBe('Oct 2026')
   })
 })
