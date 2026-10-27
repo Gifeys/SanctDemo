@@ -334,6 +334,40 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /**
+     * Device tokens, so the parish can reach a phone that is shut.
+     *
+     * NOBODY MAY READ THESE. A token is a capability: anyone holding
+     * one and a server key can put a notification on that person's
+     * phone. The only reader is the backend, which goes through the
+     * Admin SDK and is not subject to these rules - so "allow read:
+     * if false" costs the app nothing and removes the whole class of
+     * problem where one pilgrim, or a compromised admin account, can
+     * enumerate the diocese's devices.
+     *
+     * Keyed by the token itself, so a person with a phone and a
+     * tablet has two rows and a reinstall leaves one stale row that
+     * the sender deletes on the delivery failure that reveals it.
+     *
+     * A pilgrim writes only their own, and only these four fields -
+     * uid is pinned to the caller so a token cannot be filed against
+     * somebody else's account, which would send them notices meant
+     * for another person.
+     */
+    match /pushTokens/{token} {
+      allow read: if false;
+
+      allow create, update: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'churchId', 'platform', 'updatedAt'])
+        && request.resource.data.churchId is string
+        && request.resource.data.platform is string;
+
+      // Signing out on a shared phone should be able to take the
+      // token with it.
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
     match /pageEvents/{eventId} {
       allow create: if request.resource.data.keys().hasOnly(['kind', 'visitorId', 'createdAt'])
         && request.resource.data.kind in ['open', 'download']

@@ -12,6 +12,7 @@ import { emptyBudget, isScannableParish, spentMessage, type ScanBudget } from ".
 import { readParishContent } from "./src/lib/parishContentStore";
 import { codeEmail, messageFor, type OtpFailure } from "./src/lib/adminOtp";
 import { issueCode, verifyCode } from "./src/lib/adminOtpStore";
+import { pushToParish } from "./src/lib/pushSend";
 import { groundingBlock, isGap, itemFacts, massFact, type Fact, type Gap } from "./src/lib/sanctiGrounding";
 import { MASS_SCHEDULES } from "./src/data";
 import {
@@ -985,6 +986,66 @@ app.get("/api/identify/budget", async (req, res) => {
  * cannot post codes to somebody else's address or grind guesses
  * against their account.
  */
+/**
+ * Pushes a parish notice to phones, including closed ones.
+ *
+ * ## Why this exists at all
+ *
+ * notifyParish writes a Firestore document per pilgrim, which the app
+ * picks up through an onSnapshot subscription. That subscription only
+ * exists while the app is open, so an approved application sat unseen
+ * until the person next opened SanctiWalk. Those documents are still
+ * written - they are the in-app notification list and the record of
+ * what was sent - and this is what makes the phone ring as well.
+ *
+ * ## Why the server and not the admin's browser
+ *
+ * Sending an FCM message needs a service account, and a service
+ * account in a browser is a service account in everybody's hands.
+ * The browser asks; this decides.
+ *
+ * ## Who may ask
+ *
+ * A signed-in administrator of THAT parish, checked against their own
+ * profile rather than against what the request claims. Without that,
+ * the endpoint is a way for anybody with an account to notify every
+ * phone in the diocese.
+ */
+app.post("/api/admin/notify", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  const uid = await uidFromToken(req.headers.authorization);
+  if (!uid) return res.status(401).json({ error: "Sign in first." });
+
+  const { churchId, title, body } = (req.body ?? {}) as {
+    churchId?: string; title?: string; body?: string;
+  };
+  if (!churchId || !title?.trim() || !body?.trim()) {
+    return res.status(400).json({ error: "churchId, title and body are required." });
+  }
+
+  try {
+    const { getFirestore } = await import("firebase-admin/firestore");
+    const profile = await getFirestore().collection("users").doc(uid).get();
+    const data = profile.data() as { role?: string; churchId?: string } | undefined;
+
+    const mayNotify =
+      data?.role === "church_admin" && data?.churchId === churchId;
+    if (!mayNotify) {
+      // Deliberately not "you are not an admin of route-src": the
+      // reply should not help somebody map which parishes exist or
+      // which account administers them.
+      return res.status(403).json({ error: "Not allowed." });
+    }
+
+    const result = await pushToParish(churchId, title.trim(), body.trim());
+    return res.json(result);
+  } catch (error) {
+    console.error("[push] send failed:", (error as Error).message);
+    return res.status(500).json({ error: "Those notifications could not be sent." });
+  }
+});
+
 app.post("/api/admin/2fa/request", async (req, res) => {
   if (!requireAppKey(req, res)) return;
 

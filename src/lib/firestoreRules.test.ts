@@ -822,3 +822,77 @@ describe("a ministry photograph, exactly as the portal writes it", () => {
     await assertSucceeds(getDoc(doc(unauthed(), "itemPhotos", `${CHURCH_A}__x`)));
   });
 });
+
+/**
+ * Push tokens, which are capabilities rather than data.
+ *
+ * Anyone holding a token and a server key can put a notification on
+ * that person's phone, so the interesting assertions here are all
+ * about who CANNOT see them. The only legitimate reader is the
+ * backend, which uses the Admin SDK and is not subject to rules at
+ * all - so these tests can prove the rule without ever needing a
+ * passing read.
+ */
+describe("push tokens", () => {
+  const TOKEN_A = "fcm-token-belonging-to-user-a";
+  const TOKEN_B = "fcm-token-belonging-to-user-b";
+
+  const row = (uid: string) => ({
+    uid,
+    churchId: CHURCH_A,
+    platform: "android",
+    updatedAt: serverTimestamp(),
+  });
+
+  it("a pilgrim registers their own device", async () => {
+    await assertSucceeds(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), row(USER_A)),
+    );
+  });
+
+  it("a pilgrim CANNOT file a token against somebody else", async () => {
+    // Otherwise one person could point another's notices at their own
+    // handset, or fill a stranger's row with a token they control.
+    await assertFails(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN_B), row(USER_B)),
+    );
+  });
+
+  it("nobody can read a token, not even their own", async () => {
+    await setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), row(USER_A));
+    await assertFails(getDoc(doc(as(USER_A), "pushTokens", TOKEN_A)));
+  });
+
+  it("an admin CANNOT read the devices of their own parish", async () => {
+    // The strongest of these. An admin account is the most likely one
+    // to be phished, and reading tokens is the step before sending to
+    // them from somewhere else.
+    await setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), row(USER_A));
+    await assertFails(getDoc(doc(as(ADMIN_A), "pushTokens", TOKEN_A)));
+  });
+
+  it("refuses an unexpected field", async () => {
+    await assertFails(
+      setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), {
+        ...row(USER_A),
+        sendTo: "somewhere-else",
+      }),
+    );
+  });
+
+  it("a signed-out visitor registers nothing", async () => {
+    await assertFails(
+      setDoc(doc(env.unauthenticatedContext().firestore(), "pushTokens", TOKEN_A), row(USER_A)),
+    );
+  });
+
+  it("a pilgrim removes their own token when signing out", async () => {
+    await setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), row(USER_A));
+    await assertSucceeds(deleteDoc(doc(as(USER_A), "pushTokens", TOKEN_A)));
+  });
+
+  it("a pilgrim CANNOT remove somebody else's token", async () => {
+    await setDoc(doc(as(USER_A), "pushTokens", TOKEN_A), row(USER_A));
+    await assertFails(deleteDoc(doc(as(USER_B), "pushTokens", TOKEN_A)));
+  });
+});

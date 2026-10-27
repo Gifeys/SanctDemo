@@ -28,6 +28,7 @@ import CustomDioceseMap from "./components/CustomDioceseMap";
 import { auth, db } from "./lib/firebase";
 import { logActivity } from "./lib/activityLog";
 import { HEARTBEAT_INTERVAL_MS, recordChurchVisit, touchActivity } from "./lib/recordVisit";
+import { startPushRegistration } from "./lib/pushRegistration";
 import { getProfile } from "./lib/userProfile";
 import { watchNotifications, unreadCount } from "./lib/notifications";
 import { useReminders } from "./lib/useReminders";
@@ -794,6 +795,22 @@ export default function App() {
   const ownParishId = routeForHomeParish(
     choseHomeParish ? homeParishId : (myParishId ?? homeParishId),
   );
+
+  /**
+   * Register this device for pushes once there is somebody to notify.
+   *
+   * Signed out there is no account to attach a token to, and a token
+   * with no owner cannot be targeted - so this waits rather than
+   * registering at launch.
+   *
+   * Re-run when the parish changes, because the token row carries the
+   * parish it should be notified about: somebody who moves from Mary
+   * Help to San Roque should stop getting Mary Help's notices.
+   */
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    void startPushRegistration(ownParishId);
+  }, [isLoggedIn, ownParishId]);
 
   // The Mass schedule is the one thing in the app somebody acts on
   // physically: they read it, then they leave the house at a certain

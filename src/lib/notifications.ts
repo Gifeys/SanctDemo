@@ -1,5 +1,7 @@
 import { addDoc, collection, doc, getDocs, onSnapshot, query, updateDoc, where } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { apiBase } from "./apiBase";
+import { withAppKey } from "./appKey";
 import { STATUS_LABEL } from "./applications";
 import type { ApplicationStatus, NotificationDoc } from "../types";
 
@@ -180,6 +182,36 @@ export interface BroadcastResult {
   tooManyFor?: number;
 }
 
+/**
+ * Also pushes it, so a closed phone hears about it.
+ *
+ * The Firestore writes below are the in-app list and the record of
+ * what was sent; they reach nobody whose app is shut, because the
+ * subscription that delivers them only exists while it is open. This
+ * is the part that rings the phone.
+ *
+ * Failure here is deliberately not failure of the broadcast. The
+ * notices ARE written either way, and telling a parish secretary that
+ * their announcement failed - when it is sitting in every pilgrim's
+ * notification list - would be false.
+ */
+async function pushAsWell(churchId: string, title: string, body: string): Promise<void> {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return;
+    await fetch(`${apiBase()}/api/admin/notify`, {
+      method: "POST",
+      headers: withAppKey({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }),
+      body: JSON.stringify({ churchId, title, body }),
+    });
+  } catch (error) {
+    console.warn("[notifications] push not sent:", error);
+  }
+}
+
 export async function notifyParish(
   churchId: string,
   title: string,
@@ -207,5 +239,10 @@ export async function notifyParish(
     });
     sent++;
   }
+
+  // After the writes, so a push never arrives before the notice it
+  // refers to is in the list behind it.
+  await pushAsWell(churchId, title, body);
+
   return { sent };
 }
