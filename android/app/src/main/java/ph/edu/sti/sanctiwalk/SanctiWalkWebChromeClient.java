@@ -66,8 +66,13 @@ public class SanctiWalkWebChromeClient extends BridgeWebChromeClient {
     @Override
     public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
         String text = message.message();
-        if (text != null && text.startsWith("SW-VOICE")) {
-            android.util.Log.i("SW-VOICE", text);
+        // Any SW- line, not just SW-VOICE. The voice bridge was the
+        // first thing that needed diagnosing from a release build and
+        // the prefix was written for it alone; the push registration
+        // then failed invisibly for exactly the same reason, because
+        // its warnings went to a console Capacitor silences.
+        if (text != null && text.startsWith("SW-")) {
+            android.util.Log.i("SanctiWalk", text);
         }
         return super.onConsoleMessage(message);
     }

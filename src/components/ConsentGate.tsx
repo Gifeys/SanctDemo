@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, FileText, ShieldCheck } from "lucide-react";
+import { FileText, ShieldCheck } from "lucide-react";
 
 import { needsConsent, saveConsent } from "../lib/consent";
 import { LAST_UPDATED, PRIVACY, TERMS, type Doc } from "../lib/consentContent";
@@ -41,43 +41,67 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
   const [outstanding, setOutstanding] = useState(needsConsent);
   const [terms, setTerms] = useState(false);
   const [privacy, setPrivacy] = useState(false);
-  const [reading, setReading] = useState<Doc | null>(null);
+
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const [atEnd, setAtEnd] = useState(false);
 
   /**
-   * Which documents have been read to the end.
+   * Whether the whole thing has been scrolled through.
    *
-   * A tick box agreeing to terms nobody opened is a tick box, not an
-   * agreement, so the box cannot be ticked until the document has
-   * been scrolled to its last line. Both documents, not only the
-   * Terms: they are presented identically on this screen and gating
-   * one of them would read as a bug rather than as a rule.
+   * ## Why both documents are on this one screen now
+   *
+   * They used to be summaries with a "Read in full" button that opened
+   * each one as its own screen. Somebody could tick both boxes without
+   * ever opening either, and gating the boxes on having opened them
+   * only moved the problem: two more screens to visit, two more Done
+   * buttons, and the agreement still happening somewhere other than
+   * where the text was.
+   *
+   * So the text is here, in full, and the only way past it is through
+   * it. One scroll, one place, nothing to open.
+   *
+   * ## The short-document case
+   *
+   * Content that fits the screen can never fire a scroll event, so
+   * waiting for one would lock somebody out of the app permanently.
+   * If there is nothing to scroll, it has been shown.
+   *
+   * ## Why zero height is not "nothing to scroll"
+   *
+   * Before layout both heights are 0, and 0 <= 0 + 1 is true - which
+   * would unlock the button before a word had been painted. On a slow
+   * handset that is exactly when this runs.
    */
-  const [readToEnd, setReadToEnd] = useState<Record<string, boolean>>({});
-  const markRead = useCallback(
-    (title: string) => setReadToEnd(prev => (prev[title] ? prev : { ...prev, [title]: true })),
-    [],
-  );
+  const check = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+    if (el.scrollHeight === 0) return;
+
+    const nothingToScroll = el.scrollHeight <= el.clientHeight + 1;
+    // A tolerance: scrollTop is fractional on a high-density screen
+    // and routinely lands a pixel or two short of the arithmetic
+    // bottom, so an exact comparison never fires on a real phone.
+    const reachedBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
+    if (nothingToScroll || reachedBottom) setAtEnd(true);
+  }, []);
+
+  useEffect(() => {
+    if (!outstanding) return;
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [outstanding, check]);
 
   if (!outstanding) return <>{children}</>;
 
-  if (reading) {
-    return (
-      <FullDocument
-        doc={reading}
-        onBack={() => setReading(null)}
-        onReachedEnd={() => markRead(reading.title)}
-      />
-    );
-  }
-
-  const ready = terms && privacy;
+  const ready = atEnd && terms && privacy;
 
   return (
-    <div className="consent">
+    <div className="consent" ref={scroller} onScroll={check}>
       <div className="consent__sheet">
         <img
           className="consent__mark"
-          src="/ui/sanctiwalk-icon-512.png"
+          src="/ui/sanctiwalk-mark-navy.png"
           alt=""
           aria-hidden
         />
@@ -85,53 +109,29 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
         <h1 className="consent__title">Welcome to SanctiWalk</h1>
         <p className="consent__lede">
           Your companion for Mary Help of Christians Parish and San Roque
-          Cathedral Parish. Before you begin, please read these two short
-          notices.
+          Cathedral Parish. Please read these two notices before you begin —
+          scroll to the end to continue.
         </p>
 
-        <Card
-          icon={<FileText className="w-[18px] h-[18px]" aria-hidden />}
-          doc={TERMS}
-          onRead={() => setReading(TERMS)}
-        />
-        <Card
-          icon={<ShieldCheck className="w-[18px] h-[18px]" aria-hidden />}
-          doc={PRIVACY}
-          onRead={() => setReading(PRIVACY)}
-        />
+        <FullText icon={<FileText className="w-[18px] h-[18px]" aria-hidden />} doc={TERMS} />
+        <FullText icon={<ShieldCheck className="w-[18px] h-[18px]" aria-hidden />} doc={PRIVACY} />
 
-        <label className={`consent__check${readToEnd[TERMS.title] ? "" : " consent__check--locked"}`}>
+        <label className="consent__check">
           <input
             type="checkbox"
             checked={terms}
-            disabled={!readToEnd[TERMS.title]}
             onChange={e => setTerms(e.target.checked)}
           />
-          <span>
-            I have read and agree to the Terms and Conditions.
-            {!readToEnd[TERMS.title] && (
-              <em className="consent__locked-note">
-                Open “Read in full” and scroll to the end to tick this.
-              </em>
-            )}
-          </span>
+          <span>I have read and agree to the Terms and Conditions.</span>
         </label>
 
-        <label className={`consent__check${readToEnd[PRIVACY.title] ? "" : " consent__check--locked"}`}>
+        <label className="consent__check">
           <input
             type="checkbox"
             checked={privacy}
-            disabled={!readToEnd[PRIVACY.title]}
             onChange={e => setPrivacy(e.target.checked)}
           />
-          <span>
-            I have read and understood the Privacy Notice.
-            {!readToEnd[PRIVACY.title] && (
-              <em className="consent__locked-note">
-                Open “Read in full” and scroll to the end to tick this.
-              </em>
-            )}
-          </span>
+          <span>I have read and understood the Privacy Notice.</span>
         </label>
 
         <button
@@ -143,7 +143,7 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
             setOutstanding(false);
           }}
         >
-          Continue
+          {atEnd ? "Continue" : "Scroll to the end to continue"}
         </button>
 
         <p className="consent__foot">
@@ -155,126 +155,29 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
   );
 }
 
-function Card({
-  icon,
-  doc,
-  onRead,
-}: {
-  icon: ReactNode;
-  doc: Doc;
-  onRead: () => void;
-}) {
+/**
+ * One document, in full, on the consent screen itself.
+ *
+ * Replaces the summary card and its "Read in full" button. The whole
+ * point of this screen is that the text was read, and text behind a
+ * button is text nobody read.
+ */
+function FullText({ icon, doc }: { icon: ReactNode; doc: Doc }) {
   return (
     <section className="consent__card">
       <h2 className="consent__card-title">
-        {icon}
+        <span className="consent__card-icon" aria-hidden>{icon}</span>
         {doc.title}
       </h2>
-      {doc.summary.map(line => (
-        <p key={line} className="consent__card-line">
-          {line}
-        </p>
+
+      {doc.sections.map(section => (
+        <div key={section.heading} className="consent__section">
+          <h3 className="consent__heading">{section.heading}</h3>
+          {section.body.map(para => (
+            <p key={para} className="consent__para">{para}</p>
+          ))}
+        </div>
       ))}
-      <button type="button" className="consent__read" onClick={onRead}>
-        Read in full
-      </button>
     </section>
-  );
-}
-
-/**
- * One document, in full.
- *
- * A screen rather than a scrolling box inside the card: the summary
- * stays short enough to actually be read, and anybody who wants the
- * whole thing gets it with room to read it.
- */
-function FullDocument({
-  doc,
-  onBack,
-  onReachedEnd,
-}: {
-  doc: Doc;
-  onBack: () => void;
-  onReachedEnd: () => void;
-}) {
-  const scroller = useRef<HTMLDivElement | null>(null);
-  const [atEnd, setAtEnd] = useState(false);
-
-  /**
-   * Whether the last line has been seen.
-   *
-   * ## The short-document case
-   *
-   * A document that fits the screen can never be scrolled, so waiting
-   * for a scroll event would leave the reader permanently unable to
-   * tick the box - the exact trap the parish asked to avoid. If there
-   * is nothing to scroll, it has been read by being shown.
-   *
-   * ## Why a tolerance
-   *
-   * scrollTop is fractional on a zoomed or high-density screen and
-   * routinely lands a pixel or two short of the arithmetic bottom, so
-   * an exact comparison never fires on a real handset.
-   */
-  const check = useCallback(() => {
-    const el = scroller.current;
-    if (!el) return;
-
-    // Nothing has been laid out yet, so nothing can be concluded.
-    // Without this the first run decides 0 <= 0 + 1 and unlocks the
-    // document before a word of it has been on screen - which on a
-    // slow handset is exactly when this effect gets to run.
-    if (el.scrollHeight === 0) return;
-
-    const nothingToScroll = el.scrollHeight <= el.clientHeight + 1;
-    const reachedBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
-    if (nothingToScroll || reachedBottom) {
-      setAtEnd(true);
-      onReachedEnd();
-    }
-  }, [onReachedEnd]);
-
-  // On mount, after layout, and again if the window changes size - a
-  // document that fitted in portrait may not fit in landscape.
-  useEffect(() => {
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, [check]);
-
-  return (
-    <div className="consent consent--doc" ref={scroller} onScroll={check}>
-      <div className="consent__sheet">
-        <button type="button" className="consent__back" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4" aria-hidden />
-          Back
-        </button>
-
-        <h1 className="consent__title">{doc.title}</h1>
-        <p className="consent__updated">Last updated {LAST_UPDATED}</p>
-
-        {doc.sections.map(section => (
-          <section key={section.heading} className="consent__section">
-            <h2 className="consent__heading">{section.heading}</h2>
-            {section.body.map(para => (
-              <p key={para} className="consent__para">
-                {para}
-              </p>
-            ))}
-          </section>
-        ))}
-
-        <button
-          type="button"
-          className="consent__go"
-          disabled={!atEnd}
-          onClick={onBack}
-        >
-          <Check className="w-4 h-4" aria-hidden />
-          {atEnd ? "Done" : "Scroll to the end to continue"}
-        </button>
-      </div>
-    </div>
   );
 }

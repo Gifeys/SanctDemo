@@ -180,6 +180,22 @@ export interface BroadcastResult {
   sent: number;
   /** Set when nothing was sent because the parish is larger than the cap. */
   tooManyFor?: number;
+  /**
+   * What happened to the push, as distinct from the in-app notices.
+   *
+   * Absent when no push was attempted. The two really are separate:
+   * the notices can be written perfectly while every phone stays
+   * silent, and that was invisible until this existed.
+   */
+  push?: PushOutcome;
+}
+
+export interface PushOutcome {
+  ok: boolean;
+  /** How many devices the server says it reached. */
+  pushed?: number;
+  /** Why not, when it did not. */
+  reason?: string;
 }
 
 /**
@@ -195,11 +211,16 @@ export interface BroadcastResult {
  * their announcement failed - when it is sitting in every pilgrim's
  * notification list - would be false.
  */
-async function pushAsWell(churchId: string, title: string, body: string): Promise<void> {
+async function pushAsWell(
+  churchId: string,
+  title: string,
+  body: string,
+): Promise<PushOutcome> {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) return;
-    await fetch(`${apiBase()}/api/admin/notify`, {
+    if (!token) return { ok: false, reason: "Not signed in." };
+
+    const res = await fetch(`${apiBase()}/api/admin/notify`, {
       method: "POST",
       headers: withAppKey({
         "Content-Type": "application/json",
@@ -207,8 +228,14 @@ async function pushAsWell(churchId: string, title: string, body: string): Promis
       }),
       body: JSON.stringify({ churchId, title, body }),
     });
-  } catch (error) {
-    console.warn("[notifications] push not sent:", error);
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false, reason: data.error ?? `The server answered ${res.status}.` };
+    }
+    return { ok: true, pushed: Number(data.sent ?? 0) };
+  } catch {
+    return { ok: false, reason: "Could not reach the server." };
   }
 }
 
@@ -242,7 +269,13 @@ export async function notifyParish(
 
   // After the writes, so a push never arrives before the notice it
   // refers to is in the list behind it.
-  await pushAsWell(churchId, title, body);
+  //
+  // Reported, not swallowed. This failed silently once and the only
+  // way anybody could tell was that a phone stayed quiet - which is
+  // indistinguishable from the notification having worked and the
+  // pilgrim not looking. A secretary who sends an announcement is
+  // entitled to know whether it rang anybody.
+  const push = await pushAsWell(churchId, title, body);
 
-  return { sent };
+  return { sent, push };
 }

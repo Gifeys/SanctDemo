@@ -42,6 +42,21 @@ import { db } from "./firebase";
 
 export const PUSH_TOKENS = "pushTokens";
 
+/**
+ * One tag for everything this file reports.
+ *
+ * console.warn alone was useless here: Capacitor routes it through a
+ * logger that is silent in a release build, so a registration that
+ * failed on a real handset said nothing anywhere. The native
+ * WebChromeClient forwards any SW- line to logcat.
+ *
+ *     adb logcat -s SanctiWalk:I
+ */
+function pushLog(...parts: unknown[]): void {
+  // eslint-disable-next-line no-console
+  console.log("SW-PUSH", ...parts);
+}
+
 /** Whether this build can receive pushes at all. */
 export function pushSupported(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("PushNotifications");
@@ -57,6 +72,7 @@ let started = false;
  * push, not a broken app.
  */
 export async function startPushRegistration(churchId: string | null): Promise<void> {
+  pushLog("start requested, supported:", pushSupported(), "already started:", started);
   if (!pushSupported() || started) return;
   started = true;
 
@@ -67,19 +83,21 @@ export async function startPushRegistration(churchId: string | null): Promise<vo
     if (status.receive === "prompt" || status.receive === "prompt-with-rationale") {
       status = await PushNotifications.requestPermissions();
     }
+    pushLog("permission:", status.receive);
     if (status.receive !== "granted") return;
 
     await PushNotifications.addListener("registration", token => {
+      pushLog("registered, token length:", token.value?.length ?? 0);
       void saveToken(token.value, churchId);
     });
 
     await PushNotifications.addListener("registrationError", err => {
-      console.warn("[push] registration failed:", err);
+      pushLog("registration FAILED:", JSON.stringify(err));
     });
 
     await PushNotifications.register();
   } catch (error) {
-    console.warn("[push] could not start:", error);
+    pushLog("could not start:", (error as Error)?.message ?? String(error));
     started = false;
   }
 }
@@ -93,7 +111,8 @@ export async function startPushRegistration(churchId: string | null): Promise<vo
  */
 export async function saveToken(token: string, churchId: string | null): Promise<void> {
   const user = auth.currentUser;
-  if (!user || !token) return;
+  if (!user) { pushLog("not signed in, token not filed"); return; }
+  if (!token) { pushLog("empty token"); return; }
 
   try {
     await setDoc(doc(db, PUSH_TOKENS, token), {
@@ -102,9 +121,10 @@ export async function saveToken(token: string, churchId: string | null): Promise
       platform: Capacitor.getPlatform(),
       updatedAt: serverTimestamp(),
     });
+    pushLog("token stored for parish:", churchId ?? "(none)");
   } catch (error) {
     // Rules refusing it, or no connection. Either way the pilgrim
     // simply does not get pushes; nothing on screen should change.
-    console.warn("[push] token not stored:", error);
+    pushLog("token NOT stored:", (error as Error)?.message ?? String(error));
   }
 }

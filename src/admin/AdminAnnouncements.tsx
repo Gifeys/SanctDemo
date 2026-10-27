@@ -269,6 +269,16 @@ function ComposeForm({
         note += result.tooManyFor
           ? ` Nobody was notified: this parish has ${result.tooManyFor} members, more than the ${MAX_PARISH_NOTIFICATIONS} this can message at once.`
           : ` ${result.sent} ${result.sent === 1 ? "person was" : "people were"} notified.`;
+
+        // The push is reported separately from the notices, because
+        // they fail separately. Every notice can be written correctly
+        // while not one phone rings, and saying only "12 people were
+        // notified" in that case is false in the way that matters.
+        if (result.push) {
+          note += result.push.ok
+            ? ` ${result.push.pushed ?? 0} ${result.push.pushed === 1 ? "phone" : "phones"} were buzzed.`
+            : ` Phones were NOT buzzed: ${result.push.reason ?? "unknown reason"}. The notice is still in everybody's list.`;
+        }
         setNotify(false);
       }
 

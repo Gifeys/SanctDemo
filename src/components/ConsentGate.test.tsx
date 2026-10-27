@@ -12,8 +12,24 @@ function show() {
   )
 }
 
+/**
+ * The Continue button, whatever it currently says.
+ *
+ * Its label changes to "Scroll to the end to continue" until the
+ * notices have been read, so matching the word "Continue" alone is
+ * what every one of these tests actually means.
+ */
 const continueButton = () =>
-  screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement
+  screen.getByRole('button', { name: /continue/i }) as HTMLButtonElement
+
+/** Pretends the notices have been scrolled through. */
+const scrollToEnd = () => {
+  const el = document.querySelector('.consent') as HTMLElement
+  Object.defineProperty(el, 'scrollHeight', { value: 4000, configurable: true })
+  Object.defineProperty(el, 'clientHeight', { value: 800, configurable: true })
+  Object.defineProperty(el, 'scrollTop', { value: 3200, configurable: true, writable: true })
+  fireEvent.scroll(el)
+}
 
 const box = (match: RegExp) =>
   screen.getByLabelText(match) as HTMLInputElement
@@ -37,6 +53,9 @@ describe('first launch', () => {
 
   it('will not let anybody through until both are ticked', () => {
     show()
+    // Reading is now a separate condition; this test is about the
+    // boxes, so it is satisfied first.
+    scrollToEnd()
     expect(continueButton().disabled).toBe(true)
 
     fireEvent.click(box(/agree to the Terms/i))
@@ -58,6 +77,7 @@ describe('first launch', () => {
 describe('continuing', () => {
   it('shows the app once accepted', () => {
     show()
+    scrollToEnd()
     fireEvent.click(box(/agree to the Terms/i))
     fireEvent.click(box(/understood the Privacy Notice/i))
     fireEvent.click(continueButton())
@@ -66,6 +86,7 @@ describe('continuing', () => {
 
   it('remembers, so the next launch goes straight in', () => {
     show()
+    scrollToEnd()
     fireEvent.click(box(/agree to the Terms/i))
     fireEvent.click(box(/understood the Privacy Notice/i))
     fireEvent.click(continueButton())
@@ -80,130 +101,97 @@ describe('continuing', () => {
   })
 })
 
-describe('reading a document in full', () => {
-  it('opens the terms and comes back', () => {
-    show()
-    const [readTerms] = screen.getAllByRole('button', { name: 'Read in full' })
-    fireEvent.click(readTerms)
-    // A section heading that only exists in the full text.
-    expect(screen.getByText(/What SanctiWalk is/i)).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: /Back/i }))
-    expect(screen.getByText('Welcome to SanctiWalk')).toBeTruthy()
-  })
-
-  it('keeps the boxes ticked while reading', () => {
-    // The box can only be ticked after the document has been read to
-    // the end now, so this reads it first and then checks that going
-    // back into the document and out again does not clear the tick.
-    show()
-    const [readTerms] = screen.getAllByRole('button', { name: 'Read in full' })
-    fireEvent.click(readTerms)
-
-    const el = document.querySelector('.consent--doc') as HTMLElement
-    Object.defineProperty(el, 'scrollHeight', { value: 100, configurable: true })
-    Object.defineProperty(el, 'clientHeight', { value: 900, configurable: true })
-    fireEvent.scroll(el)
-
-    fireEvent.click(screen.getByRole('button', { name: /Done/i }))
-    fireEvent.click(box(/agree to the Terms/i))
-    expect(box(/agree to the Terms/i).checked).toBe(true)
-  })
+describe('what the notices say', () => {
+  /* Two tests stood here covering the "Read in full" screen - opening
+     a document and coming back, and the boxes staying ticked while
+     away. Both are gone with the button: the documents are on the
+     consent screen itself now, so there is nowhere to go and nothing
+     to come back from. What replaced them is in "reading before
+     agreeing" below. */
 
   it('the privacy notice says photographs are not stored', () => {
     // The one factual claim in the notice that a reader is most likely
     // to care about, and the one most easily broken by a later change.
     show()
-    const buttons = screen.getAllByRole('button', { name: 'Read in full' })
-    fireEvent.click(buttons[1])
     expect(screen.getByText(/not stored by SanctiWalk in any form/i)).toBeTruthy()
   })
 
   it('flags what still needs the parish to confirm it', () => {
     show()
-    const buttons = screen.getAllByRole('button', { name: 'Read in full' })
-    fireEvent.click(buttons[1])
     expect(screen.getAllByText(/NEEDS CONFIRMATION/).length).toBeGreaterThan(0)
   })
 })
 
 describe('reading before agreeing', () => {
   /** jsdom reports every element as zero-sized, so the scroller is faked. */
-  function sizeScroller({ scrollHeight, clientHeight, scrollTop }: {
+  function scrollTo({ scrollHeight, clientHeight, scrollTop }: {
     scrollHeight: number; clientHeight: number; scrollTop: number
   }) {
-    const el = document.querySelector('.consent--doc') as HTMLElement
+    const el = document.querySelector('.consent') as HTMLElement
     Object.defineProperty(el, 'scrollHeight', { value: scrollHeight, configurable: true })
     Object.defineProperty(el, 'clientHeight', { value: clientHeight, configurable: true })
     Object.defineProperty(el, 'scrollTop', { value: scrollTop, configurable: true, writable: true })
+    fireEvent.scroll(el)
     return el
   }
 
-  const openFirstDoc = () => fireEvent.click(screen.getAllByText('Read in full')[0])
-
-  it('will not let somebody agree to terms they have not opened', () => {
-    // The whole point. A tick box over an unopened document is a tick
-    // box, not an agreement.
+  it('puts both documents on the screen, in full', () => {
+    // They used to be summaries behind a "Read in full" button, which
+    // meant somebody could agree without opening either.
     show()
-    expect(box(/Terms and Conditions/i).disabled).toBe(true)
+    expect(screen.queryByText('Read in full')).toBeNull()
+    // Each title now appears twice - as the document's heading and in
+    // its checkbox - so this asks for the headings.
+    expect(screen.getByRole('heading', { name: /Terms and Conditions/i })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /Privacy Notice/i })).toBeTruthy()
+  })
+
+  it('refuses to continue before the end is reached', () => {
+    show()
+    scrollTo({ scrollHeight: 4000, clientHeight: 800, scrollTop: 0 })
+    fireEvent.click(box(/agree to the Terms/i))
+    fireEvent.click(box(/Privacy Notice/i))
     expect(continueButton().disabled).toBe(true)
   })
 
-  it('says what will unlock the box, rather than just refusing', () => {
+  it('says what is wanted, rather than just refusing', () => {
     show()
-    expect(screen.getAllByText(/scroll to the end/i).length).toBeGreaterThan(0)
+    scrollTo({ scrollHeight: 4000, clientHeight: 800, scrollTop: 0 })
+    expect(screen.getByRole('button', { name: /scroll to the end/i })).toBeTruthy()
   })
 
-  it('keeps the box locked while the document is only part-read', () => {
+  it('allows it once scrolled to the end and both are ticked', () => {
     show()
-    openFirstDoc()
-    const el = sizeScroller({ scrollHeight: 3000, clientHeight: 600, scrollTop: 100 })
-    fireEvent.scroll(el)
-    fireEvent.click(screen.getByRole('button', { name: /scroll to the end/i }))
-    // Still on the document: the Done button refuses until the end.
-    expect(screen.queryByText(/Welcome to SanctiWalk/i)).toBeNull()
-  })
-
-  it('unlocks the box once the end is reached', () => {
-    show()
-    openFirstDoc()
-    const el = sizeScroller({ scrollHeight: 3000, clientHeight: 600, scrollTop: 2400 })
-    fireEvent.scroll(el)
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
-    expect(box(/Terms and Conditions/i).disabled).toBe(false)
-  })
-
-  it('does not strand somebody when the document fits the screen', () => {
-    // A document with nothing to scroll can never fire a scroll event.
-    // Waiting for one would lock the reader out of the app for good,
-    // which is worse than the problem being solved.
-    show()
-    openFirstDoc()
-    const el = sizeScroller({ scrollHeight: 500, clientHeight: 900, scrollTop: 0 })
-    fireEvent.scroll(el)
-    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
-  })
-
-  it('still needs BOTH documents read before Continue works', () => {
-    show()
-    openFirstDoc()
-    fireEvent.scroll(sizeScroller({ scrollHeight: 100, clientHeight: 900, scrollTop: 0 }))
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
-    fireEvent.click(box(/Terms and Conditions/i))
-    // Privacy has not been opened, so its box is still locked.
-    expect(box(/Privacy Notice/i).disabled).toBe(true)
-    expect(continueButton().disabled).toBe(true)
-  })
-
-  it('allows Continue once both are read and ticked', () => {
-    show()
-    for (const i of [0, 1]) {
-      fireEvent.click(screen.getAllByText('Read in full')[i])
-      fireEvent.scroll(sizeScroller({ scrollHeight: 100, clientHeight: 900, scrollTop: 0 }))
-      fireEvent.click(screen.getByRole('button', { name: 'Done' }))
-    }
-    fireEvent.click(box(/Terms and Conditions/i))
+    scrollTo({ scrollHeight: 4000, clientHeight: 800, scrollTop: 3200 })
+    fireEvent.click(box(/agree to the Terms/i))
     fireEvent.click(box(/Privacy Notice/i))
     expect(continueButton().disabled).toBe(false)
+  })
+
+  it('still needs both boxes, scrolled or not', () => {
+    show()
+    scrollTo({ scrollHeight: 4000, clientHeight: 800, scrollTop: 3200 })
+    fireEvent.click(box(/agree to the Terms/i))
+    expect(continueButton().disabled).toBe(true)
+  })
+
+  it('does not strand somebody whose screen fits the whole thing', () => {
+    // Content with nothing to scroll can never fire a scroll event.
+    // Waiting for one would lock them out of the app for good.
+    show()
+    scrollTo({ scrollHeight: 500, clientHeight: 900, scrollTop: 0 })
+    fireEvent.click(box(/agree to the Terms/i))
+    fireEvent.click(box(/Privacy Notice/i))
+    expect(continueButton().disabled).toBe(false)
+  })
+
+  it('does not unlock before anything has been laid out', () => {
+    // Pre-layout both heights are 0, and 0 <= 0 + 1 is true - which
+    // would open the gate before a word had been painted.
+    show()
+    scrollTo({ scrollHeight: 0, clientHeight: 0, scrollTop: 0 })
+    fireEvent.click(box(/agree to the Terms/i))
+    fireEvent.click(box(/Privacy Notice/i))
+    expect(continueButton().disabled).toBe(true)
   })
 })
