@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "qr:posters": "node scripts/generate-qr-posters.mjs",
     "build:app": "vite build && node scripts/stamp-service-worker.mjs",
-    "apk": "node tools/write-latest-version.mjs && vite build && node scripts/stamp-service-worker.mjs && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleRelease'],{cwd:'android',stdio:'inherit',shell:true})\"",
+    "apk": "node scripts/write-latest-version.mjs && vite build && node scripts/stamp-service-worker.mjs && node -e \"require('fs').rmSync('dist/download',{recursive:true,force:true})\" && cap sync android && node -e \"const p=require('path').resolve('android',process.platform==='win32'?'gradlew.bat':'gradlew');require('child_process').execFileSync(p,['assembleRelease'],{cwd:'android',stdio:'inherit',shell:true})\" && node scripts/publish-apk.mjs",
     "apk:lan": "cross-env CAP_LAN_TEST=1 npm run apk",
     "test:rules": "firebase emulators:exec --only firestore,storage --project sanctiwalk-rules-test \"vitest run -c vitest.rules.config.ts\""
   },
