@@ -1011,6 +1011,77 @@ app.get("/api/identify/budget", async (req, res) => {
  * the endpoint is a way for anybody with an account to notify every
  * phone in the diocese.
  */
+/**
+ * Says whether this deployment can send a push at all.
+ *
+ * Added because "the phone did not buzz" has at least four causes -
+ * the messaging API never enabled on the project, the service
+ * account lacking it, no tokens registered, or the handset dropping
+ * it - and from outside they are indistinguishable. Every round of
+ * diagnosing this has cost somebody an evening of closing the app
+ * and waiting.
+ *
+ * Sends nothing. A dry run against a deliberately invalid token asks
+ * Google to validate the request and discard it, so the reply
+ * separates "FCM is not available to this project" from "FCM is fine
+ * and that token is not".
+ *
+ * App key only, no administrator needed: it reveals whether a
+ * service is switched on, which is not a secret, and requiring an
+ * admin sign-in would make it useless for diagnosing a server that
+ * is not reachable by one.
+ */
+app.get("/api/admin/push-selftest", async (req, res) => {
+  if (!requireAppKey(req, res)) return;
+
+  try {
+    const { getApps } = await import("firebase-admin/app");
+    if (getApps().length === 0) {
+      return res.json({
+        ok: false,
+        stage: "credentials",
+        detail: "Firebase Admin is not initialised - FIREBASE_SERVICE_ACCOUNT is missing.",
+      });
+    }
+
+    const { getMessaging } = await import("firebase-admin/messaging");
+    const { getFirestore } = await import("firebase-admin/firestore");
+
+    const tokens = await getFirestore().collection("pushTokens").limit(5).get();
+
+    try {
+      // validateOnly. Nothing is delivered to anybody.
+      await getMessaging().send(
+        { token: "selftest-not-a-real-token", notification: { title: "x", body: "x" } },
+        true,
+      );
+      return res.json({ ok: true, stage: "fcm", registeredDevices: tokens.size });
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      // An invalid TOKEN means FCM itself answered, which is the
+      // thing being tested. Anything else is the service refusing.
+      const tokenRejected =
+        err.code === "messaging/invalid-argument" ||
+        err.code === "messaging/registration-token-not-registered" ||
+        /not a valid FCM registration token/i.test(err.message ?? "");
+
+      return res.json({
+        ok: tokenRejected,
+        stage: tokenRejected ? "fcm" : "fcm-unavailable",
+        code: err.code ?? null,
+        detail: (err.message ?? "").slice(0, 300),
+        registeredDevices: tokens.size,
+      });
+    }
+  } catch (error) {
+    return res.json({
+      ok: false,
+      stage: "server",
+      detail: (error as Error).message.slice(0, 300),
+    });
+  }
+});
+
 app.post("/api/admin/notify", async (req, res) => {
   if (!requireAppKey(req, res)) return;
 
