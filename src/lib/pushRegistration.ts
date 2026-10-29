@@ -150,15 +150,42 @@ export async function saveToken(token: string, churchId: string | null): Promise
   lastToken = token;
 
   try {
+    // The registration itself, with only the fields the deployed
+    // rules are certain to allow.
+    //
+    // Written separately from the bells on purpose. Firestore refuses
+    // the WHOLE write when one field is not permitted, so adding
+    // `watches` before its rule was deployed did not merely lose the
+    // bells - it stopped every device registering at all, silently,
+    // and notifications that had been working stopped. Registration
+    // is the part that must never depend on a rule landing.
     await setDoc(doc(db, PUSH_TOKENS, token), {
       uid: user.uid,
       churchId: churchId ?? "",
       platform: Capacitor.getPlatform(),
-      watches: currentWatches(),
       updatedAt: serverTimestamp(),
     });
-    pushLog("token stored for parish:", churchId ?? "(none)",
-      "watches:", currentWatches().length);
+    pushLog("token stored for parish:", churchId ?? "(none)");
+
+    // Then the bells, as a separate write that is allowed to fail.
+    // Until the rule permitting `watches` is deployed this is refused
+    // and nothing else is affected: the device is registered, parish
+    // announcements reach it, and only the per-item bells wait.
+    try {
+      await setDoc(
+        doc(db, PUSH_TOKENS, token),
+        {
+          uid: user.uid,
+          churchId: churchId ?? "",
+          platform: Capacitor.getPlatform(),
+          watches: currentWatches(),
+          updatedAt: serverTimestamp(),
+        },
+      );
+      pushLog("bells stored:", currentWatches().length);
+    } catch {
+      pushLog("bells NOT stored - the watches rule is not deployed yet");
+    }
   } catch (error) {
     // Rules refusing it, or no connection. Either way the pilgrim
     // simply does not get pushes; nothing on screen should change.
