@@ -59,17 +59,29 @@ const PARISH_HISTORY: Record<string, ParishHistoryContent> = {
   "route-mhcp": {
     sections: [
       {
-        heading: "Our History",
+        heading: { en: "Our History", fil: "Ang Aming Kasaysayan" },
         paragraphs: [
-          "Mary Help of Christians Parish in Maypajo, Caloocan City was established in 1952 to serve the rapidly expanding population of Southern Caloocan and to provide a sacred sanctuary dedicated to Marian devotion. Under the zealous pastoral leadership of the parish priests and active community builders, it grew from a simple chapel of wood and nipa into a beautiful parish that stands as a beacon of Christian faith and Salesian spirit.",
-          "Over the decades, the parish has nurtured thousands of families, active lay organizations, and youth ministries, becoming a vital hub for prayer, catechesis, sacraments, and social services.",
+          {
+            en: "Mary Help of Christians Parish in Maypajo, Caloocan City was established in 1952 to serve the rapidly expanding population of Southern Caloocan and to provide a sacred sanctuary dedicated to Marian devotion. Under the zealous pastoral leadership of the parish priests and active community builders, it grew from a simple chapel of wood and nipa into a beautiful parish that stands as a beacon of Christian faith and Salesian spirit.",
+            fil: "Ang Parokya ng Mary Help of Christians sa Maypajo, Lungsod ng Caloocan ay itinatag noong 1952 upang paglingkuran ang mabilis na lumalaking populasyon ng Timog Caloocan at upang magbigay ng banal na santuwaryo na nakalaan sa debosyon kay Maria. Sa masigasig na pamumuno ng mga kura-paroko at ng mga aktibong tagapagtaguyod ng pamayanan, ito ay lumago mula sa isang simpleng kapilyang kahoy at nipa tungo sa isang magandang parokya na naninindigan bilang tanglaw ng pananampalatayang Kristiyano at ng diwang Salesiano.",
+          },
+          {
+            en: "Over the decades, the parish has nurtured thousands of families, active lay organizations, and youth ministries, becoming a vital hub for prayer, catechesis, sacraments, and social services.",
+            fil: "Sa paglipas ng mga dekada, inalagaan ng parokya ang libu-libong pamilya, mga aktibong samahang layko, at mga ministeryo ng kabataan, at naging mahalagang sentro ng panalangin, katesismo, mga sakramento, at paglilingkod sa lipunan.",
+          },
         ],
       },
       {
-        heading: "Our Patroness",
+        heading: { en: "Our Patroness", fil: "Ang Aming Patrona" },
         paragraphs: [
-          "The beloved patroness is the Blessed Virgin Mary under the title Mary, Help of Christians (Maria Auxiliadora). This title highlights her powerful maternal role as a helper, protector, and defender of Christians in times of severe trial, hardship, or spiritual battle.",
-          "Venerated highly within the Salesian family of St. John Bosco, her image depicts her holding the Child Jesus with both arms open, inviting the faithful to surrender their cares, seek grace, and find victory over life's daily storms through Christ.",
+          {
+            en: "The beloved patroness is the Blessed Virgin Mary under the title Mary, Help of Christians (Maria Auxiliadora). This title highlights her powerful maternal role as a helper, protector, and defender of Christians in times of severe trial, hardship, or spiritual battle.",
+            fil: "Ang minamahal na patrona ay ang Mahal na Birheng Maria sa titulong Maria, Katulong ng mga Kristiyano (Maria Auxiliadora). Itinatampok ng titulong ito ang kanyang makapangyarihang papel bilang ina — katulong, tagapagtanggol, at tagapag-ingat ng mga Kristiyano sa panahon ng matinding pagsubok, kahirapan, o espirituwal na labanan.",
+          },
+          {
+            en: "Venerated highly within the Salesian family of St. John Bosco, her image depicts her holding the Child Jesus with both arms open, inviting the faithful to surrender their cares, seek grace, and find victory over life's daily storms through Christ.",
+            fil: "Lubos siyang iginagalang sa pamilyang Salesiano ni San Juan Bosco. Ipinapakita ng kanyang imahen na kalong niya ang Batang Hesus habang bukas ang kanyang mga bisig, na nag-aanyaya sa mga mananampalataya na ipagkatiwala ang kanilang mga alalahanin, humingi ng biyaya, at magtagumpay laban sa pang-araw-araw na unos ng buhay sa pamamagitan ni Kristo.",
+          },
         ],
       },
       // The parish's own full account, in its own words and its own
@@ -81,17 +93,29 @@ const PARISH_HISTORY: Record<string, ParishHistoryContent> = {
   "route-src": {
     sections: [
       {
-        heading: "Our History",
+        heading: { en: "Our History", fil: "Ang Aming Kasaysayan" },
         paragraphs: [
-          "The historic San Roque Cathedral was originally founded as a parish in 1815 under the Archdiocese of Manila. The church stood witness to the turbulent days of the Philippine Revolution, serving as a military post and safe haven for local revolutionaries. It was repeatedly damaged during wars but rose each time through the absolute devotion of the Caloocan parishioners.",
-          "In 2003, His Holiness Pope John Paul II established the Diocese of Kalookan, and San Roque Parish was officially elevated to the dignity of a Cathedral, serving as the central seat of the Bishop, guiding the spiritual flock of Caloocan, Malabon, and Navotas.",
+          {
+            en: "The historic San Roque Cathedral was originally founded as a parish in 1815 under the Archdiocese of Manila. The church stood witness to the turbulent days of the Philippine Revolution, serving as a military post and safe haven for local revolutionaries. It was repeatedly damaged during wars but rose each time through the absolute devotion of the Caloocan parishioners.",
+            fil: "Ang makasaysayang Katedral ng San Roque ay orihinal na itinatag bilang parokya noong 1815 sa ilalim ng Arkidiyosesis ng Maynila. Ang simbahan ay naging saksi sa magulong mga araw ng Himagsikang Pilipino, na nagsilbing himpilang militar at ligtas na kanlungan ng mga lokal na rebolusyonaryo. Paulit-ulit itong nasira sa panahon ng mga digmaan ngunit muli itong nabangon sa bawat pagkakataon dahil sa lubos na debosyon ng mga parokyano ng Caloocan.",
+          },
+          {
+            en: "In 2003, His Holiness Pope John Paul II established the Diocese of Kalookan, and San Roque Parish was officially elevated to the dignity of a Cathedral, serving as the central seat of the Bishop, guiding the spiritual flock of Caloocan, Malabon, and Navotas.",
+            fil: "Noong 2003, itinatag ng Kanyang Kabanalan Papa Juan Pablo II ang Diyosesis ng Kalookan, at opisyal na itinaas ang Parokya ng San Roque sa dangal ng pagiging Katedral. Ito ang nagsisilbing pangunahing luklukan ng Obispo, na gumagabay sa espirituwal na kawan ng Caloocan, Malabon, at Navotas.",
+          },
         ],
       },
       {
-        heading: "Our Patron",
+        heading: { en: "Our Patron", fil: "Ang Aming Patron" },
         paragraphs: [
-          "The Cathedral is named in honor of San Roque (Saint Roch), a 14th-century lay saint who traveled across Europe nursing patients afflicted with the horrific bubonic plague. He is depicted pointing to a plague sore on his thigh, flanked by his faithful dog who brought him daily loaves of bread when he was isolated in the forest.",
-          "San Roque is beloved as the patron saint of the sick, plague victims, healthcare workers, and epidemics, standing as a testament of pure Christian charity, selfless volunteerism, and healing.",
+          {
+            en: "The Cathedral is named in honor of San Roque (Saint Roch), a 14th-century lay saint who traveled across Europe nursing patients afflicted with the horrific bubonic plague. He is depicted pointing to a plague sore on his thigh, flanked by his faithful dog who brought him daily loaves of bread when he was isolated in the forest.",
+            fil: "Ang Katedral ay ipinangalan bilang parangal kay San Roque (Saint Roch), isang laykong santo noong ika-14 na siglo na naglakbay sa buong Europa upang alagaan ang mga maysakit na tinamaan ng kakila-kilabot na salot na bubonic. Siya ay inilalarawan na nakaturo sa sugat ng salot sa kanyang hita, kasama ang kanyang tapat na aso na araw-araw na nagdadala sa kanya ng tinapay noong siya ay nakabukod sa gubat.",
+          },
+          {
+            en: "San Roque is beloved as the patron saint of the sick, plague victims, healthcare workers, and epidemics, standing as a testament of pure Christian charity, selfless volunteerism, and healing.",
+            fil: "Si San Roque ay minamahal bilang patron ng mga maysakit, ng mga biktima ng salot, ng mga manggagawa sa kalusugan, at ng mga epidemya. Siya ay naninindigan bilang patotoo ng dalisay na pag-ibig Kristiyano, mapagkawanggawang paglilingkod, at paggaling.",
+          },
         ],
       },
     ],
@@ -237,7 +261,11 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
   const sections: ParishHistorySection[] = managedBody
     ? [
         {
-          heading: "Our History",
+          // The heading is ours and is translated. The BODY is not:
+          // it is whatever the parish office typed, in whichever
+          // language they chose, and translating a parish's own words
+          // for them would be publishing a version nobody approved.
+          heading: { en: "Our History", fil: "Ang Aming Kasaysayan" },
           paragraphs: managedBody
             .split(/\n{2,}/)
             .map(paragraph => paragraph.trim())

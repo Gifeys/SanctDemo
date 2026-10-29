@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { HISTORY_QUIZZES, gradeQuiz, quizFor, unanswered } from './historyQuiz'
 import { parishHistorySections } from '../components/ChurchHistory'
+import { pick } from './language'
 
 describe('the quizzes themselves', () => {
   const ids = Object.keys(HISTORY_QUIZZES)
@@ -44,8 +45,15 @@ describe('the quizzes themselves', () => {
         // The one rule for this feature: no invented facts. Every
         // correct answer must appear in the parish's own history text,
         // so a visitor who read the page can answer the question.
+        // Both languages. The paragraphs became bilingual when the
+        // Filipino history was written, and joining the objects gave
+        // "[object Object]" - which contains nothing, so the check
+        // passed nothing and failed loudly. Reading both is also
+        // stricter than reading English alone: an answer has to be
+        // findable by whichever language the visitor read the page in.
         const prose = parishHistorySections(id)
           .flatMap(s => s.paragraphs)
+          .map(p => `${pick(p, 'en')} ${pick(p, 'fil')}`)
           .join(' ')
           .toLowerCase()
 
