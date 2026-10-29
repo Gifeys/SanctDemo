@@ -180,7 +180,18 @@ export default function SanctiHost({ tools }: { tools: SanctiTools }) {
         break;
       case "OPEN_AR":
         t.go("ar");
-        point("tab-scan", "Point your camera at a statue or marker and the scanner will name it.");
+        point("tab-scan", "This is the Scan tab — Sancti Scan names a statue from the camera, and the AR Museum runs inside the church.");
+        break;
+      case "OPEN_ROSARY":
+        t.go("rosary");
+        point("tab-pray", "This is the Rosary — it guides you bead by bead, in English or Filipino.");
+        break;
+      case "OPEN_ANNOUNCEMENTS":
+        if (parishId) t.selectParish(parishId);
+        // No section call: the bulletin IS the Home screen, and
+        // showHomeSection only takes the three that share it.
+        t.go("home");
+        point("tab-home", "The Parish Bulletin is on Home — announcements, feast days and events.");
         break;
       case "OPEN_MASS_SCHEDULE":
         if (parishId) t.selectParish(parishId);

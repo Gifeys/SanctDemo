@@ -35,6 +35,8 @@
  * than guessing.
  */
 
+import { expandFilipino } from "./sanctiNormalise";
+
 export type SanctiAction =
   | "OPEN_MAP"
   | "OPEN_CHURCH"
@@ -45,6 +47,8 @@ export type SanctiAction =
   | "OPEN_WEDDING"
   | "OPEN_MINISTRIES"
   | "OPEN_CHURCH_HISTORY"
+  | "OPEN_ROSARY"
+  | "OPEN_ANNOUNCEMENTS"
   | "OPEN_SETTINGS"
   | "CREATE_REMINDER"
   | "REPLAY_TUTORIAL"
@@ -101,11 +105,17 @@ export const CONFIDENCE_FLOOR = 2;
  * questions unmatchable.
  */
 export function normalise(text: string): string {
-  return text
+  const plain = text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s:]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  // Rewrite real Filipino into the register the phrase lists use.
+  // Without this "san po yung mapa" contains none of the phrases
+  // written for the map, and Sancti answered UNKNOWN to the most
+  // ordinary way of asking. See lib/sanctiNormalise.
+  return expandFilipino(plain);
 }
 
 /**
@@ -139,12 +149,22 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
   {
     action: "OPEN_BAPTISM",
     phrases: ["baptism", "binyag", "christening", "baptismal",
-      "pabinyag", "magpabinyag", "paano magpabinyag"],
+      "pabinyag", "magpabinyag", "paano magpabinyag",
+      // Naming the sacrament AND what is wanted of it. A bare
+      // "baptism" is one word and scores 2, which a two-word HELP
+      // phrase beats - so "ano ang requirements sa binyag" came back
+      // as a list of what Sancti can do rather than as the answer.
+      "requirements for baptism", "requirements sa binyag",
+      "requirements ng binyag", "apply for baptism", "mag apply ng binyag",
+      "schedule ng binyag", "baptism schedule",],
   },
   {
     action: "OPEN_WEDDING",
     phrases: ["wedding", "matrimony", "kasal", "marriage", "get married",
-      "ikakasal", "magpakasal", "paano magpakasal"],
+      "ikakasal", "magpakasal", "paano magpakasal",
+      "requirements for wedding", "requirements sa kasal",
+      "requirements ng kasal", "apply for wedding", "mag apply ng kasal",
+      "wedding schedule", "schedule ng kasal",],
   },
   {
     action: "OPEN_SACRAMENTS",
@@ -174,6 +194,12 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
     phrases: [
       "ar", "augmented reality", "scanner", "scan", "camera", "how do i use ar",
       "ar tour", "point my camera", "paano gamitin ang scanner", "paano mag scan",
+      // Sancti Scan and the AR Museum are two modes of one tab, so
+      // they are one destination. A second action for the same place
+      // only gave the scorer something to be ambiguous about.
+      "sanctiscan", "sancti scan", "ar museum", "museum",
+      "kamera", "larawan", "ano ito", "anong ito", "anong statue",
+      "identify", "saan ang scan", "saan ang camera",
     ],
   },
   {
@@ -189,6 +215,28 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
       "take me to", "directions", "navigate", "how do i get to", "bring me to",
       "paano pumunta", "show me on the map", "where is the church",
       "dalhin mo ako", "punta tayo", "saan ang simbahan", "paano papunta",
+    ],
+  },
+  {
+    // The Rosary. Asked for more often than anything except the Mass
+    // time, and until now it had no trigger at all - "pano mag rosary"
+    // came back UNKNOWN.
+    action: "OPEN_ROSARY",
+    phrases: [
+      "rosary", "holy rosary", "pray the rosary", "open the rosary",
+      "rosaryo", "magrosaryo", "mag rosaryo", "magdasal", "mag dasal",
+      "dasal", "panalangin", "prayer", "prayers", "pray",
+      "paano mag rosary", "paano magdasal", "saan ang rosary",
+      "mysteries", "misteryo", "novena",
+    ],
+  },
+  {
+    // The bulletin. "Balita" and "patalastas" are how it gets asked for.
+    action: "OPEN_ANNOUNCEMENTS",
+    phrases: [
+      "announcement", "announcements", "bulletin", "parish bulletin",
+      "balita", "patalastas", "anong bago", "latest news", "news",
+      "update", "updates", "feast day", "kapistahan", "event", "events",
     ],
   },
   {
@@ -248,6 +296,8 @@ const TRIGGERS: Array<{ action: SanctiAction; phrases: string[] }> = [
       // trigger it outscored the real intent and answered the wrong
       // question confidently. A test caught it.
       "how does this work", "ano ang kaya mo", "sino ka", "ano ang magagawa mo",
+      "features", "what features", "ano ang features", "ano pa ang features",
+      "ano pa dito", "what else", "anong pwede dito",
     ],
   },
 ];
@@ -337,11 +387,30 @@ export const NAVIGATING_ACTIONS: readonly SanctiAction[] = [
   "OPEN_MAP", "OPEN_CHURCH", "OPEN_AR", "OPEN_MASS_SCHEDULE", "OPEN_SACRAMENTS",
   "OPEN_BAPTISM", "OPEN_WEDDING", "OPEN_MINISTRIES", "OPEN_CHURCH_HISTORY",
   "OPEN_SETTINGS", "SHOW_CHURCH_LOCATION",
+  "OPEN_ROSARY", "OPEN_ANNOUNCEMENTS",
   // REPLAY_TUTORIAL and CHANGE_LANGUAGE are deliberately absent. Asking
   // to be shown around IS the instruction, and a tutorial that stopped
   // to ask whether you wanted the tutorial would be absurd. A language
   // change is one tap to undo and visible the instant it happens.
 ];
+
+/**
+ * The same triggers, put through the same rewrite as the question.
+ *
+ * Both sides have to be normalised or neither can match. The phrase
+ * lists are written in full Tagalog - "anong oras ang misa" - and the
+ * question arrives rewritten to "ano oras ang mass", so comparing one
+ * against the other found nothing. Normalising the phrases at load
+ * costs one pass over a fixed list and removes the whole class of
+ * mismatch.
+ *
+ * Duplicates collapse naturally: "misa" and "mass" both become
+ * "mass", which is the point.
+ */
+const NORMALISED_TRIGGERS = TRIGGERS.map(({ action, phrases }) => ({
+  action,
+  phrases: [...new Set(phrases.map(p => expandFilipino(p)))].filter(Boolean),
+}));
 
 /**
  * Whether Sancti should offer rather than act.
@@ -475,6 +544,24 @@ function wordPresent(word: string, haystack: string[]): boolean {
   if (word.length < MIN_FUZZY) return false;
   return haystack.some(token =>
     token.length >= MIN_FUZZY && withinEdits(word, token, 1));
+}
+
+/**
+ * Whether every word of a phrase appears, allowing one typo each.
+ *
+ * Deliberately requires ALL of them. Any-word matching turns "mass"
+ * in "where is the mass book" into a request for the schedule, and a
+ * guide that confidently answers the wrong question is worse than one
+ * that admits it did not follow.
+ *
+ * Single-word phrases are left to the exact substring check: at one
+ * word there is no corroboration, and a fuzzy match on its own is how
+ * "ar" starts matching "at".
+ */
+function phraseNearlyPresent(phrase: string, said: string[]): boolean {
+  const parts = phrase.split(" ").filter(Boolean);
+  if (parts.length < 2) return false;
+  return parts.every(part => wordPresent(part, said));
 }
 
 /**
@@ -661,14 +748,41 @@ export function understand(
 
   let best: { action: SanctiAction; score: number } = { action: "UNKNOWN", score: 0 };
 
-  for (const { action, phrases } of TRIGGERS) {
+  const said = hay.split(" ").filter(Boolean);
+
+  for (const { action, phrases } of NORMALISED_TRIGGERS) {
     let score = 0;
     for (const phrase of phrases) {
-      if (!hay.includes(phrase)) continue;
+      if (!phrase) continue;
+      const exact = hay.includes(phrase);
       // Word count, so a longer phrase outranks a shorter one inside it.
-      score = Math.max(score, phrase.split(" ").length + 1);
+      const weight = phrase.split(" ").length + 1;
+
+      if (exact) score = Math.max(score, weight);
     }
     if (score > best.score) best = { action, score };
+  }
+
+  // Only if nothing matched at all, try again forgiving one typo.
+  //
+  // A fallback rather than part of the scoring, because the words of
+  // a phrase can all appear in a sentence that means something else:
+  // "take me to the map" has every word of itself inside "take me to
+  // San Roque on the map", which is a request for San Roque. Letting
+  // that compete on score made the near-match beat the exact one.
+  //
+  // Reached only when the alternative is UNKNOWN, where a near miss
+  // is plainly better than nothing: "whats the mass shedule" is not
+  // ambiguous to any reader.
+  if (best.score === 0) {
+    for (const { action, phrases } of NORMALISED_TRIGGERS) {
+      let score = 0;
+      for (const phrase of phrases) {
+        if (!phrase || !phraseNearlyPresent(phrase, said)) continue;
+        score = Math.max(score, phrase.split(" ").length + 1);
+      }
+      if (score > best.score) best = { action, score };
+    }
   }
 
   // The sentence's own parish always wins; the previous one fills a

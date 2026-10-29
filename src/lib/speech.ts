@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import type { Language } from './language'
+import { isFallback, pickLocale } from './speechLocales'
 
 /**
  * Reading a station aloud, on a phone as well as in a browser.
@@ -157,6 +158,36 @@ export function canSpeak(
 /** A shade under natural pace; the default rattles through a reflection. */
 const RATE = 0.95
 
+/**
+ * What the handset's text-to-speech actually offers, asked once.
+ *
+ * getSupportedLanguages is a round trip to the platform, and the
+ * answer does not change while the app is running.
+ */
+let deviceLocales: string[] | null = null
+
+async function supportedLocales(): Promise<string[]> {
+  if (deviceLocales) return deviceLocales
+  try {
+    const { languages } = await TextToSpeech.getSupportedLanguages()
+    deviceLocales = Array.isArray(languages) ? languages : []
+  } catch {
+    deviceLocales = []
+  }
+  // eslint-disable-next-line no-console
+  console.log('SW-TTS device locales:', deviceLocales.length)
+  return deviceLocales
+}
+
+/**
+ * Whether the last thing spoken had to fall back to another language.
+ *
+ * Read by the UI so it can say "no Filipino voice on this phone"
+ * rather than leaving somebody wondering why the Tagalog history is
+ * being read in English.
+ */
+export let lastSpokenWasFallback = false
+
 export async function speakAloud(text: string, language: Language): Promise<void> {
   const engine = currentEngine()
   if (engine === 'none' || !text.trim()) return
@@ -165,14 +196,33 @@ export async function speakAloud(text: string, language: Language): Promise<void
     // Stop first. The plugin queues otherwise, and the pilgrim waits out
     // the previous station before hearing this one.
     await stopAloud()
-    await TextToSpeech.speak({
-      text,
-      lang: speechLocale(language),
-      rate: RATE,
-      // Read through the media channel so the phone's volume keys do
-      // what the pilgrim expects while the tour is talking.
-      category: 'playback',
-    })
+
+    // Ask for a locale the device HAS. Requesting fil-PH on a handset
+    // without the Filipino voice does not fail - it reads Tagalog in
+    // an English voice, which is how this looked like it was ignoring
+    // the language setting.
+    const available = await supportedLocales()
+    const chosen = pickLocale(language, available) ?? speechLocale(language)
+    lastSpokenWasFallback = isFallback(language, pickLocale(language, available))
+
+    // eslint-disable-next-line no-console
+    console.log('SW-TTS speaking in', chosen, 'wanted', language,
+      'fallback:', lastSpokenWasFallback)
+
+    try {
+      await TextToSpeech.speak({
+        text,
+        lang: chosen,
+        rate: RATE,
+        // Read through the media channel so the phone's volume keys do
+        // what the pilgrim expects while the tour is talking.
+        category: 'playback',
+      })
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log('SW-TTS speak FAILED:', (error as Error)?.message ?? String(error))
+      throw error
+    }
     return
   }
 
