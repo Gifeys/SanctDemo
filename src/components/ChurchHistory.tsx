@@ -1,6 +1,6 @@
 import React, { type CSSProperties } from "react";
 import HistoryQuiz from "./HistoryQuiz";
-import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Route } from "../types";
 import { PARISH_PATRON_IMAGES, PARISH_PATRON_SAINTS } from "../data";
 import { useParishContent } from "../lib/useParishContent";
@@ -8,8 +8,6 @@ import { useLanguage } from "../lib/useLanguage";
 import { pick, type Bilingual, type Language } from "../lib/language";
 import { parishTheme } from "../lib/parishTheme";
 import { MHCP_HISTORY } from "../data/mhcpHistory";
-import { useNarration } from "../lib/useNarration";
-import { historyScript, spokenLength } from "../lib/historyNarration";
 
 /** The heading the parish's own Filipino account starts at. */
 const FIRST_OWN_SECTION = pick(MHCP_HISTORY[0]?.heading, "fil");
@@ -287,17 +285,16 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
    * reports none, and `supported` is false there, so the control is
    * absent rather than present and dead.
    */
-  const narration = useNarration(language);
-  const script = historyScript(title, sections, language);
-  const length = spokenLength(script, language);
+  /* The Listen control stood here, reading the history aloud through
+     the device's text-to-speech.
 
-  // Switching language mid-sentence would leave the previous language
-  // playing under the new text. Stopping is the honest reaction; the
-  // reader can tap again and hear it in the language they just chose.
-  const stopNarration = narration.stop;
-  React.useEffect(() => {
-    stopNarration();
-  }, [language, stopNarration]);
+     Removed at the parish's request: it did not work reliably on a
+     handset. The underlying cause was a missing Filipino voice - the
+     engine does not refuse an unavailable locale, it reads the text
+     in English - and a control that silently does the wrong thing is
+     worse than no control. lib/useNarration and lib/speech are left
+     in place; the Rosary and the AR tour still use them. */
+
 
   const style = {
     "--ph-top": accent.top,
@@ -342,33 +339,6 @@ export default function ChurchHistory({ parish, onBack }: ChurchHistoryProps) {
               read or to listen - not floating over the photograph, which
               is where a media control goes when it belongs to the image
               rather than to the words. */}
-          {narration.supported && script && (
-            <button
-              type="button"
-              onClick={() => narration.toggle(script)}
-              className="parish-history__listen"
-              aria-pressed={narration.speaking}
-              aria-label={
-                narration.speaking
-                  ? "Stop reading this history aloud"
-                  : `Read this history aloud${length ? `, ${length}` : ""}`
-              }
-            >
-              {narration.speaking ? (
-                <>
-                  <VolumeX className="w-4 h-4" aria-hidden />
-                  <span>{language === "fil" ? "Ihinto" : "Stop"}</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-4 h-4" aria-hidden />
-                  <span>{language === "fil" ? "Pakinggan" : "Listen"}</span>
-                  {length && <span className="parish-history__listen-time">{length}</span>}
-                </>
-              )}
-            </button>
-          )}
-
           {sections.length > 0 ? (
             sections.map(section => (
               <React.Fragment key={pick(section.heading, "fil")}>
