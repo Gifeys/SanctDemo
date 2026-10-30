@@ -1,8 +1,14 @@
-import { addDoc, collection, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  addDoc, collection, doc, updateDoc, arrayUnion, deleteDoc, getDoc, writeBatch,
+} from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { getProfile } from "./userProfile";
 import { notifySubmitted, notifyStatusChanged } from "./notifications";
 import { isArchived } from "./applicationFilters";
+import {
+  APPLICATION_LOCKS, isRestricted, releasesLock, stillHoldsLock,
+  type ApplicationLock,
+} from "./applicationLock";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
 
 /**
@@ -127,11 +133,99 @@ export async function submitApplication(input: SubmitInput): Promise<Application
     history: [{ status: "pending", at: now.toISOString() }],
   };
 
-  const ref = await addDoc(collection(db, "applications"), document);
-  // A record of the submission, for the pilgrim's own list. Written after
-  // the application so a failure here cannot lose the application itself.
-  await notifySubmitted(document.churchId, ref.id, document.type, document.referenceNumber);
-  return { ...document, id: ref.id };
+  // A ministry application takes a lock; a sacrament does not.
+  //
+  // Written in ONE batch with the application. A second submission
+  // cannot create a lock that already exists, and because a batch is
+  // all or nothing its application is not written either - so two
+  // taps in the same second resolve to exactly one application,
+  // decided by Firestore at commit rather than by a check-then-write
+  // race here.
+  if (!isRestricted(input.kind)) {
+    const ref = await addDoc(collection(db, "applications"), document);
+    // A record of the submission, for the pilgrim's own list. Written after
+    // the application so a failure here cannot lose the application itself.
+    await notifySubmitted(document.churchId, ref.id, document.type, document.referenceNumber);
+    return { ...document, id: ref.id };
+  }
+
+  // A lock left behind by an application the parish has already
+  // decided is dead, and would otherwise bar this pilgrim forever.
+  // Clearing it is safe: releaseStaleLock only removes one whose
+  // application reads terminal, and the rules check the same thing.
+  await releaseStaleLock(user.uid);
+
+  const applicationRef = doc(collection(db, "applications"));
+  const lockRef = doc(db, APPLICATION_LOCKS, user.uid);
+  const lock: ApplicationLock = {
+    applicationId: applicationRef.id,
+    uid: user.uid,
+    churchId: document.churchId,
+    createdAt: now.toISOString(),
+  };
+
+  const batch = writeBatch(db);
+  batch.set(applicationRef, document);
+  batch.set(lockRef, lock);
+
+  // The web SDK's batch has no create(), so "must not already exist"
+  // is enforced by the RULES instead: applicationLocks allows create
+  // and never update, so a set() over a lock that exists is an update
+  // and is refused. That is the stronger place for it anyway - the
+  // guarantee holds against curl, not just against this function.
+
+  try {
+    await batch.commit();
+  } catch (error) {
+    // The common case by far is the lock already existing, which is
+    // the restriction doing its job rather than a fault.
+    throw new SubmitError(
+      "The parish is still reviewing your last ministry application. " +
+      "You can apply for another once they have decided on it.",
+      { cause: error },
+    );
+  }
+
+  await notifySubmitted(document.churchId, applicationRef.id, document.type, document.referenceNumber);
+  return { ...document, id: applicationRef.id };
+}
+
+/**
+ * Removes a lock whose application has already been decided.
+ *
+ * The recovery path. An admin's decision releases the lock in the
+ * same batch, but if that write half-fails the pilgrim would be
+ * barred with nothing on screen explaining why - which is a worse
+ * outcome than the duplicate this feature prevents.
+ *
+ * Only ever deletes a lock whose application reads terminal. The
+ * rules enforce the same condition, so this cannot be used to shed a
+ * live lock by calling it directly.
+ */
+export async function releaseStaleLock(uid: string): Promise<boolean> {
+  try {
+    const lockSnap = await getDoc(doc(db, APPLICATION_LOCKS, uid));
+    if (!lockSnap.exists()) return false;
+
+    const lock = lockSnap.data() as ApplicationLock;
+    const appSnap = await getDoc(doc(db, "applications", lock.applicationId));
+
+    // A lock pointing at an application that no longer exists is
+    // dead too - a withdrawn application takes its lock with it.
+    const status = appSnap.exists()
+      ? (appSnap.data() as { status?: ApplicationStatus }).status
+      : undefined;
+
+    if (status && stillHoldsLock(status)) return false;
+
+    await deleteDoc(doc(db, APPLICATION_LOCKS, uid));
+    return true;
+  } catch {
+    // Never fatal. A lock that cannot be cleared here is cleared by
+    // the admin's decision, and failing the submission over it would
+    // turn a recovery path into a new way to be blocked.
+    return false;
+  }
 }
 
 /**
@@ -166,6 +260,22 @@ export async function setApplicationStatus(
     ...(note ? { adminNote: note } : {}),
     history: arrayUnion({ status, at, by: user.uid, ...(note ? { note } : {}) }),
   });
+
+  // A decision frees the pilgrim to apply again.
+  //
+  // After the status write, not with it: the decision is the thing
+  // that must succeed, and a lock that outlives it is recoverable
+  // - releaseStaleLock clears any lock whose application reads
+  // terminal, and the submit path runs that before trying. A
+  // decision lost to a failed lock delete would not be recoverable.
+  if (applicant && releasesLock(status)) {
+    try {
+      await deleteDoc(doc(db, APPLICATION_LOCKS, applicant.uid));
+    } catch {
+      // The applicant's own next submission clears it. Nothing here
+      // is worth failing a recorded decision over.
+    }
+  }
 
   if (applicant) {
     await notifyStatusChanged(

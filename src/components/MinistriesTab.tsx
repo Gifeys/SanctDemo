@@ -13,6 +13,8 @@ import { useLanguage } from "../lib/useLanguage";
 import { pick } from "../lib/language";
 import { MINISTRY_DESCRIPTION_EN, bilingualFor } from "../lib/contentTranslations";
 import { submitApplication } from "../lib/applications";
+import { blockedMessage, stillHoldsLock } from "../lib/applicationLock";
+import type { ApplicationStatus } from "../types";
 import { useParishContent } from "../lib/useParishContent";
 import { watchItemPhotos } from "../lib/itemPhoto";
 import { isOpenForApplications, closedMessage } from "../lib/availability";
@@ -37,6 +39,14 @@ interface MinistriesTabProps {
    * would be unchanged and the second ask would do nothing.
    */
   openRequest?: { itemId: string; id: number };
+  /**
+   * The pilgrim's own applications, already streaming in App.
+   *
+   * Passed rather than fetched so the Apply button can say why it is
+   * unavailable without a second subscription - and so the reason is
+   * the same one the database will give, rather than a guess.
+   */
+  myApplications?: Array<{ kind?: string; status?: string; type?: string }>;
 }
 
 /**
@@ -57,7 +67,18 @@ const PLACEHOLDER_MINISTRY = "/parish/placeholder-photo.svg";
  */
 const PARISHES_WITH_OWN_PHOTOS = new Set(["route-mhcp"]);
 
-export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn, openRequest }: MinistriesTabProps) {
+export default function MinistriesTab({ parish, onAddApplication, uid, userEmail, onOpenSignIn, openRequest, myApplications = [] }: MinistriesTabProps) {
+  /**
+   * The ministry application the parish is still deciding on, if any.
+   *
+   * One at a time, across all ministries. Derived from the list App
+   * already streams, so this costs no extra read - and it is the same
+   * condition the rules enforce, so the button and the database agree
+   * rather than the button guessing.
+   */
+  const openMinistryApplication = myApplications.find(
+    a => a.kind === "ministry" && stillHoldsLock((a.status ?? "pending") as ApplicationStatus),
+  );
   const parishName = parish.name.replace(" Guide", "").replace(" Tour", "");
 
   // Which ministries this parish is currently taking applications for.
@@ -357,7 +378,26 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                           ministry had been disbanded or whether the app
                           was broken; greyed out, the answer is on the
                           card. */}
-                      {isOpenForApplications(managed, min.id) ? (
+                      {/* Already waiting on a decision.
+                          Checked before the parish's own switch,
+                          because this reason is about the pilgrim
+                          rather than the ministry - and "not
+                          available" would be the wrong sentence for
+                          a ministry that is open and taking people. */}
+                      {isOpenForApplications(managed, min.id) && openMinistryApplication ? (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            disabled
+                            className="py-1.5 px-3 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] text-sm font-bold uppercase tracking-wider rounded-full cursor-not-allowed"
+                          >
+                            Waiting on the parish
+                          </button>
+                          <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
+                            {blockedMessage(openMinistryApplication.type)}
+                          </p>
+                        </div>
+                      ) : isOpenForApplications(managed, min.id) ? (
                         <button
                           onClick={() => {
                             setApplyingToId(min.id);

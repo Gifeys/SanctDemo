@@ -1440,6 +1440,7 @@ export default function App() {
                   {/* TAB 6: Volunteer Guilds list */}
                   {activeTab === "ministries" && (
                     <MinistriesTab
+                      myApplications={applications}
                       parish={activeChurchRoute}
                       openRequest={itemRequest?.tab === "ministries" ? itemRequest : undefined}
                       onAddApplication={handleAddApplication}

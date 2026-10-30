@@ -186,7 +186,20 @@ service cloud.firestore {
         // Closed means closed. The app greys out the button, but the button
         // is not the control - anyone can POST here with curl, and a parish
         // that has shut applications for the choir has shut them.
-        && !(request.resource.data.itemId in closedApplications(myChurch()));
+        && !(request.resource.data.itemId in closedApplications(myChurch()))
+        // One open ministry application at a time. Sacraments are
+        // unrestricted: a sacrament is not a membership, and somebody
+        // arranging a baptism has no reason to be barred from asking
+        // about a wedding.
+        //
+        // In the submitting batch this is evaluated against the state
+        // BEFORE the batch, so the lock created alongside does not
+        // block its own application. A second, concurrent batch is
+        // stopped by the lock's create rule instead.
+        && (
+          request.resource.data.kind != 'ministry'
+          || !exists(/databases/$(database)/documents/applicationLocks/$(request.auth.uid))
+        );
     }
 
     // What a reviewer may change: the decision and its audit trail. Not the
@@ -195,6 +208,69 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['status', 'adminNote', 'reviewedBy', 'reviewedAt',
                   'updatedAt', 'history']);
+    }
+
+    /**
+     * One open ministry application per pilgrim.
+     *
+     * The restriction is "does this person already have a ministry
+     * application open", which is a QUERY across applications - and a
+     * rule cannot query. It can only get() one document by a path it
+     * can build. So the question is turned into a document with a
+     * predictable id, and this is it.
+     *
+     * CREATE ONLY, NEVER UPDATE. That is what makes submission
+     * atomic: the web SDK's batch has no create(), so a set() over an
+     * existing lock arrives here as an update and is refused - and
+     * because a batch is all or nothing, the duplicate application in
+     * the same batch is refused with it. Two taps in the same second
+     * resolve to exactly one application, decided here rather than by
+     * a check-then-write race in the client.
+     *
+     * DELETE IS THE RECOVERY PATH, and it is guarded by the state of
+     * the application the lock names. The worst outcome of this
+     * feature would be a parishioner permanently unable to apply
+     * because one write half-failed, so the owner may shed a lock
+     * whose application has been decided - and only then.
+     */
+    match /applicationLocks/{lockId} {
+      // Nobody needs to read somebody else's. The owner reads their
+      // own so the app can explain why Apply is unavailable; the
+      // parish admin reads their own parish's for the same reason.
+      allow read: if isSignedIn()
+        && (request.auth.uid == lockId
+            || isAdminOf(resource.data.get('churchId', noChurch())));
+
+      allow create: if isSignedIn()
+        && request.auth.uid == lockId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.churchId == myChurch()
+        && myChurch() != noChurch()
+        && request.resource.data.applicationId is string
+        && request.resource.data.applicationId != ''
+        && request.resource.data.keys().hasOnly(
+             ['applicationId', 'uid', 'churchId', 'createdAt']);
+
+      // Deliberately absent: allow update. See above - the refusal is
+      // the mechanism, not an oversight.
+
+      allow delete: if isSignedIn()
+        && (
+          // The parish, on deciding. They can already set the status,
+          // so letting them clear the lock adds no authority.
+          isAdminOf(resource.data.get('churchId', noChurch()))
+          // Or the owner, once the application it names is decided.
+          // A lock pointing at an application that no longer exists
+          // is dead too: a withdrawn application takes its lock.
+          || (
+            request.auth.uid == lockId
+            && (
+              !exists(/databases/$(database)/documents/applications/$(resource.data.applicationId))
+              || get(/databases/$(database)/documents/applications/$(resource.data.applicationId))
+                   .data.status in ['approved', 'rejected', 'completed']
+            )
+          )
+        );
     }
 
     match /applications/{applicationId} {

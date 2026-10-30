@@ -944,3 +944,86 @@ describe("push tokens carrying bells", () => {
     await assertFails(getDoc(doc(as(ADMIN_A), "pushTokens", TOKEN)));
   });
 })
+
+/**
+ * One open ministry application per pilgrim.
+ *
+ * The interesting assertions are the ones about a SECOND attempt and
+ * about getting unstuck, because those are where this feature can
+ * hurt somebody: a duplicate is untidy, while a parishioner barred
+ * forever by a half-failed write is a parish office phone call.
+ */
+describe("the ministry application lock", () => {
+  const lock = (over: Record<string, unknown> = {}) => ({
+    applicationId: "appA",
+    uid: USER_A,
+    churchId: CHURCH_A,
+    createdAt: new Date().toISOString(),
+    ...over,
+  });
+
+  it("a pilgrim takes their own lock", async () => {
+    await assertSucceeds(setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock()));
+  });
+
+  it("CANNOT take a lock in somebody else's name", async () => {
+    await assertFails(setDoc(doc(as(USER_A), "applicationLocks", USER_B), lock({ uid: USER_B })));
+  });
+
+  it("CANNOT write over a lock that already exists", async () => {
+    // This single refusal is what makes submission atomic. The web
+    // SDK's batch has no create(), so a second submission's set()
+    // arrives as an update - and because a batch is all or nothing,
+    // its application is refused with it.
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock());
+    await assertFails(
+      setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock({ applicationId: "appB" })),
+    );
+  });
+
+  it("refuses a field nobody asked for", async () => {
+    await assertFails(
+      setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock({ bypass: true })),
+    );
+  });
+
+  it("refuses a lock filed against another parish", async () => {
+    await assertFails(
+      setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock({ churchId: CHURCH_B })),
+    );
+  });
+
+  it("the owner reads their own, so the app can say why Apply is off", async () => {
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock());
+    await assertSucceeds(getDoc(doc(as(USER_A), "applicationLocks", USER_A)));
+  });
+
+  it("another pilgrim CANNOT read it", async () => {
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock());
+    await assertFails(getDoc(doc(as(USER_B), "applicationLocks", USER_A)));
+  });
+
+  it("CANNOT be shed while the application is still pending", async () => {
+    // The restriction would be worthless if the lock could simply be
+    // deleted by the person it restricts.
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock({ applicationId: "appA" }));
+    await assertFails(deleteDoc(doc(as(USER_A), "applicationLocks", USER_A)));
+  });
+
+  it("the parish admin may clear it when deciding", async () => {
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock());
+    await assertSucceeds(deleteDoc(doc(as(ADMIN_A), "applicationLocks", USER_A)));
+  });
+
+  it("another parish's admin may not", async () => {
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock());
+    await assertFails(deleteDoc(doc(as(ADMIN_B), "applicationLocks", USER_A)));
+  });
+
+  it("a lock pointing at nothing can be shed, so nobody is stranded", async () => {
+    // A withdrawn application takes its lock with it. Without this a
+    // pilgrim who withdrew would be barred with no way back.
+    await setDoc(doc(as(USER_A), "applicationLocks", USER_A), lock({ applicationId: "gone" }));
+    await assertSucceeds(deleteDoc(doc(as(USER_A), "applicationLocks", USER_A)));
+  });
+});
