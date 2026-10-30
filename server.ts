@@ -1096,7 +1096,15 @@ app.get("/api/admin/push-selftest", async (req, res) => {
         { token: "selftest-not-a-real-token", notification: { title: "x", body: "x" } },
         true,
       );
-      return res.json({ ok: true, stage: "fcm", registeredDevices: tokens.size });
+      return res.json({
+        ok: true,
+        stage: "fcm",
+        registeredDevices: tokens.size,
+        // Null means no notification has ever been sent from here -
+        // which is itself the answer when somebody reports that the
+        // phone stayed quiet.
+        lastPush,
+      });
     } catch (error) {
       const err = error as { code?: string; message?: string };
       // An invalid TOKEN means FCM itself answered, which is the
@@ -1122,6 +1130,29 @@ app.get("/api/admin/push-selftest", async (req, res) => {
     });
   }
 });
+
+/**
+ * What happened the last time a notification was genuinely sent.
+ *
+ * Read-only diagnostics. "The phone did not buzz" has several causes
+ * that look identical from outside, and establishing which has twice
+ * cost the parish an evening of closing the app and waiting. The
+ * admin screen now states the outcome, but somebody has to be
+ * looking at it and able to relay it.
+ *
+ * This records the same facts so they can be read back later: when,
+ * which parish, how many devices, how many failed. No message
+ * content and no tokens - nothing here is worth stealing, which is
+ * why it can be exposed without weakening anything.
+ */
+let lastPush: {
+  at: string;
+  churchId: string;
+  sent: number;
+  failed: number;
+  pruned: number;
+  error?: string;
+} | null = null;
 
 app.post("/api/admin/notify", async (req, res) => {
   if (!requireAppKey(req, res)) return;
@@ -1151,9 +1182,15 @@ app.post("/api/admin/notify", async (req, res) => {
     }
 
     const result = await pushToParish(churchId, title.trim(), body.trim());
+    lastPush = { at: new Date().toISOString(), churchId, ...result };
     return res.json(result);
   } catch (error) {
-    console.error("[push] send failed:", (error as Error).message);
+    const message = (error as Error).message;
+    lastPush = {
+      at: new Date().toISOString(), churchId,
+      sent: 0, failed: 0, pruned: 0, error: message.slice(0, 200),
+    };
+    console.error("[push] send failed:", message);
     return res.status(500).json({ error: "Those notifications could not be sent." });
   }
 });
