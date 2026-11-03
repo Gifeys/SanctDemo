@@ -192,10 +192,27 @@ service cloud.firestore {
           !('registrationType' in request.resource.data)
           || request.resource.data.registrationType in ['new_applicant', 'existing_member']
         )
-        // Closed means closed. The app greys out the button, but the button
-        // is not the control - anyone can POST here with curl, and a parish
-        // that has shut applications for the choir has shut them.
-        && !(request.resource.data.itemId in closedApplications(myChurch()))
+        // Closed means closed - to NEW applicants.
+        //
+        // The app greys out the button, but the button is not the
+        // control: anyone can POST here with curl, and a parish that
+        // has shut applications for the choir has shut them.
+        //
+        // Somebody already serving is the exception, because closing
+        // applications is about not taking more people, not about
+        // refusing to know who is already there. A parishioner who has
+        // sung in that choir for ten years would otherwise be unable to
+        // correct the parish's records because of a setting that was
+        // never about them.
+        //
+        // What this does NOT do is make anybody a member. It admits one
+        // more document into the parish's queue, to be verified with
+        // the named coordinator; memberships are admin-write only, so
+        // a false claim here is a row a secretary rejects, not a badge.
+        && (
+          !(request.resource.data.itemId in closedApplications(myChurch()))
+          || request.resource.data.get('registrationType', '') == 'existing_member'
+        )
         // One open ministry application at a time. Sacraments are
         // unrestricted: a sacrament is not a membership, and somebody
         // arranging a baptism has no reason to be barred from asking

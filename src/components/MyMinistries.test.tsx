@@ -82,6 +82,18 @@ describe("MyMinistries", () => {
     expect(screen.queryByText("Altar Servers")).toBeNull();
   });
 
+  it("shows a long ministry name in full", async () => {
+    // "Social Communications Ministry" was coming out as "Social
+    // Communication…", which tells somebody they are a member of
+    // something they cannot read - and on a phone there is no hover
+    // and nothing to tap to recover it.
+    h.rows = [m({ ministryName: "Social Communications Ministry" })];
+    render(<MyMinistries />);
+
+    const name = await screen.findByText("Social Communications Ministry");
+    expect(name.className).not.toContain("truncate");
+  });
+
   it("renders nothing at all when signed out", () => {
     h.uid = null;
     const { container } = render(<MyMinistries />);

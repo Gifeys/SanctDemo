@@ -549,6 +549,28 @@ describe("a ministry or sacrament the parish has closed", () => {
     );
   });
 
+  it("still admits somebody who already serves in it", async () => {
+    // Closing a ministry is about not taking more people. A
+    // parishioner who has sung in that choir for years must still be
+    // able to tell the parish so, or a setting that was never about
+    // them locks them out of their own record.
+    await close(CHURCH_A, ["min-choir"]);
+    await assertSucceeds(setDoc(
+      doc(as(USER_A), "applications", "a9"),
+      { ...application("min-choir"), registrationType: "existing_member" },
+    ));
+  });
+
+  it("but a new applicant is still refused, with the field spelled out", async () => {
+    // The exception is exactly one value. Without this, the clause
+    // above would be a way around the closed list for everybody.
+    await close(CHURCH_A, ["min-choir"]);
+    await assertFails(setDoc(
+      doc(as(USER_A), "applications", "a10"),
+      { ...application("min-choir"), registrationType: "new_applicant" },
+    ));
+  });
+
   it("reopening lets applications through again", async () => {
     await close(CHURCH_A, ["min-choir"]);
     await assertFails(

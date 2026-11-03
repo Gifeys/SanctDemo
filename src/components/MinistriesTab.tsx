@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ParishSectionHeader from "./ParishSectionHeader";
 import { MINISTRY_IMAGES, ministriesForParish } from "../data";
 import { searchMinistries, suggestionsFor } from "../lib/ministrySearch";
-import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, Info, X, ArrowLeft, ChevronRight, Search } from "lucide-react";
+import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircle, AlertTriangle, Info, X, ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { Route } from "../types";
 import { type MinistryApplicationDoc } from "../lib/ministryApplication";
 import ApplicationForm from "./ApplicationForm";
@@ -151,6 +151,16 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// form underneath them would lose what they had typed.
   const [applyingAs, setApplyingAs] = useState<RegistrationType>("new_applicant");
 
+  /// The ministry somebody has tapped "Already a Server" on, before
+  /// they have confirmed it.
+  ///
+  /// Claiming a membership is a statement about yourself that the
+  /// parish will take to a coordinator, and the button sits beside
+  /// "Apply now" where a mis-tap is easy. Applying has no such step -
+  /// a four-page form is its own confirmation - so this guards only
+  /// the claim.
+  const [claiming, setClaiming] = useState<{ id: string; name: string } | null>(null);
+
   /// This pilgrim's approved memberships.
   ///
   /// Read here so a ministry they already belong to can say so instead
@@ -214,6 +224,19 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
+      {claiming && (
+        <ConfirmClaim
+          ministryName={claiming.name}
+          onCancel={() => setClaiming(null)}
+          onConfirm={() => {
+            setApplyingToId(claiming.id);
+            setApplyingAs("existing_member");
+            setIsSubmitted(false);
+            setClaiming(null);
+          }}
+        />
+      )}
+
       <ParishSectionHeader
         routeId={parish.id}
         eyebrow="Serve and Volunteer"
@@ -457,33 +480,46 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                               Apply now
                             </button>
                             <button
-                              onClick={() => {
-                                setApplyingToId(min.id);
-                                setApplyingAs("existing_member");
-                                setIsSubmitted(false);
-                              }}
+                              onClick={() => setClaiming({ id: min.id, name: min.name })}
                               className="py-1.5 px-3 bg-transparent border border-[var(--color-brand-border)] text-[var(--color-brand-text)] text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-card-sunk)] transition-colors"
                             >
-                              I already serve here
+                              Already a Server
                             </button>
                           </div>
                           <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
-                            Already serving in {min.name}? Use the second
-                            button and the parish will verify it with your
-                            coordinator.
+                            Already serving in {min.name}? Use
+                            <strong> Already a Server</strong> and the parish
+                            will verify it with your coordinator.
                           </p>
                         </div>
                       ) : (
+                        /* Closed, but only to new applicants.
+                           A parish that has stopped taking people into
+                           the choir has not stopped wanting to know who
+                           is already in it - and somebody who has sung
+                           there for ten years would otherwise be locked
+                           out of correcting the records by a setting
+                           that was never about them. */
                         <div className="space-y-1.5">
-                          <button
-                            type="button"
-                            disabled
-                            className="py-1.5 px-3 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] text-sm font-bold uppercase tracking-wider rounded-full cursor-not-allowed"
-                          >
-                            Not available
-                          </button>
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              type="button"
+                              disabled
+                              className="py-1.5 px-3 bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[var(--color-brand-secondary)] text-sm font-bold uppercase tracking-wider rounded-full cursor-not-allowed"
+                            >
+                              Not available
+                            </button>
+                            <button
+                              onClick={() => setClaiming({ id: min.id, name: min.name })}
+                              className="py-1.5 px-3 bg-transparent border border-[var(--color-brand-border)] text-[var(--color-brand-text)] text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-card-sunk)] transition-colors"
+                            >
+                              Already a Server
+                            </button>
+                          </div>
                           <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
-                            {closedMessage("ministry", min.name)}
+                            {closedMessage("ministry", min.name)} If you already
+                            serve in {min.name}, you can still tell the parish
+                            so — they will verify it with your coordinator.
                           </p>
                         </div>
                       )}
@@ -523,6 +559,73 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The step before claiming a membership.
+ *
+ * ## Why this one and not "Apply now"
+ *
+ * Applying is four pages; nobody completes it by accident. Claiming a
+ * membership is one tap on a button sitting beside Apply, and it is a
+ * statement about yourself that a parish secretary will carry to a
+ * coordinator. The cost of a mis-tap is somebody's time, so it gets a
+ * sentence and a second tap.
+ *
+ * ## Why it says what happens next
+ *
+ * A warning that only warns makes people hesitate without telling them
+ * what they are hesitating about. This one says who checks it, which
+ * is both the reassurance for the honest case and the deterrent for
+ * the careless one.
+ */
+function ConfirmClaim({ ministryName, onCancel, onConfirm }: {
+  ministryName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Confirm that you already serve in ${ministryName}`}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+    >
+      <div className="w-full max-w-[400px] rounded-[22px] bg-[var(--color-brand-card)] p-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-[var(--color-brand-gold-deep)]" />
+          <div className="min-w-0">
+            <h3 className="text-[18px] font-bold font-serif italic text-[var(--color-brand-text)]">
+              Do you already serve here?
+            </h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-brand-text)]">
+              This tells the parish you are already part of {ministryName}. They
+              will check it with the coordinator you name, so only continue if
+              you serve there now.
+            </p>
+            <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+              If you would like to join instead, go back and use Apply now.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-full border-[1.5px] border-[var(--color-brand-border)] py-3 text-[15px] font-bold text-[var(--color-brand-text)]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-full bg-[var(--color-brand-primary)] text-white py-3 text-[15px] font-bold"
+          >
+            Yes, I serve here
+          </button>
+        </div>
       </div>
     </div>
   );

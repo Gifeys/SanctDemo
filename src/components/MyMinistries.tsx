@@ -65,7 +65,15 @@ export default function MyMinistries() {
               key={m.itemId}
               className="flex items-center justify-between gap-2 bg-[var(--color-brand-card)] px-3 py-2.5 rounded-xl border border-[var(--color-brand-border)]"
             >
-              <span className="text-[15px] font-semibold text-[var(--color-brand-text)] truncate">
+              {/* Wraps rather than truncating.
+                  "Social Communications Ministry" came out as
+                  "Social Communication…", which tells somebody they
+                  are a member of something they cannot read. There is
+                  no hover on a phone and nothing to tap, so an
+                  ellipsis here hides the answer with no way back to
+                  it. A ministry name is three words; it can have two
+                  lines. */}
+              <span className="min-w-0 flex-1 text-[15px] font-semibold text-[var(--color-brand-text)] break-words">
                 {m.ministryName}
               </span>
               <span className="shrink-0 px-2.5 py-1 bg-[var(--color-brand-gold)] text-white text-[11px] font-bold uppercase tracking-wider rounded-full">
