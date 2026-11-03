@@ -1,3 +1,5 @@
+import type { RegistrationType } from "./lib/memberships";
+
 export interface Station {
   id: string;
   name: string;
@@ -189,6 +191,16 @@ export interface ApplicationDoc {
   itemId?: string;
   /** "Baptism", "Confirmation", or the ministry's name. */
   type: string;
+  /**
+   * Whether this is somebody asking to join, or somebody already
+   * serving who is telling the parish so the records catch up.
+   *
+   * Optional because applications written before this field existed do
+   * not carry one, and every one of those was a new applicant - so
+   * absence reads as "new_applicant" and nothing needs migrating. Read
+   * it through registrationTypeOf() rather than comparing it directly.
+   */
+  registrationType?: RegistrationType;
   status: ApplicationStatus;
   referenceNumber: string;
   formData?: Record<string, unknown>;

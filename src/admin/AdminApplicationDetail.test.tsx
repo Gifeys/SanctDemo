@@ -44,8 +44,23 @@ vi.mock("../lib/applications", async () => {
 import AdminApplicationDetail from "./AdminApplicationDetail";
 import type { AdminSession } from "./AdminApp";
 
-/** Who the decision must be addressed to, taken from the document itself. */
-const TELL = { uid: "userA", churchId: "route-mhcp", what: "Baptism" };
+/**
+ * Who the decision must be addressed to, and what it is about.
+ *
+ * All of it taken from the document itself. The last four carry the
+ * membership side of a decision - a sacrament grants nothing, but it
+ * still has to pass its own kind and itemId, because the alternative
+ * is the detail page deciding what counts as a ministry.
+ */
+const TELL = {
+  uid: "userA",
+  churchId: "route-mhcp",
+  what: "Baptism",
+  kind: "sacrament",
+  itemId: "sac-baptism",
+  registrationType: undefined,
+  ministryName: "Baptism",
+};
 
 const SESSION = {
   user: { uid: "adminA" },
@@ -59,6 +74,7 @@ const APP: ApplicationDoc = {
   applicantEmail: "juan@example.com",
   churchId: "route-mhcp",
   kind: "sacrament",
+  itemId: "sac-baptism",
   type: "Baptism",
   status: "pending",
   referenceNumber: "SAC-2026-ACDEFG",

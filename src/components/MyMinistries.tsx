@@ -1,0 +1,74 @@
+import { useEffect, useState } from "react";
+import { HeartHandshake } from "lucide-react";
+import { auth } from "../lib/firebase";
+import { watchMyMemberships } from "../lib/membershipStore";
+import { myMinistries, type MembershipDoc } from "../lib/memberships";
+
+/**
+ * What the pilgrim actually serves in.
+ *
+ * ## Why this is not a filter over My Applications
+ *
+ * An application is a request; a membership is a fact about now. They
+ * come apart: somebody applies twice over three years, is approved
+ * once, later leaves the ministry. Deriving this list from application
+ * statuses would put a badge on a request and keep it there after the
+ * parish had withdrawn it.
+ *
+ * ## Why approved memberships only
+ *
+ * A badge is a claim. A pending application belongs in My
+ * Applications, where it has a status next to it and is plainly still
+ * being decided - showing it here would read as "you are in", which is
+ * the one thing the parish asked this screen not to say.
+ */
+export default function MyMinistries() {
+  const uid = auth.currentUser?.uid ?? null;
+  const [rows, setRows] = useState<MembershipDoc[]>([]);
+
+  useEffect(() => {
+    if (!uid) { setRows([]); return; }
+    // Silent on failure. An empty card is the same shape as "you are
+    // not in a ministry yet", and an error box on the account screen
+    // over a card like this one is noise.
+    return watchMyMemberships(uid, setRows, () => setRows([]));
+  }, [uid]);
+
+  if (!uid) return null;
+  const mine = myMinistries(rows, uid);
+
+  return (
+    <div className="bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] space-y-3">
+      <div className="flex items-center gap-2">
+        <HeartHandshake className="w-5 h-5 text-[var(--color-brand-secondary)] shrink-0" />
+        <h3 className="text-[16px] font-semibold text-[var(--color-brand-text)]">My Ministries</h3>
+      </div>
+
+      {mine.length === 0 ? (
+        /* Says what to do, not just that there is nothing. An empty
+           card explaining its own emptiness is a dead end. */
+        <p className="text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+          You are not listed in a ministry yet. Apply from the Ministries tab —
+          or if you already serve in one, tell the parish there and they will
+          confirm it with your coordinator.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {mine.map(m => (
+            <li
+              key={m.itemId}
+              className="flex items-center justify-between gap-2 bg-[var(--color-brand-card)] px-3 py-2.5 rounded-xl border border-[var(--color-brand-border)]"
+            >
+              <span className="text-[15px] font-semibold text-[var(--color-brand-text)] truncate">
+                {m.ministryName}
+              </span>
+              <span className="shrink-0 px-2.5 py-1 bg-[var(--color-brand-gold)] text-white text-[11px] font-bold uppercase tracking-wider rounded-full">
+                Member
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

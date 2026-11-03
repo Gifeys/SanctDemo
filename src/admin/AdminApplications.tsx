@@ -13,6 +13,10 @@ import StatusBadge from "./StatusBadge";
 import AdminNav from "./AdminNav";
 import type { AdminSession } from "./AdminApp";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
+import {
+  registrationTypeOf, type MembershipDoc, type RegistrationType,
+} from "../lib/memberships";
+import { watchParishMemberships } from "../lib/membershipStore";
 
 /**
  * The parish's applications, as a table a parish secretary can work.
@@ -50,6 +54,19 @@ export default function AdminApplications({ session }: { session: AdminSession }
   const [apps, setApps] = useState<ApplicationDoc[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({ ...NO_FILTERS, kind: locked, scope: routeScope });
+
+  /// The parish's memberships, for the export's Member column.
+  ///
+  /// Starts as null, not an empty array, and the export leaves the
+  /// column blank for a null. A file taken a second after the page
+  /// opened would otherwise state that nobody in the parish is a
+  /// member of anything.
+  const [memberships, setMemberships] = useState<MembershipDoc[] | null>(null);
+  useEffect(() => {
+    const churchId = session.profile?.churchId;
+    if (!churchId) return;
+    return watchParishMemberships(churchId, setMemberships, () => setMemberships(null));
+  }, [session.profile?.churchId]);
   const [sortKey, setSortKey] = useState<SortKey>("submitted");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -168,6 +185,24 @@ export default function AdminApplications({ session }: { session: AdminSession }
               {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
             </Select>
 
+            {/* Only where it means something.
+                A sacrament has no membership to confirm, so on that
+                tab this control would be a filter with one possible
+                answer. */}
+            {locked !== "sacrament" && (
+              <Select
+                label="Applicant type"
+                value={filters.registrationType ?? ""}
+                onChange={v => setFilters(f => ({
+                  ...f, registrationType: (v || null) as RegistrationType | null,
+                }))}
+              >
+                <option value="">Everyone</option>
+                <option value="new_applicant">New applicants</option>
+                <option value="existing_member">Existing members</option>
+              </Select>
+            )}
+
             {/* Shown on every tab, not just the archive one: an admin
                 looking at Ministries needs the finished ones too, and
                 without this the only way to them was a different tab that
@@ -228,10 +263,10 @@ export default function AdminApplications({ session }: { session: AdminSession }
           <div className="ml-auto flex flex-wrap gap-2 print:hidden">
             <Action icon={<FileSpreadsheet className="w-4 h-4" />} label="Export Excel"
                     disabled={visible.length === 0}
-                    onClick={() => exportExcel(visible, filters)} />
+                    onClick={() => exportExcel(visible, filters, memberships)} />
             <Action icon={<Download className="w-4 h-4" />} label="Export CSV"
                     disabled={visible.length === 0}
-                    onClick={() => exportCsv(visible, filters)} />
+                    onClick={() => exportCsv(visible, filters, memberships)} />
             <Action icon={<Printer className="w-4 h-4" />} label="Print"
                     disabled={visible.length === 0}
                     onClick={() => window.print()} />
@@ -298,7 +333,20 @@ export default function AdminApplications({ session }: { session: AdminSession }
                       <span className="block font-semibold">{a.applicantName || "—"}</span>
                       <span className="block text-[13px] text-[var(--color-brand-secondary)]">{a.applicantEmail}</span>
                     </td>
-                    <td className="px-4 py-3">{a.type}</td>
+                    <td className="px-4 py-3">
+                      {a.type}
+                      {/* A chip under the name rather than a column of
+                          its own. A sixth column is a sixth thing to
+                          read on every row, and only some rows have
+                          anything to say here - the ones a secretary
+                          has to verify with a coordinator instead of
+                          deciding on. */}
+                      {registrationTypeOf(a.registrationType) === "existing_member" && (
+                        <span className="mt-1 block w-fit px-2 py-0.5 rounded-full bg-[var(--color-brand-card-sunk)] border border-[var(--color-brand-border)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-brand-secondary)]">
+                          Existing member
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">{shortDate(a.createdAt)}</td>
                     <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                   </tr>

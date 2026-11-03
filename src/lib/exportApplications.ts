@@ -2,6 +2,9 @@ import * as XLSX from "xlsx";
 import type { ApplicationDoc } from "../types";
 import { STATUS_LABEL } from "./applications";
 import { MONTHS, type Filters } from "./applicationFilters";
+import {
+  isMember, registrationTypeLabel, registrationTypeOf, type MembershipDoc,
+} from "./memberships";
 
 /**
  * Exporting the filtered list, for sending to a coordinator.
@@ -35,17 +38,58 @@ function field(app: ApplicationDoc, key: string): string {
 
 type Row = Record<string, string | number>;
 
-function ministryRows(apps: ApplicationDoc[]): Row[] {
+/**
+ * Whether this person is in this ministry, read from the memberships.
+ *
+ * NOT from the application's status, which is the whole point of the
+ * column. An application can be approved and the membership later
+ * withdrawn; a spreadsheet that reported status as membership would
+ * list somebody the parish had removed.
+ *
+ * Blank rather than "No" when there are no memberships to consult at
+ * all - an export taken before they loaded would otherwise state that
+ * nobody is a member of anything, which is a wrong answer dressed as a
+ * real one.
+ */
+function memberCell(
+  a: ApplicationDoc,
+  memberships: readonly MembershipDoc[] | null,
+): string {
+  if (!memberships) return "";
+  if (!a.itemId) return "";
+  return isMember(memberships, a.uid, a.itemId) ? "Yes" : "No";
+}
+
+function membershipOf(
+  a: ApplicationDoc,
+  memberships: readonly MembershipDoc[] | null,
+): MembershipDoc | undefined {
+  if (!memberships || !a.itemId) return undefined;
+  return memberships.find(m => m.uid === a.uid && m.itemId === a.itemId);
+}
+
+function ministryRows(
+  apps: ApplicationDoc[],
+  memberships: readonly MembershipDoc[] | null,
+): Row[] {
   return apps.map((a, i) => ({
     "No.": i + 1,
     "Reference": a.referenceNumber ?? "",
     "Applicant Name": a.applicantName ?? "",
     "Ministry": a.type ?? "",
+    "Application Type": registrationTypeLabel(registrationTypeOf(a.registrationType)),
     "Contact Number": field(a, "mobile"),
     "Email": a.applicantEmail ?? "",
+    // Only the existing-member form asks these two, so they are blank
+    // on a new applicant's row - which is the honest answer, not a
+    // gap. They are what the parish verifies the claim against.
+    "Coordinator": field(a, "coordinatorName"),
+    "Years of Service": field(a, "yearsOfService"),
     "Message": field(a, "message"),
     "Date Applied": dateOnly(a.createdAt),
     "Status": STATUS_LABEL[a.status] ?? a.status,
+    "Member": memberCell(a, memberships),
+    "Date Approved": dateOnly(membershipOf(a, memberships)?.approvedAt),
     "Last Updated": dateOnly(a.reviewedAt ?? a.updatedAt),
     "Parish Note": a.adminNote ?? "",
   }));
@@ -86,8 +130,19 @@ function mixedRows(apps: ApplicationDoc[]): Row[] {
   }));
 }
 
-export function rowsFor(apps: ApplicationDoc[], kind: Filters["kind"]): Row[] {
-  if (kind === "ministry") return ministryRows(apps);
+export function rowsFor(
+  apps: ApplicationDoc[],
+  kind: Filters["kind"],
+  /**
+   * The parish's memberships, for the Member column.
+   *
+   * Null by default, and a null means the column is left blank rather
+   * than guessed at. Only the ministry sheet uses it - a sacrament has
+   * no membership to report.
+   */
+  memberships: readonly MembershipDoc[] | null = null,
+): Row[] {
+  if (kind === "ministry") return ministryRows(apps, memberships);
   if (kind === "sacrament") return sacramentRows(apps);
   return mixedRows(apps);
 }
@@ -141,8 +196,12 @@ function download(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function exportExcel(apps: ApplicationDoc[], f: Filters): void {
-  const rows = rowsFor(apps, f.kind);
+export function exportExcel(
+  apps: ApplicationDoc[],
+  f: Filters,
+  memberships: readonly MembershipDoc[] | null = null,
+): void {
+  const rows = rowsFor(apps, f.kind, memberships);
   const sheet = XLSX.utils.json_to_sheet(rows);
 
   // Column widths from the content. Without these every column is the
@@ -197,8 +256,12 @@ export function csvSafeCell(value: string | number): string | number {
   if (typeof value !== "string") return value;
   return FORMULA_START.test(value) ? `'${value}` : value;
 }
-export function exportCsv(apps: ApplicationDoc[], f: Filters): void {
-  const rows = rowsFor(apps, f.kind).map(row => {
+export function exportCsv(
+  apps: ApplicationDoc[],
+  f: Filters,
+  memberships: readonly MembershipDoc[] | null = null,
+): void {
+  const rows = rowsFor(apps, f.kind, memberships).map(row => {
     const safe: Row = {};
     for (const [key, value] of Object.entries(row)) safe[key] = csvSafeCell(value);
     return safe;

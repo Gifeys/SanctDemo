@@ -9,6 +9,10 @@ import {
   APPLICATION_LOCKS, isRestricted, releasesLock, stillHoldsLock,
   type ApplicationLock,
 } from "./applicationLock";
+import {
+  grantsMembership, registrationTypeOf, revokesMembership, type RegistrationType,
+} from "./memberships";
+import { grantMembership, revokeMembership } from "./membershipStore";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
 
 /**
@@ -86,6 +90,13 @@ export interface SubmitInput {
   /** "Baptism", or the ministry's name. Shown in the parish's list. */
   type: string;
   applicantName: string;
+  /**
+   * Joining, or already serving.
+   *
+   * Defaults to a new applicant, so a caller that does not know about
+   * this cannot accidentally register somebody as an existing member.
+   */
+  registrationType?: RegistrationType;
   /** Everything the form asked that is not one of the fields above. */
   formData?: Record<string, unknown>;
 }
@@ -126,6 +137,7 @@ export async function submitApplication(input: SubmitInput): Promise<Application
     churchId: profile.churchId,
     kind: input.kind,
     type: input.type,
+    registrationType: registrationTypeOf(input.registrationType),
     status: "pending",
     referenceNumber: referenceFor(input.kind, now),
     formData: input.formData ?? {},
@@ -246,7 +258,21 @@ export async function setApplicationStatus(
    * caller is already holding the document, and a second read would be a
    * second chance for the two to disagree.
    */
-  applicant?: { uid: string; churchId: string; what: string },
+  applicant?: {
+    uid: string;
+    churchId: string;
+    what: string;
+    /**
+     * What the decision is about, for the membership side of it. All
+     * optional: a caller that passes none of it still records the
+     * decision and still notifies, it simply grants nothing - so an
+     * older call site cannot be made wrong by this parameter growing.
+     */
+    kind?: string;
+    itemId?: string;
+    registrationType?: RegistrationType;
+    ministryName?: string;
+  },
 ): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new SubmitError("You are not signed in.");
@@ -274,6 +300,37 @@ export async function setApplicationStatus(
     } catch {
       // The applicant's own next submission clears it. Nothing here
       // is worth failing a recorded decision over.
+    }
+  }
+
+  // Approving a ministry application is what makes somebody a member;
+  // reversing that approval is what takes it back.
+  //
+  // After the decision and outside its failure path, like the lock
+  // above. The decision is the record the parish relies on, and a
+  // membership row that failed to write is visible and fixable - the
+  // admin presses Approve again, and the deterministic id means the
+  // retry writes the same row rather than a second one.
+  if (applicant?.kind && applicant.itemId) {
+    const { kind, itemId } = applicant;
+    try {
+      if (grantsMembership(kind, status)) {
+        await grantMembership({
+          uid: applicant.uid,
+          churchId: applicant.churchId,
+          itemId,
+          ministryName: applicant.ministryName || applicant.what,
+          registrationType: registrationTypeOf(applicant.registrationType),
+          applicationId,
+        });
+      } else if (revokesMembership(kind, status)) {
+        // Only this ministry's membership. Somebody serving in three
+        // who is rejected from a fourth keeps the other three.
+        await revokeMembership(applicant.uid, itemId);
+      }
+    } catch {
+      // Never fatal, for the same reason as the lock: a recorded
+      // decision must not be lost to the bookkeeping that follows it.
     }
   }
 

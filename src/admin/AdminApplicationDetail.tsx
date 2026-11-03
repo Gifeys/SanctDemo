@@ -7,6 +7,7 @@ import { setApplicationStatus, STATUS_LABEL, isClosed } from "../lib/application
 import StatusBadge from "./StatusBadge";
 import type { AdminSession } from "./AdminApp";
 import type { ApplicationDoc, ApplicationStatus } from "../types";
+import { registrationTypeLabel, registrationTypeOf } from "../lib/memberships";
 
 /**
  * One application, and the decision on it.
@@ -59,6 +60,14 @@ export default function AdminApplicationDetail({ session }: { session: AdminSess
         uid: current.uid,
         churchId: current.churchId,
         what: current.type,
+        // What the decision means for membership. Approving a ministry
+        // application is what puts somebody in the ministry; reversing
+        // that approval is what takes it back. itemId is what keeps it
+        // to THIS ministry and off their others.
+        kind: current.kind,
+        itemId: current.itemId,
+        registrationType: current.registrationType,
+        ministryName: current.type,
       });
       setNote("");
       setConfirming(null);
@@ -114,6 +123,17 @@ export default function AdminApplicationDetail({ session }: { session: AdminSess
         <Row label="Email" value={app.applicantEmail} />
         <Row label="Parish" value={session.church?.name ?? app.churchId} />
         <Row label="Submitted" value={formatWhen(app.createdAt)} />
+        {/* Shown for ministries only, and always - including "New
+            applicant". Printing it only for existing members would
+            leave a secretary unsure whether a row without it was a new
+            applicant or an older application from before this was
+            recorded. */}
+        {app.kind === "ministry" && (
+          <Row
+            label="Applicant type"
+            value={registrationTypeLabel(registrationTypeOf(app.registrationType))}
+          />
+        )}
       </Section>
 
       {app.formData && Object.keys(app.formData).length > 0 && (

@@ -4090,6 +4090,19 @@ h1, h2, h3, h4, h5, h6, .font-heading, .font-primary, .font-montserrat {
   color: var(--color-brand-secondary);
 }
 
+/* The already-a-member note. Gold rather than red: it tells somebody
+   what they already have, it is not a problem with what they typed. */
+.apply-step__notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-brand-gold);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-brand-gold) 12%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-brand-text);
+}
+
 .apply-label {
   display: block;
   margin-bottom: 4px;

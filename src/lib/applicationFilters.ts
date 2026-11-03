@@ -1,4 +1,5 @@
 import type { ApplicationDoc, ApplicationStatus } from "../types";
+import { registrationTypeOf, type RegistrationType } from "./memberships";
 
 /**
  * Filtering and sorting the parish's applications.
@@ -51,6 +52,14 @@ export interface Filters {
   kind: "ministry" | "sacrament" | null;
   /** The exact ministry or sacrament name, or null for all of them. */
   type: string | null;
+  /**
+   * New applicants, existing members, or null for both.
+   *
+   * The two are different work: one is a decision about whether to let
+   * somebody in, the other is checking a claim with a coordinator. A
+   * secretary working through one does not want the other interleaved.
+   */
+  registrationType: RegistrationType | null;
   status: ApplicationStatus | null;
   /** ISO dates, inclusive. Independent of month/year. */
   from: string | null;
@@ -66,7 +75,7 @@ export interface Filters {
  */
 export const NO_FILTERS: Filters = {
   scope: "open",
-  month: null, year: null, kind: null, type: null,
+  month: null, year: null, kind: null, type: null, registrationType: null,
   status: null, from: null, to: null, search: "",
 };
 
@@ -100,6 +109,12 @@ export function applyFilters(apps: ApplicationDoc[], f: Filters): ApplicationDoc
   return apps.filter(app => {
     if (f.kind && app.kind !== f.kind) return false;
     if (f.type && app.type !== f.type) return false;
+    // Through registrationTypeOf, so an application written before the
+    // field existed counts as the new applicant it was, rather than
+    // vanishing from both views.
+    if (f.registrationType && registrationTypeOf(app.registrationType) !== f.registrationType) {
+      return false;
+    }
     if (f.status && app.status !== f.status) return false;
 
     // Scope yields to an explicit status. Asking for "Completed" while the
@@ -217,6 +232,7 @@ export function activeFilterCount(f: Filters): number {
   if (f.year !== null) n++;
   if (f.kind) n++;
   if (f.type) n++;
+  if (f.registrationType) n++;
   if (f.status) n++;
   if (f.from) n++;
   if (f.to) n++;

@@ -240,3 +240,120 @@ describe("CSV formula injection", () => {
     expect(csvSafeCell(hostile["Applicant Name"] as string)).toMatch(/^'=/);
   });
 });
+
+describe("separating new applicants from existing members", () => {
+  const MIXED: ApplicationDoc[] = [
+    app({ referenceNumber: "NEW", registrationType: "new_applicant" }),
+    app({ referenceNumber: "MEMBER", registrationType: "existing_member" }),
+    app({ referenceNumber: "OLD" }),
+  ];
+
+  it("shows everyone when no type is chosen", () => {
+    expect(applyFilters(MIXED, f({})).map(a => a.referenceNumber))
+      .toEqual(["NEW", "MEMBER", "OLD"]);
+  });
+
+  it("gives the secretary one queue at a time", () => {
+    expect(applyFilters(MIXED, f({ registrationType: "existing_member" }))
+      .map(a => a.referenceNumber)).toEqual(["MEMBER"]);
+  });
+
+  it("files an application written before this field as the new applicant it was", () => {
+    // Not into limbo. Without this, every application already in the
+    // parish's collection would vanish from both queues.
+    expect(applyFilters(MIXED, f({ registrationType: "new_applicant" }))
+      .map(a => a.referenceNumber)).toEqual(["NEW", "OLD"]);
+  });
+
+  it("counts as an active filter, so Clear filters offers itself", () => {
+    expect(activeFilterCount(f({ registrationType: "existing_member" }))).toBe(1);
+    expect(activeFilterCount(f({}))).toBe(0);
+  });
+});
+
+describe("the ministry export's membership columns", () => {
+  const APPLIED = app({ uid: "u1", itemId: "min-lectors", type: "Lectors", status: "approved" });
+
+  const membership = {
+    uid: "u1",
+    churchId: "route-mhcp",
+    itemId: "min-lectors",
+    ministryName: "Lectors",
+    registrationType: "new_applicant" as const,
+    applicationId: "app-1",
+    approvedAt: "2026-09-21T02:00:00.000Z",
+    approvedBy: "adminA",
+  };
+
+  it("reads Member from the memberships, not from the status", () => {
+    // The column the parish asked for. An approved application whose
+    // membership was later withdrawn must read No - reporting the
+    // status here would list somebody the parish had removed.
+    const row = rowsFor([APPLIED], "ministry", [])[0]!;
+    expect(row["Status"]).toBe("Approved");
+    expect(row["Member"]).toBe("No");
+  });
+
+  it("says Yes, and when, for somebody who is in the ministry", () => {
+    const row = rowsFor([APPLIED], "ministry", [membership])[0]!;
+    expect(row["Member"]).toBe("Yes");
+    expect(row["Date Approved"]).toBe("2026-09-21");
+  });
+
+  it("does not count a membership in a different ministry", () => {
+    const row = rowsFor([APPLIED], "ministry", [{ ...membership, itemId: "min-choir" }])[0]!;
+    expect(row["Member"]).toBe("No");
+  });
+
+  it("does not count somebody else's membership", () => {
+    const row = rowsFor([APPLIED], "ministry", [{ ...membership, uid: "u2" }])[0]!;
+    expect(row["Member"]).toBe("No");
+  });
+
+  it("leaves Member blank rather than guessing when it has nothing to consult", () => {
+    // An export taken before the memberships loaded would otherwise
+    // state that nobody in the parish serves in anything - a wrong
+    // answer dressed as a real one.
+    const row = rowsFor([APPLIED], "ministry")[0]!;
+    expect(row["Member"]).toBe("");
+    expect(row["Date Approved"]).toBe("");
+  });
+
+  it("names the application type on every ministry row", () => {
+    const rows = rowsFor(
+      [APPLIED, app({ uid: "u2", itemId: "min-choir", registrationType: "existing_member" })],
+      "ministry",
+      [],
+    );
+    expect(rows[0]!["Application Type"]).toBe("New Applicant");
+    expect(rows[1]!["Application Type"]).toBe("Existing Member");
+  });
+
+  it("carries the coordinator and length of service an existing member gave", () => {
+    const row = rowsFor([app({
+      itemId: "min-lectors",
+      registrationType: "existing_member",
+      formData: { coordinatorName: "Mrs Reyes", yearsOfService: "3 years" },
+    })], "ministry", [])[0]!;
+    expect(row["Coordinator"]).toBe("Mrs Reyes");
+    expect(row["Years of Service"]).toBe("3 years");
+  });
+
+  it("keeps the columns the parish already reads", () => {
+    // The guard against a new column quietly replacing an old one.
+    const row = rowsFor([APPLIED], "ministry", [])[0]!;
+    for (const column of [
+      "No.", "Reference", "Applicant Name", "Ministry", "Contact Number",
+      "Email", "Message", "Date Applied", "Status", "Last Updated", "Parish Note",
+    ]) {
+      expect(Object.keys(row)).toContain(column);
+    }
+  });
+
+  it("adds nothing about membership to the sacrament sheet", () => {
+    // A sacrament is an event, not something you belong to.
+    const row = rowsFor([app({ kind: "sacrament", type: "Holy Baptism" })], "sacrament")[0]!;
+    expect(Object.keys(row)).not.toContain("Member");
+    expect(Object.keys(row)).not.toContain("Application Type");
+  });
+});

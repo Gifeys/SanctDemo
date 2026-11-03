@@ -183,6 +183,15 @@ service cloud.firestore {
         // and sail through.
         && request.resource.data.itemId is string
         && request.resource.data.itemId != ''
+        // Joining, or already serving. Absent is allowed and reads as
+        // a new applicant, so applications written before this field
+        // existed are still valid documents; anything other than the
+        // two known strings is refused rather than stored and later
+        // misread.
+        && (
+          !('registrationType' in request.resource.data)
+          || request.resource.data.registrationType in ['new_applicant', 'existing_member']
+        )
         // Closed means closed. The app greys out the button, but the button
         // is not the control - anyone can POST here with curl, and a parish
         // that has shut applications for the choir has shut them.
@@ -271,6 +280,58 @@ service cloud.firestore {
             )
           )
         );
+    }
+
+    /**
+     * Who actually belongs to a ministry.
+     *
+     * ## Why only an admin may write one
+     *
+     * A membership is the parish's statement that somebody serves in a
+     * ministry. If a pilgrim could write one, the badge in the app and
+     * the Member column in the parish's spreadsheet would mean nothing
+     * - anybody could declare themselves a lector. Submitting the
+     * application is the pilgrim's part; this is the parish's.
+     *
+     * ## Why the id is checked against its own contents
+     *
+     * The id is uid + '__' + itemId, and the rule recomputes it from
+     * the document's own fields. That is what makes duplicates
+     * impossible: there is exactly one id a given membership may be
+     * written to, so approving twice overwrites rather than adding,
+     * and no admin can file one person's membership under another
+     * person's key.
+     *
+     * ## Why delete is allowed
+     *
+     * Revoking a membership has to be possible, or a mistake is
+     * permanent. It takes only the membership: the application keeps
+     * its history, which is the audit trail of what was decided and
+     * when. And because the key names the ministry as well as the
+     * person, removing one cannot reach that person's others.
+     */
+    match /memberships/{membershipId} {
+      // The owner reads their own, for My Ministries. The parish reads
+      // its own parish's, for the roster and the export.
+      allow read: if isSignedIn()
+        && (request.auth.uid == resource.data.get('uid', '')
+            || isAdminOf(resource.data.get('churchId', noChurch()))
+            || isSuperAdmin());
+
+      allow create, update: if isSignedIn()
+        && isAdminOf(request.resource.data.get('churchId', noChurch()))
+        && membershipId == request.resource.data.uid + '__' + request.resource.data.itemId
+        && request.resource.data.uid is string
+        && request.resource.data.uid != ''
+        && request.resource.data.itemId is string
+        && request.resource.data.itemId != ''
+        && request.resource.data.registrationType in ['new_applicant', 'existing_member']
+        && request.resource.data.approvedBy == request.auth.uid
+        && request.resource.data.keys().hasOnly(
+             ['uid', 'churchId', 'itemId', 'ministryName', 'registrationType',
+              'applicationId', 'approvedAt', 'approvedBy']);
+
+      allow delete: if isAdminOf(resource.data.get('churchId', noChurch()));
     }
 
     match /applications/{applicationId} {

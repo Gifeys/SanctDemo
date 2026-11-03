@@ -5,6 +5,7 @@ import {
   type Answers, type Field, type Step,
 } from "../lib/applicationForm";
 import { submitApplication, SubmitError } from "../lib/applications";
+import type { RegistrationType } from "../lib/memberships";
 
 /**
  * Applying, on a screen of its own.
@@ -32,6 +33,8 @@ export default function ApplicationForm({
   itemId,
   itemName,
   parishName,
+  registrationType = "new_applicant",
+  notice,
   defaults,
   onClose,
   onSubmitted,
@@ -40,6 +43,13 @@ export default function ApplicationForm({
   itemId: string;
   itemName: string;
   parishName: string;
+  /**
+   * Which ministry form to ask. Ignored for sacraments, which have no
+   * membership to confirm.
+   */
+  registrationType?: RegistrationType;
+  /** Shown above the first step. For the already-a-member warning. */
+  notice?: string | null;
   /** From the signed-in account, so nobody retypes what the app knows. */
   defaults?: { fullName?: string; email?: string; mobile?: string };
   onClose: () => void;
@@ -47,8 +57,10 @@ export default function ApplicationForm({
   onSubmitted?: () => void;
 }) {
   const steps = useMemo(
-    () => (kind === "ministry" ? ministrySteps(itemId, itemName) : sacramentSteps(itemName)),
-    [kind, itemId, itemName],
+    () => (kind === "ministry"
+      ? ministrySteps(itemId, itemName, registrationType)
+      : sacramentSteps(itemName)),
+    [kind, itemId, itemName, registrationType],
   );
 
   const [index, setIndex] = useState(0);
@@ -95,6 +107,7 @@ export default function ApplicationForm({
         itemId,
         type: itemName,
         applicantName: String(answers.fullName ?? "").trim(),
+        registrationType: kind === "ministry" ? registrationType : undefined,
         formData: {
           ...toFormData(steps, answers),
           // Kept alongside the answers, as the old forms did, so the
@@ -167,6 +180,12 @@ export default function ApplicationForm({
           <>
             <h2 className="apply-step__title">{step!.title}</h2>
             {step!.blurb && <p className="apply-step__blurb">{step!.blurb}</p>}
+            {/* Only on the first step: by step three it is no longer
+                news, and repeating it reads as a warning about
+                something on the step it is sitting on. */}
+            {notice && index === 0 && (
+              <p className="apply-step__notice" role="status">{notice}</p>
+            )}
 
             <div className="mt-4 space-y-5">
               {step!.fields.map(field => (

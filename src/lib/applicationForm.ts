@@ -24,6 +24,8 @@
  * the parish put them.
  */
 
+import type { RegistrationType } from "./memberships";
+
 export type FieldKind = "text" | "tel" | "email" | "date" | "textarea" | "choices" | "confirm";
 
 export interface Field {
@@ -76,7 +78,18 @@ function personalStep(kind: "ministry" | "sacrament"): Step {
       },
       { name: "mobile", label: "Contact number", kind: "tel", required: true, placeholder: "09XX XXX XXXX" },
       { name: "address", label: "Address", kind: "text", required: false, maxLength: 120 },
-      { name: "birthDate", label: "Date of birth", kind: "date", required: false },
+      // Date of birth is a sacrament question only.
+      //
+      // The office genuinely needs it there - a baptism or a wedding
+      // record carries it, and the canonical requirements depend on
+      // age. A ministry coordinator needs a name and a phone number,
+      // so asking the rest was collecting something nobody read.
+      //
+      // One conditional rather than two personalStep variants, so the
+      // two forms cannot drift apart in the fields they share.
+      ...(kind === "sacrament"
+        ? [{ name: "birthDate", label: "Date of birth", kind: "date" as FieldKind, required: false }]
+        : []),
     ],
   };
 }
@@ -172,7 +185,71 @@ function ministrySpecific(ministryId: string, ministryName: string): Field[] {
   return [];
 }
 
-export function ministrySteps(ministryId: string, ministryName: string): Step[] {
+/**
+ * The form for somebody who already serves in the ministry.
+ *
+ * Deliberately short. They are not asking to be let in - they are
+ * telling the parish they are already there so the records catch up,
+ * and a four-step form for that is a reason not to bother. The fields
+ * are the ones the parish asked for and nothing else: no availability,
+ * no emergency contact, no motivation letter, no date of birth.
+ *
+ * Date applied is not a field. It is the application's createdAt,
+ * which the submit path already sets and which nobody can mistype.
+ */
+export function existingMemberSteps(ministryName: string): Step[] {
+  return [
+    {
+      title: "Confirm your membership",
+      blurb: `So the parish records show you as part of ${ministryName}.`,
+      fields: [
+        {
+          name: "fullName",
+          label: "Full name",
+          kind: "text",
+          required: true,
+          help: "As it should appear on parish records.",
+          maxLength: 80,
+        },
+        { name: "mobile", label: "Contact number", kind: "tel", required: true, placeholder: "09XX XXX XXXX" },
+        {
+          name: "coordinatorName",
+          label: "Coordinator's name",
+          kind: "text",
+          required: true,
+          help: "Whoever leads the ministry — the parish will confirm with them.",
+          maxLength: 80,
+        },
+        {
+          name: "yearsOfService",
+          label: "How long have you been serving?",
+          kind: "text",
+          required: true,
+          placeholder: "2 years, since 2019…",
+          maxLength: 40,
+        },
+      ],
+    },
+    {
+      title: "Before you send it",
+      fields: [
+        {
+          name: "consent",
+          label: "The parish may keep these details and contact me about this ministry.",
+          kind: "confirm",
+          required: true,
+        },
+      ],
+    },
+  ];
+}
+
+export function ministrySteps(
+  ministryId: string,
+  ministryName: string,
+  registrationType: RegistrationType = "new_applicant",
+): Step[] {
+  if (registrationType === "existing_member") return existingMemberSteps(ministryName);
   return [
     personalStep("ministry"),
     {

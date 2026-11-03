@@ -1027,3 +1027,165 @@ describe("the ministry application lock", () => {
     await assertSucceeds(deleteDoc(doc(as(USER_A), "applicationLocks", USER_A)));
   });
 });
+
+/**
+ * Who belongs to a ministry.
+ *
+ * The assertions that matter are the ones about a pilgrim writing
+ * their own membership and about the id, because those are where the
+ * badge stops meaning anything: if anyone could write one, "Member"
+ * in the app and in the parish's spreadsheet would be self-declared.
+ */
+describe("ministry memberships", () => {
+  const ID_A = `${USER_A}__min-lectors`;
+
+  const membership = (over: Record<string, unknown> = {}) => ({
+    uid: USER_A,
+    churchId: CHURCH_A,
+    itemId: "min-lectors",
+    ministryName: "Lectors and Commentators",
+    registrationType: "new_applicant",
+    applicationId: "appA",
+    approvedAt: new Date().toISOString(),
+    approvedBy: ADMIN_A,
+    ...over,
+  });
+
+  it("the parish admin records one", async () => {
+    await assertSucceeds(setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership()));
+  });
+
+  it("a pilgrim CANNOT make themselves a member", async () => {
+    // The whole point. Submitting the application is their part; this
+    // is the parish's statement that they serve.
+    await assertFails(setDoc(doc(as(USER_A), "memberships", ID_A), membership()));
+  });
+
+  it("CANNOT be written to an id that does not match its contents", async () => {
+    // The id is recomputed from uid and itemId, so there is exactly
+    // one key a membership may occupy. This is what makes approving
+    // twice overwrite rather than duplicate.
+    await assertFails(
+      setDoc(doc(as(ADMIN_A), "memberships", `${USER_A}__min-choir`), membership()),
+    );
+    await assertFails(
+      setDoc(doc(as(ADMIN_A), "memberships", "anything-at-all"), membership()),
+    );
+  });
+
+  it("CANNOT be filed under another person's key", async () => {
+    await assertFails(
+      setDoc(doc(as(ADMIN_A), "memberships", `${USER_B}__min-lectors`), membership()),
+    );
+  });
+
+  it("another parish's admin CANNOT grant one here", async () => {
+    await assertFails(setDoc(doc(as(ADMIN_B), "memberships", ID_A), membership()));
+    await assertFails(
+      setDoc(doc(as(ADMIN_B), "memberships", ID_A), membership({ churchId: CHURCH_B })),
+    );
+  });
+
+  it("refuses a field nobody asked for", async () => {
+    await assertFails(setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership({ bypass: true })));
+  });
+
+  it("refuses an unknown registration type", async () => {
+    // Anything but the two known strings. A stored typo would be read
+    // by the app as a new applicant and reported as fact.
+    await assertFails(
+      setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership({ registrationType: "member" })),
+    );
+  });
+
+  it("refuses an admin signing somebody else's name to the approval", async () => {
+    await assertFails(
+      setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership({ approvedBy: ADMIN_B })),
+    );
+  });
+
+  it("the member reads their own, for My Ministries", async () => {
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertSucceeds(getDoc(doc(as(USER_A), "memberships", ID_A)));
+  });
+
+  it("another pilgrim CANNOT read it", async () => {
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertFails(getDoc(doc(as(USER_B), "memberships", ID_A)));
+  });
+
+  it("another parish's admin CANNOT read it", async () => {
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertFails(getDoc(doc(as(ADMIN_B), "memberships", ID_A)));
+  });
+
+  it("the parish revokes one", async () => {
+    // Revocation has to be possible, or a mistake is permanent.
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertSucceeds(deleteDoc(doc(as(ADMIN_A), "memberships", ID_A)));
+  });
+
+  it("the member CANNOT revoke their own", async () => {
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertFails(deleteDoc(doc(as(USER_A), "memberships", ID_A)));
+  });
+
+  it("another parish CANNOT revoke it", async () => {
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await assertFails(deleteDoc(doc(as(ADMIN_B), "memberships", ID_A)));
+  });
+
+  it("revoking one leaves that person's other ministries alone", async () => {
+    // The parish's requirement, and it holds because of the key: one
+    // delete names one ministry and cannot reach another.
+    const choir = `${USER_A}__min-choir`;
+    await setDoc(doc(as(ADMIN_A), "memberships", ID_A), membership());
+    await setDoc(
+      doc(as(ADMIN_A), "memberships", choir),
+      membership({ itemId: "min-choir", ministryName: "Choir" }),
+    );
+
+    await assertSucceeds(deleteDoc(doc(as(ADMIN_A), "memberships", ID_A)));
+    await assertSucceeds(getDoc(doc(as(ADMIN_A), "memberships", choir)));
+  });
+});
+
+/** The field that says which form somebody filled in. */
+describe("an application's registration type", () => {
+  const application = (over: Record<string, unknown> = {}) => ({
+    uid: USER_A,
+    churchId: CHURCH_A,
+    kind: "ministry",
+    itemId: "min-lectors",
+    type: "Lectors",
+    status: "pending",
+    applicantName: "A",
+    applicantEmail: "a@example.com",
+    referenceNumber: "MIN-2026-AAAAAA",
+    createdAt: new Date().toISOString(),
+    ...over,
+  });
+
+  it("accepts both known types", async () => {
+    await assertSucceeds(addDoc(collection(as(USER_A), "applications"),
+      application({ registrationType: "new_applicant" })));
+    // A second ministry application needs the lock cleared; this one
+    // is about the field, so it goes in as a sacrament.
+    await assertSucceeds(addDoc(collection(as(USER_A), "applications"),
+      application({ kind: "sacrament", itemId: "sac-baptism", registrationType: "existing_member" })));
+  });
+
+  it("accepts an application with no type at all", async () => {
+    // Applications written before this field existed do not carry
+    // one, and absence reads as the new applicant it was. This is
+    // what makes the feature need no migration.
+    await assertSucceeds(addDoc(collection(as(USER_A), "applications"), application()));
+  });
+
+  it("refuses an unknown type", async () => {
+    await assertFails(addDoc(collection(as(USER_A), "applications"),
+      application({ registrationType: "existing-member" })));
+    await assertFails(addDoc(collection(as(USER_A), "applications"),
+      application({ registrationType: true })));
+  });
+});

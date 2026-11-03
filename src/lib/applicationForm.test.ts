@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  ministrySteps, sacramentSteps, validateStep, toFormData, reviewRows,
+  ministrySteps, sacramentSteps, existingMemberSteps, validateStep, toFormData, reviewRows,
   isPlausiblePhone, type Answers,
 } from "./applicationForm";
 
@@ -156,5 +156,73 @@ describe("what gets written to the application", () => {
     expect(labels.some(l => /may keep these details/i.test(l))).toBe(false);
     // Blank optional answers are left out, not shown as a dash.
     expect(labels).not.toContain("Address");
+  });
+});
+
+describe("date of birth", () => {
+  function fieldNames(steps: ReturnType<typeof ministrySteps>) {
+    return steps.flatMap(s => s.fields.map(f => f.name));
+  }
+
+  it("is not asked on a ministry application", () => {
+    // The coordinator needs a name and a number. Asking for a birth
+    // date was collecting something nobody read.
+    expect(fieldNames(ministrySteps("min-lectors", "Lectors"))).not.toContain("birthDate");
+  });
+
+  it("is not asked of an existing member either", () => {
+    expect(fieldNames(existingMemberSteps("Lectors"))).not.toContain("birthDate");
+  });
+
+  it("is still asked on a sacrament application", () => {
+    // The office needs it: the record carries it and the canonical
+    // requirements depend on age. Removing it there would break a
+    // working form.
+    expect(fieldNames(sacramentSteps("Holy Baptism"))).toContain("birthDate");
+  });
+
+  it("leaves the rest of the ministry details intact", () => {
+    // The guard against deleting the field by deleting the step.
+    const names = fieldNames(ministrySteps("min-lectors", "Lectors"));
+    expect(names).toContain("fullName");
+    expect(names).toContain("mobile");
+    expect(names).toContain("address");
+  });
+});
+
+describe("existing member form", () => {
+  it("asks only what the parish asked for", () => {
+    const names = existingMemberSteps("Lectors").flatMap(s => s.fields.map(f => f.name));
+    expect(names).toEqual([
+      "fullName", "mobile", "coordinatorName", "yearsOfService", "consent",
+    ]);
+  });
+
+  it("does not put a new applicant through the long form", () => {
+    // Two steps against four. Somebody already serving is correcting
+    // the records, not applying.
+    expect(existingMemberSteps("Lectors")).toHaveLength(2);
+  });
+
+  it("is what ministrySteps returns for an existing member", () => {
+    const steps = ministrySteps("min-lectors", "Lectors", "existing_member");
+    expect(steps).toHaveLength(2);
+    expect(steps[0].title).toBe("Confirm your membership");
+  });
+
+  it("gives a new applicant the full form, including by default", () => {
+    // The default matters: the one existing caller passes nothing.
+    expect(ministrySteps("min-lectors", "Lectors", "new_applicant")).toHaveLength(4);
+    expect(ministrySteps("min-lectors", "Lectors")).toHaveLength(4);
+  });
+
+  it("still requires a coordinator and a length of service", () => {
+    // The two fields that let the parish verify the claim. Without
+    // them anyone could declare themselves a member.
+    const [step] = existingMemberSteps("Lectors");
+    for (const name of ["coordinatorName", "yearsOfService"]) {
+      expect(step.fields.find(f => f.name === name)!.required).toBe(true);
+    }
+    expect(validateStep(step, { fullName: "A", mobile: "09171234567" })).toHaveProperty("coordinatorName");
   });
 });

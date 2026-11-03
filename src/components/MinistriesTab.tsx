@@ -6,6 +6,10 @@ import { Users, ChevronDown, ChevronUp, Check, CheckCircle, Sparkles, AlertCircl
 import { Route } from "../types";
 import { type MinistryApplicationDoc } from "../lib/ministryApplication";
 import ApplicationForm from "./ApplicationForm";
+import { watchMyMemberships } from "../lib/membershipStore";
+import {
+  alreadyMemberWarning, isMember, type MembershipDoc, type RegistrationType,
+} from "../lib/memberships";
 import SignInFirst from "./SignInFirst";
 import ItemDetailSections from "./ItemDetailSections";
 import { resolveMinistry } from "../lib/itemContent";
@@ -139,6 +143,27 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// without burying the thing you were reading.
   const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
+  /// Joining, or confirming a membership they already have.
+  ///
+  /// Two buttons rather than a question inside the form, because the
+  /// answer changes which form it is - somebody already serving gets
+  /// five fields, not four steps. Asking first and then rebuilding the
+  /// form underneath them would lose what they had typed.
+  const [applyingAs, setApplyingAs] = useState<RegistrationType>("new_applicant");
+
+  /// This pilgrim's approved memberships.
+  ///
+  /// Read here so a ministry they already belong to can say so instead
+  /// of offering to let them join it again.
+  const [memberships, setMemberships] = useState<MembershipDoc[]>([]);
+  useEffect(() => {
+    if (!uid) { setMemberships([]); return; }
+    // Failures are silent on purpose: not knowing about a membership
+    // costs a badge, and the submit path still enforces the rules. A
+    // red box on the ministries list over it would be worse.
+    return watchMyMemberships(uid, setMemberships, () => setMemberships([]));
+  }, [uid]);
+
   /// What the pilgrim last sent, so the list can say so when they come
   /// back out of the application screen.
   const [submittedMinistry, setSubmittedMinistry] = useState<string>("");
@@ -169,6 +194,8 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
         itemId={applyingTo.id}
         itemName={applyingTo.name}
         parishName={parishName}
+        registrationType={applyingAs}
+        notice={uid ? alreadyMemberWarning(memberships, uid, applyingTo.id) : null}
         defaults={{ email: userEmail }}
         onClose={() => setApplyingToId(null)}
         onSubmitted={() => {
@@ -397,16 +424,55 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                             {blockedMessage(openMinistryApplication.type)}
                           </p>
                         </div>
+                      ) : uid && isMember(memberships, uid, min.id) ? (
+                        /* Already in this one. Offering to let them
+                           join it again would invite a duplicate
+                           application the parish then has to decide
+                           on. */
+                        <div className="space-y-1.5">
+                          <span className="inline-block py-1.5 px-3 bg-[var(--color-brand-gold)] text-white text-sm font-bold uppercase tracking-wider rounded-full">
+                            Member
+                          </span>
+                          <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
+                            The parish records you as serving in {min.name}.
+                          </p>
+                        </div>
                       ) : isOpenForApplications(managed, min.id) ? (
-                        <button
-                          onClick={() => {
-                            setApplyingToId(min.id);
-                            setIsSubmitted(false);
-                          }}
-                          className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
-                        >
-                          Apply now
-                        </button>
+                        /* Two doors.
+                           Somebody already serving is not applying -
+                           they are telling the parish the records are
+                           behind, and putting them through a
+                           motivation letter and an availability grid
+                           to do it is how a record stays wrong. */
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              onClick={() => {
+                                setApplyingToId(min.id);
+                                setApplyingAs("new_applicant");
+                                setIsSubmitted(false);
+                              }}
+                              className="py-1.5 px-3 bg-[var(--color-brand-primary)] text-white text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-primary-dark)] transition-colors"
+                            >
+                              Apply now
+                            </button>
+                            <button
+                              onClick={() => {
+                                setApplyingToId(min.id);
+                                setApplyingAs("existing_member");
+                                setIsSubmitted(false);
+                              }}
+                              className="py-1.5 px-3 bg-transparent border border-[var(--color-brand-border)] text-[var(--color-brand-text)] text-sm font-bold uppercase tracking-wider rounded-full hover:bg-[var(--color-brand-card-sunk)] transition-colors"
+                            >
+                              I already serve here
+                            </button>
+                          </div>
+                          <p className="text-sm leading-relaxed text-[var(--color-brand-secondary)]">
+                            Already serving in {min.name}? Use the second
+                            button and the parish will verify it with your
+                            coordinator.
+                          </p>
+                        </div>
                       ) : (
                         <div className="space-y-1.5">
                           <button
