@@ -4,7 +4,6 @@ import { UserProgress } from "../types";
 import { t } from "../lib/ui";
 import { BADGES } from "../data";
 import MyApplications from "./MyApplications";
-import MyMinistries from "./MyMinistries";
 import EditProfileCard from "./EditProfileCard";
 import SettingDisclosure from "./SettingDisclosure";
 import { auth } from "../lib/firebase";
@@ -214,15 +213,6 @@ export default function MeTab({
           onNicknameChange={onNicknameChange}
           onPhotoChange={setPhotoUrl}
         />
-
-        {/* My Ministries, inline rather than behind a row like the two
-            below it.
-            Those lists grow without limit; this one is nought to three
-            and does not grow on its own - a membership arrives when the
-            parish approves one. The whole point is seeing at a glance
-            what you serve in, which a row saying "2 ministries" does
-            not do. */}
-        {isLoggedIn && <MyMinistries />}
 
         {/* Two rows rather than two lists. Both of these grow without
             limit - an application is never removed, a notification

@@ -37,11 +37,17 @@ export default function MyMinistries() {
   if (!uid) return null;
   const mine = myMinistries(rows, uid);
 
+  // Deliberately flat: no background, no border, no padding of its
+  // own. This sits inside the My Profile card, and a bordered box
+  // nested in a bordered box reads as a mistake. The heading matches
+  // that card's own eyebrow so the two look like one panel.
   return (
-    <div className="bg-[var(--color-brand-card-sunk)] p-4 rounded-2xl border border-[var(--color-brand-border)] space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <HeartHandshake className="w-5 h-5 text-[var(--color-brand-secondary)] shrink-0" />
-        <h3 className="text-[16px] font-semibold text-[var(--color-brand-text)]">My Ministries</h3>
+        <HeartHandshake className="w-3.5 h-3.5 text-[var(--color-brand-secondary)] shrink-0" />
+        <h4 className="text-sm font-bold text-[var(--color-brand-secondary)] uppercase tracking-wider font-sans">
+          My Ministries
+        </h4>
       </div>
 
       {mine.length === 0 ? (

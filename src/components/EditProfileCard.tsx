@@ -4,6 +4,7 @@ import { auth } from "../lib/firebase";
 import { getProfile, updateProfile } from "../lib/userProfile";
 import { fileToAvatarDataUrl, initialsFor, AvatarError } from "../lib/avatar";
 import type { UserProfile } from "../types";
+import MyMinistries from "./MyMinistries";
 
 /**
  * Your own profile: the picture and the name the app calls you.
@@ -229,6 +230,16 @@ export default function EditProfileCard({
         Your nickname is what the app calls you. The parish still records applications
         under your full name, {profile.fullName || "—"}.
       </p>
+
+      {/* What you serve in, inside your profile rather than in a card
+          of its own below it.
+          Where you serve is part of who you are to the parish - it
+          belongs next to your name, not in a third box competing with
+          it. It also stops the Me tab growing a card per fact about
+          the account. */}
+      <div className="mt-4 pt-4 border-t border-[var(--color-brand-border)]">
+        <MyMinistries />
+      </div>
     </div>
   );
 }
