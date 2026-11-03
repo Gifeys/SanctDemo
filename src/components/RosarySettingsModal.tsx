@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { X, Languages, Sparkles, Music } from "lucide-react";
+import { X, Languages, Sparkles, Music, Hand } from "lucide-react";
 import {
   RosaryLanguage,
   RosaryMysterySet,
   RosaryMusic,
+  RosaryInteraction,
   RosarySettings,
   ROSARY_SETTINGS_KEY,
   loadRosarySettings,
@@ -73,6 +74,10 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
 
   function setMusic(music: RosaryMusic) {
     updateSettings((prev) => ({ ...prev, music }));
+  }
+
+  function setInteraction(interaction: RosaryInteraction) {
+    updateSettings((prev) => ({ ...prev, interaction }));
   }
 
   if (!isOpen) return null;
@@ -160,6 +165,44 @@ export default function RosarySettingsModal({ isOpen, onClose }: RosarySettingsM
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* How you move through the prayers.
+              Above Background Music because it changes how the screen
+              behaves rather than how it sounds, and somebody who
+              cannot work out how to reach the next prayer will not
+              get as far as the music. */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2 text-sm font-semibold uppercase tracking-wider text-white/90">
+              <Hand className="w-3.5 h-3.5" />
+              <span>Moving Through Prayers</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setInteraction("button")}
+                className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
+                  settings.interaction === "button"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
+                }`}
+              >
+                Buttons
+              </button>
+              <button
+                onClick={() => setInteraction("touch")}
+                className={`min-h-11 rounded-xl border text-base font-bold transition-colors duration-300 ${
+                  settings.interaction === "touch"
+                    ? "bg-[var(--color-brand-primary-dark)] border-[var(--color-brand-on-accent)]/80 text-white shadow-[0_0_20px_rgba(24,134,160,0.4)]"
+                    : "bg-transparent border-white/25 text-white/90 hover:bg-white/5"
+                }`}
+              >
+                Tap Screen
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-white/70 leading-snug">
+              Buttons show arrows beside the beads. Tap Screen moves on when you
+              tap anywhere, and back when you tap the left edge.
+            </p>
           </div>
 
           {/* Background music */}

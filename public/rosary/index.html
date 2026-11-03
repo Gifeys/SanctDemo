@@ -703,6 +703,76 @@ header {
 /* Whole-screen tap target, sits under the controls */
 #tapzone { position: absolute; inset: 0; z-index: 12; cursor: pointer; }
 
+/* Back and forward, in button mode.
+ *
+ * Two round arrows pinned to the sides of the rosary stage, low
+ * enough to reach with a thumb and clear of both "Bead 1 of 5" and
+ * Ask Sancti - the bar along the bottom was sitting on top of the
+ * first and crowding the second.
+ *
+ * The container is inert and only the buttons take presses, so the
+ * beads behind it stay visible and nothing blocks the middle of the
+ * screen. It sits above the tap zone (13 against its 12) so a press
+ * is a press on the button, not a tap-to-advance underneath.
+ *
+ * Hidden outright in touch mode - not dimmed, because a dimmed
+ * control still invites a press.
+ */
+#stepbar {
+  position: absolute;
+  inset: 0;
+  z-index: 13;
+  display: none;
+  pointer-events: none;
+}
+#stepbar.on { display: block; }
+
+.stepbtn {
+  position: absolute;
+  bottom: 6px;
+  pointer-events: auto;
+  width: 54px; height: 54px;
+  display: grid; place-items: center;
+  padding: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .2s ease, transform .12s ease;
+  backdrop-filter: blur(6px);
+}
+.stepbtn svg {
+  width: 24px; height: 24px;
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.stepbtn:active { transform: scale(.92); }
+
+/* Back is quieter than forward. It is the rarer of the two and the
+   only one that can lose your place, so it does not compete for the
+   thumb. */
+.stepbtn--undo {
+  left: 14px;
+  background: rgba(16,22,38,.5);
+  border: 1.5px solid rgba(255,236,190,.38);
+}
+.stepbtn--undo svg { stroke: rgba(255,236,190,.9); }
+
+.stepbtn--do {
+  right: 14px;
+  background: linear-gradient(180deg, rgba(255,214,133,.96), rgba(228,170,78,.96));
+  border: 1.5px solid rgba(255,236,190,.75);
+  box-shadow: 0 6px 22px rgba(228,170,78,.3);
+}
+.stepbtn--do svg { stroke: #3a2a10; }
+
+/* At the first prayer there is nothing to go back to. Faded and
+   disabled rather than hidden: a button that vanishes and returns
+   draws the eye to the wrong side of the screen. */
+.stepbtn:disabled { opacity: .3; cursor: default; }
+.stepbtn:disabled:active { transform: none; }
+
 /* The tap guide.
  *
  * Shown at the start of every rosary rather than once ever. The small
@@ -1089,6 +1159,25 @@ header {
 
   <!-- Rosary -->
   <div id="stage">
+
+    <!-- Back and forward, in button mode.
+         Beside the beads rather than in a bar along the bottom. The
+         bar sat on top of "Bead 1 of 5" and crowded Ask Sancti, and a
+         full-width control for something you press fifty-three times
+         is a lot of screen spent on two arrows.
+
+         Arrows and no words: at this size a label has to be tiny to
+         fit, and "Undo"/"Do" said less than the direction does. The
+         name lives in aria-label for anyone using a screen reader. -->
+    <div id="stepbar" aria-hidden="true">
+      <button type="button" id="btn-undo" class="stepbtn stepbtn--undo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 L8 12 L15 19"/></svg>
+      </button>
+      <button type="button" id="btn-do" class="stepbtn stepbtn--do">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 L16 12 L9 19"/></svg>
+      </button>
+    </div>
+
     <div id="rosary">
       <svg id="chain" viewBox="0 0 340 396">
         <polyline id="cord"/>
@@ -1194,6 +1283,16 @@ header {
           </div>
         </div>
 
+        <!-- How you move through the prayers. -->
+        <div class="rs-section" id="rs-mode-section">
+          <div class="rs-label" id="rs-mode-label"></div>
+          <div class="rs-grid rs-grid-2" id="rs-mode-group">
+            <button type="button" data-mode="button" id="rs-mode-button"></button>
+            <button type="button" data-mode="touch" id="rs-mode-touch"></button>
+          </div>
+          <div class="rs-note" id="rs-mode-note"></div>
+        </div>
+
         <!-- Guided voice: the app prays each part aloud as it appears.
              Off by default. Somebody who opens the Rosary to pray does
              not expect a voice to start without being asked, and in a
@@ -1245,6 +1344,10 @@ const P = {
       mystery:"Mysteries", language:"Language", begin:"Begin", again:"Thanks be to God",
       music:"Background Music", musicOn:"On", musicOff:"Off",
       guide:"Guided Voice", guideOn:"On", guideOff:"Off",
+      mode:"Moving Through Prayers", modeButton:"Buttons", modeTouch:"Tap Screen",
+      modeNote:"Buttons show arrows beside the beads. Tap Screen moves on when you tap anywhere, and back when you tap the left edge.",
+      undo:"Go back", doNext:"Continue",
+      hintButtons:"Use the arrows to move through the prayers",
       guideNote:"Reads each prayer aloud as it appears. Turns off the microphone, because the app would otherwise hear its own voice and light the beads by itself.",
       lede:"Choose a set of mysteries and begin.",
       note:"Voice guidance needs Chrome or Edge and an internet connection. You can always tap to move on.",
@@ -1315,6 +1418,10 @@ const P = {
       mystery:"Misteryo", language:"Wika", begin:"Simulan", again:"Salamat sa Diyos",
       music:"Musikang Panlikod", musicOn:"Naka-on", musicOff:"Naka-off",
       guide:"Gabay na Boses", guideOn:"Naka-on", guideOff:"Naka-off",
+      mode:"Paggalaw sa Panalangin", modeButton:"Mga Buton", modeTouch:"I-tap ang Screen",
+      modeNote:"Ipinapakita ng Mga Buton ang mga arrow sa tabi ng rosaryo. Sa I-tap ang Screen, mag-tap kahit saan upang magpatuloy, at sa kaliwa upang bumalik.",
+      undo:"Bumalik", doNext:"Magpatuloy",
+      hintButtons:"Gamitin ang mga arrow upang magpatuloy",
       guideNote:"Binabasa nang malakas ang bawat panalangin. Isinasara nito ang mikropono, dahil kung hindi ay maririnig ng app ang sarili nitong boses.",
       lede:"Pumili ng misteryo at magsimula.",
       note:"Ang gabay sa boses ay nangangailangan ng Chrome o Edge at internet. Maaari ka pa ring mag-tap upang magpatuloy.",
@@ -1903,9 +2010,32 @@ const store = {
    file is static HTML/JS and can't import that module directly.
    ------------------------------------------------------------------ */
 const ROSARY_SETTINGS_KEY = "sanctiwalk.rosary.settings";
-const DEFAULT_ROSARY_SETTINGS = { language: "en", mysterySet: "today", music: "on" };
+const DEFAULT_ROSARY_SETTINGS = { language: "en", mysterySet: "today", music: "on", interaction: "button" };
 const VALID_MYSTERY_SETS = ["today", "joyful", "sorrowful", "glorious", "luminous"];
 
+function defaultSettings() {
+  return {
+    language: DEFAULT_ROSARY_SETTINGS.language,
+    mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet,
+    music: DEFAULT_ROSARY_SETTINGS.music,
+    interaction: DEFAULT_ROSARY_SETTINGS.interaction
+  };
+}
+
+// Anything not understood is the default. The same rule as
+// normaliseInteraction in src/lib/rosarySettings.ts.
+function normaliseInteraction(v) { return v === "touch" ? "touch" : "button"; }
+
+function withInteraction(parsed) {
+  return {
+    language: parsed.language, mysterySet: parsed.mysterySet, music: parsed.music,
+    interaction: normaliseInteraction(parsed.interaction)
+  };
+}
+
+// Deliberately does NOT require `interaction`: every pilgrim who has
+// opened the rosary before today has a three-field object stored, and
+// rejecting those would reset their language, mystery and music.
 function isValidRosarySettings(v) {
   return !!v && typeof v === "object" &&
     (v.language === "en" || v.language === "fil") &&
@@ -1915,23 +2045,23 @@ function isValidRosarySettings(v) {
 function loadRosarySettings() {
   try {
     var raw = localStorage.getItem(ROSARY_SETTINGS_KEY);
-    if (!raw) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+    if (!raw) return defaultSettings();
     var parsed = JSON.parse(raw);
-    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+    return isValidRosarySettings(parsed) ? withInteraction(parsed) : defaultSettings();
   } catch (e) {
-    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+    return defaultSettings();
   }
 }
 function saveRosarySettings(settings) {
   try { localStorage.setItem(ROSARY_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
 }
 function parseRosarySettingsEventValue(newValue) {
-  if (!newValue) return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+  if (!newValue) return defaultSettings();
   try {
     var parsed = JSON.parse(newValue);
-    return isValidRosarySettings(parsed) ? parsed : { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+    return isValidRosarySettings(parsed) ? withInteraction(parsed) : defaultSettings();
   } catch (e) {
-    return { language: DEFAULT_ROSARY_SETTINGS.language, mysterySet: DEFAULT_ROSARY_SETTINGS.mysterySet, music: DEFAULT_ROSARY_SETTINGS.music };
+    return defaultSettings();
   }
 }
 // The prayer engine's internal language tag ("en"/"tl") predates the
@@ -1946,6 +2076,8 @@ const S = {
   lang: prefToLang(INITIAL_ROSARY_SETTINGS.language),
   mysterySet: INITIAL_ROSARY_SETTINGS.mysterySet,
   musicOn: INITIAL_ROSARY_SETTINGS.music !== "off",
+  // "button" (Undo / Do under the beads) or "touch" (tap the screen).
+  interaction: normaliseInteraction(INITIAL_ROSARY_SETTINGS.interaction),
   set: INITIAL_ROSARY_SETTINGS.mysterySet === "today"
     ? DAY_SET[new Date().getDay()]
     : INITIAL_ROSARY_SETTINGS.mysterySet,
@@ -1980,6 +2112,10 @@ const el = {
   rsLangGroup:$("rs-lang-group"), rsMysteryGroup:$("rs-mystery-group"),
   rsMusicGroup:$("rs-music-group"), rsMusicLabel:$("rs-music-label"),
   rsMusicOn:$("rs-music-on"), rsMusicOff:$("rs-music-off"),
+  rsModeSection:$("rs-mode-section"), rsModeLabel:$("rs-mode-label"),
+  rsModeGroup:$("rs-mode-group"), rsModeNote:$("rs-mode-note"),
+  rsModeButton:$("rs-mode-button"), rsModeTouch:$("rs-mode-touch"),
+  stepbar:$("stepbar"), btnUndo:$("btn-undo"), btnDo:$("btn-do"),
   rsGuideSection:$("rs-guide-section"), rsGuideLabel:$("rs-guide-label"),
   rsGuideGroup:$("rs-guide-group"), rsGuideNote:$("rs-guide-note"),
   rsGuideOn:$("rs-guide-on"), rsGuideOff:$("rs-guide-off"),
@@ -2342,12 +2478,45 @@ function paintBeads(step) {
   if (activeEl) { activeEl.classList.remove("done"); activeEl.classList.add("active"); }
 }
 
+/**
+ * Shows the mode on screen: the buttons, the tap zone and the hint.
+ *
+ * One function, called from render() and from every place the mode
+ * can change, so the three can never disagree - the bug available
+ * here is buttons visible while the tap zone still advances, which
+ * moves two prayers on one press.
+ */
+function paintInteractionMode() {
+  const L = P[S.lang] || P.en;
+  const buttons = S.interaction === "button";
+
+  if (el.stepbar) {
+    el.stepbar.classList.toggle("on", buttons && S.started);
+    el.stepbar.setAttribute("aria-hidden", buttons && S.started ? "false" : "true");
+  }
+  if (el.btnUndo) {
+    // The arrow is the label on screen; the word is for screen
+    // readers, which cannot read a chevron.
+    el.btnUndo.setAttribute("aria-label", L.ui.undo);
+    // Nothing to go back to at the Sign of the Cross.
+    el.btnUndo.disabled = S.idx <= 0;
+  }
+  if (el.btnDo) el.btnDo.setAttribute("aria-label", L.ui.doNext);
+
+  // The tap zone stops advancing in button mode. Leaving it live would
+  // make a press land twice: once on the button, once on the zone.
+  if (el.tapzone) el.tapzone.style.pointerEvents = buttons ? "none" : "";
+
+  if (el.hint) el.hint.textContent = buttons ? L.ui.hintButtons : L.ui.hint;
+}
+
 function render() {
   const step = S.seq[S.idx];
   const L = P[S.lang];
   if (!step) return finishRosary();
 
   paintBeads(step);
+  paintInteractionMode();
 
   // Header
   el.hdrSet.childNodes[0].nodeValue = L.setNames[S.set];
@@ -2465,6 +2634,12 @@ function onTap(ev) {
 function finishRosary() {
   const L = P[S.lang];
   stopVoice();
+  // The prayers are done; the buttons have nothing left to step
+  // through and would sit on top of the closing screen.
+  if (el.stepbar) {
+    el.stepbar.classList.remove("on");
+    el.stepbar.setAttribute("aria-hidden", "true");
+  }
   el.finTitle.textContent = L.ui.finTitle;
   el.finBody.textContent  = L.ui.finBody;
   el.finAgain.textContent = L.ui.again;
@@ -3271,6 +3446,15 @@ function paintSettingsPanel() {
     el.rsMusicOff.classList.toggle("sel", !S.musicOn);
   }
 
+  if (el.rsModeGroup) {
+    el.rsModeLabel.textContent = P[S.lang].ui.mode;
+    el.rsModeButton.textContent = P[S.lang].ui.modeButton;
+    el.rsModeTouch.textContent = P[S.lang].ui.modeTouch;
+    el.rsModeNote.textContent = P[S.lang].ui.modeNote;
+    el.rsModeButton.classList.toggle("sel", S.interaction === "button");
+    el.rsModeTouch.classList.toggle("sel", S.interaction === "touch");
+  }
+
   // Hidden entirely where the device has no speech engine, rather than
   // offered and then silent.
   if (el.rsGuideSection) {
@@ -3317,6 +3501,10 @@ function applyRosarySettingsToState(settings) {
   S.mysterySet = settings.mysterySet;
   S.lang = newLang;
   S.musicOn = settings.music !== "off";
+  // Changing the mode must not move anybody's place in the rosary, so
+  // this touches only how it is driven - never S.idx.
+  S.interaction = normaliseInteraction(settings.interaction);
+  paintInteractionMode();
 
   if (musicChanged) {
     if (S.musicOn) playMusic(); else pauseMusic();
@@ -3443,8 +3631,49 @@ if (el.btnMic) el.btnMic.addEventListener("click", function (e) {
 });
 
 // Tap anywhere to continue - the text panel still scrolls freely
+/* Undo and Do go through the same goBack()/advance() the taps use, so
+   there is one progression and the two modes cannot drift apart. */
+if (el.btnUndo) {
+  el.btnUndo.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (!S.started) return;
+    hideTapGuide();
+    goBack();
+  });
+}
+if (el.btnDo) {
+  el.btnDo.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (!S.started) return;
+    hideTapGuide();
+    advance();
+  });
+}
+
+// Writes through the shared settings object, so the app shell's own
+// Rosary Settings reflects a change made here - and the reverse, via
+// the storage listener below.
+if (el.rsModeGroup) {
+  el.rsModeGroup.addEventListener("click", function (e) {
+    const b = e.target.closest("button"); if (!b) return;
+    S.interaction = normaliseInteraction(b.dataset.mode);
+    const current = loadRosarySettings();
+    current.interaction = S.interaction;
+    saveRosarySettings(current);
+    paintInteractionMode();
+    paintSettingsPanel();
+  });
+}
+
 el.tapzone.addEventListener("click", onTap);
-el.prayerText.addEventListener("click", function (e) { e.stopPropagation(); onTap(); });
+el.prayerText.addEventListener("click", function (e) {
+  e.stopPropagation();
+  // The other pointer route into onTap. The tap zone is neutralised by
+  // pointer-events in button mode; this one needs saying out loud, or
+  // tapping the prayer would still advance with the buttons showing.
+  if (S.interaction === "button") return;
+  onTap();
+});
 
 document.addEventListener("keydown", function (e) {
   if (!S.started) return;
@@ -3550,6 +3779,10 @@ function hideTapGuide() {
 function showTapGuide() {
   var guide = document.getElementById("tap-guide");
   if (!guide) return;
+  /* Nothing to teach in button mode. The guide names what the two
+     sides of the screen do, and in button mode the sides do nothing -
+     showing it would teach a gesture that has been turned off. */
+  if (S.interaction === "button") return;
   /* P is keyed en/tl. Falling back rather than indexing blind: a
      missing pack threw here and took the whole screen down with it. */
   var L = P[S.lang] || P.en;
