@@ -161,6 +161,16 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
   /// the claim.
   const [claiming, setClaiming] = useState<{ id: string; name: string } | null>(null);
 
+  /// The ministry somebody already in another ministry has tapped
+  /// "Apply now" on, before they have confirmed it.
+  ///
+  /// A notice inside the form was not enough: by the time they read
+  /// it they are already filling the thing in, and the question -
+  /// "does this replace what I already have?" - is one they need
+  /// answered BEFORE they start, not on the first page of four.
+  const [confirmApply, setConfirmApply] =
+    useState<{ id: string; name: string; warning: string } | null>(null);
+
   /// This pilgrim's approved memberships.
   ///
   /// Read here so a ministry they already belong to can say so instead
@@ -224,9 +234,24 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--color-brand-card)] overflow-y-auto scroll-safe">
+      {confirmApply && (
+        <ConfirmAnotherMinistry
+          ministryName={confirmApply.name}
+          warning={confirmApply.warning}
+          onCancel={() => setConfirmApply(null)}
+          onConfirm={() => {
+            setApplyingToId(confirmApply.id);
+            setApplyingAs("new_applicant");
+            setIsSubmitted(false);
+            setConfirmApply(null);
+          }}
+        />
+      )}
+
       {claiming && (
         <ConfirmClaim
           ministryName={claiming.name}
+          warning={uid ? alreadyMemberWarning(memberships, uid, claiming.id) : null}
           onCancel={() => setClaiming(null)}
           onConfirm={() => {
             setApplyingToId(claiming.id);
@@ -471,6 +496,18 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
                           <div className="flex flex-wrap gap-1.5">
                             <button
                               onClick={() => {
+                                // Somebody already serving elsewhere is
+                                // asked first. Everybody else goes
+                                // straight to the form - a dialog with
+                                // nothing to warn about is a tap for
+                                // its own sake.
+                                const warning = uid
+                                  ? alreadyMemberWarning(memberships, uid, min.id)
+                                  : null;
+                                if (warning) {
+                                  setConfirmApply({ id: min.id, name: min.name, warning });
+                                  return;
+                                }
                                 setApplyingToId(min.id);
                                 setApplyingAs("new_applicant");
                                 setIsSubmitted(false);
@@ -582,8 +619,15 @@ export default function MinistriesTab({ parish, onAddApplication, uid, userEmail
  * is both the reassurance for the honest case and the deterrent for
  * the careless one.
  */
-function ConfirmClaim({ ministryName, onCancel, onConfirm }: {
+function ConfirmClaim({ ministryName, warning, onCancel, onConfirm }: {
   ministryName: string;
+  /**
+   * The ministries they already serve in, if any. Shown here too:
+   * claiming a second membership raises the same question as applying
+   * for one, and the answer should not depend on which button they
+   * happened to press.
+   */
+  warning?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -609,6 +653,11 @@ function ConfirmClaim({ ministryName, onCancel, onConfirm }: {
             <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
               If you would like to join instead, go back and use Apply now.
             </p>
+            {warning && (
+              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+                {warning}
+              </p>
+            )}
           </div>
         </div>
 
@@ -624,6 +673,76 @@ function ConfirmClaim({ ministryName, onCancel, onConfirm }: {
             className="flex-1 rounded-full bg-[var(--color-brand-primary)] text-white py-3 text-[15px] font-bold"
           >
             Yes, I serve here
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The step before applying to a SECOND ministry.
+ *
+ * ## Why this is a dialog and not the notice inside the form
+ *
+ * The notice is still there, but it arrives too late to answer the
+ * question somebody actually has: does applying here take away what I
+ * already serve in? Asked on the first page of a four-page form, that
+ * doubt either stops them or follows them all the way to submit.
+ *
+ * So it is answered before they start, in the one place they cannot
+ * scroll past.
+ *
+ * ## Why it does not refuse
+ *
+ * The parish allows a pilgrim to serve in more than one ministry.
+ * This is a check that they meant it, not a gate - which is why the
+ * confirming button is the ordinary primary colour and not a warning
+ * red.
+ */
+function ConfirmAnotherMinistry({ ministryName, warning, onCancel, onConfirm }: {
+  ministryName: string;
+  /** From alreadyMemberWarning(): names the ministries they are in. */
+  warning: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`You are already in a ministry — confirm applying to ${ministryName}`}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+    >
+      <div className="w-full max-w-[400px] rounded-[22px] bg-[var(--color-brand-card)] p-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-[var(--color-brand-gold-deep)]" />
+          <div className="min-w-0">
+            <h3 className="text-[18px] font-bold font-serif italic text-[var(--color-brand-text)]">
+              You already serve in a ministry
+            </h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-brand-text)]">
+              {warning}
+            </p>
+            <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-brand-secondary)]">
+              Applying to {ministryName} is a new application. The parish will
+              decide on it separately.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-full border-[1.5px] border-[var(--color-brand-border)] py-3 text-[15px] font-bold text-[var(--color-brand-text)]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-full bg-[var(--color-brand-primary)] text-white py-3 text-[15px] font-bold"
+          >
+            Continue
           </button>
         </div>
       </div>

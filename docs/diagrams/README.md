@@ -1,32 +1,95 @@
 # SanctiWalk — system documentation figures
 
-Regenerate everything:
+## USE THESE (2026 revision)
+
+The panel returned every diagram with one note: **not readable, and not
+detailed enough to build a design from.** The `fig-*` sheets below are
+the answer to that and are the ones to put in the paper.
+
+Regenerate:
 
 ```
-python tools/diagrams_flow.py
-python tools/diagrams_dfd.py
-python tools/diagrams_model.py
-python tools/diagrams_wire.py
-python tools/render-diagrams.py
+python scripts/build-diagrams.py     # the SVG sheets
+python scripts/render-figs.py        # 2520px PNGs, one uniform width
+python scripts/build-diagram-pdf.py  # the combined PDF
 ```
 
-Each figure is written as an `.svg` and a 2× `.png`. Word takes either;
-the PNG is the safer one for a printed appendix, because it cannot be
-re-laid-out by a different renderer or a missing font.
+| Page | Figure | File | What it shows |
+|---|---|---|---|
+| 1 | 1 | `fig-1-use-case` | Use Case Diagram |
+| 2 | 2 | `fig-2-flow-user` | Flow Chart (User Side) |
+| 3 | 3 | `fig-3-flow-admin` | Flow Chart (Admin Side) |
+| 4 | 4 | `fig-4-dfd-level0` | Data Flow Diagram (Level 0) |
+| 5 | 5 | `fig-5-dfd-level1` | Data Flow Diagram (Level 1) |
+| 6 | 6 | `fig-6-erd` | Entity-Relationship Diagram |
+| 7 | 7 | `fig-7-hipo-user` | HIPO Chart (User Side) |
+| 8 | 8 | `fig-8-hipo-admin` | HIPO Chart (Admin Side) |
+
+These are the paper's OWN eight figures, with the paper's own numbering
+and module breakdown. An earlier pass replaced them with a different
+decomposition, which was wrong: the panel asked for these diagrams
+made readable, not for a different set of diagrams.
+
+All eight are collected in **`SanctiWalk-System-Diagrams.pdf`**, one
+figure per page, every page A4 wide.
+
+Each is written as an `.svg` and a 2× `.png`. Word takes either; the PNG
+is safer for a printed appendix because it cannot be re-laid-out by a
+different renderer or a missing font.
+
+### Why the old ones were unreadable, and what changed
+
+It was measurable. The old ERD put **79 labels at 9px on a 1460px
+canvas** — about 4pt once the sheet is fitted to a landscape A4, half
+the size of a footnote. Every figure had the same fault; the use case
+diagram went down to 8.5px.
+
+Enlarging the drawings would have changed nothing. The page is still
+250mm wide, so a figure drawn twice as large prints at half the scale
+and the type lands back where it started. **What matters is how much is
+on one sheet.** So:
+
+* no sheet is wider than 1320px, which maps to the usable width of a
+  landscape A4
+* no text is smaller than 15px — enforced inside `text()`, which
+  raises an error rather than letting a caller shrink type to fit
+* no sheet is taller than A4's proportions, so a printer never scales
+  a page down — which would undo all of the above
+* where a figure still carries a lot of text, the SHEET is drawn
+  narrower (the ERD is 1120px, not 1320), which makes every label
+  physically larger once the page is printed at a fixed width
+
+At 1320px and 15px, the smallest text prints at roughly 8pt.
+
+The generator also measures its own output and warns when content
+reaches past the bottom of the sheet — a figure that is too tall is
+silently cropped by the renderer, which is how the first ministry
+flowchart lost everything below the decision diamond.
+
+### The drawing style
+
+Plain black line work on white with one accent, the way a
+systems-analysis textbook prints a figure: square corners, hairline
+rules, no shadows. Rounded boxes mean a process; squares mean an
+external entity; the accent fill marks anything holding data. The
+earlier set gave every shape its own pastel colour, which carried no
+meaning a reader could use and had to survive a monochrome
+photocopier anyway.
+
+### Still current from the earlier set
 
 | # | File | Figure |
 |---|------|--------|
-| 1 | `01-system-flowchart` | System flowchart — the pilgrim's path through the app |
-| 2 | `02-admin-flowchart` | Admin flowchart — the parish office's path |
-| 3 | `03-dfd-level0` | Context diagram (Level 0 DFD) |
-| 4 | `04-dfd-level1` | Level 1 DFD — six processes against six stores |
-| 5 | `05-erd-firestore` | Data model — the Cloud Firestore collections |
-| 6 | `06-hipo-user` | User HIPO chart |
-| 7 | `07-hipo-admin` | Admin HIPO chart |
-| 8 | `08-use-case` | Use case diagram |
-| 9 | `09-wireframes-app` | Wireframes — all fifteen pilgrim screens |
-| 10 | `10-wireframes-admin` | Wireframes — the four admin sections |
+| 9 | `09-wireframes-app` | Wireframes — the pilgrim screens |
+| 10 | `10-wireframes-admin` | Wireframes — the admin sections |
 | 11 | `11-wireframes-ar` | Wireframes — the Unity AR application |
+
+### Superseded
+
+`01`–`08` are the returned figures. They are kept only so the revision
+can be shown side by side; do not put them in the paper.
+
+---
 
 ## What changed from the first set, and why
 
